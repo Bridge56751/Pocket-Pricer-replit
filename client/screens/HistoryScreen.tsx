@@ -83,9 +83,9 @@ export default function HistoryScreen() {
             { backgroundColor: theme.colors.card, opacity: pressed ? 0.7 : 1 }
           ]}
         >
-          {item.results?.listings?.[0]?.imageUrl ? (
+          {(item.thumbnailUrl || item.results?.listings?.[0]?.imageUrl) ? (
             <Image 
-              source={{ uri: item.results.listings[0].imageUrl }} 
+              source={{ uri: item.thumbnailUrl || item.results?.listings?.[0]?.imageUrl }} 
               style={styles.thumbnail}
               contentFit="cover"
             />
@@ -108,31 +108,31 @@ export default function HistoryScreen() {
             </Text>
             
             <View style={styles.priceRow}>
-              {item.results?.avgListPrice ? (
+              {(item.avgPrice || item.results?.avgListPrice) ? (
                 <View style={styles.priceTag}>
                   <Text style={[styles.priceLabel, { color: theme.colors.mutedForeground }]}>
                     Avg:
                   </Text>
                   <Text style={[styles.priceValue, { color: theme.colors.primary }]}>
-                    ${item.results.avgListPrice.toFixed(2)}
+                    ${(item.avgPrice || item.results?.avgListPrice)?.toFixed(2)}
                   </Text>
                 </View>
               ) : null}
               
-              {item.results?.bestBuyNow ? (
+              {(item.bestPrice || item.results?.bestBuyNow) ? (
                 <View style={styles.priceTag}>
                   <Text style={[styles.priceLabel, { color: theme.colors.mutedForeground }]}>
                     Best:
                   </Text>
                   <Text style={[styles.priceValue, { color: theme.colors.success }]}>
-                    ${item.results.bestBuyNow.toFixed(2)}
+                    ${(item.bestPrice || item.results?.bestBuyNow)?.toFixed(2)}
                   </Text>
                 </View>
               ) : null}
               
-              {item.results?.totalListings ? (
+              {(item.totalListings || item.results?.totalListings) ? (
                 <Text style={[styles.listingsCount, { color: theme.colors.mutedForeground }]}>
-                  {item.results.totalListings} listings
+                  {item.totalListings || item.results?.totalListings} listings
                 </Text>
               ) : null}
             </View>

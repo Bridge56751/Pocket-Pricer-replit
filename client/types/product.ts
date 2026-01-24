@@ -22,6 +22,10 @@ export interface SearchHistoryItem {
   product: Product | null;
   searchedAt: string;
   results?: SearchResultsData;
+  thumbnailUrl?: string;
+  avgPrice?: number;
+  bestPrice?: number;
+  totalListings?: number;
 }
 
 export interface FavoriteItem {

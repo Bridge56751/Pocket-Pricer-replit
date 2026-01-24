@@ -283,9 +283,9 @@ export default function ScanScreen() {
                   ]}
                 >
                   <View style={styles.scanImageContainer}>
-                    {scan.results?.listings?.[0]?.imageUrl ? (
+                    {(scan.thumbnailUrl || scan.results?.listings?.[0]?.imageUrl) ? (
                       <Image
-                        source={{ uri: scan.results.listings[0].imageUrl }}
+                        source={{ uri: scan.thumbnailUrl || scan.results?.listings?.[0]?.imageUrl }}
                         style={styles.scanImage}
                         resizeMode="cover"
                       />
@@ -300,7 +300,7 @@ export default function ScanScreen() {
                       style={[styles.scanTitle, { color: theme.colors.foreground }]}
                       numberOfLines={1}
                     >
-                      {scan.results?.productInfo?.name || scan.query}
+                      {scan.results?.productInfo?.name || scan.product?.title || scan.query}
                     </Text>
                     <Text 
                       style={[styles.scanCondition, { color: theme.colors.mutedForeground }]}
@@ -310,7 +310,7 @@ export default function ScanScreen() {
                     </Text>
                     <View style={styles.scanMeta}>
                       <Text style={[styles.scanPrice, { color: theme.colors.primary }]}>
-                        ${scan.results?.avgListPrice?.toFixed(0) || "0"}
+                        ${(scan.avgPrice || scan.results?.avgListPrice)?.toFixed(0) || "0"}
                       </Text>
                       <View style={styles.scanTime}>
                         <Feather name="clock" size={12} color={theme.colors.mutedForeground} />
