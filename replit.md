@@ -1,13 +1,13 @@
 # eBay Profit Estimator
 
-An Expo React Native mobile app that helps eBay sellers estimate potential profit on products by searching for current market prices.
+An Expo React Native mobile app that helps eBay sellers estimate potential profit on products by searching real eBay listings via SerpAPI.
 
 ## Overview
 
 This app allows eBay resellers to:
-- Search for products by name or barcode
-- View current eBay selling prices
-- Calculate estimated profit based on their costs
+- Search for products by name and see real active eBay listings
+- View current eBay selling prices from live data
+- Calculate estimated profit based on their costs (includes ~13% eBay fees)
 - Save favorite products for later
 - Track search history
 
@@ -15,10 +15,15 @@ This app allows eBay resellers to:
 
 - **Frontend**: Expo React Native with TypeScript
 - **Backend**: Express.js with TypeScript
+- **eBay Data**: SerpAPI (real-time eBay listing search)
 - **State Management**: TanStack React Query
 - **Local Storage**: AsyncStorage for history, favorites, and settings
 - **Navigation**: React Navigation (bottom tabs + native stack)
 - **Styling**: Custom design tokens system with dark theme
+
+## Environment Variables
+
+- `SERPAPI_API_KEY` - Required for eBay listing search (get from https://serpapi.com)
 
 ## Project Structure
 
@@ -97,11 +102,15 @@ function MyComponent() {
 
 ## API Endpoints
 
-- `POST /api/search` - Search for a product
+- `POST /api/search` - Search for a product on eBay via SerpAPI
   - Body: `{ query: string }`
-  - Returns: Product object with pricing and profit estimates
+  - Returns: Top matching product with real eBay pricing and profit estimates
 
-- `GET /api/trending` - Get trending products (optional)
+- `POST /api/search/all` - Get all matching listings
+  - Body: `{ query: string, page?: number }`
+  - Returns: `{ products: Product[], total: number }`
+
+- `GET /api/trending` - Get trending products
 
 ## Running the App
 
@@ -113,7 +122,7 @@ Users can test on physical devices using Expo Go by scanning the QR code.
 
 ## Features
 
-1. **Product Search**: Enter product names or scan barcodes
+1. **Real eBay Search**: Search any product to see current active listings
 2. **Profit Calculator**: Enter your cost to see net profit breakdown
 3. **eBay Fee Estimation**: Automatically calculates ~13% eBay fees
 4. **Search History**: Track all previous searches
@@ -122,6 +131,6 @@ Users can test on physical devices using Expo Go by scanning the QR code.
 
 ## Recent Changes
 
-- **Jan 2026**: Initial MVP with search, history, favorites, and settings
+- **Jan 2026**: Integrated SerpAPI for real eBay listing data
+- Removed barcode scanning, focused on text search for live listings
 - Added design tokens system for consistent theming
-- Implemented barcode scanning (mobile only via Expo Go)
