@@ -192,7 +192,9 @@ export default function ScanScreen() {
               <ActivityIndicator size="large" color={theme.colors.primary} />
               <View style={styles.analyzingText}>
                 <Text style={[styles.analyzingTitle, { color: theme.colors.foreground }]}>
-                  Analyzing your product{analyzingCount.total > 1 ? `s (${analyzingCount.current}/${analyzingCount.total})` : ""}...
+                  {analyzingCount.total > 1 
+                    ? `Scanning product ${analyzingCount.current} of ${analyzingCount.total}...`
+                    : "Analyzing your product..."}
                 </Text>
                 <Text style={[styles.analyzingSubtitle, { color: theme.colors.mutedForeground }]}>
                   {analyzingProgress}
