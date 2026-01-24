@@ -142,6 +142,55 @@ async function canUserSearch(user: any): Promise<{ allowed: boolean; remaining: 
   return { allowed: remaining > 0, remaining };
 }
 
+const RATE_LIMIT_PER_MINUTE = 10;
+const RATE_LIMIT_PER_DAY = 100;
+
+async function checkRateLimit(userId: string): Promise<{ allowed: boolean; message?: string }> {
+  const now = new Date();
+  const minuteWindow = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), now.getMinutes());
+  const dayWindow = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  try {
+    const result = await query(
+      `SELECT minute_count, day_count FROM rate_limits 
+       WHERE user_id = $1 AND minute_window = $2 AND day_window = $3`,
+      [userId, minuteWindow, dayWindow]
+    );
+
+    if (result.rows.length === 0) {
+      await query(
+        `INSERT INTO rate_limits (user_id, minute_window, day_window, minute_count, day_count) 
+         VALUES ($1, $2, $3, 1, 1)
+         ON CONFLICT (user_id, minute_window, day_window) 
+         DO UPDATE SET minute_count = rate_limits.minute_count + 1, day_count = rate_limits.day_count + 1, updated_at = CURRENT_TIMESTAMP`,
+        [userId, minuteWindow, dayWindow]
+      );
+      return { allowed: true };
+    }
+
+    const { minute_count, day_count } = result.rows[0];
+
+    if (day_count >= RATE_LIMIT_PER_DAY) {
+      return { allowed: false, message: "Daily limit of 100 requests reached. Try again tomorrow." };
+    }
+
+    if (minute_count >= RATE_LIMIT_PER_MINUTE) {
+      return { allowed: false, message: "Rate limit exceeded. Please wait a minute before trying again." };
+    }
+
+    await query(
+      `UPDATE rate_limits SET minute_count = minute_count + 1, day_count = day_count + 1, updated_at = CURRENT_TIMESTAMP 
+       WHERE user_id = $1 AND minute_window = $2 AND day_window = $3`,
+      [userId, minuteWindow, dayWindow]
+    );
+
+    return { allowed: true };
+  } catch (error) {
+    console.error("Rate limit check error:", error);
+    return { allowed: true };
+  }
+}
+
 async function incrementSearchCount(userId: string): Promise<void> {
   await query(
     "UPDATE users SET total_searches = COALESCE(total_searches, 0) + 1 WHERE id = $1",
