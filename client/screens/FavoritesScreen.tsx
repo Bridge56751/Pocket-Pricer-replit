@@ -2,7 +2,6 @@ import React, { useState, useCallback } from "react";
 import { View, StyleSheet, FlatList, Pressable, Text, Linking } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
-import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useFocusEffect } from "@react-navigation/native";
 import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
@@ -18,7 +17,6 @@ import type { FavoriteItem } from "@/types/product";
 export default function FavoritesScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
-  const tabBarHeight = useBottomTabBarHeight();
   const { theme } = useDesignTokens();
 
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
@@ -116,7 +114,7 @@ export default function FavoritesScreen() {
           styles.listContent,
           {
             paddingTop: headerHeight + 16,
-            paddingBottom: tabBarHeight + 16,
+            paddingBottom: insets.bottom + 16,
           },
           favorites.length === 0 && !isLoading && styles.emptyContent,
         ]}

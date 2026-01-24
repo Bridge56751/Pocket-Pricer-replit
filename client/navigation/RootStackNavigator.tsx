@@ -1,8 +1,13 @@
 import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import MainTabNavigator from "@/navigation/MainTabNavigator";
+import ScanScreen from "@/screens/ScanScreen";
+import CameraScanScreen from "@/screens/CameraScanScreen";
+import HistoryScreen from "@/screens/HistoryScreen";
+import FavoritesScreen from "@/screens/FavoritesScreen";
+import ProfileScreen from "@/screens/ProfileScreen";
 import SearchResultsScreen from "@/screens/SearchResultsScreen";
 import { useScreenOptions } from "@/hooks/useScreenOptions";
+import { HeaderTitle } from "@/components/HeaderTitle";
 
 interface ListingItem {
   id: string;
@@ -28,7 +33,11 @@ interface SearchResultsData {
 }
 
 export type RootStackParamList = {
-  Main: undefined;
+  Home: undefined;
+  CameraScan: undefined;
+  History: undefined;
+  Favorites: undefined;
+  Settings: undefined;
   SearchResults: { results: SearchResultsData };
 };
 
@@ -40,9 +49,37 @@ export default function RootStackNavigator() {
   return (
     <Stack.Navigator screenOptions={screenOptions}>
       <Stack.Screen
-        name="Main"
-        component={MainTabNavigator}
+        name="Home"
+        component={ScanScreen}
         options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="CameraScan"
+        component={CameraScanScreen}
+        options={{
+          headerTitle: "Scan Product",
+        }}
+      />
+      <Stack.Screen
+        name="History"
+        component={HistoryScreen}
+        options={{
+          headerTitle: "History",
+        }}
+      />
+      <Stack.Screen
+        name="Favorites"
+        component={FavoritesScreen}
+        options={{
+          headerTitle: "Favorites",
+        }}
+      />
+      <Stack.Screen
+        name="Settings"
+        component={ProfileScreen}
+        options={{
+          headerTitle: "Settings",
+        }}
       />
       <Stack.Screen
         name="SearchResults"

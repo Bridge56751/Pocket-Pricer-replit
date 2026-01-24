@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { View, StyleSheet, Pressable, TextInput, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
-import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 
@@ -17,7 +16,6 @@ import type { UserSettings } from "@/types/product";
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
-  const tabBarHeight = useBottomTabBarHeight();
   const { theme } = useTheme();
 
   const [settings, setSettings] = useState<UserSettings>({
@@ -58,7 +56,7 @@ export default function ProfileScreen() {
         styles.content,
         {
           paddingTop: headerHeight + Spacing.xl,
-          paddingBottom: tabBarHeight + Spacing.xl,
+          paddingBottom: insets.bottom + Spacing.xl,
         },
       ]}
       scrollIndicatorInsets={{ bottom: insets.bottom }}

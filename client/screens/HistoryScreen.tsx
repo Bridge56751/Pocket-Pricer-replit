@@ -2,7 +2,6 @@ import React, { useState, useCallback } from "react";
 import { View, StyleSheet, FlatList, Pressable, Text } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
-import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useFocusEffect } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -17,7 +16,6 @@ import type { SearchHistoryItem } from "@/types/product";
 export default function HistoryScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
-  const tabBarHeight = useBottomTabBarHeight();
   const { theme } = useDesignTokens();
 
   const [history, setHistory] = useState<SearchHistoryItem[]>([]);
@@ -98,7 +96,7 @@ export default function HistoryScreen() {
           styles.listContent,
           {
             paddingTop: headerHeight + 16,
-            paddingBottom: tabBarHeight + 16,
+            paddingBottom: insets.bottom + 16,
           },
           history.length === 0 && !isLoading && styles.emptyContent,
         ]}
