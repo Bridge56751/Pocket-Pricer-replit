@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { View, StyleSheet, Pressable, Text, Platform, ActivityIndicator } from "react-native";
+import { View, StyleSheet, Pressable, Text, Platform, ActivityIndicator, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -8,7 +8,7 @@ import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
-import Animated, { FadeIn, FadeOut, useSharedValue, useAnimatedStyle, withTiming, runOnJS } from "react-native-reanimated";
+import Animated, { useSharedValue, useAnimatedStyle, withTiming } from "react-native-reanimated";
 
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { apiRequest } from "@/lib/query-client";
@@ -16,10 +16,9 @@ import { addSearchHistory } from "@/lib/storage";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import type { SearchHistoryItem } from "@/types/product";
 
-interface ScanResult {
-  productName: string;
-  price: number;
-  imageUri: string;
+interface CapturedPhoto {
+  uri: string;
+  base64: string;
 }
 
 export default function CameraScanScreen() {
@@ -28,12 +27,10 @@ export default function CameraScanScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   
   const [permission, requestPermission] = useCameraPermissions();
+  const [capturedPhotos, setCapturedPhotos] = useState<CapturedPhoto[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [processingMessage, setProcessingMessage] = useState("");
-  const [scanCount, setScanCount] = useState(0);
-  const [lastScan, setLastScan] = useState<ScanResult | null>(null);
-  const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
-  const [showFlash, setShowFlash] = useState(false);
+  const [processingIndex, setProcessingIndex] = useState(0);
+  const [processedCount, setProcessedCount] = useState(0);
   const cameraRef = useRef<CameraView>(null);
   
   const flashOpacity = useSharedValue(0);
@@ -46,91 +43,72 @@ export default function CameraScanScreen() {
     flashOpacity.value = withTiming(0, { duration: 150 });
   };
 
-  const returnToCamera = () => {
-    setCapturedPhoto(null);
-  };
-
-  const processImage = async (imageUri: string, base64: string) => {
-    setCapturedPhoto(imageUri);
-    setIsProcessing(true);
-    setProcessingMessage("Identifying product...");
-    setLastScan(null);
+  const processAllPhotos = async () => {
+    if (capturedPhotos.length === 0) return;
     
-    try {
-      const analyzeResponse = await apiRequest("POST", "/api/analyze-image", {
-        imageBase64: base64,
-      });
-      const analysisResult = await analyzeResponse.json();
+    setIsProcessing(true);
+    setProcessingIndex(0);
+    setProcessedCount(0);
+    
+    for (let i = 0; i < capturedPhotos.length; i++) {
+      setProcessingIndex(i + 1);
+      const photo = capturedPhotos[i];
       
-      if (!analysisResult.productName) {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        setProcessingMessage("Could not identify. Try again.");
-        setTimeout(() => {
-          setIsProcessing(false);
-          setProcessingMessage("");
-          setCapturedPhoto(null);
-        }, 1500);
-        return;
+      try {
+        const analyzeResponse = await apiRequest("POST", "/api/analyze-image", {
+          imageBase64: photo.base64,
+        });
+        const analysisResult = await analyzeResponse.json();
+        
+        if (!analysisResult.productName) {
+          setProcessedCount(prev => prev + 1);
+          continue;
+        }
+
+        const searchQuery = [
+          analysisResult.brand,
+          analysisResult.productName,
+          analysisResult.model,
+        ].filter(Boolean).join(" ");
+        
+        const searchResponse = await apiRequest("POST", "/api/search", { query: searchQuery });
+        const results = await searchResponse.json();
+
+        const enrichedResults = {
+          ...results,
+          scannedImageUri: photo.uri,
+          productInfo: {
+            name: analysisResult.productName,
+            brand: analysisResult.brand,
+            category: analysisResult.category,
+            description: analysisResult.description,
+          },
+        };
+
+        const historyItem: SearchHistoryItem = {
+          id: Date.now().toString() + i,
+          query: searchQuery,
+          product: results.listings?.[0] || null,
+          searchedAt: new Date().toISOString(),
+          results: enrichedResults,
+        };
+
+        await addSearchHistory(historyItem);
+        setProcessedCount(prev => prev + 1);
+        
+      } catch (error) {
+        console.error("Processing failed for photo", i, error);
+        setProcessedCount(prev => prev + 1);
       }
-
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setProcessingMessage("Searching eBay...");
-
-      const searchQuery = [
-        analysisResult.brand,
-        analysisResult.productName,
-        analysisResult.model,
-      ].filter(Boolean).join(" ");
-      
-      const searchResponse = await apiRequest("POST", "/api/search", { query: searchQuery });
-      const results = await searchResponse.json();
-
-      const enrichedResults = {
-        ...results,
-        scannedImageUri: imageUri,
-        productInfo: {
-          name: analysisResult.productName,
-          brand: analysisResult.brand,
-          category: analysisResult.category,
-          description: analysisResult.description,
-        },
-      };
-
-      const historyItem: SearchHistoryItem = {
-        id: Date.now().toString(),
-        query: searchQuery,
-        product: results.listings?.[0] || null,
-        searchedAt: new Date().toISOString(),
-        results: enrichedResults,
-      };
-
-      await addSearchHistory(historyItem);
-      
-      setScanCount(prev => prev + 1);
-      setLastScan({
-        productName: analysisResult.productName,
-        price: results.avgListPrice || 0,
-        imageUri: imageUri,
-      });
-      setIsProcessing(false);
-      setProcessingMessage("");
-      
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      
-    } catch (error) {
-      console.error("Processing failed:", error);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setProcessingMessage("Something went wrong.");
-      setTimeout(() => {
-        setIsProcessing(false);
-        setProcessingMessage("");
-        setCapturedPhoto(null);
-      }, 1500);
     }
+    
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setIsProcessing(false);
+    navigation.goBack();
   };
 
   const handleCapture = async () => {
-    if (!cameraRef.current || isProcessing || capturedPhoto) return;
+    if (!cameraRef.current || isProcessing) return;
     
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     triggerFlash();
@@ -142,7 +120,7 @@ export default function CameraScanScreen() {
       });
       
       if (photo?.uri && photo?.base64) {
-        processImage(photo.uri, photo.base64);
+        setCapturedPhotos(prev => [...prev, { uri: photo.uri, base64: photo.base64 as string }]);
       }
     } catch (error) {
       console.error("Failed to capture photo:", error);
@@ -157,18 +135,23 @@ export default function CameraScanScreen() {
       mediaTypes: ["images"],
       quality: 0.7,
       base64: true,
+      allowsMultipleSelection: true,
     });
 
-    if (!result.canceled && result.assets[0]) {
-      const asset = result.assets[0];
-      if (asset.uri && asset.base64) {
-        processImage(asset.uri, asset.base64);
-      }
+    if (!result.canceled && result.assets) {
+      const newPhotos = result.assets
+        .filter(asset => asset.uri && asset.base64)
+        .map(asset => ({ uri: asset.uri, base64: asset.base64! }));
+      setCapturedPhotos(prev => [...prev, ...newPhotos]);
     }
   };
 
-  const handleDone = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  const removePhoto = (index: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setCapturedPhotos(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleCancel = () => {
     navigation.goBack();
   };
 
@@ -193,22 +176,22 @@ export default function CameraScanScreen() {
         <Pressable
           onPress={requestPermission}
           style={({ pressed }) => [
-            styles.enableButton,
+            styles.primaryButton,
             { backgroundColor: theme.colors.primary, opacity: pressed ? 0.7 : 1 }
           ]}
         >
-          <Text style={styles.enableButtonText}>Enable Camera</Text>
+          <Text style={styles.primaryButtonText}>Enable Camera</Text>
         </Pressable>
         
         <Pressable
           onPress={handlePickImage}
           style={({ pressed }) => [
-            styles.galleryButton,
+            styles.secondaryButton,
             { backgroundColor: theme.colors.muted, opacity: pressed ? 0.7 : 1 }
           ]}
         >
           <Feather name="image" size={18} color={theme.colors.foreground} />
-          <Text style={[styles.galleryButtonText, { color: theme.colors.foreground }]}>
+          <Text style={[styles.secondaryButtonText, { color: theme.colors.foreground }]}>
             Choose from Gallery
           </Text>
         </Pressable>
@@ -220,46 +203,21 @@ export default function CameraScanScreen() {
     return (
       <View style={[styles.container, styles.centered, { backgroundColor: theme.colors.background }]}>
         {isProcessing ? (
-          <View style={styles.processingOverlay}>
+          <View style={styles.processingContainer}>
             <ActivityIndicator size="large" color={theme.colors.primary} />
-            <Text style={[styles.processingText, { color: theme.colors.foreground }]}>
-              {processingMessage}
+            <Text style={[styles.processingTitle, { color: theme.colors.foreground }]}>
+              Searching {processingIndex} of {capturedPhotos.length}...
             </Text>
-          </View>
-        ) : lastScan ? (
-          <View style={styles.successOverlay}>
-            <Feather name="check-circle" size={48} color={theme.colors.primary} />
-            <Text style={[styles.successTitle, { color: theme.colors.foreground }]}>
-              {lastScan.productName}
-            </Text>
-            <Text style={[styles.successPrice, { color: theme.colors.primary }]}>
-              ~${lastScan.price.toFixed(0)}
-            </Text>
-            <Text style={[styles.successNote, { color: theme.colors.mutedForeground }]}>
-              Saved! Pick another image or tap Done.
-            </Text>
-            <View style={styles.webButtons}>
-              <Pressable
-                onPress={handlePickImage}
-                style={({ pressed }) => [
-                  styles.webButton,
-                  { backgroundColor: theme.colors.muted, opacity: pressed ? 0.7 : 1 }
-                ]}
-              >
-                <Feather name="image" size={18} color={theme.colors.foreground} />
-                <Text style={[styles.webButtonText, { color: theme.colors.foreground }]}>
-                  Scan Another
-                </Text>
-              </Pressable>
-              <Pressable
-                onPress={handleDone}
-                style={({ pressed }) => [
-                  styles.webButton,
-                  { backgroundColor: theme.colors.primary, opacity: pressed ? 0.7 : 1 }
-                ]}
-              >
-                <Text style={styles.doneButtonText}>Done ({scanCount})</Text>
-              </Pressable>
+            <View style={[styles.progressBar, { backgroundColor: theme.colors.muted }]}>
+              <View 
+                style={[
+                  styles.progressFill, 
+                  { 
+                    backgroundColor: theme.colors.primary,
+                    width: `${(processedCount / capturedPhotos.length) * 100}%` 
+                  }
+                ]} 
+              />
             </View>
           </View>
         ) : (
@@ -271,26 +229,47 @@ export default function CameraScanScreen() {
             <Text style={[styles.permissionMessage, { color: theme.colors.mutedForeground }]}>
               Choose images from your gallery to scan multiple products
             </Text>
+            
+            {capturedPhotos.length > 0 ? (
+              <View style={styles.webPhotoGrid}>
+                {capturedPhotos.map((photo, index) => (
+                  <View key={index} style={styles.webPhotoThumb}>
+                    <Image source={{ uri: photo.uri }} style={styles.webPhotoImage} contentFit="cover" />
+                    <Pressable 
+                      onPress={() => removePhoto(index)}
+                      style={styles.webRemoveButton}
+                    >
+                      <Feather name="x" size={14} color="#fff" />
+                    </Pressable>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+            
             <Pressable
               onPress={handlePickImage}
               style={({ pressed }) => [
-                styles.enableButton,
+                styles.primaryButton,
                 { backgroundColor: theme.colors.primary, opacity: pressed ? 0.7 : 1 }
               ]}
             >
               <Feather name="image" size={18} color={colors.light.primaryForeground} style={{ marginRight: 8 }} />
-              <Text style={styles.enableButtonText}>Choose from Gallery</Text>
+              <Text style={styles.primaryButtonText}>
+                {capturedPhotos.length > 0 ? "Add More Photos" : "Choose Photos"}
+              </Text>
             </Pressable>
-            {scanCount > 0 ? (
+            
+            {capturedPhotos.length > 0 ? (
               <Pressable
-                onPress={handleDone}
+                onPress={processAllPhotos}
                 style={({ pressed }) => [
-                  styles.galleryButton,
-                  { backgroundColor: theme.colors.muted, opacity: pressed ? 0.7 : 1 }
+                  styles.searchAllButton,
+                  { opacity: pressed ? 0.7 : 1 }
                 ]}
               >
-                <Text style={[styles.galleryButtonText, { color: theme.colors.foreground }]}>
-                  Done ({scanCount} scanned)
+                <Feather name="search" size={18} color="#fff" />
+                <Text style={styles.searchAllText}>
+                  Search All ({capturedPhotos.length})
                 </Text>
               </Pressable>
             ) : null}
@@ -300,130 +279,125 @@ export default function CameraScanScreen() {
     );
   }
 
+  if (isProcessing) {
+    return (
+      <View style={[styles.container, styles.centered, { backgroundColor: "#000" }]}>
+        <View style={styles.processingContainer}>
+          <ActivityIndicator size="large" color="#10B981" />
+          <Text style={styles.processingTitle}>
+            Searching {processingIndex} of {capturedPhotos.length}...
+          </Text>
+          <View style={styles.progressBar}>
+            <View 
+              style={[
+                styles.progressFill, 
+                { width: `${(processedCount / capturedPhotos.length) * 100}%` }
+              ]} 
+            />
+          </View>
+          <Text style={styles.processingSubtitle}>
+            Finding eBay listings for your items
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.container, { backgroundColor: "#000" }]}>
-      {capturedPhoto ? (
-        <View style={styles.capturedPhotoContainer}>
-          <Image
-            source={{ uri: capturedPhoto }}
-            style={styles.capturedPhoto}
-            contentFit="cover"
-          />
-          <View style={[styles.overlay, { paddingTop: insets.top }]}>
-            <View style={styles.topBar}>
-              <View style={styles.scanCountBadge}>
-                <Feather name="check" size={14} color="#fff" />
-                <Text style={styles.scanCountText}>{scanCount} scanned</Text>
-              </View>
-            </View>
-
-            {lastScan ? (
-              <View style={styles.resultCard}>
-                <Feather name="check-circle" size={32} color="#10B981" />
-                <Text style={styles.resultTitle} numberOfLines={2}>
-                  {lastScan.productName}
-                </Text>
-                <Text style={styles.resultPrice}>
-                  ~${lastScan.price.toFixed(0)}
-                </Text>
+      <CameraView
+        ref={cameraRef}
+        style={styles.camera}
+        facing="back"
+      >
+        <Animated.View style={[styles.flashOverlay, flashAnimatedStyle]} />
+        <View style={[styles.overlay, { paddingTop: insets.top }]}>
+          <View style={styles.topBar}>
+            <Pressable onPress={handleCancel} style={styles.cancelButton}>
+              <Feather name="x" size={24} color="#fff" />
+            </Pressable>
+            {capturedPhotos.length > 0 ? (
+              <View style={styles.photoBadge}>
+                <Text style={styles.photoBadgeText}>{capturedPhotos.length} photos</Text>
               </View>
             ) : (
-              <View style={styles.processingCard}>
-                <ActivityIndicator size="large" color="#10B981" />
-                <Text style={styles.processingCardText}>{processingMessage}</Text>
-              </View>
+              <Text style={styles.instructions}>
+                Take photos of products to scan
+              </Text>
             )}
-
-            <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 20 }]}>
-              {lastScan ? (
-                <>
-                  <Pressable
-                    onPress={returnToCamera}
-                    style={({ pressed }) => [
-                      styles.scanAnotherButton,
-                      { opacity: pressed ? 0.7 : 1 }
-                    ]}
-                  >
-                    <Feather name="camera" size={20} color="#fff" />
-                    <Text style={styles.scanAnotherText}>Scan Another</Text>
-                  </Pressable>
-                  <Pressable
-                    onPress={handleDone}
-                    style={({ pressed }) => [
-                      styles.finishButton,
-                      { opacity: pressed ? 0.7 : 1 }
-                    ]}
-                  >
-                    <Text style={styles.finishText}>Done</Text>
-                  </Pressable>
-                </>
-              ) : null}
-            </View>
+            <View style={{ width: 40 }} />
           </View>
-        </View>
-      ) : (
-        <CameraView
-          ref={cameraRef}
-          style={styles.camera}
-          facing="back"
-        >
-          <Animated.View style={[styles.flashOverlay, flashAnimatedStyle]} />
-          <View style={[styles.overlay, { paddingTop: insets.top }]}>
-            <View style={styles.topBar}>
-              {scanCount > 0 ? (
-                <View style={styles.scanCountBadge}>
-                  <Feather name="check" size={14} color="#fff" />
-                  <Text style={styles.scanCountText}>{scanCount} scanned</Text>
-                </View>
-              ) : (
-                <Text style={styles.instructions}>
-                  Point at a product and tap to scan
-                </Text>
-              )}
+
+          {capturedPhotos.length > 0 ? (
+            <View style={styles.thumbnailStrip}>
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.thumbnailScroll}
+              >
+                {capturedPhotos.map((photo, index) => (
+                  <View key={index} style={styles.thumbnailContainer}>
+                    <Image 
+                      source={{ uri: photo.uri }} 
+                      style={styles.thumbnail}
+                      contentFit="cover"
+                    />
+                    <Pressable 
+                      onPress={() => removePhoto(index)}
+                      style={styles.thumbnailRemove}
+                    >
+                      <Feather name="x" size={12} color="#fff" />
+                    </Pressable>
+                  </View>
+                ))}
+              </ScrollView>
             </View>
-            
+          ) : (
             <View style={styles.scanFrame}>
               <View style={styles.cornerTL} />
               <View style={styles.cornerTR} />
               <View style={styles.cornerBL} />
               <View style={styles.cornerBR} />
             </View>
+          )}
 
-            <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 20 }]}>
+          <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 20 }]}>
+            <Pressable
+              onPress={handlePickImage}
+              style={({ pressed }) => [
+                styles.sideButton,
+                { opacity: pressed ? 0.7 : 1 }
+              ]}
+            >
+              <Feather name="image" size={24} color="#fff" />
+            </Pressable>
+            
+            <Pressable
+              onPress={handleCapture}
+              style={({ pressed }) => [
+                styles.captureButton,
+                { opacity: pressed ? 0.7 : 1 }
+              ]}
+            >
+              <View style={styles.captureButtonInner} />
+            </Pressable>
+            
+            {capturedPhotos.length > 0 ? (
               <Pressable
-                onPress={handlePickImage}
+                onPress={processAllPhotos}
                 style={({ pressed }) => [
-                  styles.sideButton,
+                  styles.searchButton,
                   { opacity: pressed ? 0.7 : 1 }
                 ]}
               >
-                <Feather name="image" size={24} color="#fff" />
+                <Feather name="search" size={18} color="#fff" />
               </Pressable>
-              
-              <Pressable
-                onPress={handleCapture}
-                style={({ pressed }) => [
-                  styles.captureButton,
-                  { opacity: pressed ? 0.7 : 1 }
-                ]}
-              >
-                <View style={styles.captureButtonInner} />
-              </Pressable>
-              
-              <Pressable
-                onPress={handleDone}
-                style={({ pressed }) => [
-                  styles.sideButton,
-                  styles.doneButton,
-                  { opacity: pressed ? 0.7 : 1 }
-                ]}
-              >
-                <Text style={styles.doneText}>Done</Text>
-              </Pressable>
-            </View>
+            ) : (
+              <View style={styles.sideButton} />
+            )}
           </View>
-        </CameraView>
-      )}
+        </View>
+      </CameraView>
     </View>
   );
 }
@@ -444,9 +418,23 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "space-between",
   },
+  flashOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "#fff",
+    zIndex: 10,
+  },
   topBar: {
+    flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 20,
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  cancelButton: {
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
   },
   instructions: {
     color: "#fff",
@@ -456,19 +444,45 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
   },
-  scanCountBadge: {
-    flexDirection: "row",
-    alignItems: "center",
+  photoBadge: {
     backgroundColor: "rgba(16, 185, 129, 0.9)",
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
-    gap: 6,
   },
-  scanCountText: {
+  photoBadgeText: {
     color: "#fff",
     fontSize: 14,
     fontWeight: "600",
+  },
+  thumbnailStrip: {
+    marginTop: 20,
+  },
+  thumbnailScroll: {
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  thumbnailContainer: {
+    position: "relative",
+    marginRight: 12,
+  },
+  thumbnail: {
+    width: 80,
+    height: 80,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: "#10B981",
+  },
+  thumbnailRemove: {
+    position: "absolute",
+    top: -6,
+    right: -6,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   scanFrame: {
     width: 280,
@@ -520,72 +534,17 @@ const styles = StyleSheet.create({
     borderColor: "#10B981",
     borderBottomRightRadius: 12,
   },
-  successToast: {
-    position: "absolute",
-    bottom: 140,
-    left: 20,
-    right: 20,
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 12,
-    borderRadius: 16,
-    gap: 12,
-  },
-  toastImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 8,
-  },
-  toastContent: {
-    flex: 1,
-  },
-  toastTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    marginBottom: 2,
-  },
-  toastPrice: {
-    fontSize: 18,
-    fontWeight: "700",
-  },
   bottomBar: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-around",
     paddingHorizontal: 30,
   },
-  processingBar: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  processingContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.7)",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 25,
-    gap: 10,
-  },
-  processingBarText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "500",
-  },
   sideButton: {
     width: 56,
     height: 56,
     alignItems: "center",
     justifyContent: "center",
-  },
-  doneButton: {
-    backgroundColor: "rgba(16, 185, 129, 0.9)",
-    borderRadius: 28,
-  },
-  doneText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "600",
   },
   captureButton: {
     width: 72,
@@ -601,6 +560,14 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     backgroundColor: "#fff",
   },
+  searchButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#10B981",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   permissionTitle: {
     fontSize: 22,
     fontWeight: "600",
@@ -614,19 +581,19 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginBottom: 24,
   },
-  enableButton: {
+  primaryButton: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 24,
     paddingVertical: 14,
     borderRadius: 30,
   },
-  enableButtonText: {
+  primaryButtonText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
   },
-  galleryButton: {
+  secondaryButton: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 20,
@@ -635,124 +602,78 @@ const styles = StyleSheet.create({
     marginTop: 12,
     gap: 8,
   },
-  galleryButtonText: {
+  secondaryButtonText: {
     fontSize: 14,
     fontWeight: "500",
   },
-  processingOverlay: {
-    alignItems: "center",
-    gap: 16,
-  },
-  processingText: {
-    fontSize: 16,
-    fontWeight: "500",
-  },
-  successOverlay: {
-    alignItems: "center",
-    gap: 12,
-  },
-  successTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    textAlign: "center",
-  },
-  successPrice: {
-    fontSize: 32,
-    fontWeight: "700",
-  },
-  successNote: {
-    fontSize: 14,
-    marginBottom: 16,
-  },
-  webButtons: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  webButton: {
+  searchAllButton: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    backgroundColor: "#10B981",
+    paddingHorizontal: 24,
+    paddingVertical: 14,
     borderRadius: 30,
+    marginTop: 16,
     gap: 8,
   },
-  webButtonText: {
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  doneButtonText: {
+  searchAllText: {
     color: "#fff",
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: "600",
   },
-  capturedPhotoContainer: {
-    flex: 1,
-  },
-  capturedPhoto: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  flashOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "#fff",
-    zIndex: 10,
-  },
-  resultCard: {
+  processingContainer: {
     alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.75)",
-    marginHorizontal: 40,
-    paddingVertical: 24,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-    gap: 8,
+    gap: 16,
+    paddingHorizontal: 40,
   },
-  resultTitle: {
+  processingTitle: {
     color: "#fff",
     fontSize: 18,
     fontWeight: "600",
     textAlign: "center",
   },
-  resultPrice: {
-    color: "#10B981",
-    fontSize: 36,
-    fontWeight: "700",
+  processingSubtitle: {
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 14,
+    textAlign: "center",
   },
-  processingCard: {
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.75)",
-    marginHorizontal: 40,
-    paddingVertical: 32,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-    gap: 16,
-  },
-  processingCardText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "500",
-  },
-  scanAnotherButton: {
-    flexDirection: "row",
-    alignItems: "center",
+  progressBar: {
+    width: "100%",
+    height: 6,
     backgroundColor: "rgba(255,255,255,0.2)",
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderRadius: 30,
-    gap: 8,
+    borderRadius: 3,
+    overflow: "hidden",
   },
-  scanAnotherText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  finishButton: {
+  progressFill: {
+    height: "100%",
     backgroundColor: "#10B981",
-    paddingHorizontal: 28,
-    paddingVertical: 14,
-    borderRadius: 30,
+    borderRadius: 3,
   },
-  finishText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
+  webPhotoGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: 12,
+    marginBottom: 20,
+    maxWidth: 300,
+  },
+  webPhotoThumb: {
+    position: "relative",
+  },
+  webPhotoImage: {
+    width: 70,
+    height: 70,
+    borderRadius: 10,
+  },
+  webRemoveButton: {
+    position: "absolute",
+    top: -6,
+    right: -6,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
