@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import { View, StyleSheet, Pressable, Text, ScrollView, Image } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
@@ -34,7 +34,6 @@ export default function ScanScreen() {
   const { theme, colors } = useDesignTokens();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
-  const [activeTab, setActiveTab] = useState<"recent" | "all">("recent");
   const [recentScans, setRecentScans] = useState<SearchHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -66,9 +65,7 @@ export default function ScanScreen() {
     }
   };
 
-  const displayedScans = activeTab === "recent" 
-    ? recentScans.slice(0, 5) 
-    : recentScans;
+  const displayedScans = recentScans.slice(0, 10);
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -123,47 +120,11 @@ export default function ScanScreen() {
           </Pressable>
         </View>
 
-        <View style={[styles.tabsContainer, { backgroundColor: theme.colors.card }]}>
-          <Pressable
-            onPress={() => setActiveTab("recent")}
-            style={[
-              styles.tab,
-              activeTab === "recent" && styles.tabActive,
-              activeTab === "recent" && { borderBottomColor: theme.colors.primary }
-            ]}
-          >
-            <Feather 
-              name="clock" 
-              size={16} 
-              color={activeTab === "recent" ? theme.colors.foreground : theme.colors.mutedForeground} 
-            />
-            <Text style={[
-              styles.tabText,
-              { color: activeTab === "recent" ? theme.colors.foreground : theme.colors.mutedForeground }
-            ]}>
-              Recent Scans
-            </Text>
-          </Pressable>
-          <Pressable
-            onPress={() => setActiveTab("all")}
-            style={[
-              styles.tab,
-              activeTab === "all" && styles.tabActive,
-              activeTab === "all" && { borderBottomColor: theme.colors.primary }
-            ]}
-          >
-            <Feather 
-              name="grid" 
-              size={16} 
-              color={activeTab === "all" ? theme.colors.foreground : theme.colors.mutedForeground} 
-            />
-            <Text style={[
-              styles.tabText,
-              { color: activeTab === "all" ? theme.colors.foreground : theme.colors.mutedForeground }
-            ]}>
-              All Scans
-            </Text>
-          </Pressable>
+        <View style={styles.sectionHeader}>
+          <Feather name="clock" size={18} color={theme.colors.primary} />
+          <Text style={[styles.sectionTitle, { color: theme.colors.foreground }]}>
+            Recent Scans
+          </Text>
         </View>
 
         {isLoading ? (
@@ -318,28 +279,15 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: "600",
   },
-  tabsContainer: {
-    flexDirection: "row",
-    borderRadius: 16,
-    marginBottom: 16,
-    padding: 4,
-  },
-  tab: {
-    flex: 1,
+  sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 12,
-    gap: 6,
-    borderBottomWidth: 2,
-    borderBottomColor: "transparent",
+    gap: 8,
+    marginBottom: 16,
   },
-  tabActive: {
-    borderBottomWidth: 2,
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: "500",
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "600",
   },
   loadingContainer: {
     marginTop: 8,
