@@ -544,6 +544,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/search", async (req: Request, res: Response) => {
     try {
+      const user = await getUserFromToken(req);
+      if (user) {
+        const rateLimit = await checkRateLimit(user.id);
+        if (!rateLimit.allowed) {
+          return res.status(429).json({ error: rateLimit.message, rateLimited: true });
+        }
+      }
+
       const { query } = req.body;
       
       if (!query || typeof query !== "string") {
@@ -597,6 +605,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/search/sold", async (req: Request, res: Response) => {
     try {
+      const user = await getUserFromToken(req);
+      if (user) {
+        const rateLimit = await checkRateLimit(user.id);
+        if (!rateLimit.allowed) {
+          return res.status(429).json({ error: rateLimit.message, rateLimited: true });
+        }
+      }
+
       const { query } = req.body;
       
       if (!query || typeof query !== "string") {
@@ -643,6 +659,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await getUserFromToken(req);
       if (!user) {
         return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const rateLimit = await checkRateLimit(user.id);
+      if (!rateLimit.allowed) {
+        return res.status(429).json({ error: rateLimit.message, rateLimited: true });
       }
       
       const { allowed, remaining } = await canUserSearch(user);
