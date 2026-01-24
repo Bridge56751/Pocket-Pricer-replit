@@ -438,6 +438,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const stripe = await getUncachableStripeClient();
       
       let customerId = user.stripe_customer_id;
+      
+      // Verify customer exists in Stripe, create new one if not
+      if (customerId) {
+        try {
+          await stripe.customers.retrieve(customerId);
+        } catch (err: any) {
+          if (err.code === 'resource_missing') {
+            console.log(`Customer ${customerId} not found in Stripe, creating new one`);
+            customerId = null;
+          } else {
+            throw err;
+          }
+        }
+      }
+      
       if (!customerId) {
         const customer = await stripe.customers.create({
           email: user.email,
