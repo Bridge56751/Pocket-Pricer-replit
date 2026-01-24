@@ -23,6 +23,7 @@ export default function ProfileScreen() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [isLoadingCheckout, setIsLoadingCheckout] = useState(false);
+  const [isLoadingPortal, setIsLoadingPortal] = useState(false);
 
   const handleUpgrade = async () => {
     if (!token) return;
@@ -49,6 +50,34 @@ export default function ProfileScreen() {
       console.error("Failed to start checkout:", error);
     } finally {
       setIsLoadingCheckout(false);
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    if (!token) return;
+    
+    setIsLoadingPortal(true);
+    
+    try {
+      const response = await fetch(new URL("/api/customer-portal", getApiUrl()).toString(), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      const data = await response.json();
+      
+      if (data.url) {
+        await Linking.openURL(data.url);
+      } else {
+        console.error("Portal error:", data.error);
+      }
+    } catch (error) {
+      console.error("Failed to open customer portal:", error);
+    } finally {
+      setIsLoadingPortal(false);
     }
   };
 
@@ -176,9 +205,30 @@ export default function ProfileScreen() {
             </Pressable>
           </>
         ) : (
-          <Text style={[styles.upgradeHint, { color: theme.colors.mutedForeground }]}>
-            Unlimited product scans
-          </Text>
+          <>
+            <Text style={[styles.upgradeHint, { color: theme.colors.mutedForeground }]}>
+              Unlimited product scans
+            </Text>
+            <Pressable
+              onPress={handleManageSubscription}
+              disabled={isLoadingPortal}
+              style={({ pressed }) => [
+                styles.manageButton,
+                { backgroundColor: theme.colors.muted, opacity: pressed || isLoadingPortal ? 0.7 : 1 }
+              ]}
+            >
+              {isLoadingPortal ? (
+                <ActivityIndicator color={theme.colors.foreground} size="small" />
+              ) : (
+                <>
+                  <Feather name="settings" size={18} color={theme.colors.foreground} />
+                  <Text style={[styles.manageButtonText, { color: theme.colors.foreground }]}>
+                    Manage Subscription
+                  </Text>
+                </>
+              )}
+            </Pressable>
+          </>
         )}
       </View>
 
@@ -422,6 +472,19 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
+  },
+  manageButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 8,
+    marginTop: 8,
+  },
+  manageButtonText: {
+    fontSize: 15,
+    fontWeight: "500",
   },
   logoutButton: {
     flexDirection: "row",

@@ -388,6 +388,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/customer-portal", async (req: Request, res: Response) => {
+    try {
+      const user = await getUserFromToken(req);
+      if (!user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      if (!user.stripe_customer_id) {
+        return res.status(400).json({ error: "No subscription found" });
+      }
+      
+      const stripe = await getUncachableStripeClient();
+      
+      const baseUrl = req.headers.origin || `https://${req.headers.host}`;
+      
+      const session = await stripe.billingPortal.sessions.create({
+        customer: user.stripe_customer_id,
+        return_url: baseUrl,
+      });
+      
+      res.json({ url: session.url });
+    } catch (error) {
+      console.error("Customer portal error:", error);
+      res.status(500).json({ error: "Failed to create customer portal session" });
+    }
+  });
+
   app.post("/api/subscription/check", async (req: Request, res: Response) => {
     try {
       const user = await getUserFromToken(req);
