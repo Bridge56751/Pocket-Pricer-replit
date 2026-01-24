@@ -233,6 +233,77 @@ export default function SearchResultsScreen() {
               </Pressable>
             </View>
 
+            {/* Demand Indicator */}
+            <View style={[styles.demandCard, { backgroundColor: theme.colors.card }]}>
+              <View style={styles.demandHeader}>
+                <Feather name="activity" size={18} color={theme.colors.primary} />
+                <Text style={[styles.demandTitle, { color: theme.colors.foreground }]}>
+                  Market Demand
+                </Text>
+              </View>
+              
+              <View style={styles.demandContent}>
+                <View style={styles.demandBarContainer}>
+                  <View style={[styles.demandBarBg, { backgroundColor: theme.colors.muted }]}>
+                    <View 
+                      style={[
+                        styles.demandBarFill, 
+                        { 
+                          backgroundColor: results.totalListings >= 50 
+                            ? theme.colors.primary 
+                            : results.totalListings >= 20 
+                              ? theme.colors.warning 
+                              : theme.colors.danger,
+                          width: `${Math.min(100, (results.totalListings / 100) * 100)}%`
+                        }
+                      ]} 
+                    />
+                  </View>
+                  <View style={styles.demandLabels}>
+                    <Text style={[styles.demandLabelText, { color: theme.colors.mutedForeground }]}>Low</Text>
+                    <Text style={[styles.demandLabelText, { color: theme.colors.mutedForeground }]}>Medium</Text>
+                    <Text style={[styles.demandLabelText, { color: theme.colors.mutedForeground }]}>High</Text>
+                  </View>
+                </View>
+                
+                <View style={styles.demandStats}>
+                  <View style={[
+                    styles.demandBadge, 
+                    { 
+                      backgroundColor: results.totalListings >= 50 
+                        ? theme.colors.primary + '20'
+                        : results.totalListings >= 20 
+                          ? theme.colors.warning + '20'
+                          : theme.colors.danger + '20'
+                    }
+                  ]}>
+                    <Text style={[
+                      styles.demandBadgeText, 
+                      { 
+                        color: results.totalListings >= 50 
+                          ? theme.colors.primary 
+                          : results.totalListings >= 20 
+                            ? theme.colors.warning 
+                            : theme.colors.danger
+                      }
+                    ]}>
+                      {results.totalListings >= 50 ? 'High Demand' : results.totalListings >= 20 ? 'Medium Demand' : 'Low Demand'}
+                    </Text>
+                  </View>
+                  <Text style={[styles.listingCount, { color: theme.colors.foreground }]}>
+                    {results.totalListings} active listings
+                  </Text>
+                </View>
+
+                <Text style={[styles.demandHint, { color: theme.colors.mutedForeground }]}>
+                  {results.totalListings >= 50 
+                    ? 'Popular item with competitive market. Price competitively!'
+                    : results.totalListings >= 20 
+                      ? 'Moderate competition. Good opportunity for sellers.'
+                      : 'Limited competition. Consider pricing higher!'}
+                </Text>
+              </View>
+            </View>
 
             <View style={[styles.calculatorCard, { backgroundColor: theme.colors.card }]}>
               <View style={styles.calculatorHeader}>
@@ -466,6 +537,66 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "600",
+  },
+  demandCard: {
+    padding: 20,
+    borderRadius: 16,
+    marginBottom: 24,
+  },
+  demandHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 16,
+  },
+  demandTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  demandContent: {
+    gap: 16,
+  },
+  demandBarContainer: {
+    gap: 8,
+  },
+  demandBarBg: {
+    height: 12,
+    borderRadius: 6,
+    overflow: "hidden",
+  },
+  demandBarFill: {
+    height: "100%",
+    borderRadius: 6,
+  },
+  demandLabels: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  demandLabelText: {
+    fontSize: 11,
+    fontWeight: "500",
+  },
+  demandStats: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  demandBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  demandBadgeText: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  listingCount: {
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  demandHint: {
+    fontSize: 13,
+    lineHeight: 18,
   },
   calculatorCard: {
     padding: 20,
