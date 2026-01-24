@@ -199,7 +199,7 @@ export default function ProfileScreen() {
               ) : (
                 <>
                   <Feather name="zap" size={18} color="#fff" />
-                  <Text style={styles.upgradeButtonText}>Upgrade to Pro - $4.99/mo</Text>
+                  <Text style={styles.upgradeButtonText}>Upgrade to Pro - $8.99/mo</Text>
                 </>
               )}
             </Pressable>

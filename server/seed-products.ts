@@ -22,7 +22,7 @@ async function createProducts() {
 
   const monthlyPrice = await stripe.prices.create({
     product: product.id,
-    unit_amount: 499,
+    unit_amount: 899,
     currency: 'usd',
     recurring: { interval: 'month' },
     metadata: {

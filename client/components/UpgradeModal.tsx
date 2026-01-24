@@ -82,7 +82,7 @@ export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
 
           <View style={styles.priceContainer}>
             <Text style={[styles.price, { color: theme.colors.foreground }]}>
-              $4.99
+              $8.99
             </Text>
             <Text style={[styles.period, { color: theme.colors.mutedForeground }]}>
               /month

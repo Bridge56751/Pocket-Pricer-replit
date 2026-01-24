@@ -18,7 +18,7 @@ This app allows eBay resellers to:
 - **Backend**: Express.js with TypeScript
 - **Database**: PostgreSQL (Neon-backed via Replit)
 - **Authentication**: JWT tokens with bcrypt password hashing
-- **Payments**: Stripe for $4.99/month Pro subscription
+- **Payments**: Stripe for $8.99/month Pro subscription
 - **AI**: Gemini for product image identification
 - **eBay Data**: SerpAPI (real-time eBay listing search)
 - **State Management**: TanStack React Query
@@ -198,7 +198,7 @@ CREATE TABLE users (
   - JWT-based signup/login with email/password
   - Google Sign-In (native apps)
   - Apple Sign-In (iOS)
-  - Stripe integration for $4.99/month Pro subscription
+  - Stripe integration for $8.99/month Pro subscription
   - Free tier with 5 lifetime scans limit
   - Upgrade modal when limit reached
   - Profile screen with subscription status and logout
