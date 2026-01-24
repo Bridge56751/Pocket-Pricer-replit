@@ -283,9 +283,9 @@ export default function ScanScreen() {
                   ]}
                 >
                   <View style={styles.scanImageContainer}>
-                    {scan.results?.scannedImageUri ? (
+                    {scan.results?.listings?.[0]?.imageUrl ? (
                       <Image
-                        source={{ uri: scan.results.scannedImageUri }}
+                        source={{ uri: scan.results.listings[0].imageUrl }}
                         style={styles.scanImage}
                         resizeMode="cover"
                       />

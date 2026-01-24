@@ -83,9 +83,9 @@ export default function HistoryScreen() {
             { backgroundColor: theme.colors.card, opacity: pressed ? 0.7 : 1 }
           ]}
         >
-          {item.results?.scannedImageUri ? (
+          {item.results?.listings?.[0]?.imageUrl ? (
             <Image 
-              source={{ uri: item.results.scannedImageUri }} 
+              source={{ uri: item.results.listings[0].imageUrl }} 
               style={styles.thumbnail}
               contentFit="cover"
             />
