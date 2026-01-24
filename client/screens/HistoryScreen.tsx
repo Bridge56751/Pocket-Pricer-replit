@@ -14,20 +14,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { SkeletonLoader } from "@/components/SkeletonLoader";
 import { getSearchHistory, clearSearchHistory } from "@/lib/storage";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
-
-interface HistoryItem {
-  id: string;
-  query: string;
-  product?: {
-    title: string;
-    currentPrice: number;
-  };
-  searchedAt: string;
-  thumbnailUrl?: string;
-  avgPrice?: number;
-  bestPrice?: number;
-  totalListings?: number;
-}
+import type { SearchHistoryItem } from "@/types/product";
 
 export default function HistoryScreen() {
   const insets = useSafeAreaInsets();
@@ -35,7 +22,7 @@ export default function HistoryScreen() {
   const { theme } = useDesignTokens();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
-  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [history, setHistory] = useState<SearchHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useFocusEffect(
@@ -48,7 +35,7 @@ export default function HistoryScreen() {
     setIsLoading(true);
     try {
       const data = await getSearchHistory();
-      setHistory(data as HistoryItem[]);
+      setHistory(data);
     } finally {
       setIsLoading(false);
     }
@@ -75,18 +62,30 @@ export default function HistoryScreen() {
     return date.toLocaleDateString();
   };
 
-  const renderItem = ({ item, index }: { item: HistoryItem; index: number }) => {
+  const handleItemPress = (item: SearchHistoryItem) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    // Navigate directly to results if available
+    if (item.results) {
+      navigation.navigate("SearchResults", { results: item.results });
+    } else {
+      // Fallback: navigate to home with query pre-filled
+      navigation.navigate("Home", { prefillQuery: item.query });
+    }
+  };
+
+  const renderItem = ({ item, index }: { item: SearchHistoryItem; index: number }) => {
     return (
       <Animated.View entering={FadeInDown.delay(index * 50).duration(300)}>
-        <View
-          style={[
+        <Pressable
+          onPress={() => handleItemPress(item)}
+          style={({ pressed }) => [
             styles.historyCard,
-            { backgroundColor: theme.colors.card }
+            { backgroundColor: theme.colors.card, opacity: pressed ? 0.7 : 1 }
           ]}
         >
-          {item.thumbnailUrl ? (
+          {item.results?.listings?.[0]?.imageUrl ? (
             <Image 
-              source={{ uri: item.thumbnailUrl }} 
+              source={{ uri: item.results.listings[0].imageUrl }} 
               style={styles.thumbnail}
               contentFit="cover"
             />
@@ -101,7 +100,7 @@ export default function HistoryScreen() {
               style={[styles.productName, { color: theme.colors.foreground }]}
               numberOfLines={2}
             >
-              {item.product?.title || item.query}
+              {item.results?.productInfo?.name || item.product?.title || item.query}
             </Text>
             
             <Text style={[styles.timestamp, { color: theme.colors.mutedForeground }]}>
@@ -109,36 +108,36 @@ export default function HistoryScreen() {
             </Text>
             
             <View style={styles.priceRow}>
-              {item.avgPrice ? (
+              {item.results?.avgListPrice ? (
                 <View style={styles.priceTag}>
                   <Text style={[styles.priceLabel, { color: theme.colors.mutedForeground }]}>
                     Avg:
                   </Text>
                   <Text style={[styles.priceValue, { color: theme.colors.primary }]}>
-                    ${item.avgPrice.toFixed(2)}
+                    ${item.results.avgListPrice.toFixed(2)}
                   </Text>
                 </View>
               ) : null}
               
-              {item.bestPrice ? (
+              {item.results?.bestBuyNow ? (
                 <View style={styles.priceTag}>
                   <Text style={[styles.priceLabel, { color: theme.colors.mutedForeground }]}>
                     Best:
                   </Text>
                   <Text style={[styles.priceValue, { color: theme.colors.success }]}>
-                    ${item.bestPrice.toFixed(2)}
+                    ${item.results.bestBuyNow.toFixed(2)}
                   </Text>
                 </View>
               ) : null}
               
-              {item.totalListings ? (
+              {item.results?.totalListings ? (
                 <Text style={[styles.listingsCount, { color: theme.colors.mutedForeground }]}>
-                  {item.totalListings} listings
+                  {item.results.totalListings} listings
                 </Text>
               ) : null}
             </View>
           </View>
-        </View>
+        </Pressable>
       </Animated.View>
     );
   };
