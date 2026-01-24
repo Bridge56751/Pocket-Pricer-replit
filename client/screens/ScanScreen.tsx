@@ -109,7 +109,7 @@ export default function ScanScreen() {
 
       const enrichedResults = {
         ...results,
-        scannedImageUri: photos[0].uri,
+        scannedImageUri: `data:image/jpeg;base64,${photos[0].base64}`,
         productInfo: {
           name: analysisResult.productName,
           brand: analysisResult.brand,
