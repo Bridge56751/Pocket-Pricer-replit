@@ -66,6 +66,12 @@ export default function SearchResultsScreen() {
     navigation.goBack();
   };
 
+  const handleListOnEbay = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const searchQuery = encodeURIComponent(results.productInfo?.name || results.query);
+    await Linking.openURL(`https://www.ebay.com/sl/sell?keyword=${searchQuery}`);
+  };
+
   const filteredListings = activeTab === "sold" 
     ? [] 
     : results.listings;
@@ -200,6 +206,7 @@ export default function SearchResultsScreen() {
                 </Text>
               </View>
               <Pressable
+                onPress={handleListOnEbay}
                 style={({ pressed }) => [
                   styles.listOnEbayButtonInCard,
                   { backgroundColor: theme.colors.primary, opacity: pressed ? 0.7 : 1 }
@@ -210,44 +217,6 @@ export default function SearchResultsScreen() {
               </Pressable>
             </View>
 
-            <View style={styles.filterTabs}>
-              <Pressable
-                style={[
-                  styles.filterTab,
-                  styles.filterTabActive,
-                  { backgroundColor: theme.colors.primary }
-                ]}
-              >
-                <Text style={styles.filterTabTextActive}>
-                  All ({results.totalListings})
-                </Text>
-              </Pressable>
-              <Pressable style={[styles.filterTab, { borderColor: theme.colors.border }]}>
-                <Text style={[styles.filterTabText, { color: theme.colors.foreground }]}>
-                  eBay ({results.totalListings})
-                </Text>
-              </Pressable>
-              <Pressable style={[styles.filterTab, { borderColor: theme.colors.border }]}>
-                <Text style={[styles.filterTabText, { color: theme.colors.foreground }]}>
-                  Mercari (0)
-                </Text>
-              </Pressable>
-              <Pressable style={[styles.filterTab, { borderColor: theme.colors.border }]}>
-                <Text style={[styles.filterTabText, { color: theme.colors.foreground }]}>
-                  Poshmark (0)
-                </Text>
-              </Pressable>
-            </View>
-
-            <Pressable
-              style={({ pressed }) => [
-                styles.listOnEbayButton,
-                { backgroundColor: theme.colors.primary, opacity: pressed ? 0.7 : 1 }
-              ]}
-            >
-              <Feather name="external-link" size={16} color={colors.light.primaryForeground} />
-              <Text style={styles.listOnEbayText}>List on eBay</Text>
-            </Pressable>
 
             <View style={styles.statsGrid}>
               <View style={[styles.statCard, { backgroundColor: theme.colors.card }]}>
