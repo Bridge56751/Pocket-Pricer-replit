@@ -27,7 +27,7 @@ export default function AuthScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isSocialLoading, setIsSocialLoading] = useState<"google" | "apple" | null>(null);
+  const [isSocialLoading, setIsSocialLoading] = useState<"apple" | null>(null);
   const [error, setError] = useState("");
   const [isAppleAvailable, setIsAppleAvailable] = useState(false);
 
@@ -47,43 +47,6 @@ export default function AuthScreen() {
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    setError("");
-    setIsSocialLoading("google");
-    
-    try {
-      const AuthSession = await import("expo-auth-session");
-      const Google = await import("expo-auth-session/providers/google");
-      
-      const discovery = {
-        authorizationEndpoint: "https://accounts.google.com/o/oauth2/v2/auth",
-        tokenEndpoint: "https://oauth2.googleapis.com/token",
-      };
-
-      const redirectUri = AuthSession.makeRedirectUri({
-        scheme: "priceit",
-      });
-
-      const request = new AuthSession.AuthRequest({
-        clientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || "",
-        scopes: ["openid", "profile", "email"],
-        redirectUri,
-      });
-
-      const result = await request.promptAsync(discovery);
-      
-      if (result.type === "success" && result.params.code) {
-        setError("Google sign-in requires additional configuration. Please use email/password for now.");
-      } else if (result.type === "cancel") {
-        setError("");
-      }
-    } catch (err: any) {
-      console.error("Google sign-in error:", err);
-      setError("Google sign-in is not available");
-    } finally {
-      setIsSocialLoading(null);
-    }
-  };
 
   const handleAppleSignIn = async () => {
     setError("");
@@ -170,27 +133,6 @@ export default function AuthScreen() {
 
         <View style={styles.formContainer}>
           <View style={styles.socialButtons}>
-            {Platform.OS !== "web" ? (
-              <Pressable
-                style={[styles.socialButton, { backgroundColor: theme.colors.card }]}
-                onPress={handleGoogleSignIn}
-                disabled={isSocialLoading !== null}
-              >
-                {isSocialLoading === "google" ? (
-                  <ActivityIndicator color={theme.colors.foreground} size="small" />
-                ) : (
-                  <>
-                    <View style={styles.googleIcon}>
-                      <Text style={styles.googleG}>G</Text>
-                    </View>
-                    <Text style={[styles.socialButtonText, { color: theme.colors.foreground }]}>
-                      Continue with Google
-                    </Text>
-                  </>
-                )}
-              </Pressable>
-            ) : null}
-
             {isAppleAvailable ? (
               <Pressable
                 style={[styles.socialButton, styles.appleButton]}
@@ -211,7 +153,7 @@ export default function AuthScreen() {
             ) : null}
           </View>
 
-          {(Platform.OS !== "web" || isAppleAvailable) ? (
+          {isAppleAvailable ? (
             <View style={styles.dividerContainer}>
               <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
               <Text style={[styles.dividerText, { color: theme.colors.mutedForeground }]}>
@@ -371,21 +313,6 @@ const styles = StyleSheet.create({
   },
   appleButton: {
     backgroundColor: "#000",
-  },
-  googleIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#ddd",
-  },
-  googleG: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#4285F4",
   },
   socialButtonText: {
     fontSize: 16,
