@@ -60,72 +60,72 @@ export default function ScanScreen() {
     
     processingRef.current = true;
     setIsAnalyzing(true);
-    setAnalyzingCount({ current: 0, total: photos.length });
+    setAnalyzingCount({ current: 1, total: 2 });
+    setAnalyzingProgress(photos.length > 1 
+      ? `Analyzing ${photos.length} photos of your product...` 
+      : "Identifying product...");
     
-    let lastResults: any = null;
-    
-    for (let i = 0; i < photos.length; i++) {
-      setAnalyzingCount({ current: i + 1, total: photos.length });
-      setAnalyzingProgress("Identifying product...");
-      const photo = photos[i];
+    try {
+      const analyzeResponse = await apiRequest("POST", "/api/analyze-image", {
+        images: photos.map(p => p.base64),
+      });
+      const analysisResult = await analyzeResponse.json();
       
-      try {
-        const analyzeResponse = await apiRequest("POST", "/api/analyze-image", {
-          imageBase64: photo.base64,
-        });
-        const analysisResult = await analyzeResponse.json();
-        
-        if (!analysisResult.productName) {
-          continue;
-        }
-
-        setAnalyzingProgress("Searching eBay listings...");
-
-        const searchQuery = [
-          analysisResult.brand,
-          analysisResult.productName,
-          analysisResult.model,
-        ].filter(Boolean).join(" ");
-        
-        const searchResponse = await apiRequest("POST", "/api/search", { query: searchQuery });
-        const results = await searchResponse.json();
-
-        const enrichedResults = {
-          ...results,
-          scannedImageUri: photo.uri,
-          productInfo: {
-            name: analysisResult.productName,
-            brand: analysisResult.brand,
-            category: analysisResult.category,
-            description: analysisResult.description,
-          },
-        };
-
-        const historyItem: SearchHistoryItem = {
-          id: Date.now().toString() + i,
-          query: searchQuery,
-          product: results.listings?.[0] || null,
-          searchedAt: new Date().toISOString(),
-          results: enrichedResults,
-        };
-
-        await addSearchHistory(historyItem);
-        lastResults = enrichedResults;
-        
-        await loadRecentScans();
-        
-      } catch (error) {
-        console.error("Processing failed for photo", i, error);
+      if (!analysisResult.productName) {
+        setIsAnalyzing(false);
+        setAnalyzingProgress("");
+        processingRef.current = false;
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        return;
       }
-    }
-    
-    setIsAnalyzing(false);
-    setAnalyzingProgress("");
-    processingRef.current = false;
-    
-    if (lastResults) {
+
+      setAnalyzingCount({ current: 2, total: 2 });
+      setAnalyzingProgress("Searching eBay listings...");
+
+      const searchQuery = [
+        analysisResult.brand,
+        analysisResult.productName,
+        analysisResult.model,
+      ].filter(Boolean).join(" ");
+      
+      const searchResponse = await apiRequest("POST", "/api/search", { query: searchQuery });
+      const results = await searchResponse.json();
+
+      const enrichedResults = {
+        ...results,
+        scannedImageUri: photos[0].uri,
+        productInfo: {
+          name: analysisResult.productName,
+          brand: analysisResult.brand,
+          category: analysisResult.category,
+          description: analysisResult.description,
+        },
+      };
+
+      const historyItem: SearchHistoryItem = {
+        id: Date.now().toString(),
+        query: searchQuery,
+        product: results.listings?.[0] || null,
+        searchedAt: new Date().toISOString(),
+        results: enrichedResults,
+      };
+
+      await addSearchHistory(historyItem);
+      await loadRecentScans();
+      
+      setIsAnalyzing(false);
+      setAnalyzingProgress("");
+      processingRef.current = false;
+      
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      navigation.navigate("SearchResults", { results: lastResults });
+      navigation.navigate("SearchResults", { results: enrichedResults });
+      
+    } catch (error) {
+      console.error("Processing failed:", error);
+      setIsAnalyzing(false);
+      setAnalyzingProgress("");
+      processingRef.current = false;
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
   }, [loadRecentScans, navigation]);
 
@@ -192,9 +192,7 @@ export default function ScanScreen() {
               <ActivityIndicator size="large" color={theme.colors.primary} />
               <View style={styles.analyzingText}>
                 <Text style={[styles.analyzingTitle, { color: theme.colors.foreground }]}>
-                  {analyzingCount.total > 1 
-                    ? `Scanning product ${analyzingCount.current} of ${analyzingCount.total}...`
-                    : "Analyzing your product..."}
+                  Analyzing your product...
                 </Text>
                 <Text style={[styles.analyzingSubtitle, { color: theme.colors.mutedForeground }]}>
                   {analyzingProgress}

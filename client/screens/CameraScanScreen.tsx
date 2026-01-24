@@ -201,11 +201,11 @@ export default function CameraScanScreen() {
             </Pressable>
             {capturedPhotos.length > 0 ? (
               <View style={styles.photoBadge}>
-                <Text style={styles.photoBadgeText}>{capturedPhotos.length} product{capturedPhotos.length > 1 ? "s" : ""}</Text>
+                <Text style={styles.photoBadgeText}>{capturedPhotos.length} photo{capturedPhotos.length > 1 ? "s" : ""}</Text>
               </View>
             ) : (
               <Text style={styles.instructions}>
-                Snap each product to scan
+                Take photos from different angles
               </Text>
             )}
             <View style={{ width: 40 }} />

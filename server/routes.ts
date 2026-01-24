@@ -208,13 +208,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/analyze-image", async (req: Request, res: Response) => {
     try {
-      const { imageBase64 } = req.body;
+      const { imageBase64, images } = req.body;
       
-      if (!imageBase64 || typeof imageBase64 !== "string") {
+      const imageList: string[] = images || (imageBase64 ? [imageBase64] : []);
+      
+      if (imageList.length === 0) {
         return res.status(400).json({ error: "Image data is required" });
       }
 
-      const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+      const imageParts = imageList.map((img: string) => ({
+        inlineData: {
+          mimeType: "image/jpeg",
+          data: img.replace(/^data:image\/\w+;base64,/, ""),
+        },
+      }));
+
+      const promptText = imageList.length > 1
+        ? `These ${imageList.length} photos show the SAME product from different angles. Analyze all photos together to accurately identify this single product for eBay reselling. Use details from all angles to get the most accurate identification.
+
+Return ONLY a JSON object with this exact format (no markdown, no code blocks):
+{"productName": "brief product name for eBay search", "brand": "brand name if visible", "model": "model number if visible", "condition": "estimated condition", "category": "product category", "description": "brief description based on all angles"}
+
+Be specific but concise. Focus on searchable terms that would work well on eBay. If you cannot identify the product, return:
+{"productName": null, "error": "Could not identify product"}`
+        : `Identify this product for eBay reselling. Return ONLY a JSON object with this exact format (no markdown, no code blocks):
+{"productName": "brief product name for eBay search", "brand": "brand name if visible", "model": "model number if visible", "condition": "estimated condition", "category": "product category"}
+
+Be specific but concise. Focus on searchable terms that would work well on eBay. If you cannot identify the product, return:
+{"productName": null, "error": "Could not identify product"}`;
       
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash",
@@ -222,19 +243,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           {
             role: "user",
             parts: [
-              {
-                inlineData: {
-                  mimeType: "image/jpeg",
-                  data: base64Data,
-                },
-              },
-              {
-                text: `Identify this product for eBay reselling. Return ONLY a JSON object with this exact format (no markdown, no code blocks):
-{"productName": "brief product name for eBay search", "brand": "brand name if visible", "model": "model number if visible", "condition": "estimated condition", "category": "product category"}
-
-Be specific but concise. Focus on searchable terms that would work well on eBay. If you cannot identify the product, return:
-{"productName": null, "error": "Could not identify product"}`,
-              },
+              ...imageParts,
+              { text: promptText },
             ],
           },
         ],
