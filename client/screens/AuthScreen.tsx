@@ -14,7 +14,7 @@ import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { useAuth } from "@/contexts/AuthContext";
-import { Feather } from "@expo/vector-icons";
+import { Feather, Ionicons } from "@expo/vector-icons";
 import * as WebBrowser from "expo-web-browser";
 
 const appIcon = require("../../assets/images/icon.png");
@@ -233,7 +233,7 @@ export default function AuthScreen() {
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
                   <>
-                    <Text style={styles.appleLogo}></Text>
+                    <Ionicons name="logo-apple" size={22} color="#fff" />
                     <Text style={[styles.socialButtonText, { color: "#fff" }]}>
                       Continue with Apple
                     </Text>
@@ -532,9 +532,5 @@ const styles = StyleSheet.create({
   testLoginText: {
     fontSize: 15,
     fontWeight: "600",
-  },
-  appleLogo: {
-    fontSize: 22,
-    color: "#fff",
   },
 });
