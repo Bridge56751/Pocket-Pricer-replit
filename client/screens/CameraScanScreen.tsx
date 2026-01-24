@@ -8,12 +8,19 @@ import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
+import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { apiRequest } from "@/lib/query-client";
 import { addSearchHistory } from "@/lib/storage";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import type { SearchHistoryItem } from "@/types/product";
+
+interface ScanResult {
+  productName: string;
+  price: number;
+  imageUri: string;
+}
 
 export default function CameraScanScreen() {
   const insets = useSafeAreaInsets();
@@ -23,11 +30,14 @@ export default function CameraScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingMessage, setProcessingMessage] = useState("");
+  const [scanCount, setScanCount] = useState(0);
+  const [lastScan, setLastScan] = useState<ScanResult | null>(null);
   const cameraRef = useRef<CameraView>(null);
 
   const processImage = async (imageUri: string, base64: string) => {
     setIsProcessing(true);
     setProcessingMessage("Identifying product...");
+    setLastScan(null);
     
     try {
       const analyzeResponse = await apiRequest("POST", "/api/analyze-image", {
@@ -37,7 +47,7 @@ export default function CameraScanScreen() {
       
       if (!analysisResult.productName) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        setProcessingMessage("Could not identify product. Try again.");
+        setProcessingMessage("Could not identify. Try again.");
         setTimeout(() => {
           setIsProcessing(false);
           setProcessingMessage("");
@@ -46,7 +56,7 @@ export default function CameraScanScreen() {
       }
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setProcessingMessage("Searching eBay listings...");
+      setProcessingMessage("Searching eBay...");
 
       const searchQuery = [
         analysisResult.brand,
@@ -77,13 +87,26 @@ export default function CameraScanScreen() {
       };
 
       await addSearchHistory(historyItem);
+      
+      setScanCount(prev => prev + 1);
+      setLastScan({
+        productName: analysisResult.productName,
+        price: results.avgListPrice || 0,
+        imageUri: imageUri,
+      });
       setIsProcessing(false);
       setProcessingMessage("");
-      navigation.navigate("SearchResults", { results: enrichedResults });
+      
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      
+      setTimeout(() => {
+        setLastScan(null);
+      }, 3000);
+      
     } catch (error) {
       console.error("Processing failed:", error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setProcessingMessage("Something went wrong. Try again.");
+      setProcessingMessage("Something went wrong.");
       setTimeout(() => {
         setIsProcessing(false);
         setProcessingMessage("");
@@ -126,6 +149,11 @@ export default function CameraScanScreen() {
         processImage(asset.uri, asset.base64);
       }
     }
+  };
+
+  const handleDone = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    navigation.goBack();
   };
 
   if (!permission) {
@@ -182,14 +210,50 @@ export default function CameraScanScreen() {
               {processingMessage}
             </Text>
           </View>
+        ) : lastScan ? (
+          <View style={styles.successOverlay}>
+            <Feather name="check-circle" size={48} color={theme.colors.primary} />
+            <Text style={[styles.successTitle, { color: theme.colors.foreground }]}>
+              {lastScan.productName}
+            </Text>
+            <Text style={[styles.successPrice, { color: theme.colors.primary }]}>
+              ~${lastScan.price.toFixed(0)}
+            </Text>
+            <Text style={[styles.successNote, { color: theme.colors.mutedForeground }]}>
+              Saved! Pick another image or tap Done.
+            </Text>
+            <View style={styles.webButtons}>
+              <Pressable
+                onPress={handlePickImage}
+                style={({ pressed }) => [
+                  styles.webButton,
+                  { backgroundColor: theme.colors.muted, opacity: pressed ? 0.7 : 1 }
+                ]}
+              >
+                <Feather name="image" size={18} color={theme.colors.foreground} />
+                <Text style={[styles.webButtonText, { color: theme.colors.foreground }]}>
+                  Scan Another
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={handleDone}
+                style={({ pressed }) => [
+                  styles.webButton,
+                  { backgroundColor: theme.colors.primary, opacity: pressed ? 0.7 : 1 }
+                ]}
+              >
+                <Text style={styles.doneButtonText}>Done ({scanCount})</Text>
+              </Pressable>
+            </View>
+          </View>
         ) : (
           <>
             <Feather name="camera" size={64} color={theme.colors.mutedForeground} />
             <Text style={[styles.permissionTitle, { color: theme.colors.foreground }]}>
-              Scan Product
+              Scan Products
             </Text>
             <Text style={[styles.permissionMessage, { color: theme.colors.mutedForeground }]}>
-              Use Expo Go on your phone for camera scanning, or choose an image from your gallery
+              Choose images from your gallery to scan multiple products
             </Text>
             <Pressable
               onPress={handlePickImage}
@@ -201,6 +265,19 @@ export default function CameraScanScreen() {
               <Feather name="image" size={18} color={colors.light.primaryForeground} style={{ marginRight: 8 }} />
               <Text style={styles.enableButtonText}>Choose from Gallery</Text>
             </Pressable>
+            {scanCount > 0 ? (
+              <Pressable
+                onPress={handleDone}
+                style={({ pressed }) => [
+                  styles.galleryButton,
+                  { backgroundColor: theme.colors.muted, opacity: pressed ? 0.7 : 1 }
+                ]}
+              >
+                <Text style={[styles.galleryButtonText, { color: theme.colors.foreground }]}>
+                  Done ({scanCount} scanned)
+                </Text>
+              </Pressable>
+            ) : null}
           </>
         )}
       </View>
@@ -216,9 +293,16 @@ export default function CameraScanScreen() {
       >
         <View style={[styles.overlay, { paddingTop: insets.top }]}>
           <View style={styles.topBar}>
-            <Text style={styles.instructions}>
-              Point at a product and tap to scan
-            </Text>
+            {scanCount > 0 ? (
+              <View style={styles.scanCountBadge}>
+                <Feather name="check" size={14} color="#fff" />
+                <Text style={styles.scanCountText}>{scanCount} scanned</Text>
+              </View>
+            ) : (
+              <Text style={styles.instructions}>
+                Point at a product and tap to scan
+              </Text>
+            )}
           </View>
           
           <View style={styles.scanFrame}>
@@ -227,6 +311,29 @@ export default function CameraScanScreen() {
             <View style={styles.cornerBL} />
             <View style={styles.cornerBR} />
           </View>
+
+          {lastScan ? (
+            <Animated.View 
+              entering={FadeIn.duration(200)}
+              exiting={FadeOut.duration(200)}
+              style={[styles.successToast, { backgroundColor: theme.colors.card }]}
+            >
+              <Image 
+                source={{ uri: lastScan.imageUri }} 
+                style={styles.toastImage}
+                contentFit="cover"
+              />
+              <View style={styles.toastContent}>
+                <Text style={[styles.toastTitle, { color: theme.colors.foreground }]} numberOfLines={1}>
+                  {lastScan.productName}
+                </Text>
+                <Text style={[styles.toastPrice, { color: theme.colors.primary }]}>
+                  ~${lastScan.price.toFixed(0)}
+                </Text>
+              </View>
+              <Feather name="check-circle" size={24} color={theme.colors.primary} />
+            </Animated.View>
+          ) : null}
 
           {isProcessing ? (
             <View style={[styles.processingBar, { paddingBottom: insets.bottom + 40 }]}>
@@ -240,11 +347,11 @@ export default function CameraScanScreen() {
               <Pressable
                 onPress={handlePickImage}
                 style={({ pressed }) => [
-                  styles.galleryIcon,
+                  styles.sideButton,
                   { opacity: pressed ? 0.7 : 1 }
                 ]}
               >
-                <Feather name="image" size={28} color="#fff" />
+                <Feather name="image" size={24} color="#fff" />
               </Pressable>
               
               <Pressable
@@ -257,7 +364,16 @@ export default function CameraScanScreen() {
                 <View style={styles.captureButtonInner} />
               </Pressable>
               
-              <View style={styles.placeholder} />
+              <Pressable
+                onPress={handleDone}
+                style={({ pressed }) => [
+                  styles.sideButton,
+                  styles.doneButton,
+                  { opacity: pressed ? 0.7 : 1 }
+                ]}
+              >
+                <Text style={styles.doneText}>Done</Text>
+              </Pressable>
             </View>
           )}
         </View>
@@ -293,6 +409,20 @@ const styles = StyleSheet.create({
     textShadowColor: "rgba(0,0,0,0.5)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
+  },
+  scanCountBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(16, 185, 129, 0.9)",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 6,
+  },
+  scanCountText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
   },
   scanFrame: {
     width: 280,
@@ -344,11 +474,39 @@ const styles = StyleSheet.create({
     borderColor: "#10B981",
     borderBottomRightRadius: 12,
   },
+  successToast: {
+    position: "absolute",
+    bottom: 140,
+    left: 20,
+    right: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 12,
+    borderRadius: 16,
+    gap: 12,
+  },
+  toastImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+  },
+  toastContent: {
+    flex: 1,
+  },
+  toastTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 2,
+  },
+  toastPrice: {
+    fontSize: 18,
+    fontWeight: "700",
+  },
   bottomBar: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-around",
-    paddingHorizontal: 40,
+    paddingHorizontal: 30,
   },
   processingBar: {
     alignItems: "center",
@@ -368,11 +526,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "500",
   },
-  galleryIcon: {
+  sideButton: {
     width: 56,
     height: 56,
     alignItems: "center",
     justifyContent: "center",
+  },
+  doneButton: {
+    backgroundColor: "rgba(16, 185, 129, 0.9)",
+    borderRadius: 28,
+  },
+  doneText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
   },
   captureButton: {
     width: 72,
@@ -387,10 +554,6 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 30,
     backgroundColor: "#fff",
-  },
-  placeholder: {
-    width: 56,
-    height: 56,
   },
   permissionTitle: {
     fontSize: 22,
@@ -437,5 +600,43 @@ const styles = StyleSheet.create({
   processingText: {
     fontSize: 16,
     fontWeight: "500",
+  },
+  successOverlay: {
+    alignItems: "center",
+    gap: 12,
+  },
+  successTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  successPrice: {
+    fontSize: 32,
+    fontWeight: "700",
+  },
+  successNote: {
+    fontSize: 14,
+    marginBottom: 16,
+  },
+  webButtons: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  webButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 30,
+    gap: 8,
+  },
+  webButtonText: {
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  doneButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
   },
 });
