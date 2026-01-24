@@ -172,7 +172,7 @@ export default function AuthScreen() {
           <View style={styles.freeTrialInfo}>
             <Feather name="gift" size={16} color={theme.colors.primary} />
             <Text style={[styles.freeTrialText, { color: theme.colors.mutedForeground }]}>
-              Free accounts get 2 product scans per day
+              Free accounts get 5 product scans
             </Text>
           </View>
         </View>

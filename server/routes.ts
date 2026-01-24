@@ -8,7 +8,7 @@ import { query } from "./db";
 import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
 
 const JWT_SECRET = process.env.SESSION_SECRET || "price-it-secret-key";
-const FREE_SEARCHES_PER_DAY = 2;
+const FREE_LIFETIME_SEARCHES = 5;
 
 const ai = new GoogleGenAI({
   apiKey: process.env.AI_INTEGRATIONS_GEMINI_API_KEY,
@@ -137,23 +137,15 @@ async function canUserSearch(user: any): Promise<{ allowed: boolean; remaining: 
     return { allowed: true, remaining: -1 };
   }
   
-  const today = new Date().toISOString().split("T")[0];
-  const lastSearchDate = user.last_search_date?.toISOString().split("T")[0];
-  
-  if (lastSearchDate !== today) {
-    await query("UPDATE users SET searches_today = 0, last_search_date = $1 WHERE id = $2", [today, user.id]);
-    return { allowed: true, remaining: FREE_SEARCHES_PER_DAY };
-  }
-  
-  const remaining = FREE_SEARCHES_PER_DAY - user.searches_today;
+  const totalSearches = user.total_searches || 0;
+  const remaining = FREE_LIFETIME_SEARCHES - totalSearches;
   return { allowed: remaining > 0, remaining };
 }
 
 async function incrementSearchCount(userId: string): Promise<void> {
-  const today = new Date().toISOString().split("T")[0];
   await query(
-    "UPDATE users SET searches_today = searches_today + 1, last_search_date = $1 WHERE id = $2",
-    [today, userId]
+    "UPDATE users SET total_searches = COALESCE(total_searches, 0) + 1 WHERE id = $1",
+    [userId]
   );
 }
 
@@ -187,7 +179,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: userId, 
           email: email.toLowerCase(),
           subscriptionStatus: "free",
-          searchesRemaining: FREE_SEARCHES_PER_DAY,
+          searchesRemaining: FREE_LIFETIME_SEARCHES,
         }
       });
     } catch (error) {
@@ -265,7 +257,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         canSearch: allowed,
         searchesRemaining: user.subscription_status === "active" ? -1 : remaining,
         isSubscribed: user.subscription_status === "active",
-        freeSearchesPerDay: FREE_SEARCHES_PER_DAY,
+        freeLifetimeSearches: FREE_LIFETIME_SEARCHES,
       });
     } catch (error) {
       console.error("Search status error:", error);

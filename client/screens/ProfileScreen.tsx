@@ -155,7 +155,7 @@ export default function ProfileScreen() {
             <Text style={[styles.upgradeHint, { color: theme.colors.mutedForeground }]}>
               {user?.searchesRemaining === -1 
                 ? "Unlimited scans" 
-                : `${user?.searchesRemaining || 0} free scans remaining today`}
+                : `${user?.searchesRemaining || 0} free scans remaining`}
             </Text>
             <Pressable
               onPress={handleUpgrade}

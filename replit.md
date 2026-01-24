@@ -166,11 +166,11 @@ Users can test on physical devices using Expo Go by scanning the QR code.
 6. **Favorites**: Save profitable products for later
 7. **Custom Settings**: Set default costs and target profit margins
 8. **User Authentication**: Secure signup/login with JWT tokens
-9. **Subscription Tiers**: Free (2 scans/day) or Pro ($4.99/mo unlimited)
+9. **Subscription Tiers**: Free (5 lifetime scans) or Pro ($4.99/mo unlimited)
 
 ## Subscription Model
 
-- **Free Tier**: 2 product scans per day
+- **Free Tier**: 5 lifetime product scans
 - **Pro Tier**: $4.99/month for unlimited scans
 - Users see an upgrade modal when they hit the free limit
 - Stripe handles payment processing securely
@@ -185,8 +185,7 @@ CREATE TABLE users (
   stripe_customer_id VARCHAR(100),
   stripe_subscription_id VARCHAR(100),
   subscription_status VARCHAR(20) DEFAULT 'free',
-  searches_today INTEGER DEFAULT 0,
-  last_search_date DATE,
+  total_searches INTEGER DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ```
@@ -196,7 +195,7 @@ CREATE TABLE users (
 - **Jan 2026**: Added authentication and subscription system
   - JWT-based signup/login
   - Stripe integration for $4.99/month Pro subscription
-  - Free tier with 2 scans per day limit
+  - Free tier with 5 lifetime scans limit
   - Upgrade modal when limit reached
   - Profile screen with subscription status and logout
 - Integrated SerpAPI for real eBay listing data

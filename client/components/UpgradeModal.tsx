@@ -77,7 +77,7 @@ export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
           </Text>
 
           <Text style={[styles.subtitle, { color: theme.colors.mutedForeground }]}>
-            You've used all your free scans for today
+            You've used all 5 of your free scans
           </Text>
 
           <View style={styles.priceContainer}>
