@@ -11,15 +11,7 @@ import * as ImagePicker from "expo-image-picker";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from "react-native-reanimated";
 
 import { useDesignTokens } from "@/hooks/useDesignTokens";
-import { apiRequest } from "@/lib/query-client";
-import { addSearchHistory } from "@/lib/storage";
-import type { RootStackParamList } from "@/navigation/RootStackNavigator";
-import type { SearchHistoryItem } from "@/types/product";
-
-interface CapturedPhoto {
-  uri: string;
-  base64: string;
-}
+import type { RootStackParamList, CapturedPhoto } from "@/navigation/RootStackNavigator";
 
 export default function CameraScanScreen() {
   const insets = useSafeAreaInsets();
@@ -28,9 +20,6 @@ export default function CameraScanScreen() {
   
   const [permission, requestPermission] = useCameraPermissions();
   const [capturedPhotos, setCapturedPhotos] = useState<CapturedPhoto[]>([]);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [processingIndex, setProcessingIndex] = useState(0);
-  const [processedCount, setProcessedCount] = useState(0);
   const cameraRef = useRef<CameraView>(null);
   
   const flashOpacity = useSharedValue(0);
@@ -43,72 +32,14 @@ export default function CameraScanScreen() {
     flashOpacity.value = withTiming(0, { duration: 150 });
   };
 
-  const processAllPhotos = async () => {
+  const handleSearch = () => {
     if (capturedPhotos.length === 0) return;
-    
-    setIsProcessing(true);
-    setProcessingIndex(0);
-    setProcessedCount(0);
-    
-    for (let i = 0; i < capturedPhotos.length; i++) {
-      setProcessingIndex(i + 1);
-      const photo = capturedPhotos[i];
-      
-      try {
-        const analyzeResponse = await apiRequest("POST", "/api/analyze-image", {
-          imageBase64: photo.base64,
-        });
-        const analysisResult = await analyzeResponse.json();
-        
-        if (!analysisResult.productName) {
-          setProcessedCount(prev => prev + 1);
-          continue;
-        }
-
-        const searchQuery = [
-          analysisResult.brand,
-          analysisResult.productName,
-          analysisResult.model,
-        ].filter(Boolean).join(" ");
-        
-        const searchResponse = await apiRequest("POST", "/api/search", { query: searchQuery });
-        const results = await searchResponse.json();
-
-        const enrichedResults = {
-          ...results,
-          scannedImageUri: photo.uri,
-          productInfo: {
-            name: analysisResult.productName,
-            brand: analysisResult.brand,
-            category: analysisResult.category,
-            description: analysisResult.description,
-          },
-        };
-
-        const historyItem: SearchHistoryItem = {
-          id: Date.now().toString() + i,
-          query: searchQuery,
-          product: results.listings?.[0] || null,
-          searchedAt: new Date().toISOString(),
-          results: enrichedResults,
-        };
-
-        await addSearchHistory(historyItem);
-        setProcessedCount(prev => prev + 1);
-        
-      } catch (error) {
-        console.error("Processing failed for photo", i, error);
-        setProcessedCount(prev => prev + 1);
-      }
-    }
-    
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setIsProcessing(false);
-    navigation.goBack();
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    navigation.navigate("Home", { photosToProcess: capturedPhotos });
   };
 
   const handleCapture = async () => {
-    if (!cameraRef.current || isProcessing) return;
+    if (!cameraRef.current) return;
     
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     triggerFlash();
@@ -129,8 +60,6 @@ export default function CameraScanScreen() {
   };
 
   const handlePickImage = async () => {
-    if (isProcessing) return;
-    
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
       quality: 0.7,
@@ -202,103 +131,57 @@ export default function CameraScanScreen() {
   if (Platform.OS === "web") {
     return (
       <View style={[styles.container, styles.centered, { backgroundColor: theme.colors.background }]}>
-        {isProcessing ? (
-          <View style={styles.processingContainer}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
-            <Text style={[styles.processingTitle, { color: theme.colors.foreground }]}>
-              Searching {processingIndex} of {capturedPhotos.length}...
-            </Text>
-            <View style={[styles.progressBar, { backgroundColor: theme.colors.muted }]}>
-              <View 
-                style={[
-                  styles.progressFill, 
-                  { 
-                    backgroundColor: theme.colors.primary,
-                    width: `${(processedCount / capturedPhotos.length) * 100}%` 
-                  }
-                ]} 
-              />
-            </View>
-          </View>
-        ) : (
-          <>
-            <Feather name="camera" size={64} color={theme.colors.mutedForeground} />
-            <Text style={[styles.permissionTitle, { color: theme.colors.foreground }]}>
-              Scan Products
-            </Text>
-            <Text style={[styles.permissionMessage, { color: theme.colors.mutedForeground }]}>
-              Choose images from your gallery to scan multiple products
-            </Text>
-            
-            {capturedPhotos.length > 0 ? (
-              <View style={styles.webPhotoGrid}>
-                {capturedPhotos.map((photo, index) => (
-                  <View key={index} style={styles.webPhotoThumb}>
-                    <Image source={{ uri: photo.uri }} style={styles.webPhotoImage} contentFit="cover" />
-                    <Pressable 
-                      onPress={() => removePhoto(index)}
-                      style={styles.webRemoveButton}
-                    >
-                      <Feather name="x" size={14} color="#fff" />
-                    </Pressable>
-                  </View>
-                ))}
+        <Feather name="camera" size={64} color={theme.colors.mutedForeground} />
+        <Text style={[styles.permissionTitle, { color: theme.colors.foreground }]}>
+          Scan Products
+        </Text>
+        <Text style={[styles.permissionMessage, { color: theme.colors.mutedForeground }]}>
+          Choose images from your gallery to scan multiple products
+        </Text>
+        
+        {capturedPhotos.length > 0 ? (
+          <View style={styles.webPhotoGrid}>
+            {capturedPhotos.map((photo, index) => (
+              <View key={index} style={styles.webPhotoThumb}>
+                <Image source={{ uri: photo.uri }} style={styles.webPhotoImage} contentFit="cover" />
+                <Pressable 
+                  onPress={() => removePhoto(index)}
+                  style={styles.webRemoveButton}
+                >
+                  <Feather name="x" size={14} color="#fff" />
+                </Pressable>
               </View>
-            ) : null}
-            
-            <Pressable
-              onPress={handlePickImage}
-              style={({ pressed }) => [
-                styles.primaryButton,
-                { backgroundColor: theme.colors.primary, opacity: pressed ? 0.7 : 1 }
-              ]}
-            >
-              <Feather name="image" size={18} color={colors.light.primaryForeground} style={{ marginRight: 8 }} />
-              <Text style={styles.primaryButtonText}>
-                {capturedPhotos.length > 0 ? "Add More Photos" : "Choose Photos"}
-              </Text>
-            </Pressable>
-            
-            {capturedPhotos.length > 0 ? (
-              <Pressable
-                onPress={processAllPhotos}
-                style={({ pressed }) => [
-                  styles.searchAllButton,
-                  { opacity: pressed ? 0.7 : 1 }
-                ]}
-              >
-                <Feather name="search" size={18} color="#fff" />
-                <Text style={styles.searchAllText}>
-                  Search All ({capturedPhotos.length})
-                </Text>
-              </Pressable>
-            ) : null}
-          </>
-        )}
-      </View>
-    );
-  }
-
-  if (isProcessing) {
-    return (
-      <View style={[styles.container, styles.centered, { backgroundColor: "#000" }]}>
-        <View style={styles.processingContainer}>
-          <ActivityIndicator size="large" color="#10B981" />
-          <Text style={styles.processingTitle}>
-            Searching {processingIndex} of {capturedPhotos.length}...
-          </Text>
-          <View style={styles.progressBar}>
-            <View 
-              style={[
-                styles.progressFill, 
-                { width: `${(processedCount / capturedPhotos.length) * 100}%` }
-              ]} 
-            />
+            ))}
           </View>
-          <Text style={styles.processingSubtitle}>
-            Finding eBay listings for your items
+        ) : null}
+        
+        <Pressable
+          onPress={handlePickImage}
+          style={({ pressed }) => [
+            styles.primaryButton,
+            { backgroundColor: theme.colors.primary, opacity: pressed ? 0.7 : 1 }
+          ]}
+        >
+          <Feather name="image" size={18} color={colors.light.primaryForeground} style={{ marginRight: 8 }} />
+          <Text style={styles.primaryButtonText}>
+            {capturedPhotos.length > 0 ? "Add More Photos" : "Choose Photos"}
           </Text>
-        </View>
+        </Pressable>
+        
+        {capturedPhotos.length > 0 ? (
+          <Pressable
+            onPress={handleSearch}
+            style={({ pressed }) => [
+              styles.searchAllButton,
+              { opacity: pressed ? 0.7 : 1 }
+            ]}
+          >
+            <Feather name="search" size={18} color="#fff" />
+            <Text style={styles.searchAllText}>
+              Search All ({capturedPhotos.length})
+            </Text>
+          </Pressable>
+        ) : null}
       </View>
     );
   }
@@ -384,7 +267,7 @@ export default function CameraScanScreen() {
             
             {capturedPhotos.length > 0 ? (
               <Pressable
-                onPress={processAllPhotos}
+                onPress={handleSearch}
                 style={({ pressed }) => [
                   styles.searchButton,
                   { opacity: pressed ? 0.7 : 1 }
@@ -620,34 +503,6 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
-  },
-  processingContainer: {
-    alignItems: "center",
-    gap: 16,
-    paddingHorizontal: 40,
-  },
-  processingTitle: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "600",
-    textAlign: "center",
-  },
-  processingSubtitle: {
-    color: "rgba(255,255,255,0.7)",
-    fontSize: 14,
-    textAlign: "center",
-  },
-  progressBar: {
-    width: "100%",
-    height: 6,
-    backgroundColor: "rgba(255,255,255,0.2)",
-    borderRadius: 3,
-    overflow: "hidden",
-  },
-  progressFill: {
-    height: "100%",
-    backgroundColor: "#10B981",
-    borderRadius: 3,
   },
   webPhotoGrid: {
     flexDirection: "row",

@@ -39,8 +39,13 @@ interface SearchResultsData {
   };
 }
 
+export interface CapturedPhoto {
+  uri: string;
+  base64: string;
+}
+
 export type RootStackParamList = {
-  Home: undefined;
+  Home: { photosToProcess?: CapturedPhoto[] } | undefined;
   CameraScan: undefined;
   History: undefined;
   Favorites: undefined;
