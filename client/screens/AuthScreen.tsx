@@ -24,7 +24,7 @@ WebBrowser.maybeCompleteAuthSession();
 export default function AuthScreen() {
   const { theme } = useDesignTokens();
   const insets = useSafeAreaInsets();
-  const { login, signup, socialLogin } = useAuth();
+  const { login, signup, socialLogin, testLogin } = useAuth();
   
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
@@ -170,24 +170,11 @@ export default function AuthScreen() {
     setIsTestLoading(true);
     setError("");
     
-    try {
-      const { apiRequest, getApiUrl } = await import("@/lib/query-client");
-      const response = await apiRequest("POST", "/api/auth/test-login", {});
-      
-      if (response.ok) {
-        const data = await response.json();
-        const AsyncStorage = (await import("@react-native-async-storage/async-storage")).default;
-        await AsyncStorage.setItem("@pocket_pricer_auth_token", data.token);
-        await AsyncStorage.setItem("@pocket_pricer_user", JSON.stringify(data.user));
-        // Reload auth state
-        window.location?.reload?.();
-      } else {
-        setError("Test login failed");
-      }
-    } catch (err) {
-      setError("Test login failed");
-    } finally {
-      setIsTestLoading(false);
+    const result = await testLogin();
+    setIsTestLoading(false);
+    
+    if (!result.success) {
+      setError(result.error || "Test login failed");
     }
   };
 
