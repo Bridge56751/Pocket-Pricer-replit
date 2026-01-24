@@ -49,13 +49,6 @@ const slides: OnboardingSlide[] = [
     description: "Enter your purchase price and instantly see your potential profit after eBay fees (~13%).",
     iconColor: "#F59E0B",
   },
-  {
-    id: "4",
-    icon: "heart",
-    title: "Save & Track",
-    description: "Bookmark profitable finds and review your search history anytime.",
-    iconColor: "#EF4444",
-  },
 ];
 
 interface OnboardingScreenProps {
