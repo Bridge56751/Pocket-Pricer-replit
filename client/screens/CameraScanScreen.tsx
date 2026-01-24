@@ -211,6 +211,13 @@ export default function CameraScanScreen() {
             <View style={{ width: 40 }} />
           </View>
 
+          <View style={styles.scanFrame}>
+            <View style={styles.cornerTL} />
+            <View style={styles.cornerTR} />
+            <View style={styles.cornerBL} />
+            <View style={styles.cornerBR} />
+          </View>
+
           {capturedPhotos.length > 0 ? (
             <View style={styles.thumbnailStrip}>
               <ScrollView 
@@ -235,14 +242,7 @@ export default function CameraScanScreen() {
                 ))}
               </ScrollView>
             </View>
-          ) : (
-            <View style={styles.scanFrame}>
-              <View style={styles.cornerTL} />
-              <View style={styles.cornerTR} />
-              <View style={styles.cornerBL} />
-              <View style={styles.cornerBR} />
-            </View>
-          )}
+          ) : null}
 
           <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 20 }]}>
             <Pressable
