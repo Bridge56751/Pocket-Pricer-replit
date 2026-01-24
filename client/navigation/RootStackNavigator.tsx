@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import ScanScreen from "@/screens/ScanScreen";
 import CameraScanScreen from "@/screens/CameraScanScreen";
@@ -6,7 +6,6 @@ import HistoryScreen from "@/screens/HistoryScreen";
 import FavoritesScreen from "@/screens/FavoritesScreen";
 import ProfileScreen from "@/screens/ProfileScreen";
 import SearchResultsScreen from "@/screens/SearchResultsScreen";
-import OnboardingScreen, { checkOnboardingComplete } from "@/screens/OnboardingScreen";
 import { useScreenOptions } from "@/hooks/useScreenOptions";
 import { HeaderTitle } from "@/components/HeaderTitle";
 
@@ -58,23 +57,6 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function RootStackNavigator() {
   const screenOptions = useScreenOptions();
-  const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    checkOnboardingComplete().then((complete) => {
-      setShowOnboarding(!complete);
-    });
-  }, []);
-
-  if (showOnboarding === null) {
-    return null;
-  }
-
-  if (showOnboarding) {
-    return (
-      <OnboardingScreen onComplete={() => setShowOnboarding(false)} />
-    );
-  }
 
   return (
     <Stack.Navigator screenOptions={screenOptions}>

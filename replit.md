@@ -63,6 +63,7 @@ client/
 │   └── *StackNavigator.tsx    # Individual tab stacks
 ├── screens/
 │   ├── AuthScreen.tsx         # Login/signup authentication
+│   ├── OnboardingScreen.tsx   # First-launch tutorial (4 slides)
 │   ├── ScanScreen.tsx         # Product search (home)
 │   ├── CameraScanScreen.tsx   # AI camera scanning
 │   ├── HistoryScreen.tsx      # Search history
