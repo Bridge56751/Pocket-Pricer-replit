@@ -233,7 +233,7 @@ export default function AuthScreen() {
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
                   <>
-                    <Feather name="command" size={20} color="#fff" />
+                    <Text style={styles.appleLogo}></Text>
                     <Text style={[styles.socialButtonText, { color: "#fff" }]}>
                       Continue with Apple
                     </Text>
@@ -532,5 +532,9 @@ const styles = StyleSheet.create({
   testLoginText: {
     fontSize: 15,
     fontWeight: "600",
+  },
+  appleLogo: {
+    fontSize: 22,
+    color: "#fff",
   },
 });
