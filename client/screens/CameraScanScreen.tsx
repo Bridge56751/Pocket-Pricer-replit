@@ -208,7 +208,6 @@ export default function CameraScanScreen() {
         ref={cameraRef}
         style={styles.camera}
         facing="back"
-        zoom={0.02}
       >
         <Animated.View style={[styles.flashOverlay, flashAnimatedStyle]} />
         <View style={[styles.overlay, { paddingTop: insets.top }]}>
