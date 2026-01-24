@@ -69,7 +69,7 @@ export default function RootStackNavigator() {
         name="CameraScan"
         component={CameraScanScreen}
         options={{
-          headerTitle: "Scan Product",
+          headerShown: false,
         }}
       />
       <Stack.Screen
