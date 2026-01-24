@@ -38,12 +38,8 @@ export default function AuthScreen() {
   }, []);
 
   const checkGoogleAvailability = () => {
-    const hasGoogleConfig = !!(
-      process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ||
-      process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ||
-      process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID
-    );
-    setIsGoogleAvailable(hasGoogleConfig && Platform.OS !== "web");
+    // Google Sign-In disabled - requires OAuth configuration
+    setIsGoogleAvailable(false);
   };
 
   const checkAppleAvailability = async () => {
