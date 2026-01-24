@@ -2,6 +2,13 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "node:http";
 import { getJson } from "serpapi";
 import { GoogleGenAI } from "@google/genai";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import { query } from "./db";
+import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
+
+const JWT_SECRET = process.env.SESSION_SECRET || "price-it-secret-key";
+const FREE_SEARCHES_PER_DAY = 2;
 
 const ai = new GoogleGenAI({
   apiKey: process.env.AI_INTEGRATIONS_GEMINI_API_KEY,
@@ -109,7 +116,260 @@ function transformEbayResults(results: EbayResult[]): {
   };
 }
 
+async function getUserFromToken(req: Request): Promise<any | null> {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith("Bearer ")) return null;
+  
+  try {
+    const token = authHeader.split(" ")[1];
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+    const result = await query("SELECT * FROM users WHERE id = $1", [decoded.userId]);
+    return result.rows[0] || null;
+  } catch {
+    return null;
+  }
+}
+
+async function canUserSearch(user: any): Promise<{ allowed: boolean; remaining: number }> {
+  if (!user) return { allowed: false, remaining: 0 };
+  
+  if (user.subscription_status === "active") {
+    return { allowed: true, remaining: -1 };
+  }
+  
+  const today = new Date().toISOString().split("T")[0];
+  const lastSearchDate = user.last_search_date?.toISOString().split("T")[0];
+  
+  if (lastSearchDate !== today) {
+    await query("UPDATE users SET searches_today = 0, last_search_date = $1 WHERE id = $2", [today, user.id]);
+    return { allowed: true, remaining: FREE_SEARCHES_PER_DAY };
+  }
+  
+  const remaining = FREE_SEARCHES_PER_DAY - user.searches_today;
+  return { allowed: remaining > 0, remaining };
+}
+
+async function incrementSearchCount(userId: string): Promise<void> {
+  const today = new Date().toISOString().split("T")[0];
+  await query(
+    "UPDATE users SET searches_today = searches_today + 1, last_search_date = $1 WHERE id = $2",
+    [today, userId]
+  );
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
+  app.post("/api/auth/signup", async (req: Request, res: Response) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ error: "Email and password required" });
+      }
+      
+      const existing = await query("SELECT id FROM users WHERE email = $1", [email.toLowerCase()]);
+      if (existing.rows.length > 0) {
+        return res.status(400).json({ error: "Email already registered" });
+      }
+      
+      const passwordHash = await bcrypt.hash(password, 10);
+      const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      await query(
+        "INSERT INTO users (id, email, password_hash) VALUES ($1, $2, $3)",
+        [userId, email.toLowerCase(), passwordHash]
+      );
+      
+      const token = jwt.sign({ userId }, JWT_SECRET, { expiresIn: "30d" });
+      
+      res.json({ 
+        token, 
+        user: { 
+          id: userId, 
+          email: email.toLowerCase(),
+          subscriptionStatus: "free",
+          searchesRemaining: FREE_SEARCHES_PER_DAY,
+        }
+      });
+    } catch (error) {
+      console.error("Signup error:", error);
+      res.status(500).json({ error: "Signup failed" });
+    }
+  });
+
+  app.post("/api/auth/login", async (req: Request, res: Response) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ error: "Email and password required" });
+      }
+      
+      const result = await query("SELECT * FROM users WHERE email = $1", [email.toLowerCase()]);
+      const user = result.rows[0];
+      
+      if (!user || !(await bcrypt.compare(password, user.password_hash))) {
+        return res.status(401).json({ error: "Invalid email or password" });
+      }
+      
+      const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: "30d" });
+      const { allowed, remaining } = await canUserSearch(user);
+      
+      res.json({ 
+        token, 
+        user: { 
+          id: user.id, 
+          email: user.email,
+          subscriptionStatus: user.subscription_status,
+          searchesRemaining: user.subscription_status === "active" ? -1 : remaining,
+        }
+      });
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(500).json({ error: "Login failed" });
+    }
+  });
+
+  app.get("/api/auth/me", async (req: Request, res: Response) => {
+    try {
+      const user = await getUserFromToken(req);
+      if (!user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const { remaining } = await canUserSearch(user);
+      
+      res.json({ 
+        user: { 
+          id: user.id, 
+          email: user.email,
+          subscriptionStatus: user.subscription_status,
+          searchesRemaining: user.subscription_status === "active" ? -1 : remaining,
+        }
+      });
+    } catch (error) {
+      console.error("Auth check error:", error);
+      res.status(500).json({ error: "Auth check failed" });
+    }
+  });
+
+  app.get("/api/search-status", async (req: Request, res: Response) => {
+    try {
+      const user = await getUserFromToken(req);
+      if (!user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const { allowed, remaining } = await canUserSearch(user);
+      
+      res.json({ 
+        canSearch: allowed,
+        searchesRemaining: user.subscription_status === "active" ? -1 : remaining,
+        isSubscribed: user.subscription_status === "active",
+        freeSearchesPerDay: FREE_SEARCHES_PER_DAY,
+      });
+    } catch (error) {
+      console.error("Search status error:", error);
+      res.status(500).json({ error: "Failed to get search status" });
+    }
+  });
+
+  app.get("/api/stripe/publishable-key", async (_req: Request, res: Response) => {
+    try {
+      const key = await getStripePublishableKey();
+      res.json({ publishableKey: key });
+    } catch (error) {
+      console.error("Stripe key error:", error);
+      res.status(500).json({ error: "Failed to get Stripe key" });
+    }
+  });
+
+  app.post("/api/create-checkout-session", async (req: Request, res: Response) => {
+    try {
+      const user = await getUserFromToken(req);
+      if (!user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const stripe = await getUncachableStripeClient();
+      
+      let customerId = user.stripe_customer_id;
+      if (!customerId) {
+        const customer = await stripe.customers.create({
+          email: user.email,
+          metadata: { userId: user.id },
+        });
+        customerId = customer.id;
+        await query("UPDATE users SET stripe_customer_id = $1 WHERE id = $2", [customerId, user.id]);
+      }
+      
+      const prices = await stripe.prices.list({ 
+        active: true, 
+        limit: 10,
+        expand: ['data.product']
+      });
+      
+      const priceItPrice = prices.data.find(p => {
+        const product = p.product as any;
+        return product.name === 'Price It Pro' && p.recurring?.interval === 'month';
+      });
+      
+      if (!priceItPrice) {
+        return res.status(404).json({ error: "Subscription price not found. Please run seed-products script." });
+      }
+      
+      const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}`;
+      
+      const session = await stripe.checkout.sessions.create({
+        customer: customerId,
+        payment_method_types: ['card'],
+        line_items: [{ price: priceItPrice.id, quantity: 1 }],
+        mode: 'subscription',
+        success_url: `${baseUrl}/subscription-success`,
+        cancel_url: `${baseUrl}/subscription-cancel`,
+      });
+      
+      res.json({ url: session.url });
+    } catch (error) {
+      console.error("Checkout error:", error);
+      res.status(500).json({ error: "Failed to create checkout session" });
+    }
+  });
+
+  app.post("/api/subscription/check", async (req: Request, res: Response) => {
+    try {
+      const user = await getUserFromToken(req);
+      if (!user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      if (!user.stripe_customer_id) {
+        return res.json({ status: "free" });
+      }
+      
+      const stripe = await getUncachableStripeClient();
+      const subscriptions = await stripe.subscriptions.list({
+        customer: user.stripe_customer_id,
+        status: 'active',
+        limit: 1,
+      });
+      
+      if (subscriptions.data.length > 0) {
+        const subscription = subscriptions.data[0];
+        await query(
+          "UPDATE users SET subscription_status = 'active', stripe_subscription_id = $1 WHERE id = $2",
+          [subscription.id, user.id]
+        );
+        return res.json({ status: "active", subscriptionId: subscription.id });
+      }
+      
+      await query("UPDATE users SET subscription_status = 'free' WHERE id = $1", [user.id]);
+      return res.json({ status: "free" });
+    } catch (error) {
+      console.error("Subscription check error:", error);
+      res.status(500).json({ error: "Failed to check subscription" });
+    }
+  });
+
   app.post("/api/search", async (req: Request, res: Response) => {
     try {
       const { query } = req.body;
@@ -208,6 +468,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/analyze-image", async (req: Request, res: Response) => {
     try {
+      const user = await getUserFromToken(req);
+      if (!user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const { allowed, remaining } = await canUserSearch(user);
+      if (!allowed) {
+        return res.status(403).json({ 
+          error: "Daily scan limit reached", 
+          limitReached: true,
+          searchesRemaining: 0,
+        });
+      }
+      
       const { imageBase64, images } = req.body;
       
       const imageList: string[] = images || (imageBase64 ? [imageBase64] : []);
@@ -255,6 +529,9 @@ Be specific but concise. Focus on searchable terms that would work well on eBay.
       try {
         const cleanedText = text.replace(/```json\n?|\n?```/g, "").trim();
         const productInfo = JSON.parse(cleanedText);
+        
+        await incrementSearchCount(user.id);
+        
         res.json(productInfo);
       } catch (parseError) {
         console.error("Failed to parse AI response:", text);
