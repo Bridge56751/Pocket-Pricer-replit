@@ -69,6 +69,14 @@ export async function removeFavorite(id: string): Promise<void> {
   }
 }
 
+export async function clearFavorites(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(STORAGE_KEYS.FAVORITES);
+  } catch (error) {
+    console.error("Failed to clear favorites:", error);
+  }
+}
+
 export async function isFavorite(productId: string): Promise<boolean> {
   try {
     const favorites = await getFavorites();

@@ -1,145 +1,137 @@
-import React, { useState, useEffect } from "react";
-import { View, StyleSheet, Pressable, TextInput, Platform } from "react-native";
+import React, { useState } from "react";
+import { View, StyleSheet, Pressable, Text, Alert, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { ScrollView } from "react-native";
 
-import { KeyboardAwareScrollViewCompat } from "@/components/KeyboardAwareScrollViewCompat";
-import { ThemedText } from "@/components/ThemedText";
-import { Button } from "@/components/Button";
-import { useTheme } from "@/hooks/useTheme";
-import { BorderRadius, Spacing } from "@/constants/theme";
-import { getUserSettings, saveUserSettings } from "@/lib/storage";
-import type { UserSettings } from "@/types/product";
+import { useDesignTokens } from "@/hooks/useDesignTokens";
+import { clearSearchHistory, clearFavorites } from "@/lib/storage";
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
-  const { theme } = useTheme();
+  const { theme } = useDesignTokens();
 
-  const [settings, setSettings] = useState<UserSettings>({
-    defaultCost: 0,
-    defaultShippingCost: 5,
-    targetProfitMargin: 30,
-  });
-  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  useEffect(() => {
-    loadSettings();
-  }, []);
-
-  const loadSettings = async () => {
-    const data = await getUserSettings();
-    setSettings(data);
-  };
-
-  const handleSave = async () => {
-    setIsSaving(true);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    try {
-      await saveUserSettings(settings);
-    } finally {
-      setIsSaving(false);
+  const handleDeleteAccount = () => {
+    if (Platform.OS === "web") {
+      if (confirm("Are you sure you want to delete all your data? This action cannot be undone.")) {
+        performDeleteAccount();
+      }
+    } else {
+      Alert.alert(
+        "Delete Account Data",
+        "Are you sure you want to delete all your data? This action cannot be undone.",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Delete", style: "destructive", onPress: performDeleteAccount },
+        ]
+      );
     }
   };
 
-  const updateSetting = (key: keyof UserSettings, value: string) => {
-    const numValue = parseFloat(value) || 0;
-    setSettings(prev => ({ ...prev, [key]: numValue }));
+  const performDeleteAccount = async () => {
+    setIsDeleting(true);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    try {
+      await clearSearchHistory();
+      await clearFavorites();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      if (Platform.OS === "web") {
+        alert("All data has been deleted successfully.");
+      } else {
+        Alert.alert("Success", "All data has been deleted successfully.");
+      }
+    } catch (error) {
+      console.error("Failed to delete data:", error);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
-    <KeyboardAwareScrollViewCompat
-      style={[styles.container, { backgroundColor: theme.backgroundRoot }]}
+    <ScrollView
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
       contentContainerStyle={[
         styles.content,
         {
-          paddingTop: headerHeight + Spacing.xl,
-          paddingBottom: insets.bottom + Spacing.xl,
+          paddingTop: headerHeight + 24,
+          paddingBottom: insets.bottom + 24,
         },
       ]}
-      scrollIndicatorInsets={{ bottom: insets.bottom }}
     >
-      <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>
+      <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
         <View style={styles.sectionHeader}>
-          <Feather name="dollar-sign" size={20} color={theme.primary} />
-          <ThemedText style={styles.sectionTitle}>Default Settings</ThemedText>
+          <Feather name="info" size={20} color={theme.colors.primary} />
+          <Text style={[styles.sectionTitle, { color: theme.colors.foreground }]}>
+            About
+          </Text>
         </View>
 
-        <View style={styles.inputGroup}>
-          <ThemedText style={[styles.label, { color: theme.textSecondary }]}>
-            Default Item Cost ($)
-          </ThemedText>
-          <TextInput
-            style={[styles.input, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
-            value={settings.defaultCost.toString()}
-            onChangeText={(value) => updateSetting("defaultCost", value)}
-            keyboardType="decimal-pad"
-            placeholder="0.00"
-            placeholderTextColor={theme.textSecondary}
-            testID="input-default-cost"
-          />
-        </View>
-
-        <View style={styles.inputGroup}>
-          <ThemedText style={[styles.label, { color: theme.textSecondary }]}>
-            Default Shipping Cost ($)
-          </ThemedText>
-          <TextInput
-            style={[styles.input, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
-            value={settings.defaultShippingCost.toString()}
-            onChangeText={(value) => updateSetting("defaultShippingCost", value)}
-            keyboardType="decimal-pad"
-            placeholder="5.00"
-            placeholderTextColor={theme.textSecondary}
-            testID="input-shipping-cost"
-          />
-        </View>
-
-        <View style={styles.inputGroup}>
-          <ThemedText style={[styles.label, { color: theme.textSecondary }]}>
-            Target Profit Margin (%)
-          </ThemedText>
-          <TextInput
-            style={[styles.input, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
-            value={settings.targetProfitMargin.toString()}
-            onChangeText={(value) => updateSetting("targetProfitMargin", value)}
-            keyboardType="decimal-pad"
-            placeholder="30"
-            placeholderTextColor={theme.textSecondary}
-            testID="input-target-margin"
-          />
-        </View>
-      </View>
-
-      <Button onPress={handleSave} disabled={isSaving} style={styles.saveButton}>
-        {isSaving ? "Saving..." : "Save Settings"}
-      </Button>
-
-      <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>
-        <View style={styles.sectionHeader}>
-          <Feather name="info" size={20} color={theme.primary} />
-          <ThemedText style={styles.sectionTitle}>About</ThemedText>
-        </View>
-
-        <Pressable style={({ pressed }) => [styles.menuItem, { opacity: pressed ? 0.7 : 1 }]}>
-          <ThemedText>Privacy Policy</ThemedText>
-          <Feather name="chevron-right" size={20} color={theme.textSecondary} />
+        <Pressable 
+          style={({ pressed }) => [
+            styles.menuItem, 
+            { opacity: pressed ? 0.7 : 1 }
+          ]}
+        >
+          <Text style={[styles.menuItemText, { color: theme.colors.foreground }]}>
+            Privacy Policy
+          </Text>
+          <Feather name="chevron-right" size={20} color={theme.colors.mutedForeground} />
         </Pressable>
 
-        <Pressable style={({ pressed }) => [styles.menuItem, { opacity: pressed ? 0.7 : 1 }]}>
-          <ThemedText>Terms of Service</ThemedText>
-          <Feather name="chevron-right" size={20} color={theme.textSecondary} />
+        <Pressable 
+          style={({ pressed }) => [
+            styles.menuItem, 
+            { opacity: pressed ? 0.7 : 1 }
+          ]}
+        >
+          <Text style={[styles.menuItemText, { color: theme.colors.foreground }]}>
+            Terms of Service
+          </Text>
+          <Feather name="chevron-right" size={20} color={theme.colors.mutedForeground} />
         </Pressable>
 
         <View style={styles.versionContainer}>
-          <ThemedText style={[styles.versionText, { color: theme.textSecondary }]}>
+          <Text style={[styles.versionText, { color: theme.colors.mutedForeground }]}>
             Version 1.0.0
-          </ThemedText>
+          </Text>
         </View>
       </View>
-    </KeyboardAwareScrollViewCompat>
+
+      <View style={[styles.section, styles.dangerSection, { backgroundColor: theme.colors.card }]}>
+        <View style={styles.sectionHeader}>
+          <Feather name="alert-triangle" size={20} color={theme.colors.danger} />
+          <Text style={[styles.sectionTitle, { color: theme.colors.foreground }]}>
+            Account
+          </Text>
+        </View>
+
+        <Text style={[styles.warningText, { color: theme.colors.mutedForeground }]}>
+          Deleting your account will permanently remove all your scan history, favorites, and saved data.
+        </Text>
+
+        <Pressable
+          onPress={handleDeleteAccount}
+          disabled={isDeleting}
+          style={({ pressed }) => [
+            styles.deleteButton,
+            { 
+              backgroundColor: theme.colors.danger,
+              opacity: pressed || isDeleting ? 0.7 : 1 
+            }
+          ]}
+        >
+          <Feather name="trash-2" size={18} color="#fff" />
+          <Text style={styles.deleteButtonText}>
+            {isDeleting ? "Deleting..." : "Delete All Data"}
+          </Text>
+        </Pressable>
+      </View>
+    </ScrollView>
   );
 }
 
@@ -148,55 +140,60 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingHorizontal: Spacing.lg,
+    paddingHorizontal: 16,
   },
   section: {
-    borderRadius: BorderRadius.sm,
-    padding: Spacing.lg,
-    marginBottom: Spacing.lg,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+  },
+  dangerSection: {
+    marginTop: 8,
   },
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: Spacing.lg,
+    marginBottom: 16,
+    gap: 10,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: "600",
-    marginLeft: Spacing.sm,
-  },
-  inputGroup: {
-    marginBottom: Spacing.lg,
-  },
-  label: {
-    fontSize: 14,
-    marginBottom: Spacing.sm,
-  },
-  input: {
-    height: Spacing.inputHeight,
-    borderRadius: BorderRadius.xs,
-    paddingHorizontal: Spacing.lg,
-    fontSize: 16,
-    ...Platform.select({
-      web: {
-        outlineStyle: "none",
-      },
-    }),
-  },
-  saveButton: {
-    marginBottom: Spacing.lg,
   },
   menuItem: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: Spacing.md,
+    paddingVertical: 14,
+    borderBottomWidth: 0.5,
+    borderBottomColor: "rgba(255,255,255,0.1)",
+  },
+  menuItemText: {
+    fontSize: 16,
   },
   versionContainer: {
-    marginTop: Spacing.lg,
+    marginTop: 16,
     alignItems: "center",
   },
   versionText: {
-    fontSize: 12,
+    fontSize: 13,
+  },
+  warningText: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 20,
+  },
+  deleteButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 8,
+  },
+  deleteButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });
