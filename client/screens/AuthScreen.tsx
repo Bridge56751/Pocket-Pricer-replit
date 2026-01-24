@@ -10,11 +10,14 @@ import {
   Platform,
   ScrollView,
 } from "react-native";
+import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { useAuth } from "@/contexts/AuthContext";
 import { Feather } from "@expo/vector-icons";
 import * as WebBrowser from "expo-web-browser";
+
+const appIcon = require("../../assets/images/icon.png");
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -174,9 +177,7 @@ export default function AuthScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.logoContainer}>
-          <View style={[styles.logoBox, { backgroundColor: theme.colors.primary }]}>
-            <Feather name="search" size={40} color="#fff" />
-          </View>
+          <Image source={appIcon} style={styles.logoImage} contentFit="contain" />
           <Text style={[styles.appName, { color: theme.colors.foreground }]}>
             Pocket Pricer
           </Text>
@@ -355,12 +356,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 40,
   },
-  logoBox: {
-    width: 80,
-    height: 80,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
+  logoImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 24,
     marginBottom: 16,
   },
   appName: {
