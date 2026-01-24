@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from "react";
-import { View, StyleSheet, FlatList, Pressable, Platform, Text, TextInput } from "react-native";
+import { View, StyleSheet, FlatList, Pressable, Text, TextInput } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
@@ -8,6 +8,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import Animated, { FadeInDown } from "react-native-reanimated";
+import { Image } from "expo-image";
 
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { EmptyState } from "@/components/EmptyState";
@@ -17,7 +18,6 @@ import { getSearchHistory, addSearchHistory } from "@/lib/storage";
 import { apiRequest } from "@/lib/query-client";
 import type { Product, SearchHistoryItem } from "@/types/product";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
-import { Image } from "expo-image";
 
 export default function ScanScreen() {
   const insets = useSafeAreaInsets();
@@ -68,16 +68,12 @@ export default function ScanScreen() {
       navigation.navigate("ProductDetail", { product });
     } catch (error) {
       console.error("Search failed:", error);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } finally {
       setIsSearching(false);
       setSearchQuery("");
     }
   }, [searchQuery, navigation]);
-
-  const handleScanPress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    navigation.navigate("BarcodeScanner");
-  };
 
   const handleProductPress = (product: Product) => {
     navigation.navigate("ProductDetail", { product });
@@ -135,31 +131,43 @@ export default function ScanScreen() {
                 value={searchQuery}
                 onChangeText={setSearchQuery}
                 onSubmitEditing={handleSearch}
-                placeholder="Search eBay products..."
+                placeholder="Search eBay listings..."
                 placeholderTextColor={theme.colors.mutedForeground}
                 autoCapitalize="none"
                 autoCorrect={false}
                 returnKeyType="search"
                 testID="search-input"
               />
-              {Platform.OS !== "web" ? (
-                <Pressable
-                  onPress={handleScanPress}
-                  style={({ pressed }) => [
-                    theme.components.button.icon,
-                    { backgroundColor: theme.colors.primary, opacity: pressed ? 0.7 : 1 }
-                  ]}
-                  testID="scan-button"
-                >
-                  <Feather name="camera" size={18} color={colors.light.primaryForeground} />
-                </Pressable>
-              ) : null}
+              <Pressable
+                onPress={handleSearch}
+                disabled={isSearching || !searchQuery.trim()}
+                style={({ pressed }) => [
+                  styles.searchButton,
+                  { 
+                    backgroundColor: theme.colors.primary, 
+                    opacity: (pressed || isSearching || !searchQuery.trim()) ? 0.5 : 1 
+                  }
+                ]}
+                testID="search-button"
+              >
+                <Feather 
+                  name={isSearching ? "loader" : "arrow-right"} 
+                  size={18} 
+                  color={colors.light.primaryForeground} 
+                />
+              </Pressable>
             </View>
+            
+            <Text style={[styles.helperText, { color: theme.colors.mutedForeground }]}>
+              Search for any product to see real eBay listings and profit estimates
+            </Text>
+
             {isSearching ? (
               <View style={styles.searchingContainer}>
                 <SkeletonLoader count={2} type="card" />
               </View>
             ) : null}
+            
             {recentProducts.length > 0 && !isSearching ? (
               <View style={styles.sectionHeader}>
                 <Feather name="clock" size={16} color={theme.colors.mutedForeground} />
@@ -174,26 +182,13 @@ export default function ScanScreen() {
           !isLoading && !isSearching ? (
             <EmptyState
               image={require("../../assets/images/empty-search.png")}
-              title="Start Searching"
-              message="Search for any product to see its estimated selling price and potential profit on eBay"
+              title="Search eBay Listings"
+              message="Enter a product name to find current active listings and see how much profit you can make"
             />
           ) : null
         }
         renderItem={renderRecentItem}
       />
-
-      {Platform.OS !== "web" ? (
-        <Pressable
-          style={({ pressed }) => [
-            theme.components.button.fab,
-            { position: "absolute", right: theme.spacing.lg, bottom: tabBarHeight + theme.spacing.xl, opacity: pressed ? 0.7 : 1 }
-          ]}
-          onPress={handleScanPress}
-          testID="fab-scan"
-        >
-          <Feather name="camera" size={24} color={colors.light.primaryForeground} />
-        </Pressable>
-      ) : null}
     </View>
   );
 }
@@ -228,13 +223,25 @@ const styles = StyleSheet.create({
     fontSize: 16,
     height: "100%",
   },
+  searchButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  helperText: {
+    fontSize: 13,
+    marginTop: 8,
+    textAlign: "center",
+  },
   searchingContainer: {
     marginTop: 16,
   },
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 20,
+    marginTop: 24,
     marginBottom: 12,
   },
   sectionTitle: {

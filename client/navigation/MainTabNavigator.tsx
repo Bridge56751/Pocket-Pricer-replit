@@ -8,10 +8,10 @@ import ScanStackNavigator from "@/navigation/ScanStackNavigator";
 import HistoryStackNavigator from "@/navigation/HistoryStackNavigator";
 import FavoritesStackNavigator from "@/navigation/FavoritesStackNavigator";
 import ProfileStackNavigator from "@/navigation/ProfileStackNavigator";
-import { useTheme } from "@/hooks/useTheme";
+import { useDesignTokens } from "@/hooks/useDesignTokens";
 
 export type MainTabParamList = {
-  ScanTab: undefined;
+  SearchTab: undefined;
   HistoryTab: undefined;
   FavoritesTab: undefined;
   ProfileTab: undefined;
@@ -20,19 +20,19 @@ export type MainTabParamList = {
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 export default function MainTabNavigator() {
-  const { theme, isDark } = useTheme();
+  const { theme } = useDesignTokens();
 
   return (
     <Tab.Navigator
-      initialRouteName="ScanTab"
+      initialRouteName="SearchTab"
       screenOptions={{
-        tabBarActiveTintColor: theme.primary,
-        tabBarInactiveTintColor: theme.tabIconDefault,
+        tabBarActiveTintColor: theme.colors.primary,
+        tabBarInactiveTintColor: theme.colors.mutedForeground,
         tabBarStyle: {
           position: "absolute",
           backgroundColor: Platform.select({
             ios: "transparent",
-            android: theme.backgroundRoot,
+            android: theme.colors.background,
           }),
           borderTopWidth: 0,
           elevation: 0,
@@ -49,10 +49,10 @@ export default function MainTabNavigator() {
       }}
     >
       <Tab.Screen
-        name="ScanTab"
+        name="SearchTab"
         component={ScanStackNavigator}
         options={{
-          title: "Scan",
+          title: "Search",
           tabBarIcon: ({ color, size }) => (
             <Feather name="search" size={size} color={color} />
           ),
