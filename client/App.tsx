@@ -19,6 +19,7 @@ import { queryClient } from "@/lib/query-client";
 import RootStackNavigator from "@/navigation/RootStackNavigator";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { AuthProvider } from "@/contexts/AuthContext";
 import { AppContent } from "@/components/AppContent";
 
 SplashScreen.preventAutoHideAsync();
@@ -48,7 +49,9 @@ export default function App() {
           <GestureHandlerRootView style={styles.root}>
             <KeyboardProvider>
               <ThemeProvider systemColorScheme={systemColorScheme}>
-                <AppContent />
+                <AuthProvider>
+                  <AppContent />
+                </AuthProvider>
               </ThemeProvider>
             </KeyboardProvider>
           </GestureHandlerRootView>

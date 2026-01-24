@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
-import { View, StyleSheet, Pressable, Text, ScrollView, Image, ActivityIndicator } from "react-native";
+import { View, StyleSheet, Pressable, Text, ScrollView, Image, ActivityIndicator, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useFocusEffect, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -12,6 +12,8 @@ import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { SkeletonLoader } from "@/components/SkeletonLoader";
 import { getSearchHistory, addSearchHistory } from "@/lib/storage";
 import { apiRequest } from "@/lib/query-client";
+import { useAuth } from "@/contexts/AuthContext";
+import UpgradeModal from "@/components/UpgradeModal";
 import type { SearchHistoryItem } from "@/types/product";
 import type { RootStackParamList, CapturedPhoto } from "@/navigation/RootStackNavigator";
 
@@ -38,11 +40,14 @@ export default function ScanScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<ScanScreenRouteProp>();
 
+  const { user, token, refreshUser } = useAuth();
+  
   const [recentScans, setRecentScans] = useState<SearchHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analyzingProgress, setAnalyzingProgress] = useState("");
   const [analyzingCount, setAnalyzingCount] = useState({ current: 0, total: 0 });
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const processingRef = useRef(false);
 
   const loadRecentScans = useCallback(async () => {
@@ -68,8 +73,17 @@ export default function ScanScreen() {
     try {
       const analyzeResponse = await apiRequest("POST", "/api/analyze-image", {
         images: photos.map(p => p.base64),
-      });
+      }, token);
+      
       const analysisResult = await analyzeResponse.json();
+      
+      if (analyzeResponse.status === 403 && analysisResult.limitReached) {
+        setIsAnalyzing(false);
+        setAnalyzingProgress("");
+        processingRef.current = false;
+        setShowUpgradeModal(true);
+        return;
+      }
       
       if (!analysisResult.productName) {
         setIsAnalyzing(false);
@@ -78,6 +92,8 @@ export default function ScanScreen() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         return;
       }
+      
+      await refreshUser();
 
       setAnalyzingCount({ current: 2, total: 2 });
       setAnalyzingProgress("Searching eBay listings...");
@@ -319,6 +335,11 @@ export default function ScanScreen() {
           </View>
         )}
       </ScrollView>
+      
+      <UpgradeModal 
+        visible={showUpgradeModal} 
+        onClose={() => setShowUpgradeModal(false)} 
+      />
     </View>
   );
 }

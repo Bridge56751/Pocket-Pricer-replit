@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, StyleSheet, Pressable, Text, Alert, Platform } from "react-native";
+import { View, StyleSheet, Pressable, Text, Alert, Platform, ActivityIndicator, Linking } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { Feather } from "@expo/vector-icons";
@@ -8,6 +8,9 @@ import { ScrollView } from "react-native";
 
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { clearSearchHistory, clearFavorites } from "@/lib/storage";
+import { useAuth } from "@/contexts/AuthContext";
+import { getApiUrl } from "@/lib/query-client";
+import UpgradeModal from "@/components/UpgradeModal";
 
 type ThemeOption = "light" | "dark" | "system";
 
@@ -15,8 +18,54 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const { theme, themeMode, setThemeMode, isDarkMode } = useDesignTokens();
+  const { user, token, logout } = useAuth();
 
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [isLoadingCheckout, setIsLoadingCheckout] = useState(false);
+
+  const handleUpgrade = async () => {
+    if (!token) return;
+    
+    setIsLoadingCheckout(true);
+    
+    try {
+      const response = await fetch(new URL("/api/create-checkout-session", getApiUrl()).toString(), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      const data = await response.json();
+      
+      if (data.url) {
+        await Linking.openURL(data.url);
+      } else {
+        console.error("Checkout error:", data.error);
+      }
+    } catch (error) {
+      console.error("Failed to start checkout:", error);
+    } finally {
+      setIsLoadingCheckout(false);
+    }
+  };
+
+  const handleLogout = () => {
+    if (Platform.OS === "web") {
+      logout();
+    } else {
+      Alert.alert(
+        "Log Out",
+        "Are you sure you want to log out?",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Log Out", onPress: logout },
+        ]
+      );
+    }
+  };
 
   const handleThemeChange = (mode: ThemeOption) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -76,6 +125,63 @@ export default function ProfileScreen() {
         },
       ]}
     >
+      <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
+        <View style={styles.sectionHeader}>
+          <Feather name="user" size={20} color={theme.colors.primary} />
+          <Text style={[styles.sectionTitle, { color: theme.colors.foreground }]}>
+            Account
+          </Text>
+        </View>
+
+        <View style={styles.accountInfo}>
+          <Text style={[styles.emailText, { color: theme.colors.foreground }]}>
+            {user?.email}
+          </Text>
+          <View style={[
+            styles.planBadge, 
+            { backgroundColor: user?.subscriptionStatus === "active" ? theme.colors.primary : theme.colors.muted }
+          ]}>
+            <Text style={[
+              styles.planBadgeText, 
+              { color: user?.subscriptionStatus === "active" ? "#fff" : theme.colors.foreground }
+            ]}>
+              {user?.subscriptionStatus === "active" ? "Pro" : "Free"}
+            </Text>
+          </View>
+        </View>
+
+        {user?.subscriptionStatus !== "active" ? (
+          <>
+            <Text style={[styles.upgradeHint, { color: theme.colors.mutedForeground }]}>
+              {user?.searchesRemaining === -1 
+                ? "Unlimited scans" 
+                : `${user?.searchesRemaining || 0} free scans remaining today`}
+            </Text>
+            <Pressable
+              onPress={handleUpgrade}
+              disabled={isLoadingCheckout}
+              style={({ pressed }) => [
+                styles.upgradeButton,
+                { backgroundColor: theme.colors.primary, opacity: pressed || isLoadingCheckout ? 0.7 : 1 }
+              ]}
+            >
+              {isLoadingCheckout ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <>
+                  <Feather name="zap" size={18} color="#fff" />
+                  <Text style={styles.upgradeButtonText}>Upgrade to Pro - $4.99/mo</Text>
+                </>
+              )}
+            </Pressable>
+          </>
+        ) : (
+          <Text style={[styles.upgradeHint, { color: theme.colors.mutedForeground }]}>
+            Unlimited product scans
+          </Text>
+        )}
+      </View>
+
       <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
         <View style={styles.sectionHeader}>
           <Feather name="moon" size={20} color={theme.colors.primary} />
@@ -183,6 +289,24 @@ export default function ProfileScreen() {
           </Text>
         </Pressable>
       </View>
+
+      <Pressable
+        onPress={handleLogout}
+        style={({ pressed }) => [
+          styles.logoutButton,
+          { borderColor: theme.colors.border, opacity: pressed ? 0.7 : 1 }
+        ]}
+      >
+        <Feather name="log-out" size={18} color={theme.colors.mutedForeground} />
+        <Text style={[styles.logoutButtonText, { color: theme.colors.mutedForeground }]}>
+          Log Out
+        </Text>
+      </Pressable>
+      
+      <UpgradeModal 
+        visible={showUpgradeModal} 
+        onClose={() => setShowUpgradeModal(false)} 
+      />
     </ScrollView>
   );
 }
@@ -263,5 +387,54 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
+  },
+  accountInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  emailText: {
+    fontSize: 16,
+  },
+  planBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  planBadgeText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  upgradeHint: {
+    fontSize: 14,
+    marginBottom: 12,
+  },
+  upgradeButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 8,
+  },
+  upgradeButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  logoutButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 8,
+    marginBottom: 20,
+  },
+  logoutButtonText: {
+    fontSize: 16,
+    fontWeight: "500",
   },
 });
