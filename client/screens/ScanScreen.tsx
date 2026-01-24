@@ -89,26 +89,12 @@ export default function ScanScreen() {
               Price It
             </Text>
           </View>
-          <View style={styles.headerIcons}>
-            <Pressable 
-              style={styles.headerIcon}
-              onPress={() => navigation.navigate("Favorites")}
-            >
-              <Feather name="star" size={22} color={theme.colors.mutedForeground} />
-            </Pressable>
-            <Pressable 
-              style={styles.headerIcon}
-              onPress={() => navigation.navigate("History")}
-            >
-              <Feather name="clock" size={22} color={theme.colors.mutedForeground} />
-            </Pressable>
-            <Pressable 
-              style={styles.headerIcon}
-              onPress={() => navigation.navigate("Settings")}
-            >
-              <Feather name="settings" size={22} color={theme.colors.mutedForeground} />
-            </Pressable>
-          </View>
+          <Pressable 
+            style={styles.headerIcon}
+            onPress={() => navigation.navigate("Settings")}
+          >
+            <Feather name="settings" size={22} color={theme.colors.mutedForeground} />
+          </Pressable>
         </View>
 
         <View style={[styles.heroCard, { backgroundColor: theme.colors.card }]}>
@@ -298,10 +284,6 @@ const styles = StyleSheet.create({
   appName: {
     fontSize: 22,
     fontWeight: "700",
-  },
-  headerIcons: {
-    flexDirection: "row",
-    gap: 16,
   },
   headerIcon: {
     padding: 4,
