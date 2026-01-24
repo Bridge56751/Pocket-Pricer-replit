@@ -171,7 +171,7 @@ export default function ScanScreen() {
     }
   };
 
-  const displayedScans = recentScans.slice(0, 10);
+  const displayedScans = recentScans.slice(0, 15);
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>

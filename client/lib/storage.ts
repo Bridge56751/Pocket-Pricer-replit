@@ -68,7 +68,7 @@ export async function addSearchHistory(item: SearchHistoryItem): Promise<void> {
     }
     const history = await AsyncStorage.getItem(STORAGE_KEYS.SEARCH_HISTORY);
     const parsed = history ? JSON.parse(history) : [];
-    const newHistory = [item, ...parsed.filter((h: SearchHistoryItem) => h.id !== item.id)].slice(0, 50);
+    const newHistory = [item, ...parsed.filter((h: SearchHistoryItem) => h.id !== item.id)].slice(0, 15);
     await AsyncStorage.setItem(STORAGE_KEYS.SEARCH_HISTORY, JSON.stringify(newHistory));
   } catch (error) {
     console.error("Failed to save search history:", error);
