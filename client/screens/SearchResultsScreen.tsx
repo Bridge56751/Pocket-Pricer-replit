@@ -54,18 +54,24 @@ export default function SearchResultsScreen() {
   const { results } = route.params;
 
   const [purchasePrice, setPurchasePrice] = useState("");
+  const [sellingPrice, setSellingPrice] = useState(results.avgListPrice.toFixed(2));
   
-  const recommendedPrice = results.avgListPrice;
+  const suggestedPrice = results.avgListPrice;
   const EBAY_FEE_RATE = 0.13;
   
   const calculateProfit = () => {
     const purchase = parseFloat(purchasePrice) || 0;
-    const ebayFees = recommendedPrice * EBAY_FEE_RATE;
-    const profit = recommendedPrice - purchase - ebayFees;
-    return { ebayFees, profit };
+    const selling = parseFloat(sellingPrice) || suggestedPrice;
+    const ebayFees = selling * EBAY_FEE_RATE;
+    const profit = selling - purchase - ebayFees;
+    return { ebayFees, profit, selling };
   };
   
-  const { ebayFees, profit } = calculateProfit();
+  const { ebayFees, profit, selling } = calculateProfit();
+  
+  const useSuggestedPrice = () => {
+    setSellingPrice(suggestedPrice.toFixed(2));
+  };
 
   const handleViewListing = async (link: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -237,12 +243,27 @@ export default function SearchResultsScreen() {
               </View>
 
               <View style={styles.calculatorRow}>
-                <Text style={[styles.calculatorLabel, { color: theme.colors.mutedForeground }]}>
-                  Recommended List Price
-                </Text>
-                <Text style={[styles.calculatorValue, { color: theme.colors.foreground }]}>
-                  ${recommendedPrice.toFixed(2)}
-                </Text>
+                <View style={styles.labelWithHint}>
+                  <Text style={[styles.calculatorLabel, { color: theme.colors.mutedForeground }]}>
+                    Your Selling Price
+                  </Text>
+                  <Pressable onPress={useSuggestedPrice} style={styles.suggestedHint}>
+                    <Text style={[styles.suggestedHintText, { color: theme.colors.primary }]}>
+                      Suggested: ${suggestedPrice.toFixed(0)}
+                    </Text>
+                  </Pressable>
+                </View>
+                <View style={[styles.inputContainer, { backgroundColor: theme.colors.muted, borderColor: theme.colors.border }]}>
+                  <Text style={[styles.dollarSign, { color: theme.colors.mutedForeground }]}>$</Text>
+                  <TextInput
+                    style={[styles.priceInput, { color: theme.colors.foreground }]}
+                    value={sellingPrice}
+                    onChangeText={setSellingPrice}
+                    placeholder={suggestedPrice.toFixed(2)}
+                    placeholderTextColor={theme.colors.mutedForeground}
+                    keyboardType="decimal-pad"
+                  />
+                </View>
               </View>
 
               <View style={styles.calculatorRow}>
@@ -470,6 +491,17 @@ const styles = StyleSheet.create({
   calculatorLabel: {
     fontSize: 14,
     fontWeight: "500",
+  },
+  labelWithHint: {
+    flexDirection: "column",
+    gap: 4,
+  },
+  suggestedHint: {
+    paddingVertical: 2,
+  },
+  suggestedHintText: {
+    fontSize: 12,
+    fontWeight: "600",
   },
   calculatorValue: {
     fontSize: 16,
