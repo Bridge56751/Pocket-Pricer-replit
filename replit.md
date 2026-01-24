@@ -1,15 +1,16 @@
-# eBay Profit Estimator
+# Price It
 
-An Expo React Native mobile app that helps eBay sellers estimate potential profit on products by searching real eBay listings via SerpAPI.
+An Expo React Native mobile app that helps eBay sellers discover product values by scanning items with AI or searching eBay listings.
 
 ## Overview
 
 This app allows eBay resellers to:
+- Scan products with camera (AI-powered identification via Gemini)
 - Search for products by name and see real active eBay listings
 - View current eBay selling prices from live data
 - Calculate estimated profit based on their costs (includes ~13% eBay fees)
 - Save favorite products for later
-- Track search history
+- Track search and scan history
 
 ## Tech Stack
 
