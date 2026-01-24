@@ -1,5 +1,5 @@
-import React from "react";
-import { View, StyleSheet, FlatList, Pressable, Text, Linking } from "react-native";
+import React, { useState } from "react";
+import { View, StyleSheet, FlatList, Pressable, Text, Linking, TextInput } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useRoute, RouteProp, useNavigation } from "@react-navigation/native";
@@ -52,6 +52,20 @@ export default function SearchResultsScreen() {
   const navigation = useNavigation();
 
   const { results } = route.params;
+
+  const [purchasePrice, setPurchasePrice] = useState("");
+  
+  const recommendedPrice = results.avgListPrice;
+  const EBAY_FEE_RATE = 0.13;
+  
+  const calculateProfit = () => {
+    const purchase = parseFloat(purchasePrice) || 0;
+    const ebayFees = recommendedPrice * EBAY_FEE_RATE;
+    const profit = recommendedPrice - purchase - ebayFees;
+    return { ebayFees, profit };
+  };
+  
+  const { ebayFees, profit } = calculateProfit();
 
   const handleViewListing = async (link: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -214,58 +228,66 @@ export default function SearchResultsScreen() {
             </View>
 
 
-            <View style={styles.statsGrid}>
-              <View style={[styles.statCard, { backgroundColor: theme.colors.card }]}>
-                <View style={styles.statHeader}>
-                  <Feather name="tag" size={14} color={theme.colors.mutedForeground} />
-                  <Text style={[styles.statLabel, { color: theme.colors.mutedForeground }]}>
-                    Avg. List Price
-                  </Text>
-                </View>
-                <Text style={[styles.statValue, { color: theme.colors.foreground }]}>
-                  ${results.avgListPrice.toFixed(0)}
-                </Text>
-                <Text style={[styles.statSubtext, { color: theme.colors.mutedForeground }]}>
-                  {results.totalListings} active listings
+            <View style={[styles.calculatorCard, { backgroundColor: theme.colors.card }]}>
+              <View style={styles.calculatorHeader}>
+                <Feather name="dollar-sign" size={18} color={theme.colors.primary} />
+                <Text style={[styles.calculatorTitle, { color: theme.colors.foreground }]}>
+                  Profit Calculator
                 </Text>
               </View>
 
-              <View style={[styles.statCard, { backgroundColor: theme.colors.card }]}>
-                <View style={styles.statHeader}>
-                  <Feather name="dollar-sign" size={14} color={theme.colors.mutedForeground} />
-                  <Text style={[styles.statLabel, { color: theme.colors.mutedForeground }]}>
-                    Avg. Sale Price
-                  </Text>
-                </View>
-                <Text style={[styles.statValue, { color: theme.colors.foreground }]}>
-                  {results.avgSalePrice ? `$${results.avgSalePrice.toFixed(0)}` : "N/A"}
+              <View style={styles.calculatorRow}>
+                <Text style={[styles.calculatorLabel, { color: theme.colors.mutedForeground }]}>
+                  Recommended List Price
                 </Text>
-                <Text style={[styles.statSubtext, { color: theme.colors.mutedForeground }]}>
-                  {results.soldCount} sold items
+                <Text style={[styles.calculatorValue, { color: theme.colors.foreground }]}>
+                  ${recommendedPrice.toFixed(2)}
                 </Text>
               </View>
 
-              <View style={[styles.statCard, { backgroundColor: theme.colors.card }]}>
-                <View style={styles.statHeader}>
-                  <Text style={[styles.statLabel, { color: theme.colors.mutedForeground }]}>
-                    Best Buy Now
-                  </Text>
+              <View style={styles.calculatorRow}>
+                <Text style={[styles.calculatorLabel, { color: theme.colors.mutedForeground }]}>
+                  Your Purchase Price
+                </Text>
+                <View style={[styles.inputContainer, { backgroundColor: theme.colors.muted, borderColor: theme.colors.border }]}>
+                  <Text style={[styles.dollarSign, { color: theme.colors.mutedForeground }]}>$</Text>
+                  <TextInput
+                    style={[styles.priceInput, { color: theme.colors.foreground }]}
+                    value={purchasePrice}
+                    onChangeText={setPurchasePrice}
+                    placeholder="0.00"
+                    placeholderTextColor={theme.colors.mutedForeground}
+                    keyboardType="decimal-pad"
+                  />
                 </View>
-                <Text style={[styles.statValue, { color: theme.colors.foreground }]}>
-                  ${results.bestBuyNow.toFixed(0)}
+              </View>
+
+              <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+
+              <View style={styles.calculatorRow}>
+                <Text style={[styles.calculatorLabel, { color: theme.colors.mutedForeground }]}>
+                  eBay Fees (~13%)
+                </Text>
+                <Text style={[styles.calculatorValue, { color: theme.colors.danger }]}>
+                  -${ebayFees.toFixed(2)}
                 </Text>
               </View>
 
-              <View style={[styles.statCard, { backgroundColor: theme.colors.card }]}>
-                <View style={styles.statHeader}>
-                  <Text style={[styles.statLabel, { color: theme.colors.mutedForeground }]}>
-                    Top Sale Price
-                  </Text>
-                </View>
-                <Text style={[styles.statValue, { color: theme.colors.foreground }]}>
-                  {results.topSalePrice ? `$${results.topSalePrice.toFixed(0)}` : "N/A"}
+              <View style={[styles.profitRow, { backgroundColor: profit > 0 ? theme.colors.primary + '20' : theme.colors.danger + '20' }]}>
+                <Text style={[styles.profitLabel, { color: theme.colors.foreground }]}>
+                  Estimated Profit
+                </Text>
+                <Text style={[
+                  styles.profitValue, 
+                  { color: profit > 0 ? theme.colors.primary : theme.colors.danger }
+                ]}>
+                  {profit >= 0 ? '+' : ''}${profit.toFixed(2)}
                 </Text>
               </View>
+
+              <Text style={[styles.calculatorNote, { color: theme.colors.mutedForeground }]}>
+                Based on {results.totalListings} active listings
+              </Text>
             </View>
 
             <Text style={[styles.sectionTitle, { color: theme.colors.foreground }]}>
@@ -424,34 +446,79 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
-  statsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 12,
+  calculatorCard: {
+    padding: 20,
+    borderRadius: 16,
     marginBottom: 24,
   },
-  statCard: {
-    width: "47%",
-    padding: 16,
-    borderRadius: 12,
-  },
-  statHeader: {
+  calculatorHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    marginBottom: 8,
+    gap: 10,
+    marginBottom: 20,
   },
-  statLabel: {
-    fontSize: 12,
-    fontWeight: "500",
-  },
-  statValue: {
-    fontSize: 28,
+  calculatorTitle: {
+    fontSize: 18,
     fontWeight: "700",
   },
-  statSubtext: {
+  calculatorRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  calculatorLabel: {
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  calculatorValue: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    minWidth: 100,
+  },
+  dollarSign: {
+    fontSize: 16,
+    fontWeight: "500",
+    marginRight: 4,
+  },
+  priceInput: {
+    fontSize: 16,
+    fontWeight: "600",
+    minWidth: 60,
+    textAlign: "right",
+  },
+  divider: {
+    height: 1,
+    marginVertical: 16,
+  },
+  profitRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 8,
+  },
+  profitLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  profitValue: {
+    fontSize: 24,
+    fontWeight: "700",
+  },
+  calculatorNote: {
     fontSize: 12,
-    marginTop: 4,
+    textAlign: "center",
+    marginTop: 12,
   },
   sectionTitle: {
     fontSize: 18,
