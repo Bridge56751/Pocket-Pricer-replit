@@ -5,6 +5,7 @@ import { BlurView } from "expo-blur";
 import { Platform, StyleSheet } from "react-native";
 
 import ScanStackNavigator from "@/navigation/ScanStackNavigator";
+import CameraScanStackNavigator from "@/navigation/CameraScanStackNavigator";
 import HistoryStackNavigator from "@/navigation/HistoryStackNavigator";
 import FavoritesStackNavigator from "@/navigation/FavoritesStackNavigator";
 import ProfileStackNavigator from "@/navigation/ProfileStackNavigator";
@@ -12,6 +13,7 @@ import { useDesignTokens } from "@/hooks/useDesignTokens";
 
 export type MainTabParamList = {
   SearchTab: undefined;
+  CameraTab: undefined;
   HistoryTab: undefined;
   FavoritesTab: undefined;
   ProfileTab: undefined;
@@ -55,6 +57,16 @@ export default function MainTabNavigator() {
           title: "Search",
           tabBarIcon: ({ color, size }) => (
             <Feather name="search" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="CameraTab"
+        component={CameraScanStackNavigator}
+        options={{
+          title: "Scan",
+          tabBarIcon: ({ color, size }) => (
+            <Feather name="camera" size={size} color={color} />
           ),
         }}
       />

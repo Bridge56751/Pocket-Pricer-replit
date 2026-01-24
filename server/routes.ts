@@ -1,6 +1,15 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "node:http";
 import { getJson } from "serpapi";
+import { GoogleGenAI } from "@google/genai";
+
+const ai = new GoogleGenAI({
+  apiKey: process.env.AI_INTEGRATIONS_GEMINI_API_KEY,
+  httpOptions: {
+    apiVersion: "",
+    baseUrl: process.env.AI_INTEGRATIONS_GEMINI_BASE_URL,
+  },
+});
 
 interface EbayResult {
   position?: number;
@@ -194,6 +203,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Sold search error:", error);
       res.status(500).json({ error: "Search failed" });
+    }
+  });
+
+  app.post("/api/analyze-image", async (req: Request, res: Response) => {
+    try {
+      const { imageBase64 } = req.body;
+      
+      if (!imageBase64 || typeof imageBase64 !== "string") {
+        return res.status(400).json({ error: "Image data is required" });
+      }
+
+      const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+      
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: [
+          {
+            role: "user",
+            parts: [
+              {
+                inlineData: {
+                  mimeType: "image/jpeg",
+                  data: base64Data,
+                },
+              },
+              {
+                text: `Identify this product for eBay reselling. Return ONLY a JSON object with this exact format (no markdown, no code blocks):
+{"productName": "brief product name for eBay search", "brand": "brand name if visible", "model": "model number if visible", "condition": "estimated condition", "category": "product category"}
+
+Be specific but concise. Focus on searchable terms that would work well on eBay. If you cannot identify the product, return:
+{"productName": null, "error": "Could not identify product"}`,
+              },
+            ],
+          },
+        ],
+      });
+
+      const text = response.text || "";
+      
+      try {
+        const cleanedText = text.replace(/```json\n?|\n?```/g, "").trim();
+        const productInfo = JSON.parse(cleanedText);
+        res.json(productInfo);
+      } catch (parseError) {
+        console.error("Failed to parse AI response:", text);
+        res.json({ productName: text.substring(0, 100), raw: true });
+      }
+    } catch (error) {
+      console.error("Image analysis error:", error);
+      res.status(500).json({ error: "Failed to analyze image" });
     }
   });
 
