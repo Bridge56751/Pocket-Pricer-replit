@@ -58,4 +58,11 @@ export interface SearchResultsData {
   bestBuyNow: number;
   topSalePrice: number | null;
   listings: ListingItem[];
+  scannedImageUri?: string;
+  productInfo?: {
+    name: string;
+    brand?: string;
+    category?: string;
+    description?: string;
+  };
 }

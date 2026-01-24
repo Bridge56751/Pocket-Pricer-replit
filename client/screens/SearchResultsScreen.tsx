@@ -35,6 +35,13 @@ interface SearchResultsData {
   bestBuyNow: number;
   topSalePrice: number | null;
   listings: ListingItem[];
+  scannedImageUri?: string;
+  productInfo?: {
+    name: string;
+    brand?: string;
+    category?: string;
+    description?: string;
+  };
 }
 
 export default function SearchResultsScreen() {
@@ -140,6 +147,69 @@ export default function SearchResultsScreen() {
         keyExtractor={(item) => item.id}
         ListHeaderComponent={
           <View>
+            {results.scannedImageUri ? (
+              <View style={[styles.productCard, { backgroundColor: theme.colors.card }]}>
+                <Image
+                  source={{ uri: results.scannedImageUri }}
+                  style={styles.scannedImage}
+                  contentFit="cover"
+                />
+                <View style={styles.productDetails}>
+                  <Text style={[styles.productName, { color: theme.colors.foreground }]}>
+                    {results.productInfo?.name || results.query}
+                  </Text>
+                  {results.productInfo?.brand ? (
+                    <Text style={[styles.productBrand, { color: theme.colors.mutedForeground }]}>
+                      {results.productInfo.brand}
+                    </Text>
+                  ) : null}
+                  {results.productInfo?.category ? (
+                    <View style={[styles.categoryBadge, { backgroundColor: theme.colors.muted }]}>
+                      <Text style={[styles.categoryText, { color: theme.colors.foreground }]}>
+                        {results.productInfo.category}
+                      </Text>
+                    </View>
+                  ) : null}
+                  {results.productInfo?.description ? (
+                    <Text 
+                      style={[styles.productDescription, { color: theme.colors.mutedForeground }]}
+                      numberOfLines={2}
+                    >
+                      {results.productInfo.description}
+                    </Text>
+                  ) : null}
+                </View>
+              </View>
+            ) : null}
+
+            <View style={[styles.suggestedPrice, { backgroundColor: theme.colors.card }]}>
+              <View style={styles.suggestedPriceHeader}>
+                <View>
+                  <View style={styles.suggestedPriceTitle}>
+                    <Feather name="star" size={16} color={theme.colors.warning} />
+                    <Text style={[styles.suggestedPriceLabel, { color: theme.colors.foreground }]}>
+                      Suggested Listing Price
+                    </Text>
+                  </View>
+                  <Text style={[styles.suggestedPriceNote, { color: theme.colors.mutedForeground }]}>
+                    Based on current market listings
+                  </Text>
+                </View>
+                <Text style={[styles.suggestedPriceValue, { color: theme.colors.primary }]}>
+                  ${results.avgListPrice.toFixed(0)}
+                </Text>
+              </View>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.listOnEbayButtonInCard,
+                  { backgroundColor: theme.colors.primary, opacity: pressed ? 0.7 : 1 }
+                ]}
+              >
+                <Feather name="external-link" size={16} color={colors.light.primaryForeground} />
+                <Text style={styles.listOnEbayText}>List on eBay</Text>
+              </Pressable>
+            </View>
+
             <View style={styles.filterTabs}>
               <Pressable
                 style={[
@@ -337,6 +407,82 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: 16,
+  },
+  productCard: {
+    flexDirection: "row",
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 16,
+    gap: 12,
+  },
+  scannedImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 12,
+  },
+  productDetails: {
+    flex: 1,
+    justifyContent: "center",
+  },
+  productName: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 4,
+  },
+  productBrand: {
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  categoryBadge: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 16,
+    marginBottom: 6,
+  },
+  categoryText: {
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  productDescription: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  suggestedPrice: {
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+  },
+  suggestedPriceHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 12,
+  },
+  suggestedPriceTitle: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 4,
+  },
+  suggestedPriceLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  suggestedPriceNote: {
+    fontSize: 12,
+  },
+  suggestedPriceValue: {
+    fontSize: 32,
+    fontWeight: "700",
+  },
+  listOnEbayButtonInCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    borderRadius: 8,
+    gap: 8,
   },
   filterTabs: {
     flexDirection: "row",

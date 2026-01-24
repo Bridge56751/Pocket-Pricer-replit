@@ -100,16 +100,27 @@ export default function CameraScanScreen() {
       const response = await apiRequest("POST", "/api/search", { query: searchQuery });
       const results = await response.json();
 
+      const enrichedResults = {
+        ...results,
+        scannedImageUri: capturedImage,
+        productInfo: {
+          name: analysisResult.productName,
+          brand: analysisResult.brand,
+          category: analysisResult.category,
+          description: analysisResult.description,
+        },
+      };
+
       const historyItem: SearchHistoryItem = {
         id: Date.now().toString(),
         query: searchQuery,
         product: results.listings?.[0] || null,
         searchedAt: new Date().toISOString(),
-        results: results,
+        results: enrichedResults,
       };
 
       await addSearchHistory(historyItem);
-      navigation.navigate("SearchResults", { results });
+      navigation.navigate("SearchResults", { results: enrichedResults });
     } catch (error) {
       console.error("Search failed:", error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
