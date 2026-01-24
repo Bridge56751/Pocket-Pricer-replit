@@ -1,10 +1,12 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { SearchHistoryItem, FavoriteItem, UserSettings } from "@/types/product";
+import { apiRequest, getApiUrl } from "@/lib/query-client";
 
 const STORAGE_KEYS = {
   SEARCH_HISTORY: "@ebay_profit/search_history",
   FAVORITES: "@ebay_profit/favorites",
   USER_SETTINGS: "@ebay_profit/user_settings",
+  AUTH_TOKEN: "@pocket_pricer_auth_token",
 };
 
 const DEFAULT_SETTINGS: UserSettings = {
@@ -13,8 +15,36 @@ const DEFAULT_SETTINGS: UserSettings = {
   targetProfitMargin: 30,
 };
 
+async function getAuthToken(): Promise<string | null> {
+  try {
+    return await AsyncStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+  } catch {
+    return null;
+  }
+}
+
 export async function getSearchHistory(): Promise<SearchHistoryItem[]> {
   try {
+    const token = await getAuthToken();
+    if (token) {
+      const response = await apiRequest("GET", "/api/history", undefined, token);
+      if (response.ok) {
+        const data = await response.json();
+        return data.scans.map((scan: any) => ({
+          id: scan.id,
+          query: scan.query_used || scan.product_name,
+          product: {
+            title: scan.product_name,
+            currentPrice: parseFloat(scan.avg_price) || 0,
+          },
+          searchedAt: scan.scanned_at,
+          thumbnailUrl: scan.thumbnail_url,
+          avgPrice: parseFloat(scan.avg_price),
+          bestPrice: parseFloat(scan.best_price),
+          totalListings: scan.total_listings,
+        }));
+      }
+    }
     const data = await AsyncStorage.getItem(STORAGE_KEYS.SEARCH_HISTORY);
     return data ? JSON.parse(data) : [];
   } catch {
@@ -24,8 +54,21 @@ export async function getSearchHistory(): Promise<SearchHistoryItem[]> {
 
 export async function addSearchHistory(item: SearchHistoryItem): Promise<void> {
   try {
-    const history = await getSearchHistory();
-    const newHistory = [item, ...history.filter(h => h.id !== item.id)].slice(0, 50);
+    const token = await getAuthToken();
+    if (token && item.results) {
+      const thumbnail = item.results.listings?.[0]?.imageUrl || null;
+      await apiRequest("POST", "/api/history", {
+        productName: item.product?.title || item.query,
+        queryUsed: item.query,
+        avgPrice: item.results.avgListPrice,
+        bestPrice: item.results.bestBuyNow,
+        totalListings: item.results.totalListings,
+        thumbnailUrl: thumbnail,
+      }, token);
+    }
+    const history = await AsyncStorage.getItem(STORAGE_KEYS.SEARCH_HISTORY);
+    const parsed = history ? JSON.parse(history) : [];
+    const newHistory = [item, ...parsed.filter((h: SearchHistoryItem) => h.id !== item.id)].slice(0, 50);
     await AsyncStorage.setItem(STORAGE_KEYS.SEARCH_HISTORY, JSON.stringify(newHistory));
   } catch (error) {
     console.error("Failed to save search history:", error);

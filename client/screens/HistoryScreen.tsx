@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import Animated, { FadeInDown } from "react-native-reanimated";
@@ -12,8 +13,21 @@ import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { EmptyState } from "@/components/EmptyState";
 import { SkeletonLoader } from "@/components/SkeletonLoader";
 import { getSearchHistory, clearSearchHistory } from "@/lib/storage";
-import type { SearchHistoryItem } from "@/types/product";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
+
+interface HistoryItem {
+  id: string;
+  query: string;
+  product?: {
+    title: string;
+    currentPrice: number;
+  };
+  searchedAt: string;
+  thumbnailUrl?: string;
+  avgPrice?: number;
+  bestPrice?: number;
+  totalListings?: number;
+}
 
 export default function HistoryScreen() {
   const insets = useSafeAreaInsets();
@@ -21,7 +35,7 @@ export default function HistoryScreen() {
   const { theme } = useDesignTokens();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
-  const [history, setHistory] = useState<SearchHistoryItem[]>([]);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useFocusEffect(
@@ -34,7 +48,7 @@ export default function HistoryScreen() {
     setIsLoading(true);
     try {
       const data = await getSearchHistory();
-      setHistory(data);
+      setHistory(data as HistoryItem[]);
     } finally {
       setIsLoading(false);
     }
@@ -44,13 +58,6 @@ export default function HistoryScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     await clearSearchHistory();
     setHistory([]);
-  };
-
-  const handleViewItem = (item: SearchHistoryItem) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (item.results) {
-      navigation.navigate("SearchResults", { results: item.results });
-    }
   };
 
   const formatDate = (dateString: string) => {
@@ -68,47 +75,70 @@ export default function HistoryScreen() {
     return date.toLocaleDateString();
   };
 
-  const renderItem = ({ item, index }: { item: SearchHistoryItem; index: number }) => {
-    const hasResults = !!item.results;
-    
+  const renderItem = ({ item, index }: { item: HistoryItem; index: number }) => {
     return (
       <Animated.View entering={FadeInDown.delay(index * 50).duration(300)}>
-        <Pressable
-          onPress={() => handleViewItem(item)}
-          disabled={!hasResults}
-          style={({ pressed }) => [
+        <View
+          style={[
             styles.historyCard,
-            { 
-              backgroundColor: theme.colors.card,
-              opacity: pressed ? 0.7 : 1
-            }
+            { backgroundColor: theme.colors.card }
           ]}
         >
-          <View style={styles.historyContent}>
-            <View style={styles.queryRow}>
-              <Feather name="search" size={16} color={theme.colors.primary} />
-              <Text style={[styles.queryText, { color: theme.colors.foreground }]}>
-                {item.query}
-              </Text>
+          {item.thumbnailUrl ? (
+            <Image 
+              source={{ uri: item.thumbnailUrl }} 
+              style={styles.thumbnail}
+              contentFit="cover"
+            />
+          ) : (
+            <View style={[styles.thumbnailPlaceholder, { backgroundColor: theme.colors.muted }]}>
+              <Feather name="package" size={24} color={theme.colors.mutedForeground} />
             </View>
+          )}
+          
+          <View style={styles.historyContent}>
+            <Text 
+              style={[styles.productName, { color: theme.colors.foreground }]}
+              numberOfLines={2}
+            >
+              {item.product?.title || item.query}
+            </Text>
+            
             <Text style={[styles.timestamp, { color: theme.colors.mutedForeground }]}>
               {formatDate(item.searchedAt)}
             </Text>
-            {item.product ? (
-              <View style={styles.resultInfo}>
-                <Text style={[styles.resultText, { color: theme.colors.mutedForeground }]}>
-                  Found: {item.product.title?.substring(0, 40)}...
+            
+            <View style={styles.priceRow}>
+              {item.avgPrice ? (
+                <View style={styles.priceTag}>
+                  <Text style={[styles.priceLabel, { color: theme.colors.mutedForeground }]}>
+                    Avg:
+                  </Text>
+                  <Text style={[styles.priceValue, { color: theme.colors.primary }]}>
+                    ${item.avgPrice.toFixed(2)}
+                  </Text>
+                </View>
+              ) : null}
+              
+              {item.bestPrice ? (
+                <View style={styles.priceTag}>
+                  <Text style={[styles.priceLabel, { color: theme.colors.mutedForeground }]}>
+                    Best:
+                  </Text>
+                  <Text style={[styles.priceValue, { color: theme.colors.success }]}>
+                    ${item.bestPrice.toFixed(2)}
+                  </Text>
+                </View>
+              ) : null}
+              
+              {item.totalListings ? (
+                <Text style={[styles.listingsCount, { color: theme.colors.mutedForeground }]}>
+                  {item.totalListings} listings
                 </Text>
-                <Text style={[styles.priceText, { color: theme.colors.primary }]}>
-                  ${item.product.currentPrice?.toFixed(2)}
-                </Text>
-              </View>
-            ) : null}
+              ) : null}
+            </View>
           </View>
-          {hasResults ? (
-            <Feather name="chevron-right" size={20} color={theme.colors.mutedForeground} />
-          ) : null}
-        </Pressable>
+        </View>
       </Animated.View>
     );
   };
@@ -130,18 +160,23 @@ export default function HistoryScreen() {
         keyExtractor={(item) => item.id}
         ListHeaderComponent={
           history.length > 0 ? (
-            <Pressable
-              onPress={handleClearHistory}
-              style={({ pressed }) => [
-                styles.clearButton,
-                { backgroundColor: theme.colors.card, opacity: pressed ? 0.7 : 1 }
-              ]}
-            >
-              <Feather name="trash-2" size={16} color={theme.colors.danger} />
-              <Text style={[styles.clearText, { color: theme.colors.danger }]}>
-                Clear History
+            <View style={styles.headerRow}>
+              <Text style={[styles.headerTitle, { color: theme.colors.foreground }]}>
+                Recent Scans
               </Text>
-            </Pressable>
+              <Pressable
+                onPress={handleClearHistory}
+                style={({ pressed }) => [
+                  styles.clearButton,
+                  { backgroundColor: theme.colors.card, opacity: pressed ? 0.7 : 1 }
+                ]}
+              >
+                <Feather name="trash-2" size={14} color={theme.colors.danger} />
+                <Text style={[styles.clearText, { color: theme.colors.danger }]}>
+                  Clear
+                </Text>
+              </Pressable>
+            </View>
           ) : null
         }
         ListEmptyComponent={
@@ -150,8 +185,8 @@ export default function HistoryScreen() {
           ) : (
             <EmptyState
               image={require("../../assets/images/empty-history.png")}
-              title="No Search History"
-              message="Your recent product searches will appear here."
+              title="No Scan History"
+              message="Your scanned products will appear here. Start scanning to build your history!"
             />
           )
         }
@@ -174,55 +209,78 @@ const styles = StyleSheet.create({
   emptyContent: {
     flexGrow: 1,
   },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+  },
   clearButton: {
     flexDirection: "row",
     alignItems: "center",
-    alignSelf: "flex-end",
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginBottom: 16,
-    gap: 6,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 4,
   },
   clearText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "500",
   },
   historyCard: {
     flexDirection: "row",
-    alignItems: "center",
     borderRadius: 12,
-    padding: 16,
+    padding: 12,
     marginBottom: 12,
+    gap: 12,
+  },
+  thumbnail: {
+    width: 70,
+    height: 70,
+    borderRadius: 8,
+  },
+  thumbnailPlaceholder: {
+    width: 70,
+    height: 70,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
   },
   historyContent: {
     flex: 1,
+    justifyContent: "center",
   },
-  queryRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 4,
-  },
-  queryText: {
-    fontSize: 16,
+  productName: {
+    fontSize: 15,
     fontWeight: "600",
+    marginBottom: 4,
   },
   timestamp: {
     fontSize: 12,
     marginBottom: 8,
   },
-  resultInfo: {
+  priceRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    gap: 12,
   },
-  resultText: {
-    fontSize: 13,
-    flex: 1,
+  priceTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
-  priceText: {
+  priceLabel: {
+    fontSize: 12,
+  },
+  priceValue: {
     fontSize: 14,
     fontWeight: "600",
+  },
+  listingsCount: {
+    fontSize: 12,
   },
 });
