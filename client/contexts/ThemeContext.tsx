@@ -11,7 +11,7 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-const THEME_STORAGE_KEY = "@price_it_theme";
+const THEME_STORAGE_KEY = "@pocket_pricer_theme";
 
 interface ThemeProviderProps {
   children: ReactNode;

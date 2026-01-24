@@ -178,7 +178,7 @@ export default function AuthScreen() {
             <Feather name="search" size={40} color="#fff" />
           </View>
           <Text style={[styles.appName, { color: theme.colors.foreground }]}>
-            Price It
+            Pocket Pricer
           </Text>
           <Text style={[styles.tagline, { color: theme.colors.mutedForeground }]}>
             Find the best prices for your reselling business

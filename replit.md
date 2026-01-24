@@ -1,4 +1,4 @@
-# Price It
+# Pocket Pricer
 
 An Expo React Native mobile app that helps eBay sellers discover product values by scanning items with AI or searching eBay listings.
 

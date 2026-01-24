@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Price It",
+    "name": "Pocket Pricer",
     "slug": "ebay-profit-estimator",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -42,7 +42,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow Price It to access your camera to scan and identify products."
+          "cameraPermission": "Allow Pocket Pricer to access your camera to scan and identify products."
         }
       ]
     ],

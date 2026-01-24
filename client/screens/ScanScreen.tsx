@@ -191,7 +191,7 @@ export default function ScanScreen() {
               resizeMode="contain"
             />
             <Text style={[styles.appName, { color: theme.colors.primary }]}>
-              Price It
+              Pocket Pricer
             </Text>
           </View>
           <Pressable 

@@ -363,7 +363,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const priceItPrice = prices.data.find(p => {
         const product = p.product as any;
-        return product.name === 'Price It Pro' && p.recurring?.interval === 'month';
+        return product.name === 'Pocket Pricer Pro' && p.recurring?.interval === 'month';
       });
       
       if (!priceItPrice) {
