@@ -221,16 +221,6 @@ export default function SearchResultsScreen() {
                   ${results.avgListPrice.toFixed(0)}
                 </Text>
               </View>
-              <Pressable
-                onPress={handleListOnEbay}
-                style={({ pressed }) => [
-                  styles.listOnEbayButtonInCard,
-                  { backgroundColor: theme.colors.primary, opacity: pressed ? 0.7 : 1 }
-                ]}
-              >
-                <Feather name="external-link" size={16} color={colors.light.primaryForeground} />
-                <Text style={styles.listOnEbayText}>List on eBay</Text>
-              </Pressable>
             </View>
 
             {/* Demand Indicator */}
@@ -380,6 +370,17 @@ export default function SearchResultsScreen() {
               <Text style={[styles.calculatorNote, { color: theme.colors.mutedForeground }]}>
                 Based on {results.totalListings} active listings
               </Text>
+
+              <Pressable
+                onPress={handleListOnEbay}
+                style={({ pressed }) => [
+                  styles.listOnEbayButton,
+                  { backgroundColor: theme.colors.primary, opacity: pressed ? 0.7 : 1 }
+                ]}
+              >
+                <Feather name="external-link" size={16} color={colors.light.primaryForeground} />
+                <Text style={styles.listOnEbayText}>List This Item on eBay</Text>
+              </Pressable>
             </View>
 
             <Text style={[styles.sectionTitle, { color: theme.colors.foreground }]}>
