@@ -29,7 +29,11 @@ export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
     setIsLoading(true);
     
     try {
-      const response = await fetch(new URL("/api/create-checkout-session", getApiUrl()).toString(), {
+      const apiUrl = getApiUrl();
+      const checkoutUrl = new URL("/api/create-checkout-session", apiUrl).toString();
+      console.log("Checkout URL:", checkoutUrl);
+      
+      const response = await fetch(checkoutUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -37,7 +41,9 @@ export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
         },
       });
       
+      console.log("Response status:", response.status);
       const data = await response.json();
+      console.log("Response data:", JSON.stringify(data));
       
       if (data.url) {
         await Linking.openURL(data.url);
@@ -46,10 +52,10 @@ export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
           checkSubscription();
         }, 5000);
       } else {
-        console.error("Checkout error:", data.error);
+        console.error("Checkout error:", data.error, data.details);
       }
-    } catch (error) {
-      console.error("Failed to start checkout:", error);
+    } catch (error: any) {
+      console.error("Failed to start checkout:", error?.message || error);
     } finally {
       setIsLoading(false);
     }
