@@ -480,6 +480,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/stripe-webhook", async (req: Request, res: Response) => {
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    
+    if (!webhookSecret) {
+      console.log("Stripe webhook secret not configured, skipping signature verification");
+    }
+
+    let event;
+    
+    try {
+      const stripe = await getUncachableStripeClient();
+      
+      if (webhookSecret) {
+        const sig = req.headers["stripe-signature"] as string;
+        const rawBody = (req as any).rawBody;
+        event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
+      } else {
+        event = req.body;
+      }
+    } catch (err: any) {
+      console.error("Webhook signature verification failed:", err.message);
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    try {
+      switch (event.type) {
+        case "checkout.session.completed": {
+          const session = event.data.object;
+          const customerId = session.customer as string;
+          const subscriptionId = session.subscription as string;
+          
+          if (customerId && subscriptionId) {
+            await query(
+              "UPDATE users SET subscription_status = 'active', stripe_subscription_id = $1 WHERE stripe_customer_id = $2",
+              [subscriptionId, customerId]
+            );
+            console.log(`Subscription activated for customer ${customerId}`);
+          }
+          break;
+        }
+        
+        case "customer.subscription.updated": {
+          const subscription = event.data.object;
+          const customerId = subscription.customer as string;
+          const status = subscription.status;
+          
+          const newStatus = status === "active" ? "active" : "free";
+          await query(
+            "UPDATE users SET subscription_status = $1 WHERE stripe_customer_id = $2",
+            [newStatus, customerId]
+          );
+          console.log(`Subscription updated to ${newStatus} for customer ${customerId}`);
+          break;
+        }
+        
+        case "customer.subscription.deleted": {
+          const subscription = event.data.object;
+          const customerId = subscription.customer as string;
+          
+          await query(
+            "UPDATE users SET subscription_status = 'free', stripe_subscription_id = NULL WHERE stripe_customer_id = $1",
+            [customerId]
+          );
+          console.log(`Subscription cancelled for customer ${customerId}`);
+          break;
+        }
+        
+        case "invoice.payment_failed": {
+          const invoice = event.data.object;
+          const customerId = invoice.customer as string;
+          console.log(`Payment failed for customer ${customerId}`);
+          break;
+        }
+        
+        default:
+          console.log(`Unhandled event type: ${event.type}`);
+      }
+
+      res.json({ received: true });
+    } catch (error) {
+      console.error("Webhook processing error:", error);
+      res.status(500).json({ error: "Webhook processing failed" });
+    }
+  });
+
   app.post("/api/customer-portal", async (req: Request, res: Response) => {
     try {
       const user = await getUserFromToken(req);
