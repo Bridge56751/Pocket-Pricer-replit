@@ -221,6 +221,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/auth/social", async (req: Request, res: Response) => {
+    try {
+      const { provider, email, name, googleId, appleId } = req.body;
+      
+      if (!provider || (!googleId && !appleId)) {
+        return res.status(400).json({ error: "Invalid social login data" });
+      }
+      
+      const providerId = provider === "google" ? googleId : appleId;
+      const providerColumn = provider === "google" ? "google_id" : "apple_id";
+      
+      let result = await query(`SELECT * FROM users WHERE ${providerColumn} = $1`, [providerId]);
+      let user = result.rows[0];
+      
+      if (!user && email) {
+        result = await query("SELECT * FROM users WHERE email = $1", [email.toLowerCase()]);
+        user = result.rows[0];
+        
+        if (user) {
+          await query(`UPDATE users SET ${providerColumn} = $1 WHERE id = $2`, [providerId, user.id]);
+          user[providerColumn] = providerId;
+        }
+      }
+      
+      if (!user) {
+        const userEmail = email || `${provider}_${providerId}@priceit.app`;
+        const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const randomPassword = Math.random().toString(36).slice(-16);
+        const passwordHash = await bcrypt.hash(randomPassword, 10);
+        
+        await query(
+          `INSERT INTO users (id, email, password_hash, ${providerColumn}) VALUES ($1, $2, $3, $4)`,
+          [userId, userEmail.toLowerCase(), passwordHash, providerId]
+        );
+        
+        user = { 
+          id: userId, 
+          email: userEmail.toLowerCase(), 
+          subscription_status: "free",
+          total_searches: 0,
+        };
+      }
+      
+      const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: "30d" });
+      const { remaining } = await canUserSearch(user);
+      
+      res.json({ 
+        token, 
+        user: { 
+          id: user.id, 
+          email: user.email,
+          subscriptionStatus: user.subscription_status || "free",
+          searchesRemaining: user.subscription_status === "active" ? -1 : remaining,
+        }
+      });
+    } catch (error) {
+      console.error("Social login error:", error);
+      res.status(500).json({ error: "Social login failed" });
+    }
+  });
+
   app.get("/api/auth/me", async (req: Request, res: Response) => {
     try {
       const user = await getUserFromToken(req);

@@ -9,6 +9,13 @@ interface User {
   searchesRemaining: number;
 }
 
+interface SocialLoginData {
+  email?: string | null;
+  name?: string;
+  googleId?: string;
+  appleId?: string;
+}
+
 interface AuthContextType {
   user: User | null;
   token: string | null;
@@ -16,6 +23,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signup: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  socialLogin: (provider: "google" | "apple", data: SocialLoginData) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   checkSubscription: () => Promise<void>;
@@ -113,6 +121,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const socialLogin = async (provider: "google" | "apple", data: SocialLoginData) => {
+    try {
+      const response = await fetch(new URL("/api/auth/social", getApiUrl()).toString(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider, ...data }),
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        await AsyncStorage.setItem(AUTH_TOKEN_KEY, result.token);
+        setToken(result.token);
+        setUser(result.user);
+        return { success: true };
+      } else {
+        return { success: false, error: result.error || "Social login failed" };
+      }
+    } catch (error) {
+      return { success: false, error: "Connection failed" };
+    }
+  };
+
   const logout = async () => {
     await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
     setToken(null);
@@ -151,6 +182,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: !!user,
         login,
         signup,
+        socialLogin,
         logout,
         refreshUser,
         checkSubscription,

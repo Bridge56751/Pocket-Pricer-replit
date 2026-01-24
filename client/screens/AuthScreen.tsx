@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -14,17 +14,110 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { useAuth } from "@/contexts/AuthContext";
 import { Feather } from "@expo/vector-icons";
+import * as WebBrowser from "expo-web-browser";
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function AuthScreen() {
   const { theme } = useDesignTokens();
   const insets = useSafeAreaInsets();
-  const { login, signup } = useAuth();
+  const { login, signup, socialLogin } = useAuth();
   
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isSocialLoading, setIsSocialLoading] = useState<"google" | "apple" | null>(null);
   const [error, setError] = useState("");
+  const [isAppleAvailable, setIsAppleAvailable] = useState(false);
+
+  useEffect(() => {
+    checkAppleAvailability();
+  }, []);
+
+  const checkAppleAvailability = async () => {
+    if (Platform.OS === "ios") {
+      try {
+        const AppleAuth = await import("expo-apple-authentication");
+        const available = await AppleAuth.isAvailableAsync();
+        setIsAppleAvailable(available);
+      } catch {
+        setIsAppleAvailable(false);
+      }
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setError("");
+    setIsSocialLoading("google");
+    
+    try {
+      const AuthSession = await import("expo-auth-session");
+      const Google = await import("expo-auth-session/providers/google");
+      
+      const discovery = {
+        authorizationEndpoint: "https://accounts.google.com/o/oauth2/v2/auth",
+        tokenEndpoint: "https://oauth2.googleapis.com/token",
+      };
+
+      const redirectUri = AuthSession.makeRedirectUri({
+        scheme: "priceit",
+      });
+
+      const request = new AuthSession.AuthRequest({
+        clientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || "",
+        scopes: ["openid", "profile", "email"],
+        redirectUri,
+      });
+
+      const result = await request.promptAsync(discovery);
+      
+      if (result.type === "success" && result.params.code) {
+        setError("Google sign-in requires additional configuration. Please use email/password for now.");
+      } else if (result.type === "cancel") {
+        setError("");
+      }
+    } catch (err: any) {
+      console.error("Google sign-in error:", err);
+      setError("Google sign-in is not available");
+    } finally {
+      setIsSocialLoading(null);
+    }
+  };
+
+  const handleAppleSignIn = async () => {
+    setError("");
+    setIsSocialLoading("apple");
+    
+    try {
+      const AppleAuth = await import("expo-apple-authentication");
+      
+      const credential = await AppleAuth.signInAsync({
+        requestedScopes: [
+          AppleAuth.AppleAuthenticationScope.FULL_NAME,
+          AppleAuth.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+
+      const result = await socialLogin("apple", {
+        email: credential.email,
+        name: credential.fullName?.givenName 
+          ? `${credential.fullName.givenName} ${credential.fullName.familyName || ""}`.trim()
+          : undefined,
+        appleId: credential.user,
+      });
+
+      if (!result.success) {
+        setError(result.error || "Apple sign-in failed");
+      }
+    } catch (err: any) {
+      if (err.code !== "ERR_REQUEST_CANCELED") {
+        setError("Apple sign-in failed");
+      }
+    } finally {
+      setIsSocialLoading(null);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!email.trim() || !password.trim()) {
@@ -76,6 +169,58 @@ export default function AuthScreen() {
         </View>
 
         <View style={styles.formContainer}>
+          <View style={styles.socialButtons}>
+            {Platform.OS !== "web" ? (
+              <Pressable
+                style={[styles.socialButton, { backgroundColor: theme.colors.card }]}
+                onPress={handleGoogleSignIn}
+                disabled={isSocialLoading !== null}
+              >
+                {isSocialLoading === "google" ? (
+                  <ActivityIndicator color={theme.colors.foreground} size="small" />
+                ) : (
+                  <>
+                    <View style={styles.googleIcon}>
+                      <Text style={styles.googleG}>G</Text>
+                    </View>
+                    <Text style={[styles.socialButtonText, { color: theme.colors.foreground }]}>
+                      Continue with Google
+                    </Text>
+                  </>
+                )}
+              </Pressable>
+            ) : null}
+
+            {isAppleAvailable ? (
+              <Pressable
+                style={[styles.socialButton, styles.appleButton]}
+                onPress={handleAppleSignIn}
+                disabled={isSocialLoading !== null}
+              >
+                {isSocialLoading === "apple" ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <>
+                    <Feather name="command" size={20} color="#fff" />
+                    <Text style={[styles.socialButtonText, { color: "#fff" }]}>
+                      Continue with Apple
+                    </Text>
+                  </>
+                )}
+              </Pressable>
+            ) : null}
+          </View>
+
+          {(Platform.OS !== "web" || isAppleAvailable) ? (
+            <View style={styles.dividerContainer}>
+              <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+              <Text style={[styles.dividerText, { color: theme.colors.mutedForeground }]}>
+                or
+              </Text>
+              <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+            </View>
+          ) : null}
+
           <View style={styles.tabContainer}>
             <Pressable
               style={[
@@ -212,6 +357,52 @@ const styles = StyleSheet.create({
   },
   formContainer: {
     gap: 16,
+  },
+  socialButtons: {
+    gap: 12,
+  },
+  socialButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 12,
+  },
+  appleButton: {
+    backgroundColor: "#000",
+  },
+  googleIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#ddd",
+  },
+  googleG: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#4285F4",
+  },
+  socialButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  dividerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+    marginVertical: 8,
+  },
+  divider: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    fontSize: 14,
   },
   tabContainer: {
     flexDirection: "row",

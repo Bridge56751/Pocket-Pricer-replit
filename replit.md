@@ -165,7 +165,7 @@ Users can test on physical devices using Expo Go by scanning the QR code.
 5. **Search History**: Track all previous searches
 6. **Favorites**: Save profitable products for later
 7. **Custom Settings**: Set default costs and target profit margins
-8. **User Authentication**: Secure signup/login with JWT tokens
+8. **User Authentication**: Secure signup/login with JWT, Google Sign-In, and Apple Sign-In
 9. **Subscription Tiers**: Free (5 lifetime scans) or Pro ($4.99/mo unlimited)
 
 ## Subscription Model
@@ -182,6 +182,8 @@ CREATE TABLE users (
   id VARCHAR(50) PRIMARY KEY,
   email VARCHAR(255) UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
+  google_id VARCHAR(255),
+  apple_id VARCHAR(255),
   stripe_customer_id VARCHAR(100),
   stripe_subscription_id VARCHAR(100),
   subscription_status VARCHAR(20) DEFAULT 'free',
@@ -193,7 +195,9 @@ CREATE TABLE users (
 ## Recent Changes
 
 - **Jan 2026**: Added authentication and subscription system
-  - JWT-based signup/login
+  - JWT-based signup/login with email/password
+  - Google Sign-In (native apps)
+  - Apple Sign-In (iOS)
   - Stripe integration for $4.99/month Pro subscription
   - Free tier with 5 lifetime scans limit
   - Upgrade modal when limit reached
