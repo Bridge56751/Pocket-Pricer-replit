@@ -3,12 +3,17 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { Platform, StyleSheet } from "react-native";
-import HomeStackNavigator from "@/navigation/HomeStackNavigator";
+
+import ScanStackNavigator from "@/navigation/ScanStackNavigator";
+import HistoryStackNavigator from "@/navigation/HistoryStackNavigator";
+import FavoritesStackNavigator from "@/navigation/FavoritesStackNavigator";
 import ProfileStackNavigator from "@/navigation/ProfileStackNavigator";
 import { useTheme } from "@/hooks/useTheme";
 
 export type MainTabParamList = {
-  HomeTab: undefined;
+  ScanTab: undefined;
+  HistoryTab: undefined;
+  FavoritesTab: undefined;
   ProfileTab: undefined;
 };
 
@@ -19,9 +24,9 @@ export default function MainTabNavigator() {
 
   return (
     <Tab.Navigator
-      initialRouteName="HomeTab"
+      initialRouteName="ScanTab"
       screenOptions={{
-        tabBarActiveTintColor: theme.tabIconSelected,
+        tabBarActiveTintColor: theme.primary,
         tabBarInactiveTintColor: theme.tabIconDefault,
         tabBarStyle: {
           position: "absolute",
@@ -36,7 +41,7 @@ export default function MainTabNavigator() {
           Platform.OS === "ios" ? (
             <BlurView
               intensity={100}
-              tint={isDark ? "dark" : "light"}
+              tint="dark"
               style={StyleSheet.absoluteFill}
             />
           ) : null,
@@ -44,12 +49,32 @@ export default function MainTabNavigator() {
       }}
     >
       <Tab.Screen
-        name="HomeTab"
-        component={HomeStackNavigator}
+        name="ScanTab"
+        component={ScanStackNavigator}
         options={{
-          title: "Home",
+          title: "Scan",
           tabBarIcon: ({ color, size }) => (
-            <Feather name="home" size={size} color={color} />
+            <Feather name="search" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="HistoryTab"
+        component={HistoryStackNavigator}
+        options={{
+          title: "History",
+          tabBarIcon: ({ color, size }) => (
+            <Feather name="clock" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="FavoritesTab"
+        component={FavoritesStackNavigator}
+        options={{
+          title: "Favorites",
+          tabBarIcon: ({ color, size }) => (
+            <Feather name="star" size={size} color={color} />
           ),
         }}
       />
@@ -57,9 +82,9 @@ export default function MainTabNavigator() {
         name="ProfileTab"
         component={ProfileStackNavigator}
         options={{
-          title: "Profile",
+          title: "Settings",
           tabBarIcon: ({ color, size }) => (
-            <Feather name="user" size={size} color={color} />
+            <Feather name="settings" size={size} color={color} />
           ),
         }}
       />

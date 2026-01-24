@@ -1,12 +1,15 @@
 import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import MainTabNavigator from "@/navigation/MainTabNavigator";
-import ModalScreen from "@/screens/ModalScreen";
+import ProductDetailScreen from "@/screens/ProductDetailScreen";
+import BarcodeScannerScreen from "@/screens/BarcodeScannerScreen";
 import { useScreenOptions } from "@/hooks/useScreenOptions";
+import type { Product } from "@/types/product";
 
 export type RootStackParamList = {
   Main: undefined;
-  Modal: undefined;
+  ProductDetail: { product: Product };
+  BarcodeScanner: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -22,11 +25,18 @@ export default function RootStackNavigator() {
         options={{ headerShown: false }}
       />
       <Stack.Screen
-        name="Modal"
-        component={ModalScreen}
+        name="ProductDetail"
+        component={ProductDetailScreen}
         options={{
-          presentation: "modal",
-          headerTitle: "Modal",
+          headerTitle: "Product Details",
+        }}
+      />
+      <Stack.Screen
+        name="BarcodeScanner"
+        component={BarcodeScannerScreen}
+        options={{
+          headerShown: false,
+          presentation: "fullScreenModal",
         }}
       />
     </Stack.Navigator>
