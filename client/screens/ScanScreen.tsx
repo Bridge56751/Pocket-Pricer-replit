@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from "react";
-import { View, StyleSheet, FlatList, Pressable, Platform } from "react-native";
+import { View, StyleSheet, FlatList, Pressable, Platform, Text, TextInput } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
@@ -7,43 +7,29 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  FadeInDown,
-} from "react-native-reanimated";
+import Animated, { FadeInDown } from "react-native-reanimated";
 
-import { SearchBar } from "@/components/SearchBar";
-import { ProductCard } from "@/components/ProductCard";
+import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { EmptyState } from "@/components/EmptyState";
 import { SkeletonLoader } from "@/components/SkeletonLoader";
-import { useTheme } from "@/hooks/useTheme";
-import { BorderRadius, Spacing } from "@/constants/theme";
+import { ProfitBadge } from "@/components/ProfitBadge";
 import { getSearchHistory, addSearchHistory } from "@/lib/storage";
 import { apiRequest } from "@/lib/query-client";
 import type { Product, SearchHistoryItem } from "@/types/product";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
-
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+import { Image } from "expo-image";
 
 export default function ScanScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const tabBarHeight = useBottomTabBarHeight();
-  const { theme } = useTheme();
+  const { theme, colors } = useDesignTokens();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [recentSearches, setRecentSearches] = useState<SearchHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  const fabScale = useSharedValue(1);
-
-  const fabAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: fabScale.value }],
-  }));
 
   useEffect(() => {
     loadRecentSearches();
@@ -93,14 +79,6 @@ export default function ScanScreen() {
     navigation.navigate("BarcodeScanner");
   };
 
-  const handleFabPressIn = () => {
-    fabScale.value = withSpring(0.9, { damping: 15, stiffness: 150 });
-  };
-
-  const handleFabPressOut = () => {
-    fabScale.value = withSpring(1, { damping: 15, stiffness: 150 });
-  };
-
   const handleProductPress = (product: Product) => {
     navigation.navigate("ProductDetail", { product });
   };
@@ -109,29 +87,38 @@ export default function ScanScreen() {
     if (!item.product) return null;
 
     return (
-      <Animated.View entering={FadeInDown.delay(index * 50).duration(300)}>
-        <ProductCard
-          product={item.product}
-          compact
+      <Animated.View entering={FadeInDown.delay(index * 50).duration(300)} style={styles.gridItem}>
+        <Pressable
           onPress={() => handleProductPress(item.product!)}
-        />
+          style={({ pressed }) => [
+            styles.productCard,
+            { backgroundColor: theme.colors.card, opacity: pressed ? 0.7 : 1 }
+          ]}
+        >
+          <Image
+            source={{ uri: item.product.imageUrl }}
+            style={styles.productImage}
+            contentFit="cover"
+          />
+          <View style={styles.productBadge}>
+            <ProfitBadge profit={item.product.estimatedProfit} size="small" />
+          </View>
+        </Pressable>
       </Animated.View>
     );
   };
 
-  const recentProducts = recentSearches
-    .filter(s => s.product)
-    .map(s => s);
+  const recentProducts = recentSearches.filter(s => s.product);
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.backgroundRoot }]}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <FlatList
         style={styles.list}
         contentContainerStyle={[
           styles.listContent,
           {
-            paddingTop: headerHeight + Spacing.xl,
-            paddingBottom: tabBarHeight + Spacing["5xl"] + Spacing.xl,
+            paddingTop: headerHeight + theme.spacing.xl,
+            paddingBottom: tabBarHeight + theme.spacing["5xl"] + theme.spacing.xl,
           },
         ]}
         scrollIndicatorInsets={{ bottom: insets.bottom }}
@@ -141,13 +128,33 @@ export default function ScanScreen() {
         columnWrapperStyle={styles.columnWrapper}
         ListHeaderComponent={
           <View style={styles.header}>
-            <SearchBar
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              onSubmit={handleSearch}
-              onScanPress={handleScanPress}
-              placeholder="Search eBay products..."
-            />
+            <View style={[styles.searchContainer, { backgroundColor: theme.colors.card }]}>
+              <Feather name="search" size={20} color={theme.colors.mutedForeground} style={styles.searchIcon} />
+              <TextInput
+                style={[styles.searchInput, { color: theme.colors.foreground }]}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                onSubmitEditing={handleSearch}
+                placeholder="Search eBay products..."
+                placeholderTextColor={theme.colors.mutedForeground}
+                autoCapitalize="none"
+                autoCorrect={false}
+                returnKeyType="search"
+                testID="search-input"
+              />
+              {Platform.OS !== "web" ? (
+                <Pressable
+                  onPress={handleScanPress}
+                  style={({ pressed }) => [
+                    theme.components.button.icon,
+                    { backgroundColor: theme.colors.primary, opacity: pressed ? 0.7 : 1 }
+                  ]}
+                  testID="scan-button"
+                >
+                  <Feather name="camera" size={18} color={colors.light.primaryForeground} />
+                </Pressable>
+              ) : null}
+            </View>
             {isSearching ? (
               <View style={styles.searchingContainer}>
                 <SkeletonLoader count={2} type="card" />
@@ -155,14 +162,10 @@ export default function ScanScreen() {
             ) : null}
             {recentProducts.length > 0 && !isSearching ? (
               <View style={styles.sectionHeader}>
-                <Feather name="clock" size={16} color={theme.textSecondary} />
-                <View style={{ width: Spacing.sm }} />
-                <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <View style={{ flex: 1 }} />
-                  <View style={{ flex: 2, alignItems: 'center' }}>
-                    <Feather name="clock" size={0} color="transparent" />
-                  </View>
-                </View>
+                <Feather name="clock" size={16} color={theme.colors.mutedForeground} />
+                <Text style={[styles.sectionTitle, { color: theme.colors.mutedForeground }]}>
+                  Recent Searches
+                </Text>
               </View>
             ) : null}
           </View>
@@ -180,22 +183,16 @@ export default function ScanScreen() {
       />
 
       {Platform.OS !== "web" ? (
-        <AnimatedPressable
-          style={[
-            styles.fab,
-            {
-              backgroundColor: theme.primary,
-              bottom: tabBarHeight + Spacing.xl,
-            },
-            fabAnimatedStyle,
+        <Pressable
+          style={({ pressed }) => [
+            theme.components.button.fab,
+            { position: "absolute", right: theme.spacing.lg, bottom: tabBarHeight + theme.spacing.xl, opacity: pressed ? 0.7 : 1 }
           ]}
           onPress={handleScanPress}
-          onPressIn={handleFabPressIn}
-          onPressOut={handleFabPressOut}
           testID="fab-scan"
         >
-          <Feather name="camera" size={24} color="#FFFFFF" />
-        </AnimatedPressable>
+          <Feather name="camera" size={24} color={colors.light.primaryForeground} />
+        </Pressable>
       ) : null}
     </View>
   );
@@ -209,36 +206,61 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
-    paddingHorizontal: Spacing.lg,
+    paddingHorizontal: 16,
     flexGrow: 1,
   },
   header: {
-    marginBottom: Spacing.lg,
+    marginBottom: 16,
+  },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 12,
+    paddingLeft: 12,
+    paddingRight: 4,
+    height: 52,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    height: "100%",
   },
   searchingContainer: {
-    marginTop: Spacing.lg,
+    marginTop: 16,
   },
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: Spacing.xl,
-    marginBottom: Spacing.md,
+    marginTop: 20,
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: "500",
+    marginLeft: 8,
   },
   columnWrapper: {
     justifyContent: "space-between",
   },
-  fab: {
+  gridItem: {
+    width: "48%",
+  },
+  productCard: {
+    aspectRatio: 1,
+    borderRadius: 12,
+    overflow: "hidden",
+    marginBottom: 12,
+  },
+  productImage: {
+    width: "100%",
+    height: "100%",
+  },
+  productBadge: {
     position: "absolute",
-    right: Spacing.lg,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    bottom: 8,
+    left: 8,
   },
 });
