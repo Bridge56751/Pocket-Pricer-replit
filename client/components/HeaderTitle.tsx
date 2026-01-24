@@ -5,10 +5,10 @@ import { ThemedText } from "@/components/ThemedText";
 import { Spacing } from "@/constants/theme";
 
 interface HeaderTitleProps {
-  title: string;
+  title?: string;
 }
 
-export function HeaderTitle({ title }: HeaderTitleProps) {
+export function HeaderTitle({ title = "Price It" }: HeaderTitleProps) {
   return (
     <View style={styles.container}>
       <Image

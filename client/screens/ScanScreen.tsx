@@ -1,8 +1,7 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { View, StyleSheet, Pressable, Text, ScrollView, Image } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useNavigation, useFocusEffect } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useNavigation, useFocusEffect, NavigationProp } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
@@ -12,7 +11,7 @@ import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { SkeletonLoader } from "@/components/SkeletonLoader";
 import { getSearchHistory } from "@/lib/storage";
 import type { SearchHistoryItem } from "@/types/product";
-import type { RootStackParamList } from "@/navigation/RootStackNavigator";
+import type { MainTabParamList } from "@/navigation/MainTabNavigator";
 
 function formatTimeAgo(dateString: string): string {
   const date = new Date(dateString);
@@ -32,7 +31,7 @@ function formatTimeAgo(dateString: string): string {
 export default function ScanScreen() {
   const insets = useSafeAreaInsets();
   const { theme, colors } = useDesignTokens();
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<NavigationProp<MainTabParamList>>();
 
   const [activeTab, setActiveTab] = useState<"recent" | "all">("recent");
   const [recentScans, setRecentScans] = useState<SearchHistoryItem[]>([]);
@@ -56,12 +55,12 @@ export default function ScanScreen() {
 
   const handleScanProduct = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    navigation.navigate("MainTabs", { screen: "CameraTab" } as any);
+    navigation.navigate("CameraTab" as any);
   };
 
   const handleViewScan = (scan: SearchHistoryItem) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    navigation.navigate("MainTabs", { screen: "HistoryTab" } as any);
+    navigation.navigate("HistoryTab" as any);
   };
 
   const displayedScans = activeTab === "recent" 
@@ -92,19 +91,19 @@ export default function ScanScreen() {
           <View style={styles.headerIcons}>
             <Pressable 
               style={styles.headerIcon}
-              onPress={() => navigation.navigate("MainTabs", { screen: "ProfileTab" } as any)}
+              onPress={() => navigation.navigate("ProfileTab" as any)}
             >
               <Feather name="user" size={22} color={theme.colors.mutedForeground} />
             </Pressable>
             <Pressable 
               style={styles.headerIcon}
-              onPress={() => navigation.navigate("MainTabs", { screen: "HistoryTab" } as any)}
+              onPress={() => navigation.navigate("HistoryTab" as any)}
             >
               <Feather name="clock" size={22} color={theme.colors.mutedForeground} />
             </Pressable>
             <Pressable 
               style={styles.headerIcon}
-              onPress={() => navigation.navigate("MainTabs", { screen: "ProfileTab" } as any)}
+              onPress={() => navigation.navigate("ProfileTab" as any)}
             >
               <Feather name="settings" size={22} color={theme.colors.mutedForeground} />
             </Pressable>
