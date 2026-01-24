@@ -38,8 +38,14 @@ export default function CameraScanScreen() {
     navigation.navigate("Home", { photosToProcess: capturedPhotos });
   };
 
+  const MAX_PHOTOS = 5;
+
   const handleCapture = async () => {
     if (!cameraRef.current) return;
+    if (capturedPhotos.length >= MAX_PHOTOS) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      return;
+    }
     
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     triggerFlash();
@@ -71,7 +77,10 @@ export default function CameraScanScreen() {
       const newPhotos = result.assets
         .filter(asset => asset.uri && asset.base64)
         .map(asset => ({ uri: asset.uri, base64: asset.base64! }));
-      setCapturedPhotos(prev => [...prev, ...newPhotos]);
+      setCapturedPhotos(prev => {
+        const combined = [...prev, ...newPhotos];
+        return combined.slice(0, MAX_PHOTOS);
+      });
     }
   };
 
@@ -201,7 +210,7 @@ export default function CameraScanScreen() {
             </Pressable>
             {capturedPhotos.length > 0 ? (
               <View style={styles.photoBadge}>
-                <Text style={styles.photoBadgeText}>{capturedPhotos.length} photo{capturedPhotos.length > 1 ? "s" : ""}</Text>
+                <Text style={styles.photoBadgeText}>{capturedPhotos.length}/{MAX_PHOTOS} photos</Text>
               </View>
             ) : (
               <Text style={styles.instructions}>
@@ -312,6 +321,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 12,
+    marginTop: 50,
   },
   cancelButton: {
     width: 40,
@@ -343,26 +353,26 @@ const styles = StyleSheet.create({
   },
   thumbnailScroll: {
     paddingHorizontal: 16,
-    gap: 12,
+    flexDirection: "row",
   },
   thumbnailContainer: {
     position: "relative",
-    marginRight: 12,
+    marginRight: 4,
   },
   thumbnail: {
-    width: 80,
-    height: 80,
-    borderRadius: 12,
+    width: 50,
+    height: 50,
+    borderRadius: 8,
     borderWidth: 2,
     borderColor: "#10B981",
   },
   thumbnailRemove: {
     position: "absolute",
-    top: -6,
-    right: -6,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    top: -4,
+    right: -4,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: "rgba(0,0,0,0.7)",
     alignItems: "center",
     justifyContent: "center",
