@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "eBay Profit Estimator",
+    "name": "Price It",
     "slug": "ebay-profit-estimator",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -42,7 +42,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow eBay Profit Estimator to access your camera to scan product barcodes."
+          "cameraPermission": "Allow Price It to access your camera to scan and identify products."
         }
       ]
     ],
