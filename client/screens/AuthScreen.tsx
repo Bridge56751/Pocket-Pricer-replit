@@ -164,6 +164,33 @@ export default function AuthScreen() {
     }
   };
 
+  // TEMPORARY: Test login for development - remove before production
+  const [isTestLoading, setIsTestLoading] = useState(false);
+  const handleTestLogin = async () => {
+    setIsTestLoading(true);
+    setError("");
+    
+    try {
+      const { apiRequest, getApiUrl } = await import("@/lib/query-client");
+      const response = await apiRequest("POST", "/api/auth/test-login", {});
+      
+      if (response.ok) {
+        const data = await response.json();
+        const AsyncStorage = (await import("@react-native-async-storage/async-storage")).default;
+        await AsyncStorage.setItem("@pocket_pricer_auth_token", data.token);
+        await AsyncStorage.setItem("@pocket_pricer_user", JSON.stringify(data.user));
+        // Reload auth state
+        window.location?.reload?.();
+      } else {
+        setError("Test login failed");
+      }
+    } catch (err) {
+      setError("Test login failed");
+    } finally {
+      setIsTestLoading(false);
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
@@ -338,6 +365,28 @@ export default function AuthScreen() {
               Free accounts get 5 product scans
             </Text>
           </View>
+
+          {/* TEMPORARY: Test login button - remove before production */}
+          <Pressable
+            style={[
+              styles.testLoginButton,
+              { borderColor: theme.colors.warning },
+              isTestLoading && styles.buttonDisabled,
+            ]}
+            onPress={handleTestLogin}
+            disabled={isTestLoading}
+          >
+            {isTestLoading ? (
+              <ActivityIndicator color={theme.colors.warning} size="small" />
+            ) : (
+              <>
+                <Feather name="zap" size={18} color={theme.colors.warning} />
+                <Text style={[styles.testLoginText, { color: theme.colors.warning }]}>
+                  Test Login (Pro Account)
+                </Text>
+              </>
+            )}
+          </Pressable>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -481,5 +530,20 @@ const styles = StyleSheet.create({
   },
   freeTrialText: {
     fontSize: 14,
+  },
+  testLoginButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    borderRadius: 12,
+    paddingVertical: 14,
+    borderWidth: 2,
+    borderStyle: "dashed",
+    marginTop: 24,
+  },
+  testLoginText: {
+    fontSize: 15,
+    fontWeight: "600",
   },
 });

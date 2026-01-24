@@ -221,6 +221,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // TEMPORARY: Test login endpoint for development - remove before production
+  app.post("/api/auth/test-login", async (req: Request, res: Response) => {
+    try {
+      const testEmail = "testuser@pocketpricer.dev";
+      
+      // Check if test user exists
+      let result = await query("SELECT * FROM users WHERE email = $1", [testEmail]);
+      let user = result.rows[0];
+      
+      if (!user) {
+        // Create test user with Pro subscription
+        const userId = `test_${Date.now()}`;
+        const passwordHash = await bcrypt.hash("testpassword123", 10);
+        
+        result = await query(
+          `INSERT INTO users (id, email, password_hash, subscription_status, total_searches) 
+           VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+          [userId, testEmail, passwordHash, "active", 0]
+        );
+        user = result.rows[0];
+      } else if (user.subscription_status !== "active") {
+        // Upgrade existing test user to Pro
+        await query("UPDATE users SET subscription_status = $1 WHERE id = $2", ["active", user.id]);
+        user.subscription_status = "active";
+      }
+      
+      const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: "30d" });
+      
+      res.json({ 
+        token, 
+        user: { 
+          id: user.id, 
+          email: user.email,
+          subscriptionStatus: "active",
+          searchesRemaining: -1,
+        }
+      });
+    } catch (error) {
+      console.error("Test login error:", error);
+      res.status(500).json({ error: "Test login failed" });
+    }
+  });
+
   app.post("/api/auth/social", async (req: Request, res: Response) => {
     try {
       const { provider, email, name, googleId, appleId } = req.body;
