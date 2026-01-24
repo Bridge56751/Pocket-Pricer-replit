@@ -105,6 +105,7 @@ export default function CameraScanScreen() {
         query: searchQuery,
         product: results.listings?.[0] || null,
         searchedAt: new Date().toISOString(),
+        results: results,
       };
 
       await addSearchHistory(historyItem);

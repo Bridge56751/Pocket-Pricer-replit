@@ -21,6 +21,7 @@ export interface SearchHistoryItem {
   query: string;
   product: Product | null;
   searchedAt: string;
+  results?: SearchResultsData;
 }
 
 export interface FavoriteItem {

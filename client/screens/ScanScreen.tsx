@@ -61,7 +61,9 @@ export default function ScanScreen() {
 
   const handleViewScan = (scan: SearchHistoryItem) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    navigation.navigate("History");
+    if (scan.results) {
+      navigation.navigate("SearchResults", { results: scan.results });
+    }
   };
 
   const displayedScans = activeTab === "recent" 

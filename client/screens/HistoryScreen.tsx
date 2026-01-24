@@ -2,7 +2,8 @@ import React, { useState, useCallback } from "react";
 import { View, StyleSheet, FlatList, Pressable, Text } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import Animated, { FadeInDown } from "react-native-reanimated";
@@ -12,11 +13,13 @@ import { EmptyState } from "@/components/EmptyState";
 import { SkeletonLoader } from "@/components/SkeletonLoader";
 import { getSearchHistory, clearSearchHistory } from "@/lib/storage";
 import type { SearchHistoryItem } from "@/types/product";
+import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 export default function HistoryScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const { theme } = useDesignTokens();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const [history, setHistory] = useState<SearchHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -43,6 +46,13 @@ export default function HistoryScreen() {
     setHistory([]);
   };
 
+  const handleViewItem = (item: SearchHistoryItem) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (item.results) {
+      navigation.navigate("SearchResults", { results: item.results });
+    }
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -59,9 +69,21 @@ export default function HistoryScreen() {
   };
 
   const renderItem = ({ item, index }: { item: SearchHistoryItem; index: number }) => {
+    const hasResults = !!item.results;
+    
     return (
       <Animated.View entering={FadeInDown.delay(index * 50).duration(300)}>
-        <View style={[styles.historyCard, { backgroundColor: theme.colors.card }]}>
+        <Pressable
+          onPress={() => handleViewItem(item)}
+          disabled={!hasResults}
+          style={({ pressed }) => [
+            styles.historyCard,
+            { 
+              backgroundColor: theme.colors.card,
+              opacity: pressed ? 0.7 : 1
+            }
+          ]}
+        >
           <View style={styles.historyContent}>
             <View style={styles.queryRow}>
               <Feather name="search" size={16} color={theme.colors.primary} />
@@ -83,7 +105,10 @@ export default function HistoryScreen() {
               </View>
             ) : null}
           </View>
-        </View>
+          {hasResults ? (
+            <Feather name="chevron-right" size={20} color={theme.colors.mutedForeground} />
+          ) : null}
+        </Pressable>
       </Animated.View>
     );
   };
@@ -164,6 +189,8 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   historyCard: {
+    flexDirection: "row",
+    alignItems: "center",
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
