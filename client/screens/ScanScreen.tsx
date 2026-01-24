@@ -303,16 +303,14 @@ export default function ScanScreen() {
                       {scan.results?.productInfo?.name || scan.query}
                     </Text>
                     <Text 
-                      style={[styles.scanBrand, { color: theme.colors.mutedForeground }]}
+                      style={[styles.scanCondition, { color: theme.colors.mutedForeground }]}
                       numberOfLines={1}
                     >
-                      {scan.results?.totalListings ? `${scan.results.totalListings} listings` : "Product Search"}
+                      {scan.results?.listings?.[0]?.condition || "New"}
                     </Text>
                     <View style={styles.scanMeta}>
                       <Text style={[styles.scanPrice, { color: theme.colors.primary }]}>
-                        {scan.results?.avgListPrice 
-                          ? `$${scan.results.avgListPrice.toFixed(0)} avg` 
-                          : "View Results"}
+                        ${scan.results?.avgListPrice?.toFixed(0) || "0"}
                       </Text>
                       <View style={styles.scanTime}>
                         <Feather name="clock" size={12} color={theme.colors.mutedForeground} />
@@ -494,7 +492,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginBottom: 2,
   },
-  scanBrand: {
+  scanCondition: {
     fontSize: 13,
     marginBottom: 4,
   },
