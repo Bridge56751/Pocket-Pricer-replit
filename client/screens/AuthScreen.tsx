@@ -27,13 +27,24 @@ export default function AuthScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isSocialLoading, setIsSocialLoading] = useState<"apple" | null>(null);
+  const [isSocialLoading, setIsSocialLoading] = useState<"google" | "apple" | null>(null);
   const [error, setError] = useState("");
   const [isAppleAvailable, setIsAppleAvailable] = useState(false);
+  const [isGoogleAvailable, setIsGoogleAvailable] = useState(false);
 
   useEffect(() => {
     checkAppleAvailability();
+    checkGoogleAvailability();
   }, []);
+
+  const checkGoogleAvailability = () => {
+    const hasGoogleConfig = !!(
+      process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ||
+      process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ||
+      process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID
+    );
+    setIsGoogleAvailable(hasGoogleConfig && Platform.OS !== "web");
+  };
 
   const checkAppleAvailability = async () => {
     if (Platform.OS === "ios") {
@@ -47,6 +58,53 @@ export default function AuthScreen() {
     }
   };
 
+
+  const handleGoogleSignIn = async () => {
+    setError("");
+    setIsSocialLoading("google");
+    
+    try {
+      const AuthSession = await import("expo-auth-session");
+      const Google = await import("expo-auth-session/providers/google");
+      
+      const config = {
+        expoClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+        iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+        androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
+        webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+      };
+
+      const [request, response, promptAsync] = Google.useIdTokenAuthRequest(config);
+      
+      const result = await promptAsync();
+      
+      if (result.type === "success") {
+        const { id_token } = result.params;
+        
+        const userInfoResponse = await fetch(
+          `https://oauth2.googleapis.com/tokeninfo?id_token=${id_token}`
+        );
+        const userInfo = await userInfoResponse.json();
+        
+        const loginResult = await socialLogin("google", {
+          email: userInfo.email,
+          name: userInfo.name,
+          googleId: userInfo.sub,
+        });
+
+        if (!loginResult.success) {
+          setError(loginResult.error || "Google sign-in failed");
+        }
+      } else if (result.type !== "cancel") {
+        setError("Google sign-in failed");
+      }
+    } catch (err: any) {
+      console.error("Google sign-in error:", err);
+      setError("Google sign-in is not available");
+    } finally {
+      setIsSocialLoading(null);
+    }
+  };
 
   const handleAppleSignIn = async () => {
     setError("");
@@ -133,6 +191,27 @@ export default function AuthScreen() {
 
         <View style={styles.formContainer}>
           <View style={styles.socialButtons}>
+            {isGoogleAvailable ? (
+              <Pressable
+                style={[styles.socialButton, { backgroundColor: theme.colors.card }]}
+                onPress={handleGoogleSignIn}
+                disabled={isSocialLoading !== null}
+              >
+                {isSocialLoading === "google" ? (
+                  <ActivityIndicator color={theme.colors.foreground} size="small" />
+                ) : (
+                  <>
+                    <View style={styles.googleIcon}>
+                      <Text style={styles.googleG}>G</Text>
+                    </View>
+                    <Text style={[styles.socialButtonText, { color: theme.colors.foreground }]}>
+                      Continue with Google
+                    </Text>
+                  </>
+                )}
+              </Pressable>
+            ) : null}
+
             {isAppleAvailable ? (
               <Pressable
                 style={[styles.socialButton, styles.appleButton]}
@@ -153,7 +232,7 @@ export default function AuthScreen() {
             ) : null}
           </View>
 
-          {isAppleAvailable ? (
+          {(isGoogleAvailable || isAppleAvailable) ? (
             <View style={styles.dividerContainer}>
               <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
               <Text style={[styles.dividerText, { color: theme.colors.mutedForeground }]}>
@@ -313,6 +392,21 @@ const styles = StyleSheet.create({
   },
   appleButton: {
     backgroundColor: "#000",
+  },
+  googleIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#ddd",
+  },
+  googleG: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#4285F4",
   },
   socialButtonText: {
     fontSize: 16,
