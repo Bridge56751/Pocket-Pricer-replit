@@ -184,16 +184,10 @@ export default function ScanScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <View style={styles.logoContainer}>
-            <Image
-              source={require("../../assets/images/icon.png")}
-              style={styles.logo}
-              resizeMode="contain"
-            />
-            <Text style={[styles.appName, { color: theme.colors.primary }]}>
-              Pocket Pricer
-            </Text>
-          </View>
+          <View style={styles.headerSpacer} />
+          <Text style={[styles.appName, { color: theme.colors.primary }]}>
+            Pocket Pricer
+          </Text>
           <Pressable 
             style={styles.headerIcon}
             onPress={() => navigation.navigate("Settings")}
@@ -360,10 +354,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 20,
   },
-  logoContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
+  headerSpacer: {
+    width: 40,
   },
   logo: {
     width: 36,
