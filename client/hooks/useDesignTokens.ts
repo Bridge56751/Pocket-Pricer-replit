@@ -1,9 +1,8 @@
 import { lightTheme, darkTheme, colors } from "@/constants/design-tokens";
-import { useColorScheme } from "@/hooks/useColorScheme";
+import { useThemeContext } from "@/contexts/ThemeContext";
 
 export function useDesignTokens() {
-  const colorScheme = useColorScheme();
-  const isDarkMode = colorScheme === "dark";
+  const { isDarkMode, themeMode, setThemeMode } = useThemeContext();
   
   const theme = isDarkMode ? darkTheme : lightTheme;
   
@@ -11,5 +10,7 @@ export function useDesignTokens() {
     theme,
     colors,
     isDarkMode,
+    themeMode,
+    setThemeMode,
   };
 }

@@ -9,12 +9,19 @@ import { ScrollView } from "react-native";
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { clearSearchHistory, clearFavorites } from "@/lib/storage";
 
+type ThemeOption = "light" | "dark" | "system";
+
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
-  const { theme } = useDesignTokens();
+  const { theme, themeMode, setThemeMode, isDarkMode } = useDesignTokens();
 
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleThemeChange = (mode: ThemeOption) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setThemeMode(mode);
+  };
 
   const handleDeleteAccount = () => {
     if (Platform.OS === "web") {
@@ -52,6 +59,12 @@ export default function ProfileScreen() {
     }
   };
 
+  const themeOptions: { value: ThemeOption; label: string; icon: string }[] = [
+    { value: "light", label: "Light", icon: "sun" },
+    { value: "dark", label: "Dark", icon: "moon" },
+    { value: "system", label: "System", icon: "smartphone" },
+  ];
+
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
@@ -65,6 +78,45 @@ export default function ProfileScreen() {
     >
       <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
         <View style={styles.sectionHeader}>
+          <Feather name="moon" size={20} color={theme.colors.primary} />
+          <Text style={[styles.sectionTitle, { color: theme.colors.foreground }]}>
+            Appearance
+          </Text>
+        </View>
+
+        <View style={styles.themeOptions}>
+          {themeOptions.map((option) => (
+            <Pressable
+              key={option.value}
+              onPress={() => handleThemeChange(option.value)}
+              style={({ pressed }) => [
+                styles.themeOption,
+                { 
+                  backgroundColor: themeMode === option.value 
+                    ? theme.colors.primary 
+                    : theme.colors.muted,
+                  opacity: pressed ? 0.7 : 1 
+                }
+              ]}
+            >
+              <Feather 
+                name={option.icon as any} 
+                size={18} 
+                color={themeMode === option.value ? "#fff" : theme.colors.foreground} 
+              />
+              <Text style={[
+                styles.themeOptionText, 
+                { color: themeMode === option.value ? "#fff" : theme.colors.foreground }
+              ]}>
+                {option.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+
+      <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
+        <View style={styles.sectionHeader}>
           <Feather name="info" size={20} color={theme.colors.primary} />
           <Text style={[styles.sectionTitle, { color: theme.colors.foreground }]}>
             About
@@ -74,7 +126,7 @@ export default function ProfileScreen() {
         <Pressable 
           style={({ pressed }) => [
             styles.menuItem, 
-            { opacity: pressed ? 0.7 : 1 }
+            { borderBottomColor: theme.colors.border, opacity: pressed ? 0.7 : 1 }
           ]}
         >
           <Text style={[styles.menuItemText, { color: theme.colors.foreground }]}>
@@ -86,7 +138,7 @@ export default function ProfileScreen() {
         <Pressable 
           style={({ pressed }) => [
             styles.menuItem, 
-            { opacity: pressed ? 0.7 : 1 }
+            { borderBottomColor: theme.colors.border, opacity: pressed ? 0.7 : 1 }
           ]}
         >
           <Text style={[styles.menuItemText, { color: theme.colors.foreground }]}>
@@ -160,13 +212,29 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: "600",
   },
+  themeOptions: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  themeOption: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    borderRadius: 10,
+    gap: 6,
+  },
+  themeOptionText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
   menuItem: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingVertical: 14,
     borderBottomWidth: 0.5,
-    borderBottomColor: "rgba(255,255,255,0.1)",
   },
   menuItemText: {
     fontSize: 16,
