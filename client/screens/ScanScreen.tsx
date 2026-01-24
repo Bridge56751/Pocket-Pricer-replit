@@ -283,9 +283,9 @@ export default function ScanScreen() {
                   ]}
                 >
                   <View style={styles.scanImageContainer}>
-                    {scan.product?.imageUrl ? (
+                    {scan.results?.listings?.[0]?.imageUrl ? (
                       <Image
-                        source={{ uri: scan.product.imageUrl }}
+                        source={{ uri: scan.results.listings[0].imageUrl }}
                         style={styles.scanImage}
                         resizeMode="cover"
                       />
@@ -300,18 +300,18 @@ export default function ScanScreen() {
                       style={[styles.scanTitle, { color: theme.colors.foreground }]}
                       numberOfLines={1}
                     >
-                      {scan.query}
+                      {scan.results?.productInfo?.name || scan.query}
                     </Text>
                     <Text 
                       style={[styles.scanBrand, { color: theme.colors.mutedForeground }]}
                       numberOfLines={1}
                     >
-                      {scan.product?.condition || "Product Search"}
+                      {scan.results?.totalListings ? `${scan.results.totalListings} listings` : "Product Search"}
                     </Text>
                     <View style={styles.scanMeta}>
                       <Text style={[styles.scanPrice, { color: theme.colors.primary }]}>
-                        {scan.product?.currentPrice 
-                          ? `$${scan.product.currentPrice.toFixed(0)}` 
+                        {scan.results?.avgListPrice 
+                          ? `$${scan.results.avgListPrice.toFixed(0)} avg` 
                           : "View Results"}
                       </Text>
                       <View style={styles.scanTime}>
