@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { View, StyleSheet, FlatList, Pressable, Text, Linking } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -52,7 +52,6 @@ export default function SearchResultsScreen() {
   const navigation = useNavigation();
 
   const { results } = route.params;
-  const [activeTab, setActiveTab] = useState<"all" | "active" | "sold">("all");
 
   const handleViewListing = async (link: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -72,9 +71,6 @@ export default function SearchResultsScreen() {
     await Linking.openURL(`https://www.ebay.com/sl/sell?keyword=${searchQuery}`);
   };
 
-  const filteredListings = activeTab === "sold" 
-    ? [] 
-    : results.listings;
 
   const renderListing = ({ item, index }: { item: ListingItem; index: number }) => (
     <Animated.View 
@@ -149,7 +145,7 @@ export default function SearchResultsScreen() {
           { paddingTop: headerHeight + theme.spacing.lg, paddingBottom: 100 }
         ]}
         scrollIndicatorInsets={{ bottom: insets.bottom }}
-        data={filteredListings}
+        data={results.listings}
         keyExtractor={(item) => item.id}
         ListHeaderComponent={
           <View>
@@ -273,79 +269,17 @@ export default function SearchResultsScreen() {
             </View>
 
             <Text style={[styles.sectionTitle, { color: theme.colors.foreground }]}>
-              Marketplace Listings
+              Active Listings ({results.totalListings})
             </Text>
-
-            <View style={styles.listingTabs}>
-              <Pressable
-                onPress={() => setActiveTab("all")}
-                style={[
-                  styles.listingTab,
-                  activeTab === "all" && styles.listingTabActive,
-                  { borderColor: activeTab === "all" ? theme.colors.primary : theme.colors.border }
-                ]}
-              >
-                <Feather 
-                  name="check-square" 
-                  size={14} 
-                  color={activeTab === "all" ? theme.colors.primary : theme.colors.mutedForeground} 
-                />
-                <Text style={[
-                  styles.listingTabText,
-                  { color: activeTab === "all" ? theme.colors.primary : theme.colors.foreground }
-                ]}>
-                  All ({results.totalListings})
-                </Text>
-              </Pressable>
-
-              <Pressable
-                onPress={() => setActiveTab("active")}
-                style={[
-                  styles.listingTab,
-                  activeTab === "active" && styles.listingTabActive,
-                  { borderColor: activeTab === "active" ? theme.colors.primary : theme.colors.border }
-                ]}
-              >
-                <Feather 
-                  name="tag" 
-                  size={14} 
-                  color={activeTab === "active" ? theme.colors.primary : theme.colors.mutedForeground} 
-                />
-                <Text style={[
-                  styles.listingTabText,
-                  { color: activeTab === "active" ? theme.colors.primary : theme.colors.foreground }
-                ]}>
-                  Active ({results.totalListings})
-                </Text>
-              </Pressable>
-
-              <Pressable
-                onPress={() => setActiveTab("sold")}
-                style={[
-                  styles.listingTab,
-                  activeTab === "sold" && styles.listingTabActive,
-                  { borderColor: activeTab === "sold" ? theme.colors.primary : theme.colors.border }
-                ]}
-              >
-                <Text style={[
-                  styles.listingTabText,
-                  { color: activeTab === "sold" ? theme.colors.primary : theme.colors.foreground }
-                ]}>
-                  Sold (0)
-                </Text>
-              </Pressable>
-            </View>
           </View>
         }
         renderItem={renderListing}
         ListEmptyComponent={
-          activeTab === "sold" ? (
-            <View style={styles.emptyState}>
-              <Text style={[styles.emptyText, { color: theme.colors.mutedForeground }]}>
-                No sold listings found
-              </Text>
-            </View>
-          ) : null
+          <View style={styles.emptyState}>
+            <Text style={[styles.emptyText, { color: theme.colors.mutedForeground }]}>
+              No listings found
+            </Text>
+          </View>
         }
       />
 
