@@ -648,6 +648,121 @@ Be specific but concise. Focus on searchable terms that would work well on eBay.
       res.status(500).json({ error: "Failed to fetch trending products" });
     }
   });
+
+  // Save scan to history
+  app.post("/api/history", async (req: Request, res: Response) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader?.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const token = authHeader.split(" ")[1];
+      let decoded: { userId: string };
+      try {
+        decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+      } catch {
+        return res.status(401).json({ error: "Invalid token" });
+      }
+
+      const { productName, queryUsed, avgPrice, bestPrice, totalListings, thumbnailUrl } = req.body;
+
+      if (!productName) {
+        return res.status(400).json({ error: "Product name is required" });
+      }
+
+      // Check how many scans user has, delete oldest if more than 15
+      const countResult = await query(
+        "SELECT COUNT(*) as count FROM scan_history WHERE user_id = $1",
+        [decoded.userId]
+      );
+      
+      const currentCount = parseInt(countResult.rows[0].count);
+      
+      if (currentCount >= 15) {
+        // Delete oldest scans to make room (keep only 14, so new one makes 15)
+        await query(
+          `DELETE FROM scan_history WHERE id IN (
+            SELECT id FROM scan_history WHERE user_id = $1 
+            ORDER BY scanned_at ASC 
+            LIMIT $2
+          )`,
+          [decoded.userId, currentCount - 14]
+        );
+      }
+
+      // Insert new scan
+      const result = await query(
+        `INSERT INTO scan_history (user_id, product_name, query_used, avg_price, best_price, total_listings, thumbnail_url)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         RETURNING *`,
+        [decoded.userId, productName, queryUsed || productName, avgPrice, bestPrice, totalListings, thumbnailUrl]
+      );
+
+      res.json({ success: true, scan: result.rows[0] });
+    } catch (error) {
+      console.error("Save scan error:", error);
+      res.status(500).json({ error: "Failed to save scan" });
+    }
+  });
+
+  // Get user's scan history
+  app.get("/api/history", async (req: Request, res: Response) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader?.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const token = authHeader.split(" ")[1];
+      let decoded: { userId: string };
+      try {
+        decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+      } catch {
+        return res.status(401).json({ error: "Invalid token" });
+      }
+
+      const result = await query(
+        `SELECT * FROM scan_history WHERE user_id = $1 ORDER BY scanned_at DESC LIMIT 15`,
+        [decoded.userId]
+      );
+
+      res.json({ scans: result.rows });
+    } catch (error) {
+      console.error("Get history error:", error);
+      res.status(500).json({ error: "Failed to get history" });
+    }
+  });
+
+  // Delete a scan from history
+  app.delete("/api/history/:id", async (req: Request, res: Response) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader?.startsWith("Bearer ")) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const token = authHeader.split(" ")[1];
+      let decoded: { userId: string };
+      try {
+        decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+      } catch {
+        return res.status(401).json({ error: "Invalid token" });
+      }
+
+      const { id } = req.params;
+      
+      await query(
+        "DELETE FROM scan_history WHERE id = $1 AND user_id = $2",
+        [id, decoded.userId]
+      );
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete scan error:", error);
+      res.status(500).json({ error: "Failed to delete scan" });
+    }
+  });
   
   const httpServer = createServer(app);
 
