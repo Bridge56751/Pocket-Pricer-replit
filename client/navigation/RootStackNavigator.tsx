@@ -1,13 +1,35 @@
 import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import MainTabNavigator from "@/navigation/MainTabNavigator";
-import ProductDetailScreen from "@/screens/ProductDetailScreen";
+import SearchResultsScreen from "@/screens/SearchResultsScreen";
 import { useScreenOptions } from "@/hooks/useScreenOptions";
-import type { Product } from "@/types/product";
+
+interface ListingItem {
+  id: string;
+  title: string;
+  imageUrl: string;
+  currentPrice: number;
+  originalPrice?: number;
+  condition: string;
+  shipping: number;
+  link: string;
+  seller?: string;
+}
+
+interface SearchResultsData {
+  query: string;
+  totalListings: number;
+  avgListPrice: number;
+  avgSalePrice: number | null;
+  soldCount: number;
+  bestBuyNow: number;
+  topSalePrice: number | null;
+  listings: ListingItem[];
+}
 
 export type RootStackParamList = {
   Main: undefined;
-  ProductDetail: { product: Product };
+  SearchResults: { results: SearchResultsData };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -23,10 +45,10 @@ export default function RootStackNavigator() {
         options={{ headerShown: false }}
       />
       <Stack.Screen
-        name="ProductDetail"
-        component={ProductDetailScreen}
+        name="SearchResults"
+        component={SearchResultsScreen}
         options={{
-          headerTitle: "Product Details",
+          headerTitle: "Scan Result",
         }}
       />
     </Stack.Navigator>

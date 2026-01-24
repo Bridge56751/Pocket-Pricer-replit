@@ -1,30 +1,24 @@
 import React, { useState, useCallback } from "react";
-import { View, StyleSheet, FlatList, Pressable } from "react-native";
+import { View, StyleSheet, FlatList, Pressable, Text } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
-import { useNavigation, useFocusEffect } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useFocusEffect } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
-import { ProductCard } from "@/components/ProductCard";
+import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { EmptyState } from "@/components/EmptyState";
 import { SkeletonLoader } from "@/components/SkeletonLoader";
-import { ThemedText } from "@/components/ThemedText";
-import { useTheme } from "@/hooks/useTheme";
-import { BorderRadius, Spacing } from "@/constants/theme";
 import { getSearchHistory, clearSearchHistory } from "@/lib/storage";
-import type { SearchHistoryItem, Product } from "@/types/product";
-import type { RootStackParamList } from "@/navigation/RootStackNavigator";
+import type { SearchHistoryItem } from "@/types/product";
 
 export default function HistoryScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const tabBarHeight = useBottomTabBarHeight();
-  const { theme } = useTheme();
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { theme } = useDesignTokens();
 
   const [history, setHistory] = useState<SearchHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -51,10 +45,6 @@ export default function HistoryScreen() {
     setHistory([]);
   };
 
-  const handleProductPress = (product: Product) => {
-    navigation.navigate("ProductDetail", { product });
-  };
-
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -71,44 +61,44 @@ export default function HistoryScreen() {
   };
 
   const renderItem = ({ item, index }: { item: SearchHistoryItem; index: number }) => {
-    if (!item.product) {
-      return (
-        <Animated.View
-          entering={FadeInDown.delay(index * 50).duration(300)}
-          style={[styles.queryItem, { backgroundColor: theme.backgroundDefault }]}
-        >
-          <Feather name="search" size={20} color={theme.textSecondary} />
-          <View style={styles.queryContent}>
-            <ThemedText style={styles.queryText}>{item.query}</ThemedText>
-            <ThemedText style={[styles.timestamp, { color: theme.textSecondary }]}>
-              {formatDate(item.searchedAt)} - No results
-            </ThemedText>
-          </View>
-        </Animated.View>
-      );
-    }
-
     return (
       <Animated.View entering={FadeInDown.delay(index * 50).duration(300)}>
-        <View style={styles.itemContainer}>
-          <ProductCard product={item.product} onPress={() => handleProductPress(item.product!)} />
-          <ThemedText style={[styles.timestamp, { color: theme.textSecondary }]}>
-            {formatDate(item.searchedAt)}
-          </ThemedText>
+        <View style={[styles.historyCard, { backgroundColor: theme.colors.card }]}>
+          <View style={styles.historyContent}>
+            <View style={styles.queryRow}>
+              <Feather name="search" size={16} color={theme.colors.primary} />
+              <Text style={[styles.queryText, { color: theme.colors.foreground }]}>
+                {item.query}
+              </Text>
+            </View>
+            <Text style={[styles.timestamp, { color: theme.colors.mutedForeground }]}>
+              {formatDate(item.searchedAt)}
+            </Text>
+            {item.product ? (
+              <View style={styles.resultInfo}>
+                <Text style={[styles.resultText, { color: theme.colors.mutedForeground }]}>
+                  Found: {item.product.title?.substring(0, 40)}...
+                </Text>
+                <Text style={[styles.priceText, { color: theme.colors.primary }]}>
+                  ${item.product.currentPrice?.toFixed(2)}
+                </Text>
+              </View>
+            ) : null}
+          </View>
         </View>
       </Animated.View>
     );
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.backgroundRoot }]}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <FlatList
         style={styles.list}
         contentContainerStyle={[
           styles.listContent,
           {
-            paddingTop: headerHeight + Spacing.xl,
-            paddingBottom: tabBarHeight + Spacing.xl,
+            paddingTop: headerHeight + 16,
+            paddingBottom: tabBarHeight + 16,
           },
           history.length === 0 && !isLoading && styles.emptyContent,
         ]}
@@ -121,13 +111,13 @@ export default function HistoryScreen() {
               onPress={handleClearHistory}
               style={({ pressed }) => [
                 styles.clearButton,
-                { backgroundColor: theme.backgroundDefault, opacity: pressed ? 0.7 : 1 },
+                { backgroundColor: theme.colors.card, opacity: pressed ? 0.7 : 1 }
               ]}
             >
-              <Feather name="trash-2" size={16} color={theme.danger} />
-              <ThemedText style={[styles.clearText, { color: theme.danger }]}>
+              <Feather name="trash-2" size={16} color={theme.colors.danger} />
+              <Text style={[styles.clearText, { color: theme.colors.danger }]}>
                 Clear History
-              </ThemedText>
+              </Text>
             </Pressable>
           ) : null
         }
@@ -138,7 +128,7 @@ export default function HistoryScreen() {
             <EmptyState
               image={require("../../assets/images/empty-history.png")}
               title="No Search History"
-              message="Your recent product searches will appear here. Start searching to build your history."
+              message="Your recent product searches will appear here."
             />
           )
         }
@@ -156,7 +146,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
-    paddingHorizontal: Spacing.lg,
+    paddingHorizontal: 16,
   },
   emptyContent: {
     flexGrow: 1,
@@ -165,35 +155,49 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     alignSelf: "flex-end",
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.full,
-    marginBottom: Spacing.lg,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginBottom: 16,
+    gap: 6,
   },
   clearText: {
     fontSize: 14,
     fontWeight: "500",
-    marginLeft: Spacing.xs,
   },
-  itemContainer: {
-    marginBottom: Spacing.xs,
+  historyCard: {
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
   },
-  queryItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: Spacing.lg,
-    borderRadius: BorderRadius.sm,
-    marginBottom: Spacing.md,
-  },
-  queryContent: {
-    marginLeft: Spacing.md,
+  historyContent: {
     flex: 1,
   },
+  queryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 4,
+  },
   queryText: {
-    fontWeight: "500",
+    fontSize: 16,
+    fontWeight: "600",
   },
   timestamp: {
     fontSize: 12,
-    marginTop: Spacing.xs,
+    marginBottom: 8,
+  },
+  resultInfo: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  resultText: {
+    fontSize: 13,
+    flex: 1,
+  },
+  priceText: {
+    fontSize: 14,
+    fontWeight: "600",
   },
 });

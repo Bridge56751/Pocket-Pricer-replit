@@ -3,13 +3,17 @@ export interface Product {
   title: string;
   imageUrl: string;
   currentPrice: number;
-  estimatedProfit: number;
-  soldCount: number;
-  avgShipping: number;
-  ebayFees: number;
-  category: string;
+  originalPrice?: number;
+  estimatedProfit?: number;
+  soldCount?: number;
+  avgShipping?: number;
+  ebayFees?: number;
+  category?: string;
   condition: string;
-  searchedAt: string;
+  shipping?: number;
+  link?: string;
+  seller?: string;
+  searchedAt?: string;
 }
 
 export interface SearchHistoryItem {
@@ -30,4 +34,27 @@ export interface UserSettings {
   defaultCost: number;
   defaultShippingCost: number;
   targetProfitMargin: number;
+}
+
+export interface ListingItem {
+  id: string;
+  title: string;
+  imageUrl: string;
+  currentPrice: number;
+  originalPrice?: number;
+  condition: string;
+  shipping: number;
+  link: string;
+  seller?: string;
+}
+
+export interface SearchResultsData {
+  query: string;
+  totalListings: number;
+  avgListPrice: number;
+  avgSalePrice: number | null;
+  soldCount: number;
+  bestBuyNow: number;
+  topSalePrice: number | null;
+  listings: ListingItem[];
 }

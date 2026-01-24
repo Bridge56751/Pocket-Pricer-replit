@@ -9,8 +9,12 @@ interface EbayResult {
   price?: {
     raw?: string;
     extracted?: number;
+    from?: {
+      raw?: string;
+      extracted?: number;
+    };
   };
-  shipping?: string;
+  shipping?: string | number | { raw?: string; value?: number };
   thumbnail?: string;
   condition?: string;
   seller?: {
@@ -28,41 +32,71 @@ interface SerpApiResponse {
   search_metadata?: {
     status?: string;
   };
+  search_information?: {
+    total_results?: number;
+  };
   error?: string;
 }
 
-function calculateProfit(price: number): {
-  ebayFees: number;
-  avgShipping: number;
-  estimatedProfit: number;
-} {
-  const ebayFees = parseFloat((price * 0.13).toFixed(2));
-  const avgShipping = 8.50;
-  const estimatedCost = price * 0.5;
-  const estimatedProfit = parseFloat((price - estimatedCost - ebayFees - avgShipping).toFixed(2));
+function parseShippingCost(shipping?: unknown): number {
+  if (!shipping) return 8.50;
   
-  return { ebayFees, avgShipping, estimatedProfit };
+  if (typeof shipping === "number") return shipping;
+  
+  if (typeof shipping === "string") {
+    if (shipping.toLowerCase().includes("free")) return 0;
+    const match = shipping.match(/\$?([\d.]+)/);
+    return match ? parseFloat(match[1]) : 8.50;
+  }
+  
+  if (typeof shipping === "object" && shipping !== null) {
+    const shippingObj = shipping as { raw?: string; value?: number };
+    if (typeof shippingObj.value === "number") return shippingObj.value;
+    if (typeof shippingObj.raw === "string") {
+      if (shippingObj.raw.toLowerCase().includes("free")) return 0;
+      const match = shippingObj.raw.match(/\$?([\d.]+)/);
+      return match ? parseFloat(match[1]) : 8.50;
+    }
+  }
+  
+  return 8.50;
 }
 
-function transformEbayResult(result: EbayResult, index: number): any {
-  const price = result.price?.extracted || 0;
-  const { ebayFees, avgShipping, estimatedProfit } = calculateProfit(price);
-  
+function transformEbayResults(results: EbayResult[]): {
+  listings: any[];
+  avgListPrice: number;
+  bestBuyNow: number;
+  totalListings: number;
+} {
+  const listings = results.map((result, index) => {
+    const price = result.price?.extracted || 0;
+    const originalPrice = result.price?.from?.extracted;
+    const shipping = parseShippingCost(result.shipping);
+
+    return {
+      id: `ebay-${Date.now()}-${index}`,
+      title: result.title || "Unknown Product",
+      imageUrl: result.thumbnail || "https://via.placeholder.com/400",
+      currentPrice: price,
+      originalPrice: originalPrice && originalPrice > price ? originalPrice : undefined,
+      condition: result.condition || "Not specified",
+      shipping,
+      link: result.link || "",
+      seller: result.seller?.name || "Unknown Seller",
+    };
+  });
+
+  const prices = listings.map(l => l.currentPrice).filter(p => p > 0);
+  const avgListPrice = prices.length > 0 
+    ? prices.reduce((a, b) => a + b, 0) / prices.length 
+    : 0;
+  const bestBuyNow = prices.length > 0 ? Math.min(...prices) : 0;
+
   return {
-    id: `ebay-${Date.now()}-${index}`,
-    title: result.title || "Unknown Product",
-    imageUrl: result.thumbnail || "https://via.placeholder.com/400",
-    currentPrice: price,
-    estimatedProfit,
-    soldCount: result.sold || Math.floor(Math.random() * 100) + 10,
-    avgShipping,
-    ebayFees,
-    category: "eBay Listing",
-    condition: result.condition || "Not specified",
-    link: result.link || "",
-    seller: result.seller?.name || "Unknown Seller",
-    sellerRating: result.seller?.rating || 0,
-    searchedAt: new Date().toISOString(),
+    listings,
+    avgListPrice,
+    bestBuyNow,
+    totalListings: listings.length,
   };
 }
 
@@ -85,7 +119,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         engine: "ebay",
         _nkw: query,
         ebay_domain: "ebay.com",
-        _ipg: 20,
+        _ipg: 25,
         api_key: apiKey,
       }) as SerpApiResponse;
 
@@ -100,19 +134,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "No products found" });
       }
 
-      const topResult = results[0];
-      const product = transformEbayResult(topResult, 0);
+      const { listings, avgListPrice, bestBuyNow, totalListings } = transformEbayResults(results);
+
+      const searchResults = {
+        query,
+        totalListings,
+        avgListPrice,
+        avgSalePrice: null,
+        soldCount: 0,
+        bestBuyNow,
+        topSalePrice: null,
+        listings,
+      };
       
-      res.json(product);
+      res.json(searchResults);
     } catch (error) {
       console.error("Search error:", error);
       res.status(500).json({ error: "Search failed" });
     }
   });
 
-  app.post("/api/search/all", async (req: Request, res: Response) => {
+  app.post("/api/search/sold", async (req: Request, res: Response) => {
     try {
-      const { query, page = 1 } = req.body;
+      const { query } = req.body;
       
       if (!query || typeof query !== "string") {
         return res.status(400).json({ error: "Query is required" });
@@ -128,8 +172,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         engine: "ebay",
         _nkw: query,
         ebay_domain: "ebay.com",
-        _pgn: page,
-        _ipg: 20,
+        _fsrp: "Sold",
+        _ipg: 25,
         api_key: apiKey,
       }) as SerpApiResponse;
 
@@ -139,11 +183,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const results = response.organic_results || [];
-      const products = results.map((result, index) => transformEbayResult(result, index));
-      
-      res.json({ products, total: results.length });
+      const { listings, avgListPrice, totalListings } = transformEbayResults(results);
+
+      res.json({
+        soldCount: totalListings,
+        avgSalePrice: avgListPrice,
+        topSalePrice: listings.length > 0 ? Math.max(...listings.map(l => l.currentPrice)) : null,
+        listings,
+      });
     } catch (error) {
-      console.error("Search error:", error);
+      console.error("Sold search error:", error);
       res.status(500).json({ error: "Search failed" });
     }
   });
@@ -160,15 +209,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         engine: "ebay",
         _nkw: "trending electronics",
         ebay_domain: "ebay.com",
-        _fsrp: "Sold",
         _ipg: 8,
         api_key: apiKey,
       }) as SerpApiResponse;
 
       const results = response.organic_results || [];
-      const products = results.map((result, index) => transformEbayResult(result, index));
+      const { listings } = transformEbayResults(results);
       
-      res.json(products);
+      res.json(listings);
     } catch (error) {
       console.error("Trending error:", error);
       res.status(500).json({ error: "Failed to fetch trending products" });

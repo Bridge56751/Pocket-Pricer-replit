@@ -7,8 +7,7 @@ import Animated, {
   withTiming,
   interpolate,
 } from "react-native-reanimated";
-import { useTheme } from "@/hooks/useTheme";
-import { BorderRadius, Spacing } from "@/constants/theme";
+import { useDesignTokens } from "@/hooks/useDesignTokens";
 
 interface SkeletonLoaderProps {
   count?: number;
@@ -16,7 +15,7 @@ interface SkeletonLoaderProps {
 }
 
 function SkeletonItem({ type }: { type: "card" | "list" }) {
-  const { theme } = useTheme();
+  const { theme } = useDesignTokens();
   const shimmer = useSharedValue(0);
 
   useEffect(() => {
@@ -29,19 +28,19 @@ function SkeletonItem({ type }: { type: "card" | "list" }) {
 
   if (type === "card") {
     return (
-      <View style={[styles.cardContainer, { backgroundColor: theme.backgroundDefault }]}>
-        <Animated.View style={[styles.cardImage, { backgroundColor: theme.backgroundSecondary }, animatedStyle]} />
+      <View style={[styles.cardContainer, { backgroundColor: theme.colors.card }]}>
+        <Animated.View style={[styles.cardImage, { backgroundColor: theme.colors.muted }, animatedStyle]} />
         <View style={styles.cardContent}>
-          <Animated.View style={[styles.cardTitle, { backgroundColor: theme.backgroundSecondary }, animatedStyle]} />
-          <Animated.View style={[styles.cardSubtitle, { backgroundColor: theme.backgroundSecondary }, animatedStyle]} />
-          <Animated.View style={[styles.cardBadge, { backgroundColor: theme.backgroundSecondary }, animatedStyle]} />
+          <Animated.View style={[styles.cardTitle, { backgroundColor: theme.colors.muted }, animatedStyle]} />
+          <Animated.View style={[styles.cardSubtitle, { backgroundColor: theme.colors.muted }, animatedStyle]} />
+          <Animated.View style={[styles.cardBadge, { backgroundColor: theme.colors.muted }, animatedStyle]} />
         </View>
       </View>
     );
   }
 
   return (
-    <Animated.View style={[styles.listItem, { backgroundColor: theme.backgroundDefault }, animatedStyle]} />
+    <Animated.View style={[styles.listItem, { backgroundColor: theme.colors.card }, animatedStyle]} />
   );
 }
 
@@ -58,9 +57,9 @@ export function SkeletonLoader({ count = 3, type = "card" }: SkeletonLoaderProps
 const styles = StyleSheet.create({
   cardContainer: {
     flexDirection: "row",
-    borderRadius: BorderRadius.sm,
+    borderRadius: 12,
     overflow: "hidden",
-    marginBottom: Spacing.md,
+    marginBottom: 12,
   },
   cardImage: {
     width: 100,
@@ -68,27 +67,27 @@ const styles = StyleSheet.create({
   },
   cardContent: {
     flex: 1,
-    padding: Spacing.md,
+    padding: 12,
     justifyContent: "space-between",
   },
   cardTitle: {
     height: 16,
-    borderRadius: BorderRadius.xs,
+    borderRadius: 8,
     width: "80%",
   },
   cardSubtitle: {
     height: 12,
-    borderRadius: BorderRadius.xs,
+    borderRadius: 8,
     width: "60%",
   },
   cardBadge: {
     height: 24,
-    borderRadius: BorderRadius.full,
+    borderRadius: 9999,
     width: 80,
   },
   listItem: {
     height: 80,
-    borderRadius: BorderRadius.sm,
-    marginBottom: Spacing.md,
+    borderRadius: 12,
+    marginBottom: 12,
   },
 });
