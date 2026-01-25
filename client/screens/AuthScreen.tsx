@@ -29,6 +29,7 @@ export default function AuthScreen() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isSocialLoading, setIsSocialLoading] = useState<"google" | "apple" | null>(null);
   const [error, setError] = useState("");
@@ -150,6 +151,11 @@ export default function AuthScreen() {
       return;
     }
 
+    if (!isLogin && password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
     setIsLoading(true);
     setError("");
 
@@ -248,6 +254,7 @@ export default function AuthScreen() {
               onPress={() => {
                 setIsLogin(true);
                 setError("");
+                setConfirmPassword("");
               }}
             >
               <Text
@@ -267,6 +274,7 @@ export default function AuthScreen() {
               onPress={() => {
                 setIsLogin(false);
                 setError("");
+                setConfirmPassword("");
               }}
             >
               <Text
@@ -306,6 +314,21 @@ export default function AuthScreen() {
               autoComplete="password"
             />
           </View>
+
+          {!isLogin ? (
+            <View style={[styles.inputContainer, { backgroundColor: theme.colors.card }]}>
+              <Feather name="lock" size={20} color={theme.colors.mutedForeground} />
+              <TextInput
+                style={[styles.input, { color: theme.colors.foreground }]}
+                placeholder="Confirm Password"
+                placeholderTextColor={theme.colors.mutedForeground}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry
+                autoComplete="password"
+              />
+            </View>
+          ) : null}
 
           {error ? (
             <View style={styles.errorContainer}>
