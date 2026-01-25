@@ -384,6 +384,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete user account
+  app.delete("/api/auth/account", async (req: Request, res: Response) => {
+    try {
+      const user = await getUserFromToken(req);
+      if (!user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      // Cancel any active Stripe subscription first
+      if (user.stripe_subscription_id) {
+        try {
+          const stripe = await getUncachableStripeClient();
+          if (stripe) {
+            await stripe.subscriptions.cancel(user.stripe_subscription_id);
+          }
+        } catch (stripeError) {
+          console.error("Failed to cancel subscription:", stripeError);
+        }
+      }
+
+      // Delete user sessions
+      await query("DELETE FROM user_sessions WHERE user_id = $1", [user.id]);
+
+      // Delete the user account
+      await query("DELETE FROM users WHERE id = $1", [user.id]);
+
+      res.json({ success: true, message: "Account deleted successfully" });
+    } catch (error) {
+      console.error("Delete account error:", error);
+      res.status(500).json({ error: "Failed to delete account" });
+    }
+  });
+
   // TEMPORARY: Test login endpoint for development - remove before production
   app.post("/api/auth/test-login", async (req: Request, res: Response) => {
     try {

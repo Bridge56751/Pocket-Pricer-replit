@@ -270,16 +270,33 @@ export default function ProfileScreen() {
     setIsDeleting(true);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     try {
+      // Clear local data first
       await clearSearchHistory();
       await clearFavorites();
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      if (Platform.OS === "web") {
-        alert("All data has been deleted successfully.");
-      } else {
-        Alert.alert("Success", "All data has been deleted successfully.");
+      
+      // Delete account on server
+      const response = await fetch(new URL("/api/auth/account", getApiUrl()).toString(), {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to delete account");
       }
+      
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      
+      // Log out after successful deletion
+      await logout();
     } catch (error) {
-      console.error("Failed to delete data:", error);
+      console.error("Failed to delete account:", error);
+      if (Platform.OS === "web") {
+        alert("Failed to delete account. Please try again.");
+      } else {
+        Alert.alert("Error", "Failed to delete account. Please try again.");
+      }
     } finally {
       setIsDeleting(false);
     }
