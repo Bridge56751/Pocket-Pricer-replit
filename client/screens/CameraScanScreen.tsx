@@ -208,6 +208,7 @@ export default function CameraScanScreen() {
         ref={cameraRef}
         style={styles.camera}
         facing="back"
+        selectedLens="wide-angle-camera"
       >
           <Animated.View style={[styles.flashOverlay, flashAnimatedStyle]} />
           <View style={[styles.overlay, { paddingTop: insets.top }]}>
