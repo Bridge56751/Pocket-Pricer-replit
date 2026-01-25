@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Platform } from "react-native";
+import * as Device from "expo-device";
 import { getApiUrl } from "@/lib/query-client";
 
 interface User {
@@ -21,7 +23,7 @@ interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string; deviceLimitReached?: boolean }>;
   signup: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   socialLogin: (provider: "google" | "apple", data: SocialLoginData) => Promise<{ success: boolean; error?: string }>;
   testLogin: () => Promise<{ success: boolean; error?: string }>;
@@ -33,6 +35,29 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const AUTH_TOKEN_KEY = "@pocket_pricer_auth_token";
+const DEVICE_ID_KEY = "@pocket_pricer_device_id";
+
+const getDeviceName = (): string => {
+  if (Platform.OS === "web") {
+    return "Web Browser";
+  }
+  const brand = Device.brand || "";
+  const model = Device.modelName || "";
+  return `${brand} ${model}`.trim() || `${Platform.OS} Device`;
+};
+
+const getOrCreateDeviceId = async (): Promise<string> => {
+  try {
+    let deviceId = await AsyncStorage.getItem(DEVICE_ID_KEY);
+    if (!deviceId) {
+      deviceId = `device_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      await AsyncStorage.setItem(DEVICE_ID_KEY, deviceId);
+    }
+    return deviceId;
+  } catch {
+    return `device_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+};
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -78,21 +103,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
+      const deviceId = await getOrCreateDeviceId();
+      const deviceName = getDeviceName();
+      
       const response = await fetch(new URL("/api/auth/login", getApiUrl()).toString(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, deviceId, deviceName }),
       });
       
       const data = await response.json();
       
       if (response.ok) {
         await AsyncStorage.setItem(AUTH_TOKEN_KEY, data.token);
+        if (data.deviceId) {
+          await AsyncStorage.setItem(DEVICE_ID_KEY, data.deviceId);
+        }
         setToken(data.token);
         setUser(data.user);
         return { success: true };
       } else {
-        return { success: false, error: data.error || "Login failed" };
+        return { 
+          success: false, 
+          error: data.message || data.error || "Login failed",
+          deviceLimitReached: data.deviceLimitReached 
+        };
       }
     } catch (error) {
       return { success: false, error: "Connection failed" };
@@ -101,16 +136,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signup = async (email: string, password: string) => {
     try {
+      const deviceId = await getOrCreateDeviceId();
+      const deviceName = getDeviceName();
+      
       const response = await fetch(new URL("/api/auth/signup", getApiUrl()).toString(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, deviceId, deviceName }),
       });
       
       const data = await response.json();
       
       if (response.ok) {
         await AsyncStorage.setItem(AUTH_TOKEN_KEY, data.token);
+        if (data.deviceId) {
+          await AsyncStorage.setItem(DEVICE_ID_KEY, data.deviceId);
+        }
         setToken(data.token);
         setUser(data.user);
         return { success: true };
@@ -170,6 +211,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
+    try {
+      const deviceId = await AsyncStorage.getItem(DEVICE_ID_KEY);
+      if (token && deviceId) {
+        await fetch(new URL("/api/auth/logout", getApiUrl()).toString(), {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}` 
+          },
+          body: JSON.stringify({ deviceId }),
+        });
+      }
+    } catch (error) {
+      console.error("Logout API error:", error);
+    }
     await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
     setToken(null);
     setUser(null);

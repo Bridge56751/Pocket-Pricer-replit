@@ -201,7 +201,7 @@ async function incrementSearchCount(userId: string): Promise<void> {
 export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/signup", async (req: Request, res: Response) => {
     try {
-      const { email, password } = req.body;
+      const { email, password, deviceId, deviceName } = req.body;
       
       if (!email || !password) {
         return res.status(400).json({ error: "Email and password required" });
@@ -214,16 +214,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const passwordHash = await bcrypt.hash(password, 10);
       const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const clientDeviceId = deviceId || `device_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
       await query(
         "INSERT INTO users (id, email, password_hash) VALUES ($1, $2, $3)",
         [userId, email.toLowerCase(), passwordHash]
       );
       
-      const token = jwt.sign({ userId }, JWT_SECRET, { expiresIn: "30d" });
+      const token = jwt.sign({ userId, deviceId: clientDeviceId }, JWT_SECRET, { expiresIn: "30d" });
+      const tokenHash = await bcrypt.hash(token.slice(-20), 5);
+      
+      // Create first device session
+      await query(
+        `INSERT INTO user_sessions (user_id, device_id, device_name, token_hash) 
+         VALUES ($1, $2, $3, $4)`,
+        [userId, clientDeviceId, deviceName || "Unknown Device", tokenHash]
+      );
       
       res.json({ 
-        token, 
+        token,
+        deviceId: clientDeviceId,
         user: { 
           id: userId, 
           email: email.toLowerCase(),
@@ -239,7 +249,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/auth/login", async (req: Request, res: Response) => {
     try {
-      const { email, password } = req.body;
+      const { email, password, deviceId, deviceName } = req.body;
       
       if (!email || !password) {
         return res.status(400).json({ error: "Email and password required" });
@@ -252,11 +262,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Invalid email or password" });
       }
       
-      const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: "30d" });
+      // Check device limit (2 devices per account)
+      const MAX_DEVICES = 2;
+      const clientDeviceId = deviceId || `device_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Check if this device is already registered
+      const existingSession = await query(
+        "SELECT id FROM user_sessions WHERE user_id = $1 AND device_id = $2",
+        [user.id, clientDeviceId]
+      );
+      
+      if (existingSession.rows.length === 0) {
+        // New device - check if user is at device limit
+        const sessionCount = await query(
+          "SELECT COUNT(*) as count FROM user_sessions WHERE user_id = $1",
+          [user.id]
+        );
+        
+        if (parseInt(sessionCount.rows[0].count) >= MAX_DEVICES) {
+          return res.status(403).json({ 
+            error: "Device limit reached", 
+            message: "You can only use 2 devices per account. Please log out from another device first.",
+            deviceLimitReached: true
+          });
+        }
+      }
+      
+      const token = jwt.sign({ userId: user.id, deviceId: clientDeviceId }, JWT_SECRET, { expiresIn: "30d" });
+      const tokenHash = await bcrypt.hash(token.slice(-20), 5);
+      
+      // Upsert session (update if exists, insert if new)
+      await query(
+        `INSERT INTO user_sessions (user_id, device_id, device_name, token_hash, last_active) 
+         VALUES ($1, $2, $3, $4, NOW()) 
+         ON CONFLICT (user_id, device_id) 
+         DO UPDATE SET token_hash = $4, last_active = NOW()`,
+        [user.id, clientDeviceId, deviceName || "Unknown Device", tokenHash]
+      );
+      
       const { allowed, remaining } = await canUserSearch(user);
       
       res.json({ 
-        token, 
+        token,
+        deviceId: clientDeviceId,
         user: { 
           id: user.id, 
           email: user.email,
@@ -267,6 +315,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Login error:", error);
       res.status(500).json({ error: "Login failed" });
+    }
+  });
+
+  // Logout - removes device session
+  app.post("/api/auth/logout", async (req: Request, res: Response) => {
+    try {
+      const user = await getUserFromToken(req);
+      if (!user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const { deviceId } = req.body;
+      
+      if (deviceId) {
+        await query(
+          "DELETE FROM user_sessions WHERE user_id = $1 AND device_id = $2",
+          [user.id, deviceId]
+        );
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Logout error:", error);
+      res.status(500).json({ error: "Logout failed" });
+    }
+  });
+
+  // Get active devices
+  app.get("/api/auth/devices", async (req: Request, res: Response) => {
+    try {
+      const user = await getUserFromToken(req);
+      if (!user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const result = await query(
+        "SELECT device_id, device_name, last_active, created_at FROM user_sessions WHERE user_id = $1 ORDER BY last_active DESC",
+        [user.id]
+      );
+      
+      res.json({ devices: result.rows });
+    } catch (error) {
+      console.error("Get devices error:", error);
+      res.status(500).json({ error: "Failed to get devices" });
+    }
+  });
+
+  // Remove a specific device
+  app.delete("/api/auth/devices/:deviceId", async (req: Request, res: Response) => {
+    try {
+      const user = await getUserFromToken(req);
+      if (!user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const { deviceId } = req.params;
+      
+      await query(
+        "DELETE FROM user_sessions WHERE user_id = $1 AND device_id = $2",
+        [user.id, deviceId]
+      );
+      
+      res.json({ success: true, message: "Device removed successfully" });
+    } catch (error) {
+      console.error("Remove device error:", error);
+      res.status(500).json({ error: "Failed to remove device" });
     }
   });
 
