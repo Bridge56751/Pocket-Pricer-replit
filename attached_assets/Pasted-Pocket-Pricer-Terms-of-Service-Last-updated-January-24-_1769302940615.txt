@@ -1,0 +1,132 @@
+Pocket Pricer Terms of Service
+
+Last updated: January 24, 2026
+
+⸻
+
+1. Agreement to Terms
+
+By accessing or using Pocket Pricer, you agree to these Terms of Service.
+
+If you do not agree, do not use the Service.
+
+⸻
+
+2. Eligibility
+
+Pocket Pricer is available to users under 18 years of age.
+
+If you are under 18, you confirm that you have permission from a parent or legal guardian to use the Service.
+
+Users under 13 are not permitted to create an account.
+
+⸻
+
+3. Service Description
+
+Pocket Pricer provides tools to assist with product scanning and resale price research.
+
+All pricing information is for informational purposes only.
+
+We do not guarantee:
+    •    Pricing accuracy
+    •    Profitability
+    •    Market availability
+
+⸻
+
+4. Accounts
+    •    One account per user
+    •    You are responsible for account security
+    •    Sharing accounts is prohibited
+
+We may limit concurrent device usage for security purposes.
+
+⸻
+
+5. Subscriptions & Billing
+
+Pocket Pricer offers optional paid subscriptions.
+
+Subscription terms:
+    •    Billed monthly unless otherwise stated
+    •    Automatically renew until canceled
+    •    Payments processed through Stripe
+
+⸻
+
+6. Cancellation
+
+You may cancel your subscription at any time.
+
+When canceled:
+    •    Access remains active until the end of the current billing period
+    •    No further charges will occur
+
+⸻
+
+7. Refund Policy
+
+All payments are non-refundable.
+
+We do not provide refunds for:
+    •    Partial billing periods
+    •    Unused time
+    •    Accidental purchases
+
+Except where required by law.
+
+⸻
+
+8. Acceptable Use
+
+You agree not to:
+    •    Abuse the Service
+    •    Attempt to bypass security
+    •    Reverse engineer the application
+    •    Use automated bots or scraping tools
+    •    Violate applicable laws
+
+⸻
+
+9. Intellectual Property
+
+All software, content, trademarks, and designs are owned by Pocket Pricer or its licensors.
+
+Unauthorized use is prohibited.
+
+⸻
+
+10. Disclaimer
+
+The Service is provided “as is.”
+
+We make no warranties regarding:
+    •    Accuracy of data
+    •    Business outcomes
+    •    Continuous availability
+
+⸻
+
+11. Limitation of Liability
+
+To the maximum extent permitted by law:
+
+Pocket Pricer shall not be liable for indirect, incidental, or consequential damages.
+
+Total liability shall not exceed the amount paid in the previous 12 months.
+
+⸻
+
+12. Termination
+
+We may suspend or terminate accounts for:
+    •    Violations of these Terms
+    •    Abuse or fraud
+    •    Security risks
+
+⸻
+
+13. Governing Law
+
+These Terms are governed by the laws of the United States.

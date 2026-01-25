@@ -223,6 +223,13 @@ export default function ProfileScreen() {
     await WebBrowser.openBrowserAsync(privacyUrl);
   };
 
+  const handleOpenTermsOfService = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const baseUrl = getApiUrl().replace(':5000', '');
+    const termsUrl = `${baseUrl}:5000/terms`;
+    await WebBrowser.openBrowserAsync(termsUrl);
+  };
+
   const handleDeleteAccount = () => {
     if (user?.subscriptionStatus === "active" && !subscriptionInfo?.cancelAtPeriodEnd) {
       if (Platform.OS === "web") {
@@ -447,6 +454,19 @@ export default function ProfileScreen() {
         >
           <Text style={[styles.menuItemText, { color: theme.colors.foreground }]}>
             Privacy Policy
+          </Text>
+          <Feather name="chevron-right" size={20} color={theme.colors.mutedForeground} />
+        </Pressable>
+
+        <Pressable 
+          onPress={handleOpenTermsOfService}
+          style={({ pressed }) => [
+            styles.menuItem, 
+            { borderBottomColor: theme.colors.border, opacity: pressed ? 0.7 : 1 }
+          ]}
+        >
+          <Text style={[styles.menuItemText, { color: theme.colors.foreground }]}>
+            Terms of Service
           </Text>
           <Feather name="chevron-right" size={20} color={theme.colors.mutedForeground} />
         </Pressable>
