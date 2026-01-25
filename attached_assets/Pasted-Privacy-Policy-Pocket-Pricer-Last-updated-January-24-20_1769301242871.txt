@@ -1,0 +1,98 @@
+Privacy Policy
+
+Pocket Pricer
+
+Last updated: January 24, 2026
+
+Pocket Pricer (“we”, “our”, or “us”) values your privacy. This Privacy Policy explains how we collect, use, and protect your information when you use the Pocket Pricer mobile application and website (the “Service”).
+
+⸻
+
+1. Information We Collect
+
+We may collect the following information:
+
+Personal Information
+    •    Email address
+    •    Account ID
+    •    Subscription status
+    •    App usage data
+
+Payment Information
+
+All payments are processed securely by Stripe.
+
+We do not store or process credit card numbers or banking information on our servers.
+
+Stripe’s privacy policy can be found at:
+https://stripe.com/privacy
+
+⸻
+
+2. How We Use Your Information
+
+We use your information to:
+    •    Create and manage your account
+    •    Process subscriptions and billing
+    •    Enable paid (“Pro”) features
+    •    Provide customer support
+    •    Improve app performance
+    •    Prevent fraud and abuse
+    •    Comply with legal requirements
+
+⸻
+
+3. Third-Party Services
+
+Pocket Pricer uses third-party services including:
+    •    Stripe – payment processing
+    •    SERP API – product search data
+    •    Hosting & databases (e.g., Replit, PostgreSQL)
+
+These providers only receive information necessary to perform their services.
+
+⸻
+
+4. Data Storage & Security
+    •    User data is stored securely on encrypted servers.
+    •    API keys and sensitive credentials are never exposed to the client app.
+    •    Access is restricted to authorized systems only.
+
+No system is 100% secure, but we take reasonable measures to protect your information.
+
+⸻
+
+5. Subscription Data
+
+Your subscription status (Free or Pro) is stored server-side and updated automatically through secure Stripe webhooks.
+
+⸻
+
+6. Account Deletion
+
+You may request account deletion at any time by contacting:
+
+support@pocketpricer.app
+
+Upon deletion:
+    •    Your account data will be permanently removed unless legally required to retain it.
+
+⸻
+
+7. Children’s Privacy
+
+Pocket Pricer is not intended for use by children under the age of 13.
+We do not knowingly collect personal information from children.
+
+⸻
+
+8. Changes to This Policy
+
+We may update this Privacy Policy from time to time.
+Changes will be posted on this page with an updated “Last updated” date.
+
+⸻
+
+9. Contact Us
+
+If you have any questions about this Privacy Policy, please contact:
