@@ -1,0 +1,232 @@
+{
+"id": 
+"evt_1StGdU07Fxxq03SoWbcZTy7M"
+,
+"object": 
+"event",
+"api_version": 
+"2024-04-10",
+"created": 
+1769298780
+,
+"data": {
+"object": {
+"id": 
+"cs_live_a1Zc2EPDuxqhpnbmCWxjK4QHH0pT3ODUbKYtNGGIZBsdLgcQQ0XBhbxkiY",
+"object": 
+"checkout.session",
+"adaptive_pricing": {
+"enabled": 
+false,
+},
+"after_expiration": 
+null,
+"allow_promotion_codes": 
+null,
+"amount_subtotal": 
+899,
+"amount_total": 
+899,
+"automatic_tax": {
+"enabled": 
+false,
+"liability": 
+null,
+"provider": 
+null,
+"status": 
+null,
+},
+"billing_address_collection": 
+null,
+"branding_settings": {
+"background_color": 
+"#ffffff",
+"border_style": 
+"rounded",
+"button_color": 
+"#0074d4",
+"display_name": 
+"Auto Keep",
+"font_family": 
+"default",
+"icon": 
+null,
+"logo": 
+null,
+},
+"cancel_url": 
+"https://faab9dbe-a29d-40b6-93e9-7f182cb4c84d-00-38g0lwgqm1wqs.riker.replit.dev/subscription-cancel",
+"client_reference_id": 
+null,
+"client_secret": 
+null,
+"collected_information": {
+"business_name": 
+null,
+"individual_name": 
+null,
+"shipping_details": 
+null,
+},
+"consent": 
+null,
+"consent_collection": 
+null,
+"created": 
+1769298720
+,
+"currency": 
+"usd",
+"currency_conversion": 
+null,
+"custom_fields": [],
+"custom_text": {
+"after_submit": 
+null,
+"shipping_address": 
+null,
+"submit": 
+null,
+"terms_of_service_acceptance": 
+null,
+},
+"customer": 
+"cus_TqyZfmzsVv3SCS"
+,
+"customer_account": 
+null,
+"customer_creation": 
+null,
+"customer_details": {
+"address": {
+"city": 
+"Reno",
+"country": 
+"US",
+"line1": 
+"1662 River Oaks Dr",
+"line2": 
+"",
+"postal_code": 
+"89511",
+"state": 
+"NV",
+},
+"business_name": 
+null,
+"email": 
+"bridgerogan56@gmail.com",
+"individual_name": 
+null,
+"name": 
+"Bridge Rogan",
+"phone": 
+null,
+"tax_exempt": 
+"none",
+"tax_ids": [],
+},
+"customer_email": 
+null,
+"discounts": [],
+"expires_at": 
+1769385120
+,
+"invoice": 
+"in_1StGdR07Fxxq03Som58fTsbj"
+,
+"invoice_creation": 
+null,
+"livemode": 
+true,
+"locale": 
+null,
+"metadata": {},
+"mode": 
+"subscription",
+"origin_context": 
+null,
+"payment_intent": 
+null,
+"payment_link": 
+null,
+"payment_method_collection": 
+"always",
+"payment_method_configuration_details": 
+null,
+"payment_method_options": {
+"card": {
+"request_three_d_secure": 
+"automatic",
+},
+},
+"payment_method_types": [
+"card",
+],
+"payment_status": 
+"paid",
+"permissions": 
+null,
+"phone_number_collection": {
+"enabled": 
+false,
+},
+"recovered_from": 
+null,
+"saved_payment_method_options": {
+"allow_redisplay_filters": [
+"always",
+],
+"payment_method_remove": 
+"disabled",
+"payment_method_save": 
+null,
+},
+"setup_intent": 
+null,
+"shipping_address_collection": 
+null,
+"shipping_cost": 
+null,
+"shipping_details": 
+null,
+"shipping_options": [],
+"status": 
+"complete",
+"submit_type": 
+null,
+"subscription": 
+"sub_1StGdT07Fxxq03SoVCZDxdHI"
+,
+"success_url": 
+"https://faab9dbe-a29d-40b6-93e9-7f182cb4c84d-00-38g0lwgqm1wqs.riker.replit.dev/subscription-success",
+"total_details": {
+"amount_discount": 
+0,
+"amount_shipping": 
+0,
+"amount_tax": 
+0,
+},
+"ui_mode": 
+"hosted",
+"url": 
+null,
+"wallet_options": 
+null,
+},
+},
+"livemode": 
+true,
+"pending_webhooks": 
+1,
+"request": {
+"id": 
+null,
+"idempotency_key": 
+null,
+},
+"type": 
+"checkout.session.completed",
+}
