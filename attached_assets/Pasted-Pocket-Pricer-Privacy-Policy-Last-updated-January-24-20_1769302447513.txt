@@ -1,0 +1,187 @@
+Pocket Pricer Privacy Policy
+
+Last updated: January 24, 2026
+
+⸻
+
+1. Introduction
+
+Pocket Pricer (“we,” “our,” or “us”) is a mobile application designed to help users scan products and research resale prices on online marketplaces.
+
+Pocket Pricer is owned and operated by Integrated Sales Solutions LLC.
+
+This Privacy Policy explains how we collect, use, store, and protect your information when you use the Pocket Pricer mobile application and related services (the “Service”).
+
+By using Pocket Pricer, you agree to the practices described in this Privacy Policy.
+
+⸻
+
+2. Information We Collect
+
+a. Information You Provide
+
+We may collect the following information:
+    •    Email address
+    •    Account login credentials
+    •    Encrypted password (securely hashed — never stored in plain text)
+    •    Subscription status
+    •    Customer support communications
+
+⸻
+
+b. Automatically Collected Information
+
+When you use the Service, we may automatically collect:
+    •    Device type and operating system
+    •    App usage activity
+    •    IP address (used for security and fraud prevention)
+    •    Login timestamps
+
+⸻
+
+c. Search History Data
+
+Pocket Pricer stores a limited search history associated with your account, including:
+    •    Your most recent product searches (approximately the last 15 searches)
+
+This data is used solely to:
+    •    Display search history to the user
+    •    Improve app usability and performance
+
+Search history is not shared publicly and is accessible only to the account owner.
+
+⸻
+
+3. Camera Access
+
+Pocket Pricer may request access to your device camera in order to:
+    •    Scan products
+    •    Capture item images
+    •    Assist with product identification and resale research
+
+Camera access is optional and may be disabled at any time through your device settings.
+
+Captured images are used only to provide app functionality.
+
+⸻
+
+4. Photo Library Access
+
+With your permission, Pocket Pricer may request access to your device’s photo library in order to:
+    •    Allow selection of existing product images
+    •    Analyze user-selected photos for item lookup and pricing research
+
+You may choose to grant:
+    •    Limited photo access (selected images only), or
+    •    Full photo library access
+
+Pocket Pricer accesses only the images you explicitly allow.
+
+We do not:
+    •    Access photos without permission
+    •    Upload your entire photo library
+    •    Use photos for advertising or tracking
+    •    Sell or share personal images
+
+You may revoke photo access at any time through your device’s privacy settings.
+
+⸻
+
+5. Payments and Subscriptions
+
+Pocket Pricer offers optional paid subscription features.
+
+All payments are processed securely by Stripe.
+
+Pocket Pricer does not collect or store:
+    •    Credit card numbers
+    •    Bank account details
+    •    Payment authentication information
+
+We store only:
+    •    Stripe customer ID
+    •    Stripe subscription ID
+    •    Subscription status
+
+Payment information is governed by Stripe’s privacy policy.
+
+⸻
+
+6. How We Use Information
+
+We use collected information to:
+    •    Create and manage user accounts
+    •    Authenticate logins
+    •    Provide scanning and pricing functionality
+    •    Manage subscriptions and billing
+    •    Enable premium features
+    •    Improve app performance and reliability
+    •    Prevent fraud and abuse
+    •    Comply with legal obligations
+
+⸻
+
+7. Data Storage and Security
+
+We use industry-standard security practices, including:
+    •    Password hashing using bcrypt
+    •    Encrypted database connections
+    •    Secure server infrastructure
+    •    Environment-based secret storage
+    •    HTTPS encryption
+
+User data is stored on protected servers with restricted access.
+
+⸻
+
+8. Data Sharing
+
+We do not sell personal data.
+
+Information may be shared only with:
+    •    Stripe (payment processing)
+    •    Infrastructure and hosting providers required to operate the Service
+    •    Law enforcement or regulators when legally required
+
+⸻
+
+9. Data Retention
+
+We retain user data only as long as necessary to operate the Service or comply with legal requirements.
+
+Users may request account deletion at any time.
+
+⸻
+
+10. Your Rights
+
+You may:
+    •    Access your personal information
+    •    Update or correct your data
+    •    Cancel subscriptions
+    •    Request deletion of your account
+
+Requests can be made through the app or by contacting support.
+
+⸻
+
+11. Children’s Privacy
+
+Pocket Pricer is not intended for children under the age of 13.
+
+We do not knowingly collect personal information from children.
+
+⸻
+
+12. Changes to This Policy
+
+We may update this Privacy Policy periodically.
+
+Updates will be posted within the app or on our website with a revised effective date.
+
+⸻
+
+13. Contact Information
+
+Pocket Pricer
+Operated by Integrated Sales Solutions LLC
