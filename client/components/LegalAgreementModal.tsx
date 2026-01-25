@@ -1,16 +1,17 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
   Modal,
   StyleSheet,
   Pressable,
-  Linking,
+  ActivityIndicator,
   Platform,
 } from "react-native";
-import * as WebBrowser from "expo-web-browser";
+import { WebView } from "react-native-webview";
 import * as Haptics from "expo-haptics";
-import { BlurView } from "expo-blur";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Feather } from "@expo/vector-icons";
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { getApiUrl } from "@/lib/query-client";
 
@@ -20,31 +21,33 @@ interface LegalAgreementModalProps {
   onCancel: () => void;
 }
 
+type ViewingDocument = "privacy" | "terms" | null;
+
 export function LegalAgreementModal({
   visible,
   onAgree,
   onCancel,
 }: LegalAgreementModalProps) {
   const { theme } = useDesignTokens();
+  const insets = useSafeAreaInsets();
+  const [viewingDocument, setViewingDocument] = useState<ViewingDocument>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleOpenPrivacyPolicy = async () => {
+  const handleOpenPrivacyPolicy = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    try {
-      const privacyUrl = new URL("/privacy", getApiUrl()).toString();
-      await WebBrowser.openBrowserAsync(privacyUrl);
-    } catch (error) {
-      console.error("Failed to open privacy policy:", error);
-    }
+    setViewingDocument("privacy");
+    setIsLoading(true);
   };
 
-  const handleOpenTermsOfService = async () => {
+  const handleOpenTermsOfService = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    try {
-      const termsUrl = new URL("/terms", getApiUrl()).toString();
-      await WebBrowser.openBrowserAsync(termsUrl);
-    } catch (error) {
-      console.error("Failed to open terms of service:", error);
-    }
+    setViewingDocument("terms");
+    setIsLoading(true);
+  };
+
+  const handleCloseDocument = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setViewingDocument(null);
   };
 
   const handleAgree = () => {
@@ -56,6 +59,60 @@ export function LegalAgreementModal({
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onCancel();
   };
+
+  const getDocumentUrl = (doc: "privacy" | "terms") => {
+    try {
+      return new URL(`/${doc}`, getApiUrl()).toString();
+    } catch {
+      return "";
+    }
+  };
+
+  if (viewingDocument) {
+    return (
+      <Modal
+        visible={visible}
+        animationType="slide"
+        statusBarTranslucent
+      >
+        <View style={[styles.documentContainer, { backgroundColor: theme.colors.background, paddingTop: insets.top }]}>
+          <View style={[styles.documentHeader, { borderBottomColor: theme.colors.border }]}>
+            <Pressable
+              onPress={handleCloseDocument}
+              style={({ pressed }) => [styles.backButton, { opacity: pressed ? 0.7 : 1 }]}
+            >
+              <Feather name="arrow-left" size={24} color={theme.colors.primary} />
+              <Text style={[styles.backButtonText, { color: theme.colors.primary }]}>Back</Text>
+            </Pressable>
+            <Text style={[styles.documentTitle, { color: theme.colors.foreground }]}>
+              {viewingDocument === "privacy" ? "Privacy Policy" : "Terms of Service"}
+            </Text>
+            <View style={styles.headerSpacer} />
+          </View>
+          
+          {isLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={theme.colors.primary} />
+            </View>
+          ) : null}
+          
+          {Platform.OS === "web" ? (
+            <iframe
+              src={getDocumentUrl(viewingDocument)}
+              style={{ flex: 1, border: "none", width: "100%", height: "100%" }}
+              onLoad={() => setIsLoading(false)}
+            />
+          ) : (
+            <WebView
+              source={{ uri: getDocumentUrl(viewingDocument) }}
+              style={[styles.webview, isLoading && styles.hidden]}
+              onLoadEnd={() => setIsLoading(false)}
+            />
+          )}
+        </View>
+      </Modal>
+    );
+  }
 
   return (
     <Modal
@@ -293,5 +350,44 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     fontSize: 16,
     fontWeight: "500",
+  },
+  documentContainer: {
+    flex: 1,
+  },
+  documentHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  backButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 8,
+  },
+  backButtonText: {
+    fontSize: 17,
+    marginLeft: 4,
+  },
+  documentTitle: {
+    fontSize: 17,
+    fontWeight: "600",
+  },
+  headerSpacer: {
+    width: 70,
+  },
+  loadingContainer: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1,
+  },
+  webview: {
+    flex: 1,
+  },
+  hidden: {
+    opacity: 0,
   },
 });
