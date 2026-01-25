@@ -24,7 +24,7 @@ WebBrowser.maybeCompleteAuthSession();
 export default function AuthScreen() {
   const { theme } = useDesignTokens();
   const insets = useSafeAreaInsets();
-  const { login, signup, socialLogin, testLogin } = useAuth();
+  const { login, signup, socialLogin } = useAuth();
   
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
@@ -161,20 +161,6 @@ export default function AuthScreen() {
 
     if (!result.success) {
       setError(result.error || "Authentication failed");
-    }
-  };
-
-  // TEMPORARY: Test login for development - remove before production
-  const [isTestLoading, setIsTestLoading] = useState(false);
-  const handleTestLogin = async () => {
-    setIsTestLoading(true);
-    setError("");
-    
-    const result = await testLogin();
-    setIsTestLoading(false);
-    
-    if (!result.success) {
-      setError(result.error || "Test login failed");
     }
   };
 
@@ -353,27 +339,6 @@ export default function AuthScreen() {
             </Text>
           </View>
 
-          {/* TEMPORARY: Test login button - remove before production */}
-          <Pressable
-            style={[
-              styles.testLoginButton,
-              { borderColor: theme.colors.warning },
-              isTestLoading && styles.buttonDisabled,
-            ]}
-            onPress={handleTestLogin}
-            disabled={isTestLoading}
-          >
-            {isTestLoading ? (
-              <ActivityIndicator color={theme.colors.warning} size="small" />
-            ) : (
-              <>
-                <Feather name="zap" size={18} color={theme.colors.warning} />
-                <Text style={[styles.testLoginText, { color: theme.colors.warning }]}>
-                  Test Login (Pro Account)
-                </Text>
-              </>
-            )}
-          </Pressable>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -517,20 +482,5 @@ const styles = StyleSheet.create({
   },
   freeTrialText: {
     fontSize: 14,
-  },
-  testLoginButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    borderRadius: 12,
-    paddingVertical: 14,
-    borderWidth: 2,
-    borderStyle: "dashed",
-    marginTop: 24,
-  },
-  testLoginText: {
-    fontSize: 15,
-    fontWeight: "600",
   },
 });

@@ -26,7 +26,6 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string; deviceLimitReached?: boolean }>;
   signup: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   socialLogin: (provider: "google" | "apple", data: SocialLoginData) => Promise<{ success: boolean; error?: string }>;
-  testLogin: () => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   checkSubscription: () => Promise<void>;
@@ -186,30 +185,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // TEMPORARY: Test login for development - remove before production
-  const testLogin = async () => {
-    try {
-      const response = await fetch(new URL("/api/auth/test-login", getApiUrl()).toString(), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      });
-      
-      const data = await response.json();
-      
-      if (response.ok) {
-        await AsyncStorage.setItem(AUTH_TOKEN_KEY, data.token);
-        setToken(data.token);
-        setUser(data.user);
-        return { success: true };
-      } else {
-        return { success: false, error: data.error || "Test login failed" };
-      }
-    } catch (error) {
-      return { success: false, error: "Connection failed" };
-    }
-  };
-
   const logout = async () => {
     try {
       const deviceId = await AsyncStorage.getItem(DEVICE_ID_KEY);
@@ -264,7 +239,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         signup,
         socialLogin,
-        testLogin,
         logout,
         refreshUser,
         checkSubscription,
