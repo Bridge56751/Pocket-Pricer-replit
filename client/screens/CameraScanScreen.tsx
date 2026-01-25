@@ -8,7 +8,8 @@ import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
-import Animated, { useSharedValue, useAnimatedStyle, withTiming } from "react-native-reanimated";
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, runOnJS } from "react-native-reanimated";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import type { RootStackParamList, CapturedPhoto } from "@/navigation/RootStackNavigator";
@@ -20,14 +21,22 @@ export default function CameraScanScreen() {
   
   const [permission, requestPermission] = useCameraPermissions();
   const [capturedPhotos, setCapturedPhotos] = useState<CapturedPhoto[]>([]);
-  const [zoom, setZoom] = useState(0); // Default camera
+  const [zoom, setZoom] = useState(0);
+  const lastZoom = useSharedValue(0);
   const cameraRef = useRef<CameraView>(null);
-  
-  const zoomLevels = [
-    { label: "1x", value: 0 },
-    { label: "1.5x", value: 0.25 },
-    { label: "2x", value: 0.5 },
-  ];
+
+  const updateZoom = (value: number) => {
+    setZoom(Math.min(1, Math.max(0, value)));
+  };
+
+  const pinchGesture = Gesture.Pinch()
+    .onStart(() => {
+      lastZoom.value = zoom;
+    })
+    .onUpdate((event) => {
+      const newZoom = lastZoom.value + (event.scale - 1) * 0.5;
+      runOnJS(updateZoom)(newZoom);
+    });
   
   const flashOpacity = useSharedValue(0);
   const flashAnimatedStyle = useAnimatedStyle(() => ({
@@ -211,14 +220,15 @@ export default function CameraScanScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: "#000" }]}>
-      <CameraView
-        ref={cameraRef}
-        style={styles.camera}
-        facing="back"
-        zoom={zoom}
-      >
-        <Animated.View style={[styles.flashOverlay, flashAnimatedStyle]} />
-        <View style={[styles.overlay, { paddingTop: insets.top }]}>
+      <GestureDetector gesture={pinchGesture}>
+        <CameraView
+          ref={cameraRef}
+          style={styles.camera}
+          facing="back"
+          zoom={zoom}
+        >
+          <Animated.View style={[styles.flashOverlay, flashAnimatedStyle]} />
+          <View style={[styles.overlay, { paddingTop: insets.top }]}>
           <View style={styles.topBar}>
             <Pressable onPress={handleCancel} style={styles.cancelButton}>
               <Feather name="x" size={24} color="#fff" />
@@ -268,29 +278,6 @@ export default function CameraScanScreen() {
             </View>
           ) : null}
 
-          <View style={styles.zoomControls}>
-            {zoomLevels.map((level) => (
-              <Pressable
-                key={level.label}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setZoom(level.value);
-                }}
-                style={[
-                  styles.zoomButton,
-                  zoom === level.value && styles.zoomButtonActive,
-                ]}
-              >
-                <Text style={[
-                  styles.zoomButtonText,
-                  zoom === level.value && styles.zoomButtonTextActive,
-                ]}>
-                  {level.label}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-
           <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 20 }]}>
             <Pressable
               onPress={handlePickImage}
@@ -327,7 +314,8 @@ export default function CameraScanScreen() {
             )}
           </View>
         </View>
-      </CameraView>
+        </CameraView>
+      </GestureDetector>
     </View>
   );
 }
@@ -463,32 +451,6 @@ const styles = StyleSheet.create({
     borderRightWidth: 4,
     borderColor: "#10B981",
     borderBottomRightRadius: 24,
-  },
-  zoomControls: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 12,
-    marginBottom: 20,
-  },
-  zoomButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "rgba(255,255,255,0.2)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  zoomButtonActive: {
-    backgroundColor: "#10B981",
-  },
-  zoomButtonText: {
-    color: "#fff",
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  zoomButtonTextActive: {
-    color: "#fff",
   },
   bottomBar: {
     flexDirection: "row",
