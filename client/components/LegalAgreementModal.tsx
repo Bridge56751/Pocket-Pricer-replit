@@ -159,7 +159,7 @@ export function LegalAgreementModal({
                   { backgroundColor: theme.colors.primary + "20" },
                 ]}
               >
-                <Text style={styles.linkIconText}>📜</Text>
+                <Feather name="file-text" size={20} color={theme.colors.primary} />
               </View>
               <View style={styles.linkTextContainer}>
                 <Text
@@ -194,7 +194,7 @@ export function LegalAgreementModal({
                   { backgroundColor: theme.colors.primary + "20" },
                 ]}
               >
-                <Text style={styles.linkIconText}>🔒</Text>
+                <Feather name="shield" size={20} color={theme.colors.primary} />
               </View>
               <View style={styles.linkTextContainer}>
                 <Text
@@ -306,9 +306,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginRight: 14,
-  },
-  linkIconText: {
-    fontSize: 20,
   },
   linkTextContainer: {
     flex: 1,
