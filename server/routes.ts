@@ -216,9 +216,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const clientDeviceId = deviceId || `device_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
+      // Check if there's an existing Stripe customer with an active subscription for this email
+      let subscriptionStatus = "free";
+      let stripeCustomerId: string | null = null;
+      let stripeSubscriptionId: string | null = null;
+      
+      try {
+        const stripe = await getUncachableStripeClient();
+        if (stripe) {
+          // Search for existing customer by email
+          const customers = await stripe.customers.list({ email: email.toLowerCase(), limit: 1 });
+          
+          if (customers.data.length > 0) {
+            const customer = customers.data[0];
+            stripeCustomerId = customer.id;
+            
+            // Check for active subscriptions
+            const subscriptions = await stripe.subscriptions.list({
+              customer: customer.id,
+              status: "active",
+              limit: 1,
+            });
+            
+            if (subscriptions.data.length > 0) {
+              stripeSubscriptionId = subscriptions.data[0].id;
+              subscriptionStatus = "active";
+              console.log(`Restoring Pro subscription for returning user: ${email}`);
+            }
+          }
+        }
+      } catch (stripeError) {
+        console.error("Failed to check Stripe subscription:", stripeError);
+        // Continue with free account if Stripe check fails
+      }
+      
       await query(
-        "INSERT INTO users (id, email, password_hash) VALUES ($1, $2, $3)",
-        [userId, email.toLowerCase(), passwordHash]
+        `INSERT INTO users (id, email, password_hash, subscription_status, stripe_customer_id, stripe_subscription_id) 
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [userId, email.toLowerCase(), passwordHash, subscriptionStatus, stripeCustomerId, stripeSubscriptionId]
       );
       
       const token = jwt.sign({ userId, deviceId: clientDeviceId }, JWT_SECRET, { expiresIn: "30d" });
@@ -237,8 +272,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user: { 
           id: userId, 
           email: email.toLowerCase(),
-          subscriptionStatus: "free",
-          searchesRemaining: FREE_LIFETIME_SEARCHES,
+          subscriptionStatus: subscriptionStatus,
+          searchesRemaining: subscriptionStatus === "active" ? 999999 : FREE_LIFETIME_SEARCHES,
         }
       });
     } catch (error) {
@@ -392,22 +427,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Not authenticated" });
       }
 
-      // Cancel any active Stripe subscription first
-      if (user.stripe_subscription_id) {
-        try {
-          const stripe = await getUncachableStripeClient();
-          if (stripe) {
-            await stripe.subscriptions.cancel(user.stripe_subscription_id);
-          }
-        } catch (stripeError) {
-          console.error("Failed to cancel subscription:", stripeError);
-        }
-      }
+      // Keep the Stripe subscription active - user can restore it if they sign up again
+      // Just delete local account data
 
       // Delete user sessions
       await query("DELETE FROM user_sessions WHERE user_id = $1", [user.id]);
 
-      // Delete the user account
+      // Delete the user account (but keep Stripe subscription intact)
       await query("DELETE FROM users WHERE id = $1", [user.id]);
 
       res.json({ success: true, message: "Account deleted successfully" });
