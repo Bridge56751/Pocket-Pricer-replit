@@ -20,13 +20,13 @@ export default function CameraScanScreen() {
   
   const [permission, requestPermission] = useCameraPermissions();
   const [capturedPhotos, setCapturedPhotos] = useState<CapturedPhoto[]>([]);
-  const [zoom, setZoom] = useState(0.5); // Default to 1x (main camera)
+  const [zoom, setZoom] = useState(0); // Default camera
   const cameraRef = useRef<CameraView>(null);
   
   const zoomLevels = [
-    { label: "0.5x", value: 0 },
-    { label: "1x", value: 0.5 },
-    { label: "2x", value: 0.75 },
+    { label: "1x", value: 0 },
+    { label: "1.5x", value: 0.25 },
+    { label: "2x", value: 0.5 },
   ];
   
   const flashOpacity = useSharedValue(0);
