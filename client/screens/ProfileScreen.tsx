@@ -216,6 +216,19 @@ export default function ProfileScreen() {
   };
 
   const handleDeleteAccount = () => {
+    if (user?.subscriptionStatus === "active" && !subscriptionInfo?.cancelAtPeriodEnd) {
+      if (Platform.OS === "web") {
+        alert("Please cancel your subscription first before deleting your account.");
+      } else {
+        Alert.alert(
+          "Active Subscription",
+          "Please cancel your subscription first before deleting your account. You can cancel from the Account section above.",
+          [{ text: "OK" }]
+        );
+      }
+      return;
+    }
+
     if (Platform.OS === "web") {
       if (confirm("Are you sure you want to delete all your data? This action cannot be undone.")) {
         performDeleteAccount();
