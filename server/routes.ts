@@ -660,10 +660,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (webhookSecret) {
         const sig = req.headers["stripe-signature"] as string;
-        const rawBody = (req as any).rawBody;
-        event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
+        // req.body is raw Buffer when using express.raw()
+        event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
       } else {
-        event = req.body;
+        event = JSON.parse(req.body.toString());
       }
     } catch (err: any) {
       console.error("Webhook signature verification failed:", err.message);

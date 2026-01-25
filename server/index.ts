@@ -53,12 +53,13 @@ function setupCors(app: express.Application) {
 }
 
 function setupBodyParsing(app: express.Application) {
+  // Stripe webhook needs raw body - must be before express.json()
+  app.use("/api/stripe-webhook", express.raw({ type: "application/json" }));
+  
+  // JSON parsing for all other routes
   app.use(
     express.json({
       limit: "10mb",
-      verify: (req, _res, buf) => {
-        req.rawBody = buf;
-      },
     }),
   );
 
