@@ -658,17 +658,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Not authenticated" });
       }
       
-      if (!user.stripe_subscription_id) {
+      const stripe = await getUncachableStripeClient();
+      
+      // First, try to find the active subscription from Stripe
+      let subscriptionId = user.stripe_subscription_id;
+      
+      if (user.stripe_customer_id) {
+        try {
+          const subscriptions = await stripe.subscriptions.list({
+            customer: user.stripe_customer_id,
+            status: 'active',
+            limit: 1,
+          });
+          
+          if (subscriptions.data.length > 0) {
+            subscriptionId = subscriptions.data[0].id;
+            // Update stored subscription ID if different
+            if (subscriptionId !== user.stripe_subscription_id) {
+              await query(
+                "UPDATE users SET stripe_subscription_id = $1 WHERE id = $2",
+                [subscriptionId, user.id]
+              );
+            }
+          }
+        } catch (listError: any) {
+          console.error("Error listing subscriptions:", listError?.message);
+        }
+      }
+      
+      if (!subscriptionId) {
         return res.status(400).json({ error: "No active subscription found" });
       }
       
-      const stripe = await getUncachableStripeClient();
-      
-      const subscription = await stripe.subscriptions.update(user.stripe_subscription_id, {
+      const subscription = await stripe.subscriptions.update(subscriptionId, {
         cancel_at_period_end: true,
       }) as any;
       
-      console.log("Subscription updated:", JSON.stringify(subscription, null, 2));
+      console.log("Subscription cancelled at period end:", subscription.id);
       
       let accessUntil = null;
       if (subscription.current_period_end) {
@@ -684,7 +710,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: any) {
       console.error("Cancel subscription error:", error?.message || error);
-      res.status(500).json({ error: "Failed to cancel subscription" });
+      res.status(500).json({ error: "Failed to cancel subscription", details: error?.message });
     }
   });
 
@@ -695,17 +721,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Not authenticated" });
       }
       
-      if (!user.stripe_subscription_id) {
+      const stripe = await getUncachableStripeClient();
+      
+      // Find the subscription from Stripe by customer ID
+      let subscriptionId = user.stripe_subscription_id;
+      
+      if (user.stripe_customer_id) {
+        try {
+          const subscriptions = await stripe.subscriptions.list({
+            customer: user.stripe_customer_id,
+            limit: 1,
+          });
+          
+          if (subscriptions.data.length > 0) {
+            subscriptionId = subscriptions.data[0].id;
+            if (subscriptionId !== user.stripe_subscription_id) {
+              await query(
+                "UPDATE users SET stripe_subscription_id = $1 WHERE id = $2",
+                [subscriptionId, user.id]
+              );
+            }
+          }
+        } catch (listError: any) {
+          console.error("Error listing subscriptions:", listError?.message);
+        }
+      }
+      
+      if (!subscriptionId) {
         return res.status(400).json({ error: "No subscription found" });
       }
       
-      const stripe = await getUncachableStripeClient();
-      
-      await stripe.subscriptions.update(user.stripe_subscription_id, {
+      await stripe.subscriptions.update(subscriptionId, {
         cancel_at_period_end: false,
       });
       
-      console.log(`Subscription ${user.stripe_subscription_id} reactivated`);
+      console.log(`Subscription ${subscriptionId} reactivated`);
       
       res.json({ 
         success: true, 
@@ -713,7 +763,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: any) {
       console.error("Reactivate subscription error:", error?.message || error);
-      res.status(500).json({ error: "Failed to reactivate subscription" });
+      res.status(500).json({ error: "Failed to reactivate subscription", details: error?.message });
     }
   });
 
