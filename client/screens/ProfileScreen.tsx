@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import * as WebBrowser from "expo-web-browser";
 import { ScrollView } from "react-native";
 
 import { useDesignTokens } from "@/hooks/useDesignTokens";
@@ -213,6 +214,13 @@ export default function ProfileScreen() {
   const handleThemeChange = (mode: ThemeOption) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setThemeMode(mode);
+  };
+
+  const handleOpenPrivacyPolicy = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const baseUrl = getApiUrl().replace(':5000', '');
+    const privacyUrl = `${baseUrl}:5000/privacy`;
+    await WebBrowser.openBrowserAsync(privacyUrl);
   };
 
   const handleDeleteAccount = () => {
@@ -431,6 +439,7 @@ export default function ProfileScreen() {
         </View>
 
         <Pressable 
+          onPress={handleOpenPrivacyPolicy}
           style={({ pressed }) => [
             styles.menuItem, 
             { borderBottomColor: theme.colors.border, opacity: pressed ? 0.7 : 1 }
@@ -438,18 +447,6 @@ export default function ProfileScreen() {
         >
           <Text style={[styles.menuItemText, { color: theme.colors.foreground }]}>
             Privacy Policy
-          </Text>
-          <Feather name="chevron-right" size={20} color={theme.colors.mutedForeground} />
-        </Pressable>
-
-        <Pressable 
-          style={({ pressed }) => [
-            styles.menuItem, 
-            { borderBottomColor: theme.colors.border, opacity: pressed ? 0.7 : 1 }
-          ]}
-        >
-          <Text style={[styles.menuItemText, { color: theme.colors.foreground }]}>
-            Terms of Service
           </Text>
           <Feather name="chevron-right" size={20} color={theme.colors.mutedForeground} />
         </Pressable>
