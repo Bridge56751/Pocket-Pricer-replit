@@ -20,7 +20,14 @@ export default function CameraScanScreen() {
   
   const [permission, requestPermission] = useCameraPermissions();
   const [capturedPhotos, setCapturedPhotos] = useState<CapturedPhoto[]>([]);
+  const [zoom, setZoom] = useState(0.25); // Default to 1x zoom
   const cameraRef = useRef<CameraView>(null);
+  
+  const zoomLevels = [
+    { label: "0.5x", value: 0 },
+    { label: "1x", value: 0.25 },
+    { label: "2x", value: 0.5 },
+  ];
   
   const flashOpacity = useSharedValue(0);
   const flashAnimatedStyle = useAnimatedStyle(() => ({
@@ -208,6 +215,7 @@ export default function CameraScanScreen() {
         ref={cameraRef}
         style={styles.camera}
         facing="back"
+        zoom={zoom}
       >
         <Animated.View style={[styles.flashOverlay, flashAnimatedStyle]} />
         <View style={[styles.overlay, { paddingTop: insets.top }]}>
@@ -259,6 +267,29 @@ export default function CameraScanScreen() {
               </ScrollView>
             </View>
           ) : null}
+
+          <View style={styles.zoomControls}>
+            {zoomLevels.map((level) => (
+              <Pressable
+                key={level.label}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setZoom(level.value);
+                }}
+                style={[
+                  styles.zoomButton,
+                  zoom === level.value && styles.zoomButtonActive,
+                ]}
+              >
+                <Text style={[
+                  styles.zoomButtonText,
+                  zoom === level.value && styles.zoomButtonTextActive,
+                ]}>
+                  {level.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
 
           <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 20 }]}>
             <Pressable
@@ -432,6 +463,32 @@ const styles = StyleSheet.create({
     borderRightWidth: 4,
     borderColor: "#10B981",
     borderBottomRightRadius: 24,
+  },
+  zoomControls: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    marginBottom: 20,
+  },
+  zoomButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  zoomButtonActive: {
+    backgroundColor: "#10B981",
+  },
+  zoomButtonText: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  zoomButtonTextActive: {
+    color: "#fff",
   },
   bottomBar: {
     flexDirection: "row",
