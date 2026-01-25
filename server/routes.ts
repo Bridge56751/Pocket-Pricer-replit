@@ -12,8 +12,7 @@ const FREE_LIFETIME_SEARCHES = 5;
 
 // Emails that get Pro status for free (add emails or domain patterns)
 const FREE_PRO_EMAILS: string[] = [
-  // Add exact emails: "friend@example.com"
-  // Or domain patterns: "@yourcompany.com"
+  "presslabrie22@gmail.com",
 ];
 
 function isFreePro(email: string): boolean {
