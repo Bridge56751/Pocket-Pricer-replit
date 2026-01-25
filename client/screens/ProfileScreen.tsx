@@ -218,16 +218,22 @@ export default function ProfileScreen() {
 
   const handleOpenPrivacyPolicy = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const baseUrl = getApiUrl().replace(':5000', '');
-    const privacyUrl = `${baseUrl}:5000/privacy`;
-    await WebBrowser.openBrowserAsync(privacyUrl);
+    try {
+      const privacyUrl = new URL("/privacy", getApiUrl()).toString();
+      await WebBrowser.openBrowserAsync(privacyUrl);
+    } catch (error) {
+      console.error("Failed to open privacy policy:", error);
+    }
   };
 
   const handleOpenTermsOfService = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const baseUrl = getApiUrl().replace(':5000', '');
-    const termsUrl = `${baseUrl}:5000/terms`;
-    await WebBrowser.openBrowserAsync(termsUrl);
+    try {
+      const termsUrl = new URL("/terms", getApiUrl()).toString();
+      await WebBrowser.openBrowserAsync(termsUrl);
+    } catch (error) {
+      console.error("Failed to open terms of service:", error);
+    }
   };
 
   const handleDeleteAccount = () => {
