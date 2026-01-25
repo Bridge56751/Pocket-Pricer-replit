@@ -8,8 +8,7 @@ import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
-import Animated, { useSharedValue, useAnimatedStyle, withTiming, runOnJS } from "react-native-reanimated";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import Animated, { useSharedValue, useAnimatedStyle, withTiming } from "react-native-reanimated";
 
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import type { RootStackParamList, CapturedPhoto } from "@/navigation/RootStackNavigator";
@@ -21,22 +20,7 @@ export default function CameraScanScreen() {
   
   const [permission, requestPermission] = useCameraPermissions();
   const [capturedPhotos, setCapturedPhotos] = useState<CapturedPhoto[]>([]);
-  const [zoom, setZoom] = useState(0);
-  const lastZoom = useSharedValue(0);
   const cameraRef = useRef<CameraView>(null);
-
-  const updateZoom = (value: number) => {
-    setZoom(Math.min(1, Math.max(0, value)));
-  };
-
-  const pinchGesture = Gesture.Pinch()
-    .onStart(() => {
-      lastZoom.value = zoom;
-    })
-    .onUpdate((event) => {
-      const newZoom = lastZoom.value + (event.scale - 1) * 0.5;
-      runOnJS(updateZoom)(newZoom);
-    });
   
   const flashOpacity = useSharedValue(0);
   const flashAnimatedStyle = useAnimatedStyle(() => ({
@@ -220,13 +204,11 @@ export default function CameraScanScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: "#000" }]}>
-      <GestureDetector gesture={pinchGesture}>
-        <CameraView
-          ref={cameraRef}
-          style={styles.camera}
-          facing="back"
-          zoom={zoom}
-        >
+      <CameraView
+        ref={cameraRef}
+        style={styles.camera}
+        facing="back"
+      >
           <Animated.View style={[styles.flashOverlay, flashAnimatedStyle]} />
           <View style={[styles.overlay, { paddingTop: insets.top }]}>
           <View style={styles.topBar}>
@@ -314,8 +296,7 @@ export default function CameraScanScreen() {
             )}
           </View>
         </View>
-        </CameraView>
-      </GestureDetector>
+      </CameraView>
     </View>
   );
 }
