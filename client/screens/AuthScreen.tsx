@@ -16,7 +16,6 @@ import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { useAuth } from "@/contexts/AuthContext";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import * as WebBrowser from "expo-web-browser";
-import { LegalAgreementModal } from "@/components/LegalAgreementModal";
 
 const appIcon = require("../../assets/images/icon.png");
 
@@ -35,7 +34,6 @@ export default function AuthScreen() {
   const [error, setError] = useState("");
   const [isAppleAvailable, setIsAppleAvailable] = useState(false);
   const [isGoogleAvailable, setIsGoogleAvailable] = useState(false);
-  const [showLegalModal, setShowLegalModal] = useState(false);
 
   useEffect(() => {
     checkAppleAvailability();
@@ -152,36 +150,18 @@ export default function AuthScreen() {
       return;
     }
 
-    setError("");
-
-    if (isLogin) {
-      setIsLoading(true);
-      const result = await login(email.trim(), password);
-      setIsLoading(false);
-      if (!result.success) {
-        setError(result.error || "Authentication failed");
-      }
-    } else {
-      setShowLegalModal(true);
-    }
-  };
-
-  const handleLegalAgree = async () => {
-    setShowLegalModal(false);
     setIsLoading(true);
     setError("");
 
-    const result = await signup(email.trim(), password);
+    const result = isLogin
+      ? await login(email.trim(), password)
+      : await signup(email.trim(), password);
 
     setIsLoading(false);
 
     if (!result.success) {
-      setError(result.error || "Signup failed");
+      setError(result.error || "Authentication failed");
     }
-  };
-
-  const handleLegalCancel = () => {
-    setShowLegalModal(false);
   };
 
   // TEMPORARY: Test login for development - remove before production
@@ -396,12 +376,6 @@ export default function AuthScreen() {
           </Pressable>
         </View>
       </ScrollView>
-
-      <LegalAgreementModal
-        visible={showLegalModal}
-        onAgree={handleLegalAgree}
-        onCancel={handleLegalCancel}
-      />
     </KeyboardAvoidingView>
   );
 }

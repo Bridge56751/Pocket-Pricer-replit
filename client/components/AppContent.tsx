@@ -3,23 +3,49 @@ import { View, ActivityIndicator, StyleSheet, Alert } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 import * as Linking from "expo-linking";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import RootStackNavigator from "@/navigation/RootStackNavigator";
 import AuthScreen from "@/screens/AuthScreen";
 import OnboardingScreen, { checkOnboardingComplete } from "@/screens/OnboardingScreen";
+import { LegalAgreementModal } from "@/components/LegalAgreementModal";
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { useAuth } from "@/contexts/AuthContext";
+
+const LEGAL_ACCEPTED_KEY = "@pocket_pricer_legal_accepted";
 
 export function AppContent() {
   const { isDarkMode, theme } = useDesignTokens();
   const { isAuthenticated, isLoading, checkSubscription } = useAuth();
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
+  const [legalAccepted, setLegalAccepted] = useState<boolean | null>(null);
+  const [showLegalModal, setShowLegalModal] = useState(false);
 
   useEffect(() => {
     checkOnboardingComplete().then((complete) => {
       setShowOnboarding(!complete);
     });
+    AsyncStorage.getItem(LEGAL_ACCEPTED_KEY).then((value) => {
+      setLegalAccepted(value === "true");
+    });
   }, []);
+
+  const handleLegalAgree = async () => {
+    await AsyncStorage.setItem(LEGAL_ACCEPTED_KEY, "true");
+    setLegalAccepted(true);
+    setShowLegalModal(false);
+  };
+
+  const handleLegalCancel = () => {
+    setShowLegalModal(false);
+  };
+
+  const handleOnboardingComplete = () => {
+    setShowOnboarding(false);
+    if (!legalAccepted) {
+      setShowLegalModal(true);
+    }
+  };
 
   useEffect(() => {
     const handleDeepLink = (event: { url: string }) => {
@@ -46,7 +72,7 @@ export function AppContent() {
     };
   }, [checkSubscription]);
 
-  if (isLoading || showOnboarding === null) {
+  if (isLoading || showOnboarding === null || legalAccepted === null) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -58,7 +84,7 @@ export function AppContent() {
   if (showOnboarding) {
     return (
       <>
-        <OnboardingScreen onComplete={() => setShowOnboarding(false)} />
+        <OnboardingScreen onComplete={handleOnboardingComplete} />
         <StatusBar style={isDarkMode ? "light" : "dark"} />
       </>
     );
@@ -68,6 +94,11 @@ export function AppContent() {
     return (
       <>
         <AuthScreen />
+        <LegalAgreementModal
+          visible={showLegalModal}
+          onAgree={handleLegalAgree}
+          onCancel={handleLegalCancel}
+        />
         <StatusBar style={isDarkMode ? "light" : "dark"} />
       </>
     );
