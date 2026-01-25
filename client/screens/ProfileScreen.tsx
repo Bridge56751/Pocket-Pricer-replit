@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, StyleSheet, Pressable, Text, Alert, Platform, ActivityIndicator, Linking } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -12,18 +12,49 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getApiUrl } from "@/lib/query-client";
 import UpgradeModal from "@/components/UpgradeModal";
 
+interface SubscriptionInfo {
+  cancelAtPeriodEnd: boolean;
+  periodEndDate: string | null;
+}
+
 type ThemeOption = "light" | "dark" | "system";
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const { theme, themeMode, setThemeMode, isDarkMode } = useDesignTokens();
-  const { user, token, logout } = useAuth();
+  const { user, token, logout, checkSubscription } = useAuth();
 
   const [isDeleting, setIsDeleting] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [isLoadingCheckout, setIsLoadingCheckout] = useState(false);
   const [isLoadingPortal, setIsLoadingPortal] = useState(false);
+  const [isLoadingCancel, setIsLoadingCancel] = useState(false);
+  const [subscriptionInfo, setSubscriptionInfo] = useState<SubscriptionInfo | null>(null);
+
+  useEffect(() => {
+    if (user?.subscriptionStatus === "active" && token) {
+      fetchSubscriptionInfo();
+    }
+  }, [user?.subscriptionStatus, token]);
+
+  const fetchSubscriptionInfo = async () => {
+    try {
+      const response = await fetch(new URL("/api/subscription/check", getApiUrl()).toString(), {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+      if (data.status === "active") {
+        setSubscriptionInfo({
+          cancelAtPeriodEnd: data.cancelAtPeriodEnd || false,
+          periodEndDate: data.periodEndDate || null,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to fetch subscription info:", error);
+    }
+  };
 
   const handleUpgrade = async () => {
     if (!token) return;
@@ -78,6 +109,89 @@ export default function ProfileScreen() {
       console.error("Failed to open customer portal:", error);
     } finally {
       setIsLoadingPortal(false);
+    }
+  };
+
+  const handleCancelSubscription = () => {
+    const confirmCancel = async () => {
+      setIsLoadingCancel(true);
+      try {
+        const response = await fetch(new URL("/api/subscription/cancel", getApiUrl()).toString(), {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          const endDate = data.accessUntil ? new Date(data.accessUntil).toLocaleDateString() : "the end of your billing period";
+          
+          if (Platform.OS === "web") {
+            alert(`Your subscription has been cancelled. You'll continue to have Pro access until ${endDate}.`);
+          } else {
+            Alert.alert("Subscription Cancelled", `You'll continue to have Pro access until ${endDate}.`);
+          }
+          fetchSubscriptionInfo();
+        } else {
+          throw new Error(data.error);
+        }
+      } catch (error) {
+        console.error("Cancel error:", error);
+        if (Platform.OS === "web") {
+          alert("Failed to cancel subscription. Please try again.");
+        } else {
+          Alert.alert("Error", "Failed to cancel subscription. Please try again.");
+        }
+      } finally {
+        setIsLoadingCancel(false);
+      }
+    };
+
+    if (Platform.OS === "web") {
+      if (confirm("Are you sure you want to cancel? You'll keep Pro access until the end of your billing period.")) {
+        confirmCancel();
+      }
+    } else {
+      Alert.alert(
+        "Cancel Subscription",
+        "Are you sure you want to cancel? You'll keep Pro access until the end of your billing period.",
+        [
+          { text: "Keep Subscription", style: "cancel" },
+          { text: "Cancel Subscription", style: "destructive", onPress: confirmCancel },
+        ]
+      );
+    }
+  };
+
+  const handleReactivateSubscription = async () => {
+    setIsLoadingCancel(true);
+    try {
+      const response = await fetch(new URL("/api/subscription/reactivate", getApiUrl()).toString(), {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        if (Platform.OS === "web") {
+          alert("Your subscription has been reactivated!");
+        } else {
+          Alert.alert("Success", "Your subscription has been reactivated!");
+        }
+        fetchSubscriptionInfo();
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (error) {
+      console.error("Reactivate error:", error);
+      if (Platform.OS === "web") {
+        alert("Failed to reactivate subscription. Please try again.");
+      } else {
+        Alert.alert("Error", "Failed to reactivate subscription. Please try again.");
+      }
+    } finally {
+      setIsLoadingCancel(false);
     }
   };
 
@@ -206,28 +320,52 @@ export default function ProfileScreen() {
           </>
         ) : (
           <>
-            <Text style={[styles.upgradeHint, { color: theme.colors.mutedForeground }]}>
-              Unlimited product scans
-            </Text>
-            <Pressable
-              onPress={handleManageSubscription}
-              disabled={isLoadingPortal}
-              style={({ pressed }) => [
-                styles.manageButton,
-                { backgroundColor: theme.colors.muted, opacity: pressed || isLoadingPortal ? 0.7 : 1 }
-              ]}
-            >
-              {isLoadingPortal ? (
-                <ActivityIndicator color={theme.colors.foreground} size="small" />
-              ) : (
-                <>
-                  <Feather name="settings" size={18} color={theme.colors.foreground} />
-                  <Text style={[styles.manageButtonText, { color: theme.colors.foreground }]}>
-                    Manage Subscription
-                  </Text>
-                </>
-              )}
-            </Pressable>
+            {subscriptionInfo?.cancelAtPeriodEnd ? (
+              <>
+                <Text style={[styles.upgradeHint, { color: theme.colors.danger }]}>
+                  Cancels on {subscriptionInfo.periodEndDate ? new Date(subscriptionInfo.periodEndDate).toLocaleDateString() : "end of period"}
+                </Text>
+                <Pressable
+                  onPress={handleReactivateSubscription}
+                  disabled={isLoadingCancel}
+                  style={({ pressed }) => [
+                    styles.upgradeButton,
+                    { backgroundColor: theme.colors.primary, opacity: pressed || isLoadingCancel ? 0.7 : 1 }
+                  ]}
+                >
+                  {isLoadingCancel ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                    <>
+                      <Feather name="refresh-cw" size={18} color="#fff" />
+                      <Text style={styles.upgradeButtonText}>Keep My Subscription</Text>
+                    </>
+                  )}
+                </Pressable>
+              </>
+            ) : (
+              <>
+                <Text style={[styles.upgradeHint, { color: theme.colors.mutedForeground }]}>
+                  Unlimited product scans
+                </Text>
+                <Pressable
+                  onPress={handleCancelSubscription}
+                  disabled={isLoadingCancel}
+                  style={({ pressed }) => [
+                    styles.cancelButton,
+                    { borderColor: theme.colors.danger, opacity: pressed || isLoadingCancel ? 0.7 : 1 }
+                  ]}
+                >
+                  {isLoadingCancel ? (
+                    <ActivityIndicator color={theme.colors.danger} size="small" />
+                  ) : (
+                    <Text style={[styles.cancelButtonText, { color: theme.colors.danger }]}>
+                      Cancel Subscription
+                    </Text>
+                  )}
+                </Pressable>
+              </>
+            )}
           </>
         )}
       </View>
@@ -483,6 +621,18 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   manageButtonText: {
+    fontSize: 15,
+    fontWeight: "500",
+  },
+  cancelButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 8,
+  },
+  cancelButtonText: {
     fontSize: 15,
     fontWeight: "500",
   },
