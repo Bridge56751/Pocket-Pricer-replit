@@ -10,6 +10,24 @@ import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClie
 const JWT_SECRET = process.env.SESSION_SECRET || "price-it-secret-key";
 const FREE_LIFETIME_SEARCHES = 5;
 
+// Emails that get Pro status for free (add emails or domain patterns)
+const FREE_PRO_EMAILS: string[] = [
+  // Add exact emails: "friend@example.com"
+  // Or domain patterns: "@yourcompany.com"
+];
+
+function isFreePro(email: string): boolean {
+  const lowerEmail = email.toLowerCase();
+  return FREE_PRO_EMAILS.some(pattern => {
+    if (pattern.startsWith("@")) {
+      // Domain pattern
+      return lowerEmail.endsWith(pattern.toLowerCase());
+    }
+    // Exact email match
+    return lowerEmail === pattern.toLowerCase();
+  });
+}
+
 const ai = new GoogleGenAI({
   apiKey: process.env.AI_INTEGRATIONS_GEMINI_API_KEY,
   httpOptions: {
@@ -216,38 +234,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const clientDeviceId = deviceId || `device_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
-      // Check if there's an existing Stripe customer with an active subscription for this email
+      // Check if email is on the free Pro list
       let subscriptionStatus = "free";
       let stripeCustomerId: string | null = null;
       let stripeSubscriptionId: string | null = null;
       
-      try {
-        const stripe = await getUncachableStripeClient();
-        if (stripe) {
-          // Search for existing customer by email
-          const customers = await stripe.customers.list({ email: email.toLowerCase(), limit: 1 });
-          
-          if (customers.data.length > 0) {
-            const customer = customers.data[0];
-            stripeCustomerId = customer.id;
+      if (isFreePro(email)) {
+        subscriptionStatus = "active";
+        console.log(`Granting free Pro access to whitelisted email: ${email}`);
+      } else {
+        // Check if there's an existing Stripe customer with an active subscription for this email
+        try {
+          const stripe = await getUncachableStripeClient();
+          if (stripe) {
+            // Search for existing customer by email
+            const customers = await stripe.customers.list({ email: email.toLowerCase(), limit: 1 });
             
-            // Check for active subscriptions
-            const subscriptions = await stripe.subscriptions.list({
-              customer: customer.id,
-              status: "active",
-              limit: 1,
-            });
-            
-            if (subscriptions.data.length > 0) {
-              stripeSubscriptionId = subscriptions.data[0].id;
-              subscriptionStatus = "active";
-              console.log(`Restoring Pro subscription for returning user: ${email}`);
+            if (customers.data.length > 0) {
+              const customer = customers.data[0];
+              stripeCustomerId = customer.id;
+              
+              // Check for active subscriptions
+              const subscriptions = await stripe.subscriptions.list({
+                customer: customer.id,
+                status: "active",
+                limit: 1,
+              });
+              
+              if (subscriptions.data.length > 0) {
+                stripeSubscriptionId = subscriptions.data[0].id;
+                subscriptionStatus = "active";
+                console.log(`Restoring Pro subscription for returning user: ${email}`);
+              }
             }
           }
+        } catch (stripeError) {
+          console.error("Failed to check Stripe subscription:", stripeError);
+          // Continue with free account if Stripe check fails
         }
-      } catch (stripeError) {
-        console.error("Failed to check Stripe subscription:", stripeError);
-        // Continue with free account if Stripe check fails
       }
       
       await query(
