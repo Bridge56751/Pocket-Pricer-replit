@@ -477,15 +477,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Subscription price not found. Please run seed-products script." });
       }
       
-      const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}`;
-      
       const session = await stripe.checkout.sessions.create({
         customer: customerId,
         payment_method_types: ['card'],
         line_items: [{ price: priceItPrice.id, quantity: 1 }],
         mode: 'subscription',
-        success_url: `${baseUrl}/subscription-success`,
-        cancel_url: `${baseUrl}/subscription-cancel`,
+        success_url: `ebayprofit://subscription-success`,
+        cancel_url: `ebayprofit://subscription-cancel`,
       });
       
       res.json({ url: session.url });
