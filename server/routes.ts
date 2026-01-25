@@ -668,14 +668,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cancel_at_period_end: true,
       }) as any;
       
-      const periodEndDate = new Date(subscription.current_period_end * 1000);
+      console.log("Subscription updated:", JSON.stringify(subscription, null, 2));
       
-      console.log(`Subscription ${subscription.id} set to cancel at ${periodEndDate.toISOString()}`);
+      let accessUntil = null;
+      if (subscription.current_period_end) {
+        const periodEndDate = new Date(subscription.current_period_end * 1000);
+        accessUntil = periodEndDate.toISOString();
+        console.log(`Subscription ${subscription.id} set to cancel at ${accessUntil}`);
+      }
       
       res.json({ 
         success: true, 
         message: "Your subscription will be cancelled at the end of your billing period.",
-        accessUntil: periodEndDate.toISOString()
+        accessUntil
       });
     } catch (error: any) {
       console.error("Cancel subscription error:", error?.message || error);
