@@ -6,12 +6,13 @@ import {
   Modal,
   Pressable,
   ActivityIndicator,
-  Linking,
+  Platform,
+  Alert,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useDesignTokens } from "@/hooks/useDesignTokens";
+import { useRevenueCat } from "@/contexts/RevenueCatContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { getApiUrl } from "@/lib/query-client";
 
 interface UpgradeModalProps {
   visible: boolean;
@@ -20,46 +21,86 @@ interface UpgradeModalProps {
 
 export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
   const { theme } = useDesignTokens();
-  const { token, checkSubscription } = useAuth();
+  const { packages, purchasePackage, restorePurchases, isPro } = useRevenueCat();
+  const { refreshUser } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
 
   const handleUpgrade = async () => {
-    if (!token) return;
-    
+    if (Platform.OS === "web") {
+      Alert.alert(
+        "Mobile Only",
+        "Subscriptions are only available in the mobile app. Please use Expo Go on your iOS or Android device to subscribe."
+      );
+      return;
+    }
+
+    if (packages.length === 0) {
+      Alert.alert("Error", "No subscription packages available. Please try again later.");
+      return;
+    }
+
     setIsLoading(true);
-    
+
     try {
-      const apiUrl = getApiUrl();
-      const checkoutUrl = new URL("/api/create-checkout-session", apiUrl).toString();
-      console.log("Checkout URL:", checkoutUrl);
-      
-      const response = await fetch(checkoutUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      
-      console.log("Response status:", response.status);
-      const data = await response.json();
-      console.log("Response data:", JSON.stringify(data));
-      
-      if (data.url) {
-        await Linking.openURL(data.url);
+      const monthlyPackage = packages.find(
+        (pkg) => pkg.packageType === "MONTHLY" || pkg.identifier === "$rc_monthly"
+      ) || packages[0];
+
+      const result = await purchasePackage(monthlyPackage);
+
+      if (result.success) {
+        await refreshUser();
         onClose();
-        setTimeout(() => {
-          checkSubscription();
-        }, 5000);
-      } else {
-        console.error("Checkout error:", data.error, data.details);
+        Alert.alert("Success", "Welcome to Pocket Pricer Pro! You now have unlimited scans.");
+      } else if (result.error && result.error !== "Purchase cancelled") {
+        Alert.alert("Purchase Failed", result.error);
       }
     } catch (error: any) {
-      console.error("Failed to start checkout:", error?.message || error);
+      Alert.alert("Error", error?.message || "Purchase failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
+
+  const handleRestore = async () => {
+    if (Platform.OS === "web") {
+      Alert.alert("Mobile Only", "Please use the mobile app to restore purchases.");
+      return;
+    }
+
+    setIsRestoring(true);
+
+    try {
+      const result = await restorePurchases();
+
+      if (result.success) {
+        await refreshUser();
+        onClose();
+        Alert.alert("Restored", "Your Pro subscription has been restored!");
+      } else {
+        Alert.alert("No Subscription Found", result.error || "No active subscription found for this account.");
+      }
+    } catch (error: any) {
+      Alert.alert("Error", error?.message || "Failed to restore purchases.");
+    } finally {
+      setIsRestoring(false);
+    }
+  };
+
+  const getPrice = () => {
+    if (packages.length > 0) {
+      const monthlyPackage = packages.find(
+        (pkg) => pkg.packageType === "MONTHLY" || pkg.identifier === "$rc_monthly"
+      ) || packages[0];
+      return monthlyPackage.product.priceString;
+    }
+    return "$4.99";
+  };
+
+  if (isPro) {
+    return null;
+  }
 
   return (
     <Modal
@@ -88,7 +129,7 @@ export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
 
           <View style={styles.priceContainer}>
             <Text style={[styles.price, { color: theme.colors.foreground }]}>
-              $8.99
+              {getPrice()}
             </Text>
             <Text style={[styles.period, { color: theme.colors.mutedForeground }]}>
               /month
@@ -119,12 +160,26 @@ export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
           <Pressable
             style={[styles.upgradeButton, { backgroundColor: theme.colors.primary }]}
             onPress={handleUpgrade}
-            disabled={isLoading}
+            disabled={isLoading || isRestoring}
           >
             {isLoading ? (
               <ActivityIndicator color="#fff" />
             ) : (
               <Text style={styles.upgradeButtonText}>Subscribe Now</Text>
+            )}
+          </Pressable>
+
+          <Pressable 
+            onPress={handleRestore}
+            disabled={isLoading || isRestoring}
+            style={styles.restoreButton}
+          >
+            {isRestoring ? (
+              <ActivityIndicator size="small" color={theme.colors.primary} />
+            ) : (
+              <Text style={[styles.restoreText, { color: theme.colors.primary }]}>
+                Restore Purchase
+              </Text>
             )}
           </Pressable>
 
@@ -215,6 +270,14 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 18,
     fontWeight: "600",
+  },
+  restoreButton: {
+    paddingVertical: 8,
+    marginBottom: 4,
+  },
+  restoreText: {
+    fontSize: 15,
+    fontWeight: "500",
   },
   laterText: {
     fontSize: 15,

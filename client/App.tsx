@@ -20,6 +20,7 @@ import RootStackNavigator from "@/navigation/RootStackNavigator";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { RevenueCatProvider } from "@/contexts/RevenueCatContext";
 import { AppContent } from "@/components/AppContent";
 
 SplashScreen.preventAutoHideAsync();
@@ -49,9 +50,11 @@ export default function App() {
           <GestureHandlerRootView style={styles.root}>
             <KeyboardProvider>
               <ThemeProvider systemColorScheme={systemColorScheme}>
-                <AuthProvider>
-                  <AppContent />
-                </AuthProvider>
+                <RevenueCatProvider>
+                  <AuthProvider>
+                    <AppContent />
+                  </AuthProvider>
+                </RevenueCatProvider>
               </ThemeProvider>
             </KeyboardProvider>
           </GestureHandlerRootView>

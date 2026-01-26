@@ -76,3 +76,8 @@ ensurePreviewReachable = "/status"
 
 [objectStorage]
 defaultBucketID = "replit-objstore-7a381cbe-aa87-4d8f-a4e7-ab55e4546f7a"
+
+[userenv]
+
+[userenv.shared]
+EXPO_PUBLIC_REVENUECAT_API_KEY = "test_HDxTMeLUIgzKxGutPHRBDaFgXgR"
