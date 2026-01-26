@@ -5,29 +5,43 @@ let connectionSettings: any;
 
 async function getCredentials() {
   const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
+  console.log("RESEND DEBUG - Connector hostname:", hostname);
+  
   const xReplitToken = process.env.REPL_IDENTITY 
     ? 'repl ' + process.env.REPL_IDENTITY 
     : process.env.WEB_REPL_RENEWAL 
     ? 'depl ' + process.env.WEB_REPL_RENEWAL 
     : null;
 
+  console.log("RESEND DEBUG - Token type:", xReplitToken ? (xReplitToken.startsWith('repl') ? 'repl' : 'depl') : 'none');
+
   if (!xReplitToken) {
+    console.error("RESEND DEBUG - No token found!");
     throw new Error('X_REPLIT_TOKEN not found for repl/depl');
   }
 
-  connectionSettings = await fetch(
-    'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=resend',
-    {
-      headers: {
-        'Accept': 'application/json',
-        'X_REPLIT_TOKEN': xReplitToken
-      }
+  const url = 'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=resend';
+  console.log("RESEND DEBUG - Fetching from:", url);
+  
+  const response = await fetch(url, {
+    headers: {
+      'Accept': 'application/json',
+      'X_REPLIT_TOKEN': xReplitToken
     }
-  ).then(res => res.json()).then(data => data.items?.[0]);
+  });
+  
+  const data = await response.json();
+  console.log("RESEND DEBUG - Raw response:", JSON.stringify(data, null, 2));
+  
+  connectionSettings = data.items?.[0];
 
-  if (!connectionSettings || (!connectionSettings.settings.api_key)) {
+  if (!connectionSettings || (!connectionSettings.settings?.api_key)) {
+    console.error("RESEND DEBUG - No connection settings or API key found");
     throw new Error('Resend not connected - please set up the Resend integration');
   }
+  
+  console.log("RESEND DEBUG - From email:", connectionSettings.settings.from_email);
+  console.log("RESEND DEBUG - API key prefix:", connectionSettings.settings.api_key?.substring(0, 10) + "...");
   
   return {
     apiKey: connectionSettings.settings.api_key, 
