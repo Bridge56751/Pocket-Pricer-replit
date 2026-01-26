@@ -1,18 +1,43 @@
-// Resend email client - uses RESEND_API_KEY and RESEND_FROM_EMAIL secrets
+// Resend email client - uses Replit Resend connector
 import { Resend } from 'resend';
 
-function getResendClient() {
-  const apiKey = process.env.RESEND_API_KEY;
-  const fromEmail = process.env.RESEND_FROM_EMAIL;
-  
-  if (!apiKey) {
-    throw new Error('RESEND_API_KEY not configured');
+let connectionSettings: any;
+
+async function getCredentials() {
+  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
+  const xReplitToken = process.env.REPL_IDENTITY 
+    ? 'repl ' + process.env.REPL_IDENTITY 
+    : process.env.WEB_REPL_RENEWAL 
+    ? 'depl ' + process.env.WEB_REPL_RENEWAL 
+    : null;
+
+  if (!xReplitToken) {
+    throw new Error('X_REPLIT_TOKEN not found for repl/depl');
+  }
+
+  connectionSettings = await fetch(
+    'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=resend',
+    {
+      headers: {
+        'Accept': 'application/json',
+        'X_REPLIT_TOKEN': xReplitToken
+      }
+    }
+  ).then(res => res.json()).then(data => data.items?.[0]);
+
+  if (!connectionSettings || (!connectionSettings.settings.api_key)) {
+    throw new Error('Resend not connected - please set up the Resend integration');
   }
   
-  if (!fromEmail) {
-    throw new Error('RESEND_FROM_EMAIL not configured');
-  }
-  
+  return {
+    apiKey: connectionSettings.settings.api_key, 
+    fromEmail: connectionSettings.settings.from_email
+  };
+}
+
+// Get a fresh Resend client each time (credentials may expire)
+export async function getUncachableResendClient() {
+  const { apiKey, fromEmail } = await getCredentials();
   return {
     client: new Resend(apiKey),
     fromEmail
@@ -22,10 +47,8 @@ function getResendClient() {
 export async function sendVerificationEmail(to: string, verificationCode: string) {
   console.log("Attempting to send verification email to:", to);
   
-  const { client, fromEmail } = getResendClient();
+  const { client, fromEmail } = await getUncachableResendClient();
   console.log("Using from email:", fromEmail);
-  
-  const verificationUrl = `${process.env.EXPO_PUBLIC_DOMAIN || 'https://pocket-pricer.replit.app'}/api/verify-email?code=${verificationCode}&email=${encodeURIComponent(to)}`;
   
   const result = await client.emails.send({
     from: fromEmail,
@@ -76,9 +99,9 @@ export async function sendVerificationEmail(to: string, verificationCode: string
 }
 
 export async function sendSubscriptionThankYouEmail(to: string) {
-  const { client, fromEmail } = getResendClient();
+  const { client, fromEmail } = await getUncachableResendClient();
   
-  await client.emails.send({
+  const result = await client.emails.send({
     from: fromEmail,
     to: [to],
     subject: 'Welcome to Pocket Pricer Pro!',
@@ -123,4 +146,8 @@ export async function sendSubscriptionThankYouEmail(to: string) {
       </html>
     `
   });
+  
+  if (result.error) {
+    throw new Error(`Resend error: ${result.error.message}`);
+  }
 }
