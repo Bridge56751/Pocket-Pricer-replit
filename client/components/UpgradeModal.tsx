@@ -95,7 +95,7 @@ export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
       ) || packages[0];
       return monthlyPackage.product.priceString;
     }
-    return "$4.99";
+    return "$8.99";
   };
 
   if (isPro) {

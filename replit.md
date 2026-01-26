@@ -171,12 +171,12 @@ Users can test on physical devices using Expo Go by scanning the QR code.
 6. **Favorites**: Save profitable products for later
 7. **Custom Settings**: Set default costs and target profit margins
 8. **User Authentication**: Secure signup/login with JWT, Google Sign-In, and Apple Sign-In
-9. **Subscription Tiers**: Free (5 lifetime scans) or Pro ($4.99/mo unlimited)
+9. **Subscription Tiers**: Free (5 lifetime scans) or Pro ($8.99/mo unlimited)
 
 ## Subscription Model
 
 - **Free Tier**: 5 lifetime product scans
-- **Pro Tier**: $4.99/month for unlimited scans
+- **Pro Tier**: $8.99/month for unlimited scans
 - Users see an upgrade modal when they hit the free limit
 - RevenueCat handles iOS/Android in-app purchases (prevents duplicate payments via Apple ID tracking)
 - Stripe available as web fallback
