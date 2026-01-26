@@ -231,7 +231,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const existing = await query("SELECT id FROM users WHERE email = $1", [email.toLowerCase()]);
       if (existing.rows.length > 0) {
-        return res.status(400).json({ error: "Email already registered" });
+        return res.status(400).json({ error: "You already have an account. Please log in instead." });
       }
       
       const passwordHash = await bcrypt.hash(password, 10);
