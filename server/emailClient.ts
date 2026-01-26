@@ -20,11 +20,14 @@ function getResendClient() {
 }
 
 export async function sendVerificationEmail(to: string, verificationCode: string) {
+  console.log("Attempting to send verification email to:", to);
+  
   const { client, fromEmail } = getResendClient();
+  console.log("Using from email:", fromEmail);
   
   const verificationUrl = `${process.env.EXPO_PUBLIC_DOMAIN || 'https://pocket-pricer.replit.app'}/api/verify-email?code=${verificationCode}&email=${encodeURIComponent(to)}`;
   
-  await client.emails.send({
+  const result = await client.emails.send({
     from: fromEmail,
     to: [to],
     subject: 'Verify your Pocket Pricer account',
@@ -62,6 +65,14 @@ export async function sendVerificationEmail(to: string, verificationCode: string
       </html>
     `
   });
+  
+  console.log("Email send result:", JSON.stringify(result, null, 2));
+  
+  if (result.error) {
+    throw new Error(`Resend error: ${result.error.message}`);
+  }
+  
+  console.log("Verification email sent successfully to:", to);
 }
 
 export async function sendSubscriptionThankYouEmail(to: string) {
