@@ -232,10 +232,10 @@ const styles = StyleSheet.create({
   },
   historyCard: {
     flexDirection: "row",
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
-    gap: 12,
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 14,
+    gap: 14,
   },
   thumbnail: {
     width: 90,
