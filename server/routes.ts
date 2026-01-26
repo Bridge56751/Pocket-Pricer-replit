@@ -925,6 +925,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // RevenueCat subscription sync - called from mobile app to sync iOS/Android purchase status
+  app.post("/api/subscription/sync", async (req: Request, res: Response) => {
+    try {
+      const user = await getUserFromToken(req);
+      if (!user) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const { isPro, revenuecatUserId } = req.body;
+      
+      if (typeof isPro !== "boolean") {
+        return res.status(400).json({ error: "isPro status required" });
+      }
+      
+      const newStatus = isPro ? "active" : "free";
+      
+      // Update user subscription status based on RevenueCat
+      await query(
+        "UPDATE users SET subscription_status = $1, revenuecat_user_id = $2 WHERE id = $3",
+        [newStatus, revenuecatUserId || null, user.id]
+      );
+      
+      // Send thank you email on new subscription
+      if (isPro && user.subscription_status !== "active") {
+        try {
+          await sendSubscriptionThankYouEmail(user.email);
+        } catch (emailError) {
+          console.error("Failed to send subscription thank you email:", emailError);
+        }
+      }
+      
+      return res.json({ 
+        status: newStatus,
+        synced: true
+      });
+    } catch (error) {
+      console.error("Subscription sync error:", error);
+      res.status(500).json({ error: "Failed to sync subscription" });
+    }
+  });
+
   app.post("/api/subscription/cancel", async (req: Request, res: Response) => {
     try {
       const user = await getUserFromToken(req);

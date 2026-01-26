@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 import * as Device from "expo-device";
+import Purchases from "react-native-purchases";
 import { getApiUrl } from "@/lib/query-client";
 
 interface User {
@@ -129,6 +130,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         setToken(data.token);
         setUser(data.user);
+        
+        // Identify user with RevenueCat
+        if (Platform.OS !== "web" && data.user?.id) {
+          try {
+            await Purchases.logIn(data.user.id);
+          } catch (e) {
+            console.log("RevenueCat identify error:", e);
+          }
+        }
+        
         return { success: true };
       } else {
         return { 
@@ -223,6 +234,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await AsyncStorage.setItem(AUTH_TOKEN_KEY, result.token);
         setToken(result.token);
         setUser(result.user);
+        
+        // Identify user with RevenueCat
+        if (Platform.OS !== "web" && result.user?.id) {
+          try {
+            await Purchases.logIn(result.user.id);
+          } catch (e) {
+            console.log("RevenueCat identify error:", e);
+          }
+        }
+        
         return { success: true };
       } else {
         return { success: false, error: result.error || "Social login failed" };
@@ -248,6 +269,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error("Logout API error:", error);
     }
+    
+    // Logout from RevenueCat
+    if (Platform.OS !== "web") {
+      try {
+        await Purchases.logOut();
+      } catch (e) {
+        console.log("RevenueCat logout error:", e);
+      }
+    }
+    
     await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
     setToken(null);
     setUser(null);
@@ -263,12 +294,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!token) return;
     
     try {
-      const response = await fetch(new URL("/api/subscription/check", getApiUrl()).toString(), {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      
-      if (response.ok) {
+      // Check RevenueCat subscription status on native platforms
+      if (Platform.OS !== "web") {
+        const customerInfo = await Purchases.getCustomerInfo();
+        const isPro = "pro" in customerInfo.entitlements.active || "Pro" in customerInfo.entitlements.active;
+        
+        // Sync with backend
+        const response = await fetch(new URL("/api/subscription/sync", getApiUrl()).toString(), {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}` 
+          },
+          body: JSON.stringify({ 
+            isPro,
+            revenuecatUserId: customerInfo.originalAppUserId 
+          }),
+        });
+        
+        if (response.ok) {
+          await refreshUser();
+        }
+      } else {
+        // Web fallback - just refresh user
         await refreshUser();
       }
     } catch (error) {
