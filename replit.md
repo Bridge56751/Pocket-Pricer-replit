@@ -18,7 +18,7 @@ This app allows eBay resellers to:
 - **Backend**: Express.js with TypeScript
 - **Database**: PostgreSQL (Neon-backed via Replit)
 - **Authentication**: JWT tokens with bcrypt password hashing
-- **Payments**: Stripe for $8.99/month Pro subscription
+- **Payments**: RevenueCat for iOS/Android in-app purchases ($4.99/month Pro subscription)
 - **AI**: Gemini for product image identification
 - **eBay Data**: SerpAPI (real-time eBay listing search)
 - **State Management**: TanStack React Query
@@ -30,7 +30,8 @@ This app allows eBay resellers to:
 
 - `SERPAPI_API_KEY` - Required for eBay listing search (get from https://serpapi.com)
 - `SESSION_SECRET` - Used for JWT token signing
-- Stripe keys configured via Replit integration
+- `REVENUECAT_API_KEY` - RevenueCat public API key for in-app purchases
+- `EXPO_PUBLIC_REVENUECAT_API_KEY` - Same key, exposed to frontend
 
 ## Project Structure
 
@@ -71,7 +72,8 @@ client/
 │   ├── ProfileScreen.tsx      # User settings & subscription
 │   └── ProductDetailScreen.tsx # Product profit breakdown
 ├── contexts/
-│   └── AuthContext.tsx        # Authentication state management
+│   ├── AuthContext.tsx        # Authentication state management
+│   └── RevenueCatContext.tsx  # In-app purchase management
 ├── components/
 │   └── UpgradeModal.tsx       # Pro subscription upgrade modal
 └── types/
@@ -141,13 +143,15 @@ function MyComponent() {
 
 - `GET /api/trending` - Get trending products
 
-### Payments (Stripe)
-- `POST /api/create-checkout-session` - Start Stripe checkout for Pro subscription
+### Payments (RevenueCat)
+- `POST /api/subscription/sync` - Sync subscription status from RevenueCat
   - Headers: `Authorization: Bearer <token>`
-  - Returns: `{ url: string }` - Stripe checkout URL
+  - Body: `{ isPro: boolean, revenuecatUserId: string }`
+  - Called automatically after in-app purchase on iOS/Android
 
-- `POST /api/stripe-webhook` - Handle Stripe webhook events
-  - Automatically updates subscription status on payment
+- Stripe endpoints kept for legacy/web support:
+  - `POST /api/create-checkout-session` - Web checkout fallback
+  - `POST /api/stripe-webhook` - Handle Stripe webhook events
 
 ## Running the App
 
@@ -174,7 +178,8 @@ Users can test on physical devices using Expo Go by scanning the QR code.
 - **Free Tier**: 5 lifetime product scans
 - **Pro Tier**: $4.99/month for unlimited scans
 - Users see an upgrade modal when they hit the free limit
-- Stripe handles payment processing securely
+- RevenueCat handles iOS/Android in-app purchases (prevents duplicate payments via Apple ID tracking)
+- Stripe available as web fallback
 
 ## Database Schema
 
@@ -187,6 +192,7 @@ CREATE TABLE users (
   apple_id VARCHAR(255),
   stripe_customer_id VARCHAR(100),
   stripe_subscription_id VARCHAR(100),
+  revenuecat_user_id VARCHAR(255),
   subscription_status VARCHAR(20) DEFAULT 'free',
   total_searches INTEGER DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -195,11 +201,16 @@ CREATE TABLE users (
 
 ## Recent Changes
 
+- **Jan 2026**: Switched from Stripe to RevenueCat for iOS in-app purchases
+  - RevenueCat handles Apple/Google payment processing
+  - Prevents duplicate payments via Apple ID tracking
+  - User subscription status syncs with backend
+  - Restore purchases functionality added
 - **Jan 2026**: Added authentication and subscription system
   - JWT-based signup/login with email/password
+  - Email verification with 6-digit codes via Resend
   - Google Sign-In (native apps)
   - Apple Sign-In (iOS)
-  - Stripe integration for $8.99/month Pro subscription
   - Free tier with 5 lifetime scans limit
   - Upgrade modal when limit reached
   - Profile screen with subscription status and logout
