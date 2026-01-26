@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { useAuth } from "@/contexts/AuthContext";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import * as WebBrowser from "expo-web-browser";
+import { getApiUrl, apiRequest } from "@/lib/query-client";
 
 const appIcon = require("../../assets/images/icon.png");
 
@@ -24,7 +25,7 @@ WebBrowser.maybeCompleteAuthSession();
 export default function AuthScreen() {
   const { theme } = useDesignTokens();
   const insets = useSafeAreaInsets();
-  const { login, signup, socialLogin } = useAuth();
+  const { login, signup, socialLogin, verifyEmail } = useAuth();
   
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
@@ -35,11 +36,88 @@ export default function AuthScreen() {
   const [error, setError] = useState("");
   const [isAppleAvailable, setIsAppleAvailable] = useState(false);
   const [isGoogleAvailable, setIsGoogleAvailable] = useState(false);
+  
+  const [showVerification, setShowVerification] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState("");
+  const [verificationCode, setVerificationCode] = useState(["", "", "", "", "", ""]);
+  const [isResending, setIsResending] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const codeInputRefs = useRef<(TextInput | null)[]>([]);
 
   useEffect(() => {
     checkAppleAvailability();
     checkGoogleAvailability();
   }, []);
+  
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCooldown]);
+
+  const handleCodeChange = (index: number, value: string) => {
+    if (value.length > 1) {
+      value = value.slice(-1);
+    }
+    
+    const newCode = [...verificationCode];
+    newCode[index] = value;
+    setVerificationCode(newCode);
+    
+    if (value && index < 5) {
+      codeInputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleCodeKeyPress = (index: number, key: string) => {
+    if (key === "Backspace" && !verificationCode[index] && index > 0) {
+      codeInputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    const code = verificationCode.join("");
+    if (code.length !== 6) {
+      setError("Please enter the 6-digit code");
+      return;
+    }
+
+    setIsLoading(true);
+    setError("");
+
+    const result = await verifyEmail(verificationEmail, code);
+    
+    setIsLoading(false);
+
+    if (!result.success) {
+      setError(result.error || "Verification failed");
+    }
+  };
+
+  const handleResendCode = async () => {
+    if (resendCooldown > 0) return;
+    
+    setIsResending(true);
+    setError("");
+
+    try {
+      const response = await apiRequest("POST", "/api/auth/resend-verification", {
+        email: verificationEmail,
+      });
+
+      if (response.ok) {
+        setResendCooldown(60);
+      } else {
+        const data = await response.json();
+        setError(data.error || "Failed to resend code");
+      }
+    } catch (err) {
+      setError("Failed to resend code");
+    } finally {
+      setIsResending(false);
+    }
+  };
 
   const checkGoogleAvailability = () => {
     // Google Sign-In disabled - requires OAuth configuration
@@ -159,16 +237,136 @@ export default function AuthScreen() {
     setIsLoading(true);
     setError("");
 
-    const result = isLogin
-      ? await login(email.trim(), password)
-      : await signup(email.trim(), password);
+    if (isLogin) {
+      const result = await login(email.trim(), password);
+      setIsLoading(false);
 
-    setIsLoading(false);
+      if (!result.success) {
+        if (result.requiresVerification) {
+          setVerificationEmail(result.email || email.trim());
+          setShowVerification(true);
+        } else {
+          setError(result.error || "Authentication failed");
+        }
+      }
+    } else {
+      const result = await signup(email.trim(), password);
+      setIsLoading(false);
 
-    if (!result.success) {
-      setError(result.error || "Authentication failed");
+      if (result.requiresVerification) {
+        setVerificationEmail(result.email || email.trim());
+        setShowVerification(true);
+      } else if (!result.success) {
+        setError(result.error || "Authentication failed");
+      }
     }
   };
+
+  if (showVerification) {
+    return (
+      <KeyboardAvoidingView
+        style={[styles.container, { backgroundColor: theme.colors.background }]}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <ScrollView
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingTop: insets.top + 60, paddingBottom: insets.bottom + 40 },
+          ]}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.logoContainer}>
+            <View style={[styles.verifyIconContainer, { backgroundColor: theme.colors.primary + "20" }]}>
+              <Feather name="mail" size={48} color={theme.colors.primary} />
+            </View>
+            <Text style={[styles.appName, { color: theme.colors.foreground }]}>
+              Verify Your Email
+            </Text>
+            <Text style={[styles.tagline, { color: theme.colors.mutedForeground }]}>
+              We sent a 6-digit code to{"\n"}{verificationEmail}
+            </Text>
+          </View>
+
+          <View style={styles.formContainer}>
+            <View style={styles.codeInputContainer}>
+              {verificationCode.map((digit, index) => (
+                <TextInput
+                  key={index}
+                  ref={(ref) => { codeInputRefs.current[index] = ref; }}
+                  style={[
+                    styles.codeInput,
+                    { 
+                      backgroundColor: theme.colors.card,
+                      color: theme.colors.foreground,
+                      borderColor: digit ? theme.colors.primary : theme.colors.border,
+                    },
+                  ]}
+                  value={digit}
+                  onChangeText={(value) => handleCodeChange(index, value)}
+                  onKeyPress={({ nativeEvent }) => handleCodeKeyPress(index, nativeEvent.key)}
+                  keyboardType="number-pad"
+                  maxLength={1}
+                  selectTextOnFocus
+                />
+              ))}
+            </View>
+
+            {error ? (
+              <View style={styles.errorContainer}>
+                <Feather name="alert-circle" size={16} color="#ef4444" />
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            ) : null}
+
+            <Pressable
+              style={[
+                styles.submitButton,
+                { backgroundColor: theme.colors.primary },
+                isLoading && styles.buttonDisabled,
+              ]}
+              onPress={handleVerifyCode}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.submitButtonText}>Verify Email</Text>
+              )}
+            </Pressable>
+
+            <View style={styles.resendContainer}>
+              <Text style={[styles.resendText, { color: theme.colors.mutedForeground }]}>
+                Didn't receive the code?
+              </Text>
+              <Pressable onPress={handleResendCode} disabled={isResending || resendCooldown > 0}>
+                {isResending ? (
+                  <ActivityIndicator size="small" color={theme.colors.primary} />
+                ) : (
+                  <Text style={[styles.resendLink, { color: resendCooldown > 0 ? theme.colors.mutedForeground : theme.colors.primary }]}>
+                    {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend Code"}
+                  </Text>
+                )}
+              </Pressable>
+            </View>
+
+            <Pressable
+              style={styles.backButton}
+              onPress={() => {
+                setShowVerification(false);
+                setVerificationCode(["", "", "", "", "", ""]);
+                setError("");
+              }}
+            >
+              <Feather name="arrow-left" size={20} color={theme.colors.mutedForeground} />
+              <Text style={[styles.backButtonText, { color: theme.colors.mutedForeground }]}>
+                Back to Sign In
+              </Text>
+            </Pressable>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -505,5 +703,52 @@ const styles = StyleSheet.create({
   },
   freeTrialText: {
     fontSize: 14,
+  },
+  verifyIconContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  codeInputContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 8,
+    marginVertical: 24,
+  },
+  codeInput: {
+    width: 48,
+    height: 56,
+    borderRadius: 12,
+    borderWidth: 2,
+    fontSize: 24,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  resendContainer: {
+    alignItems: "center",
+    gap: 8,
+    marginTop: 16,
+  },
+  resendText: {
+    fontSize: 14,
+  },
+  resendLink: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  backButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginTop: 32,
+    paddingVertical: 12,
+  },
+  backButtonText: {
+    fontSize: 16,
+    fontWeight: "500",
   },
 });

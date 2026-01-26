@@ -18,13 +18,22 @@ interface SocialLoginData {
   appleId?: string;
 }
 
+interface AuthResult {
+  success: boolean;
+  error?: string;
+  deviceLimitReached?: boolean;
+  requiresVerification?: boolean;
+  email?: string;
+}
+
 interface AuthContextType {
   user: User | null;
   token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string; deviceLimitReached?: boolean }>;
-  signup: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (email: string, password: string) => Promise<AuthResult>;
+  signup: (email: string, password: string) => Promise<AuthResult>;
+  verifyEmail: (email: string, code: string) => Promise<AuthResult>;
   socialLogin: (provider: "google" | "apple", data: SocialLoginData) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -100,7 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<AuthResult> => {
     try {
       const deviceId = await getOrCreateDeviceId();
       const deviceName = getDeviceName();
@@ -125,7 +134,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { 
           success: false, 
           error: data.message || data.error || "Login failed",
-          deviceLimitReached: data.deviceLimitReached 
+          deviceLimitReached: data.deviceLimitReached,
+          requiresVerification: data.requiresVerification,
+          email: data.email
         };
       }
     } catch (error) {
@@ -133,7 +144,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signup = async (email: string, password: string) => {
+  const signup = async (email: string, password: string): Promise<AuthResult> => {
     try {
       const deviceId = await getOrCreateDeviceId();
       const deviceName = getDeviceName();
@@ -147,6 +158,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await response.json();
       
       if (response.ok) {
+        if (data.requiresVerification) {
+          return { 
+            success: true, 
+            requiresVerification: true,
+            email: data.email
+          };
+        }
         await AsyncStorage.setItem(AUTH_TOKEN_KEY, data.token);
         if (data.deviceId) {
           await AsyncStorage.setItem(DEVICE_ID_KEY, data.deviceId);
@@ -156,6 +174,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: true };
       } else {
         return { success: false, error: data.error || "Signup failed" };
+      }
+    } catch (error) {
+      return { success: false, error: "Connection failed" };
+    }
+  };
+
+  const verifyEmail = async (email: string, code: string): Promise<AuthResult> => {
+    try {
+      const deviceId = await getOrCreateDeviceId();
+      const deviceName = getDeviceName();
+      
+      const response = await fetch(new URL("/api/auth/verify-email", getApiUrl()).toString(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code, deviceId, deviceName }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        await AsyncStorage.setItem(AUTH_TOKEN_KEY, data.token);
+        if (data.deviceId) {
+          await AsyncStorage.setItem(DEVICE_ID_KEY, data.deviceId);
+        }
+        setToken(data.token);
+        setUser(data.user);
+        return { success: true };
+      } else {
+        return { success: false, error: data.error || "Verification failed" };
       }
     } catch (error) {
       return { success: false, error: "Connection failed" };
@@ -238,6 +285,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: !!user,
         login,
         signup,
+        verifyEmail,
         socialLogin,
         logout,
         refreshUser,
