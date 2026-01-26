@@ -6,6 +6,11 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { query } from "./db";
 import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
+import { sendVerificationEmail, sendSubscriptionThankYouEmail } from "./emailClient";
+
+function generateVerificationCode(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
 
 const JWT_SECRET = process.env.SESSION_SECRET || "price-it-secret-key";
 const FREE_LIFETIME_SEARCHES = 5;
@@ -273,35 +278,128 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Generate email verification code
+      const verificationCode = generateVerificationCode();
+      const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+      
       await query(
-        `INSERT INTO users (id, email, password_hash, subscription_status, stripe_customer_id, stripe_subscription_id) 
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [userId, email.toLowerCase(), passwordHash, subscriptionStatus, stripeCustomerId, stripeSubscriptionId]
+        `INSERT INTO users (id, email, password_hash, subscription_status, stripe_customer_id, stripe_subscription_id, email_verified, verification_code, verification_code_expires) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        [userId, email.toLowerCase(), passwordHash, subscriptionStatus, stripeCustomerId, stripeSubscriptionId, false, verificationCode, verificationExpires]
       );
       
-      const token = jwt.sign({ userId, deviceId: clientDeviceId }, JWT_SECRET, { expiresIn: "30d" });
+      // Send verification email
+      try {
+        await sendVerificationEmail(email.toLowerCase(), verificationCode);
+      } catch (emailError) {
+        console.error("Failed to send verification email:", emailError);
+        // Continue with signup even if email fails
+      }
+      
+      res.json({ 
+        requiresVerification: true,
+        email: email.toLowerCase(),
+        message: "Please check your email for a verification code"
+      });
+    } catch (error) {
+      console.error("Signup error:", error);
+      res.status(500).json({ error: "Signup failed" });
+    }
+  });
+
+  // Verify email with code
+  app.post("/api/auth/verify-email", async (req: Request, res: Response) => {
+    try {
+      const { email, code, deviceId, deviceName } = req.body;
+      
+      if (!email || !code) {
+        return res.status(400).json({ error: "Email and verification code required" });
+      }
+      
+      const result = await query(
+        "SELECT * FROM users WHERE email = $1 AND verification_code = $2",
+        [email.toLowerCase(), code]
+      );
+      
+      const user = result.rows[0];
+      
+      if (!user) {
+        return res.status(400).json({ error: "Invalid verification code" });
+      }
+      
+      if (new Date(user.verification_code_expires) < new Date()) {
+        return res.status(400).json({ error: "Verification code expired. Please request a new one." });
+      }
+      
+      // Mark email as verified
+      await query(
+        "UPDATE users SET email_verified = true, verification_code = NULL, verification_code_expires = NULL WHERE id = $1",
+        [user.id]
+      );
+      
+      // Create session and return token
+      const clientDeviceId = deviceId || `device_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const token = jwt.sign({ userId: user.id, deviceId: clientDeviceId }, JWT_SECRET, { expiresIn: "30d" });
       const tokenHash = await bcrypt.hash(token.slice(-20), 5);
       
-      // Create first device session
       await query(
         `INSERT INTO user_sessions (user_id, device_id, device_name, token_hash) 
-         VALUES ($1, $2, $3, $4)`,
-        [userId, clientDeviceId, deviceName || "Unknown Device", tokenHash]
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (user_id, device_id) 
+         DO UPDATE SET token_hash = $4, last_active = NOW()`,
+        [user.id, clientDeviceId, deviceName || "Unknown Device", tokenHash]
       );
       
       res.json({ 
         token,
         deviceId: clientDeviceId,
         user: { 
-          id: userId, 
-          email: email.toLowerCase(),
-          subscriptionStatus: subscriptionStatus,
-          searchesRemaining: subscriptionStatus === "active" ? 999999 : FREE_LIFETIME_SEARCHES,
+          id: user.id, 
+          email: user.email,
+          subscriptionStatus: user.subscription_status,
+          searchesRemaining: user.subscription_status === "active" ? -1 : FREE_LIFETIME_SEARCHES - (user.total_searches || 0),
         }
       });
     } catch (error) {
-      console.error("Signup error:", error);
-      res.status(500).json({ error: "Signup failed" });
+      console.error("Verify email error:", error);
+      res.status(500).json({ error: "Verification failed" });
+    }
+  });
+
+  // Resend verification code
+  app.post("/api/auth/resend-verification", async (req: Request, res: Response) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ error: "Email required" });
+      }
+      
+      const result = await query("SELECT * FROM users WHERE email = $1", [email.toLowerCase()]);
+      const user = result.rows[0];
+      
+      if (!user) {
+        return res.status(400).json({ error: "User not found" });
+      }
+      
+      if (user.email_verified) {
+        return res.status(400).json({ error: "Email already verified" });
+      }
+      
+      const verificationCode = generateVerificationCode();
+      const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      
+      await query(
+        "UPDATE users SET verification_code = $1, verification_code_expires = $2 WHERE id = $3",
+        [verificationCode, verificationExpires, user.id]
+      );
+      
+      await sendVerificationEmail(email.toLowerCase(), verificationCode);
+      
+      res.json({ success: true, message: "Verification code sent" });
+    } catch (error) {
+      console.error("Resend verification error:", error);
+      res.status(500).json({ error: "Failed to resend verification code" });
     }
   });
 
@@ -318,6 +416,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!user || !(await bcrypt.compare(password, user.password_hash))) {
         return res.status(401).json({ error: "Invalid email or password" });
+      }
+      
+      // Check if email is verified
+      if (!user.email_verified) {
+        return res.status(403).json({ 
+          error: "Email not verified",
+          requiresVerification: true,
+          email: user.email,
+          message: "Please verify your email before logging in"
+        });
       }
       
       // Check device limit (2 devices per account)
@@ -683,6 +791,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
               [subscriptionId, customerId]
             );
             console.log(`Subscription activated for customer ${customerId}`);
+            
+            // Send thank you email
+            try {
+              const userResult = await query(
+                "SELECT email FROM users WHERE stripe_customer_id = $1",
+                [customerId]
+              );
+              if (userResult.rows.length > 0) {
+                await sendSubscriptionThankYouEmail(userResult.rows[0].email);
+                console.log(`Thank you email sent to ${userResult.rows[0].email}`);
+              }
+            } catch (emailError) {
+              console.error("Failed to send thank you email:", emailError);
+            }
           }
           break;
         }
