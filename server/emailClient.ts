@@ -1,72 +1,55 @@
-// Resend email client - uses Replit Resend connector
-import { Resend } from 'resend';
+// SendGrid email client - uses Replit SendGrid connector
+import sgMail from '@sendgrid/mail';
 
 let connectionSettings: any;
 
 async function getCredentials() {
   const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
-  console.log("RESEND DEBUG - Connector hostname:", hostname);
-  
   const xReplitToken = process.env.REPL_IDENTITY 
     ? 'repl ' + process.env.REPL_IDENTITY 
     : process.env.WEB_REPL_RENEWAL 
     ? 'depl ' + process.env.WEB_REPL_RENEWAL 
     : null;
 
-  console.log("RESEND DEBUG - Token type:", xReplitToken ? (xReplitToken.startsWith('repl') ? 'repl' : 'depl') : 'none');
-
   if (!xReplitToken) {
-    console.error("RESEND DEBUG - No token found!");
     throw new Error('X_REPLIT_TOKEN not found for repl/depl');
   }
 
-  const url = 'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=resend';
-  console.log("RESEND DEBUG - Fetching from:", url);
-  
-  const response = await fetch(url, {
-    headers: {
-      'Accept': 'application/json',
-      'X_REPLIT_TOKEN': xReplitToken
+  connectionSettings = await fetch(
+    'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=sendgrid',
+    {
+      headers: {
+        'Accept': 'application/json',
+        'X_REPLIT_TOKEN': xReplitToken
+      }
     }
-  });
-  
-  const data = await response.json();
-  console.log("RESEND DEBUG - Raw response:", JSON.stringify(data, null, 2));
-  
-  connectionSettings = data.items?.[0];
+  ).then(res => res.json()).then(data => data.items?.[0]);
 
-  if (!connectionSettings || (!connectionSettings.settings?.api_key)) {
-    console.error("RESEND DEBUG - No connection settings or API key found");
-    throw new Error('Resend not connected - please set up the Resend integration');
+  if (!connectionSettings || (!connectionSettings.settings.api_key || !connectionSettings.settings.from_email)) {
+    throw new Error('SendGrid not connected');
   }
-  
-  console.log("RESEND DEBUG - From email:", connectionSettings.settings.from_email);
-  console.log("RESEND DEBUG - API key prefix:", connectionSettings.settings.api_key?.substring(0, 10) + "...");
-  
-  return {
-    apiKey: connectionSettings.settings.api_key, 
-    fromEmail: connectionSettings.settings.from_email
-  };
+  return {apiKey: connectionSettings.settings.api_key, email: connectionSettings.settings.from_email};
 }
 
-// Get a fresh Resend client each time (credentials may expire)
-export async function getUncachableResendClient() {
-  const { apiKey, fromEmail } = await getCredentials();
+// Get a fresh SendGrid client each time (credentials may expire)
+export async function getUncachableSendGridClient() {
+  const {apiKey, email} = await getCredentials();
+  sgMail.setApiKey(apiKey);
   return {
-    client: new Resend(apiKey),
-    fromEmail
+    client: sgMail,
+    fromEmail: email
   };
 }
 
 export async function sendVerificationEmail(to: string, verificationCode: string) {
   console.log("Attempting to send verification email to:", to);
   
-  const { client, fromEmail } = await getUncachableResendClient();
+  const { client, fromEmail } = await getUncachableSendGridClient();
   console.log("Using from email:", fromEmail);
   
-  const result = await client.emails.send({
+  const msg = {
+    to: to,
     from: fromEmail,
-    to: [to],
     subject: 'Verify your Pocket Pricer account',
     html: `
       <!DOCTYPE html>
@@ -101,23 +84,23 @@ export async function sendVerificationEmail(to: string, verificationCode: string
       </body>
       </html>
     `
-  });
-  
-  console.log("Email send result:", JSON.stringify(result, null, 2));
-  
-  if (result.error) {
-    throw new Error(`Resend error: ${result.error.message}`);
+  };
+
+  try {
+    await client.send(msg);
+    console.log("Verification email sent successfully to:", to);
+  } catch (error: any) {
+    console.error("SendGrid error:", error?.response?.body || error);
+    throw new Error(`SendGrid error: ${error?.message || 'Failed to send email'}`);
   }
-  
-  console.log("Verification email sent successfully to:", to);
 }
 
 export async function sendSubscriptionThankYouEmail(to: string) {
-  const { client, fromEmail } = await getUncachableResendClient();
+  const { client, fromEmail } = await getUncachableSendGridClient();
   
-  const result = await client.emails.send({
+  const msg = {
+    to: to,
     from: fromEmail,
-    to: [to],
     subject: 'Welcome to Pocket Pricer Pro!',
     html: `
       <!DOCTYPE html>
@@ -159,9 +142,13 @@ export async function sendSubscriptionThankYouEmail(to: string) {
       </body>
       </html>
     `
-  });
-  
-  if (result.error) {
-    throw new Error(`Resend error: ${result.error.message}`);
+  };
+
+  try {
+    await client.send(msg);
+    console.log("Subscription thank you email sent successfully to:", to);
+  } catch (error: any) {
+    console.error("SendGrid error:", error?.response?.body || error);
+    throw new Error(`SendGrid error: ${error?.message || 'Failed to send email'}`);
   }
 }
