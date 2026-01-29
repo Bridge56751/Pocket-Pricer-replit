@@ -1,0 +1,28 @@
+{
+  "cli": {
+    "version": ">= 5.0.0"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_DOMAIN": "pocket-pricer.replit.app"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_DOMAIN": "pocket-pricer.replit.app"
+      }
+    },
+    "production": {
+      "env": {
+        "EXPO_PUBLIC_DOMAIN": "pocket-pricer.replit.app"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
