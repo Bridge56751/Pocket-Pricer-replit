@@ -1,0 +1,31 @@
+bridgerogan@Bridges-Mac-mini Pocket-Pricer-replit % git add -A && git commit -m "Fix home button freeze with image-store" && eas build --platform ios
+[main e3c55fe] Fix home button freeze with image-store
+ Committer: Bridge Rogan <bridgerogan@Bridges-Mac-mini.local>
+Your name and email address were configured automatically based
+on your username and hostname. Please check that they are accurate.
+You can suppress this message by setting them explicitly. Run the
+following command and follow the instructions in your editor to edit
+your configuration file:
+
+    git config --global --edit
+
+After doing this, you may fix the identity used for this commit with:
+
+    git commit --amend --reset-author
+
+ 5 files changed, 28 insertions(+), 793 deletions(-)
+ create mode 100644 client/lib/image-store.ts
+The field "cli.appVersionSource" is not set, but it will be required in the future. Learn more: https://docs.expo.dev/build-reference/app-versions/
+Resolved "production" environment for the build. Learn more: https://docs.expo.dev/eas/environment-variables/#setting-the-environment-for-your-builds
+Environment variables with visibility "Plain text" and "Sensitive" loaded from the "production" environment on EAS: EXPO_PUBLIC_DOMAIN.
+Environment variables loaded from the "production" build profile "env" configuration: EXPO_PUBLIC_DOMAIN, EXPO_PUBLIC_REVENUECAT_API_KEY.
+The following environment variables are defined in both the "production" build profile "env" configuration and the "production" environment on EAS: EXPO_PUBLIC_DOMAIN. The values from the build profile configuration will be used.
+
+
+
+The field "cli.appVersionSource" is not set, but it will be required in the future. Learn more: https://docs.expo.dev/build-reference/app-versions/
+✔ Using remote iOS credentials (Expo server)
+
+If you provide your Apple account credentials we will be able to generate all necessary build credentials and fully validate them.
+This is optional, but without Apple account access you will need to provide all the missing values manually and we can only run minimal validation on them.
+? Do you want to log in to your Apple account? › (Y/n)
