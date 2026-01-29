@@ -1,5 +1,7 @@
 import React from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { HeaderButton } from "@react-navigation/elements";
+import { Feather } from "@expo/vector-icons";
 import ScanScreen from "@/screens/ScanScreen";
 import CameraScanScreen from "@/screens/CameraScanScreen";
 import HistoryScreen from "@/screens/HistoryScreen";
@@ -8,6 +10,7 @@ import ProfileScreen from "@/screens/ProfileScreen";
 import SearchResultsScreen from "@/screens/SearchResultsScreen";
 import { useScreenOptions } from "@/hooks/useScreenOptions";
 import { HeaderTitle } from "@/components/HeaderTitle";
+import { useTheme } from "@/hooks/useTheme";
 
 interface ListingItem {
   id: string;
@@ -57,6 +60,22 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function RootStackNavigator() {
   const screenOptions = useScreenOptions();
+  const { theme } = useTheme();
+
+  const renderBackButton = (navigation: any) => (
+    <HeaderButton
+      onPress={() => {
+        if (navigation.canGoBack()) {
+          navigation.goBack();
+        } else {
+          navigation.navigate("Home");
+        }
+      }}
+      pressOpacity={0.7}
+    >
+      <Feather name="arrow-left" size={24} color={theme.text} />
+    </HeaderButton>
+  );
 
   return (
     <Stack.Navigator screenOptions={screenOptions}>
@@ -75,30 +94,34 @@ export default function RootStackNavigator() {
       <Stack.Screen
         name="History"
         component={HistoryScreen}
-        options={{
+        options={({ navigation }) => ({
           headerTitle: "History",
-        }}
+          headerLeft: () => renderBackButton(navigation),
+        })}
       />
       <Stack.Screen
         name="Favorites"
         component={FavoritesScreen}
-        options={{
+        options={({ navigation }) => ({
           headerTitle: "Favorites",
-        }}
+          headerLeft: () => renderBackButton(navigation),
+        })}
       />
       <Stack.Screen
         name="Settings"
         component={ProfileScreen}
-        options={{
+        options={({ navigation }) => ({
           headerTitle: "Settings",
-        }}
+          headerLeft: () => renderBackButton(navigation),
+        })}
       />
       <Stack.Screen
         name="SearchResults"
         component={SearchResultsScreen}
-        options={{
+        options={({ navigation }) => ({
           headerTitle: "Scan Result",
-        }}
+          headerLeft: () => renderBackButton(navigation),
+        })}
       />
     </Stack.Navigator>
   );
