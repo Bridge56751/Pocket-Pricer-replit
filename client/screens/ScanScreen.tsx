@@ -12,6 +12,7 @@ import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { SkeletonLoader } from "@/components/SkeletonLoader";
 import { getSearchHistory, addSearchHistory } from "@/lib/storage";
 import { apiRequest } from "@/lib/query-client";
+import { storeImage } from "@/lib/image-store";
 import { useAuth } from "@/contexts/AuthContext";
 import UpgradeModal from "@/components/UpgradeModal";
 import type { SearchHistoryItem } from "@/types/product";
@@ -107,9 +108,10 @@ export default function ScanScreen() {
       const searchResponse = await apiRequest("POST", "/api/search", { query: searchQuery });
       const results = await searchResponse.json();
 
+      const scannedImageId = storeImage(`data:image/jpeg;base64,${photos[0].base64}`);
       const enrichedResults = {
         ...results,
-        scannedImageUri: `data:image/jpeg;base64,${photos[0].base64}`,
+        scannedImageId,
         productInfo: {
           name: analysisResult.productName,
           brand: analysisResult.brand,

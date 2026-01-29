@@ -30,7 +30,7 @@ interface SearchResultsData {
   bestBuyNow: number;
   topSalePrice: number | null;
   listings: ListingItem[];
-  scannedImageUri?: string;
+  scannedImageId?: string;
   productInfo?: {
     name: string;
     brand?: string;
