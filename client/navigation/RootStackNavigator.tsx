@@ -1,7 +1,9 @@
 import React from "react";
+import { Platform } from "react-native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { HeaderButton } from "@react-navigation/elements";
 import { Feather } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import ScanScreen from "@/screens/ScanScreen";
 import CameraScanScreen from "@/screens/CameraScanScreen";
 import HistoryScreen from "@/screens/HistoryScreen";
@@ -65,6 +67,9 @@ export default function RootStackNavigator() {
   const renderBackButton = (navigation: any) => (
     <HeaderButton
       onPress={() => {
+        if (Platform.OS !== "web") {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        }
         if (navigation.canGoBack()) {
           navigation.goBack();
         } else {
