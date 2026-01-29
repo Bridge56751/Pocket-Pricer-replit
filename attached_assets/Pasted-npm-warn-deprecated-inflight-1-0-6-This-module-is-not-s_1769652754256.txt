@@ -1,0 +1,36 @@
+npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
+npm warn deprecated @esbuild-kit/esm-loader@2.6.5: Merged into tsx: https://tsx.is
+npm warn deprecated @esbuild-kit/core-utils@3.3.2: Merged into tsx: https://tsx.is
+npm warn cleanup Failed to remove some directories [
+npm warn cleanup   [
+npm warn cleanup     '/Users/bridgerogan/Desktop/Pocket-Pricer-replit/node_modules/react-native',
+npm warn cleanup     [Error: ENOTEMPTY: directory not empty, rmdir '/Users/bridgerogan/Desktop/Pocket-Pricer-replit/node_modules/react-native/ReactAndroid/src/main/res/views/uimanager'] {
+npm warn cleanup       errno: -66,
+npm warn cleanup       code: 'ENOTEMPTY',
+npm warn cleanup       syscall: 'rmdir',
+npm warn cleanup       path: '/Users/bridgerogan/Desktop/Pocket-Pricer-replit/node_modules/react-native/ReactAndroid/src/main/res/views/uimanager'
+npm warn cleanup     }
+npm warn cleanup   ],
+npm warn cleanup   [
+npm warn cleanup     '/Users/bridgerogan/Desktop/Pocket-Pricer-replit/node_modules',
+npm warn cleanup     [Error: ENOTEMPTY: directory not empty, rmdir '/Users/bridgerogan/Desktop/Pocket-Pricer-replit/node_modules/react-native/ReactAndroid/src/main/res/views/uimanager'] {
+npm warn cleanup       errno: -66,
+npm warn cleanup       code: 'ENOTEMPTY',
+npm warn cleanup       syscall: 'rmdir',
+npm warn cleanup       path: '/Users/bridgerogan/Desktop/Pocket-Pricer-replit/node_modules/react-native/ReactAndroid/src/main/res/views/uimanager'
+npm warn cleanup     }
+npm warn cleanup   ]
+npm warn cleanup ]
+npm error code EACCES
+npm error syscall mkdir
+npm error path /Users/bridgerogan/.npm/_cacache/index-v5/02/4c
+npm error errno -13
+npm error
+npm error Your cache folder contains root-owned files, due to a bug in
+npm error previous versions of npm which has since been addressed.
+npm error
+npm error To permanently fix this problem, please run:
+npm error   sudo chown -R 501:20 "/Users/bridgerogan/.npm"
+npm error A complete log of this run can be found in: /Users/bridgerogan/.npm/_logs/2026-01-29T02_11_57_187Z-debug-0.log
+bridgerogan@Bridges-Mac-mini Pocket-Pricer-replit % 
