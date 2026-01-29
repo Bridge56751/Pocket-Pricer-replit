@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { View, StyleSheet, FlatList, Pressable, Text, Linking, TextInput } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -10,6 +10,7 @@ import Animated, { FadeInDown } from "react-native-reanimated";
 
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { SkeletonLoader } from "@/components/SkeletonLoader";
+import { getImage } from "@/lib/image-store";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 type SearchResultsRouteProp = RouteProp<RootStackParamList, "SearchResults">;
@@ -35,6 +36,7 @@ interface SearchResultsData {
   bestBuyNow: number;
   topSalePrice: number | null;
   listings: ListingItem[];
+  scannedImageId?: string;
   scannedImageUri?: string;
   productInfo?: {
     name: string;
@@ -52,6 +54,14 @@ export default function SearchResultsScreen() {
   const navigation = useNavigation();
 
   const { results } = route.params;
+  
+  const scannedImageUri = useMemo(() => {
+    if (results.scannedImageId) {
+      return getImage(results.scannedImageId);
+    }
+    const resultsAny = results as SearchResultsData;
+    return resultsAny.scannedImageUri;
+  }, [results.scannedImageId, results]);
 
   const [purchasePrice, setPurchasePrice] = useState("");
   const [sellingPrice, setSellingPrice] = useState(results.avgListPrice.toFixed(2));
@@ -169,10 +179,10 @@ export default function SearchResultsScreen() {
         keyExtractor={(item) => item.id}
         ListHeaderComponent={
           <View>
-            {results.scannedImageUri ? (
+            {scannedImageUri ? (
               <View style={[styles.productCard, { backgroundColor: theme.colors.card }]}>
                 <Image
-                  source={{ uri: results.scannedImageUri }}
+                  source={{ uri: scannedImageUri }}
                   style={styles.scannedImage}
                   contentFit="cover"
                 />
