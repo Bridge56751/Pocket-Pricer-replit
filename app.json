@@ -11,7 +11,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.ebayprofit.app",
-      "buildNumber": "16"
+      "buildNumber": "17"
     },
     "android": {
       "adaptiveIcon": {
@@ -45,8 +45,7 @@
         {
           "cameraPermission": "Allow Pocket Pricer to access your camera to scan and identify products."
         }
-      ],
-      "react-native-purchases"
+      ]
     ],
     "experiments": {
       "reactCompiler": true
