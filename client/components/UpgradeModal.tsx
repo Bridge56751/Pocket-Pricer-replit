@@ -21,11 +21,10 @@ interface UpgradeModalProps {
 
 export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
   const { theme } = useDesignTokens();
-  const { packages, purchasePackage, restorePurchases, isPro, isReady, offeringsDebug, reloadOfferings } = useRevenueCat();
+  const { packages, purchasePackage, restorePurchases, isPro } = useRevenueCat();
   const { refreshUser } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
-  const [showDebug, setShowDebug] = useState(false);
 
   const handleUpgrade = async () => {
     if (Platform.OS === "web") {
@@ -189,47 +188,6 @@ export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
               Maybe later
             </Text>
           </Pressable>
-
-          <Pressable onPress={() => setShowDebug(!showDebug)}>
-            <Text style={[styles.debugToggle, { color: theme.colors.mutedForeground }]}>
-              {showDebug ? "Hide Debug" : "Show Debug"}
-            </Text>
-          </Pressable>
-
-          {showDebug ? (
-            <View style={styles.debugContainer}>
-              <Text style={[styles.debugText, { color: theme.colors.mutedForeground }]}>
-                Ready: {isReady ? "Yes" : "No"}
-              </Text>
-              <Text style={[styles.debugText, { color: theme.colors.mutedForeground }]}>
-                Packages: {packages.length}
-              </Text>
-              <Text style={[styles.debugText, { color: theme.colors.mutedForeground }]}>
-                API Key: {process.env.EXPO_PUBLIC_REVENUECAT_API_KEY ? "Set" : "Missing"}
-              </Text>
-              <Text style={[styles.debugText, { color: theme.colors.mutedForeground }]}>
-                Platform: {Platform.OS}
-              </Text>
-              {packages.map((pkg, i) => (
-                <Text key={i} style={[styles.debugText, { color: theme.colors.mutedForeground }]}>
-                  Pkg {i}: {pkg.identifier} - {pkg.product?.priceString}
-                </Text>
-              ))}
-              {offeringsDebug ? (
-                <Text style={[styles.debugText, { color: theme.colors.mutedForeground }]}>
-                  Debug: {offeringsDebug.substring(0, 200)}
-                </Text>
-              ) : null}
-              <Pressable 
-                onPress={reloadOfferings}
-                style={[styles.debugReloadButton, { borderColor: theme.colors.primary }]}
-              >
-                <Text style={[styles.debugReloadText, { color: theme.colors.primary }]}>
-                  Reload Offerings
-                </Text>
-              </Pressable>
-            </View>
-          ) : null}
         </View>
       </View>
     </Modal>
@@ -324,33 +282,5 @@ const styles = StyleSheet.create({
   laterText: {
     fontSize: 15,
     paddingVertical: 8,
-  },
-  debugToggle: {
-    fontSize: 12,
-    paddingVertical: 4,
-    marginTop: 8,
-  },
-  debugContainer: {
-    marginTop: 8,
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: "rgba(0,0,0,0.1)",
-    width: "100%",
-  },
-  debugText: {
-    fontSize: 11,
-    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
-  },
-  debugReloadButton: {
-    marginTop: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderRadius: 6,
-    alignSelf: "center",
-  },
-  debugReloadText: {
-    fontSize: 12,
-    fontWeight: "500",
   },
 });
