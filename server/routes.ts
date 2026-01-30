@@ -550,7 +550,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Delete user account
+  // Delete user account (soft delete - preserves search count for abuse prevention)
   app.delete("/api/auth/account", async (req: Request, res: Response) => {
     try {
       const user = await getUserFromToken(req);
@@ -559,13 +559,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Keep the Stripe subscription active - user can restore it if they sign up again
-      // Just delete local account data
+      // Soft delete: mark as deleted but preserve the record to prevent free scan abuse
 
       // Delete user sessions
       await query("DELETE FROM user_sessions WHERE user_id = $1", [user.id]);
 
-      // Delete the user account (but keep Stripe subscription intact)
-      await query("DELETE FROM users WHERE id = $1", [user.id]);
+      // Soft delete: mark as deleted, clear password, but keep search count and social IDs
+      await query(
+        `UPDATE users SET 
+          deleted_at = NOW(), 
+          password_hash = 'DELETED',
+          email_verified = false,
+          verification_code = NULL,
+          verification_code_expires = NULL
+        WHERE id = $1`,
+        [user.id]
+      );
 
       res.json({ success: true, message: "Account deleted successfully" });
     } catch (error) {
@@ -584,10 +593,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const providerId = provider === "google" ? googleId : appleId;
       const providerColumn = provider === "google" ? "google_id" : "apple_id";
       
+      // Check for existing user by provider ID (including soft-deleted accounts)
       let result = await query(`SELECT * FROM users WHERE ${providerColumn} = $1`, [providerId]);
       let user = result.rows[0];
       
       if (!user && email) {
+        // Check by email (including soft-deleted accounts)
         result = await query("SELECT * FROM users WHERE email = $1", [email.toLowerCase()]);
         user = result.rows[0];
         
@@ -597,7 +608,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      if (!user) {
+      if (user) {
+        // If account was soft-deleted, restore it but keep the search count
+        if (user.deleted_at) {
+          console.log(`Restoring soft-deleted account for ${provider} user, keeping search count: ${user.total_searches}`);
+          await query(
+            `UPDATE users SET deleted_at = NULL WHERE id = $1`,
+            [user.id]
+          );
+          user.deleted_at = null;
+        }
+      } else {
+        // Create new user only if no existing account found
         const userEmail = email || `${provider}_${providerId}@priceit.app`;
         const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         const randomPassword = Math.random().toString(36).slice(-16);
