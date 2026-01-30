@@ -21,10 +21,11 @@ interface UpgradeModalProps {
 
 export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
   const { theme } = useDesignTokens();
-  const { packages, purchasePackage, restorePurchases, isPro } = useRevenueCat();
+  const { packages, purchasePackage, restorePurchases, isPro, isReady } = useRevenueCat();
   const { refreshUser } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
+  const [showDebug, setShowDebug] = useState(false);
 
   const handleUpgrade = async () => {
     if (Platform.OS === "web") {
@@ -188,6 +189,31 @@ export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
               Maybe later
             </Text>
           </Pressable>
+
+          <Pressable onPress={() => setShowDebug(!showDebug)}>
+            <Text style={[styles.debugToggle, { color: theme.colors.mutedForeground }]}>
+              {showDebug ? "Hide Debug" : "Show Debug"}
+            </Text>
+          </Pressable>
+
+          {showDebug ? (
+            <View style={styles.debugContainer}>
+              <Text style={[styles.debugText, { color: theme.colors.mutedForeground }]}>
+                Ready: {isReady ? "Yes" : "No"}
+              </Text>
+              <Text style={[styles.debugText, { color: theme.colors.mutedForeground }]}>
+                Packages: {packages.length}
+              </Text>
+              <Text style={[styles.debugText, { color: theme.colors.mutedForeground }]}>
+                API Key: {process.env.EXPO_PUBLIC_REVENUECAT_API_KEY ? "Set" : "Missing"}
+              </Text>
+              {packages.map((pkg, i) => (
+                <Text key={i} style={[styles.debugText, { color: theme.colors.mutedForeground }]}>
+                  Pkg {i}: {pkg.identifier} - {pkg.product?.priceString}
+                </Text>
+              ))}
+            </View>
+          ) : null}
         </View>
       </View>
     </Modal>
@@ -282,5 +308,21 @@ const styles = StyleSheet.create({
   laterText: {
     fontSize: 15,
     paddingVertical: 8,
+  },
+  debugToggle: {
+    fontSize: 12,
+    paddingVertical: 4,
+    marginTop: 8,
+  },
+  debugContainer: {
+    marginTop: 8,
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: "rgba(0,0,0,0.1)",
+    width: "100%",
+  },
+  debugText: {
+    fontSize: 11,
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
   },
 });
