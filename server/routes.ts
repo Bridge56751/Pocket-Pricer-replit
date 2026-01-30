@@ -229,8 +229,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Email and password required" });
       }
       
-      const existing = await query("SELECT id FROM users WHERE email = $1", [email.toLowerCase()]);
+      const existing = await query("SELECT * FROM users WHERE email = $1", [email.toLowerCase()]);
       if (existing.rows.length > 0) {
+        const existingUser = existing.rows[0];
+        
+        // If account was soft-deleted, restore it with existing search count
+        if (existingUser.deleted_at) {
+          console.log(`Restoring soft-deleted account for email signup, keeping search count: ${existingUser.total_searches}`);
+          const passwordHash = await bcrypt.hash(password, 10);
+          const verificationCode = generateVerificationCode();
+          const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+          
+          await query(
+            `UPDATE users SET 
+              deleted_at = NULL,
+              password_hash = $1,
+              email_verified = false,
+              verification_code = $2,
+              verification_code_expires = $3
+            WHERE id = $4`,
+            [passwordHash, verificationCode, verificationExpires, existingUser.id]
+          );
+          
+          // Send verification email
+          try {
+            await sendVerificationEmail(email.toLowerCase(), verificationCode);
+          } catch (emailError) {
+            console.error("Failed to send verification email:", emailError);
+          }
+          
+          return res.json({ 
+            requiresVerification: true,
+            email: email.toLowerCase(),
+            message: "Please check your email for a verification code"
+          });
+        }
+        
         return res.status(400).json({ error: "You already have an account. Please log in instead." });
       }
       
