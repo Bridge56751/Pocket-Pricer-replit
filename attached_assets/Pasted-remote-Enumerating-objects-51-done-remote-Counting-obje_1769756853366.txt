@@ -1,0 +1,42 @@
+remote: Enumerating objects: 51, done.
+remote: Counting objects: 100% (38/38), done.
+remote: Total 51 (delta 38), reused 38 (delta 38), pack-reused 13 (from 1)
+Unpacking objects: 100% (51/51), 24.24 MiB | 9.53 MiB/s, done.
+From https://github.com/Bridge56751/Pocket-Pricer-replit
+   d0e38ed..f6536bb  main       -> origin/main
+Updating d0e38ed..f6536bb
+Fast-forward
+ attached_assets/IMG_0175_1769753241086.jpeg | Bin 0 -> 48614 bytes
+ attached_assets/IMG_0176_1769753479788.jpeg | Bin 0 -> 4408847 bytes
+ attached_assets/IMG_0178_1769756408551.jpeg | Bin 0 -> 16378 bytes
+ attached_assets/IMG_0178_1769756424571.jpeg | Bin 0 -> 16378 bytes
+ attached_assets/IMG_0178_1769756474725.jpeg | Bin 0 -> 16378 bytes
+ attached_assets/image_1769753300579.jpg     | Bin 0 -> 1297410 bytes
+ attached_assets/image_1769754387637.jpg     | Bin 0 -> 3005000 bytes
+ attached_assets/image_1769754627718.jpg     | Bin 0 -> 1838301 bytes
+ attached_assets/image_1769754806237.jpg     | Bin 0 -> 1927117 bytes
+ attached_assets/image_1769754876261.jpg     | Bin 0 -> 1504453 bytes
+ attached_assets/image_1769754885689.jpg     | Bin 0 -> 2344060 bytes
+ attached_assets/image_1769754984612.jpg     | Bin 0 -> 2214465 bytes
+ attached_assets/image_1769755024406.jpg     | Bin 0 -> 2271977 bytes
+ attached_assets/image_1769755041735.jpg     | Bin 0 -> 1818227 bytes
+ attached_assets/image_1769755099986.jpg     | Bin 0 -> 2797543 bytes
+ client/components/UpgradeModal.tsx          |  30 +++++++++++++++++++++++++++++-
+ client/contexts/RevenueCatContext.tsx       |  59 +++++++++++++++++++++++++++++++++++++++++++++++------------
+ 17 files changed, 76 insertions(+), 13 deletions(-)
+ create mode 100644 attached_assets/IMG_0175_1769753241086.jpeg
+ create mode 100644 attached_assets/IMG_0176_1769753479788.jpeg
+ create mode 100644 attached_assets/IMG_0178_1769756408551.jpeg
+ create mode 100644 attached_assets/IMG_0178_1769756424571.jpeg
+ create mode 100644 attached_assets/IMG_0178_1769756474725.jpeg
+ create mode 100644 attached_assets/image_1769753300579.jpg
+ create mode 100644 attached_assets/image_1769754387637.jpg
+ create mode 100644 attached_assets/image_1769754627718.jpg
+ create mode 100644 attached_assets/image_1769754806237.jpg
+ create mode 100644 attached_assets/image_1769754876261.jpg
+ create mode 100644 attached_assets/image_1769754885689.jpg
+ create mode 100644 attached_assets/image_1769754984612.jpg
+ create mode 100644 attached_assets/image_1769755024406.jpg
+ create mode 100644 attached_assets/image_1769755041735.jpg
+ create mode 100644 attached_assets/image_1769755099986.jpg
+bridgerogan@Bridges-Mac-mini Pocket-Pricer-replit % 
