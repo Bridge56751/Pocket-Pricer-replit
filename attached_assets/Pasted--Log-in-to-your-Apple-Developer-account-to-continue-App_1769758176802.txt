@@ -1,0 +1,49 @@
+› Log in to your Apple Developer account to continue
+✔ Apple ID: … brogan@auto-keep.com
+› Restoring session /Users/bridgerogan/.app-store/auth/brogan@auto-keep.com/cookie
+› Team Integrated Sales Solutions LLC (MK5J5GQ94D)
+› Provider Integrated Sales Solutions LLC (128078328)
+✔ Logged in Local session
+✔ Bundle identifier registered com.ebayprofit.app
+✔ Synced capabilities: No updates
+✔ Synced capability identifiers: No updates
+✔ Fetched Apple distribution certificates
+✔ Fetched Apple provisioning profiles
+
+Project Credentials Configuration
+
+Project                   @brogan56/ebay-profit-estimator
+Bundle Identifier         com.ebayprofit.app
+                          
+App Store Configuration   
+                          
+Distribution Certificate  
+Serial Number             2589DCAD2564CAF15238038B0DF9AC09
+Expiration Date           Sun, 24 Jan 2027 22:27:41 PST
+Apple Team                MK5J5GQ94D (Integrated Sales Solutions LLC (Company/Organization))
+Updated                   5 days ago
+                          
+Provisioning Profile      
+Developer Portal ID       TN7KY2438U
+Status                    active
+Expiration                Sun, 24 Jan 2027 22:27:41 PST
+Apple Team                MK5J5GQ94D (Integrated Sales Solutions LLC (Company/Organization))
+Updated                   7 hours ago
+                          
+All credentials are ready to build @brogan56/ebay-profit-estimator (com.ebayprofit.app)
+
+
+Compressing project files and uploading to EAS Build. Learn more: https://expo.fyi/eas-build-archive
+✔ Compressed project files 9s (401 MB)
+Your project archive is 401 MB. You can reduce its size and the time it takes to upload by excluding files that are unnecessary for the build process in .easignore file. Learn more: https://expo.fyi/eas-build-archive
+✔ Uploaded to EAS 8s
+✔ Computed project fingerprint
+
+See logs: https://expo.dev/accounts/brogan56/projects/ebay-profit-estimator/builds/25965c2e-cabd-48d1-8303-cf08f8b866c2
+
+Waiting for build to complete. You can press Ctrl+C to exit.
+✔ Build finished
+
+🍏 iOS app:
+https://expo.dev/artifacts/eas/5DcPHmoobSWCgctjacsbUS.ipa
+bridgerogan@Bridges-Mac-mini Pocket-Pricer-replit % 
