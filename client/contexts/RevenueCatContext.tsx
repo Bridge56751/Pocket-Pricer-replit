@@ -102,7 +102,7 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
     if (!customerInfo) return false;
     
     const entitlements = customerInfo.entitlements.active;
-    return "pro" in entitlements || "Pro" in entitlements;
+    return "pro" in entitlements || "Pro" in entitlements || "Pocket Pricer Pro" in entitlements;
   })();
 
   const purchasePackage = async (pkg: PurchasesPackage): Promise<{ success: boolean; error?: string }> => {
@@ -114,7 +114,7 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
       const { customerInfo } = await Purchases.purchasePackage(pkg);
       setCustomerInfo(customerInfo);
       
-      const isNowPro = "pro" in customerInfo.entitlements.active || "Pro" in customerInfo.entitlements.active;
+      const isNowPro = "pro" in customerInfo.entitlements.active || "Pro" in customerInfo.entitlements.active || "Pocket Pricer Pro" in customerInfo.entitlements.active;
       
       if (isNowPro) {
         return { success: true };
@@ -138,7 +138,7 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
       const info = await Purchases.restorePurchases();
       setCustomerInfo(info);
       
-      const isNowPro = "pro" in info.entitlements.active || "Pro" in info.entitlements.active;
+      const isNowPro = "pro" in info.entitlements.active || "Pro" in info.entitlements.active || "Pocket Pricer Pro" in info.entitlements.active;
       
       if (isNowPro) {
         return { success: true };

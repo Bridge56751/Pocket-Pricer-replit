@@ -297,7 +297,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Check RevenueCat subscription status on native platforms
       if (Platform.OS !== "web") {
         const customerInfo = await Purchases.getCustomerInfo();
-        const isPro = "pro" in customerInfo.entitlements.active || "Pro" in customerInfo.entitlements.active;
+        const isPro = "pro" in customerInfo.entitlements.active || "Pro" in customerInfo.entitlements.active || "Pocket Pricer Pro" in customerInfo.entitlements.active;
         
         // Sync with backend
         const response = await fetch(new URL("/api/subscription/sync", getApiUrl()).toString(), {
