@@ -65,14 +65,29 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const loadOfferings = async () => {
+  const loadOfferings = async (retryCount = 0) => {
     try {
+      console.log("RevenueCat: Loading offerings, attempt", retryCount + 1);
       const offerings = await Purchases.getOfferings();
+      console.log("RevenueCat: Offerings response:", JSON.stringify(offerings, null, 2));
+      
       if (offerings.current && offerings.current.availablePackages.length > 0) {
+        console.log("RevenueCat: Found", offerings.current.availablePackages.length, "packages");
         setPackages(offerings.current.availablePackages);
+      } else {
+        console.log("RevenueCat: No current offering or no packages available");
+        console.log("RevenueCat: All offerings:", Object.keys(offerings.all || {}));
+        
+        if (retryCount < 2) {
+          console.log("RevenueCat: Retrying in 2 seconds...");
+          setTimeout(() => loadOfferings(retryCount + 1), 2000);
+        }
       }
     } catch (error) {
       console.error("Failed to load offerings:", error);
+      if (retryCount < 2) {
+        setTimeout(() => loadOfferings(retryCount + 1), 2000);
+      }
     }
   };
 
