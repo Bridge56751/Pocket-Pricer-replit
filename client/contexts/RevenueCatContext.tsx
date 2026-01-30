@@ -13,11 +13,13 @@ interface RevenueCatContextType {
   customerInfo: CustomerInfo | null;
   packages: PurchasesPackage[];
   isPro: boolean;
+  offeringsDebug: string;
   purchasePackage: (pkg: PurchasesPackage) => Promise<{ success: boolean; error?: string }>;
   restorePurchases: () => Promise<{ success: boolean; error?: string }>;
   refreshCustomerInfo: () => Promise<void>;
   identifyUser: (userId: string) => Promise<void>;
   logout: () => Promise<void>;
+  reloadOfferings: () => Promise<void>;
 }
 
 const RevenueCatContext = createContext<RevenueCatContextType | undefined>(undefined);
@@ -26,6 +28,7 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
   const [isReady, setIsReady] = useState(false);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
+  const [offeringsDebug, setOfferingsDebug] = useState<string>("");
 
   useEffect(() => {
     initRevenueCat();
@@ -69,24 +72,49 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
     try {
       console.log("RevenueCat: Loading offerings, attempt", retryCount + 1);
       const offerings = await Purchases.getOfferings();
-      console.log("RevenueCat: Offerings response:", JSON.stringify(offerings, null, 2));
       
+      // Detailed logging
+      console.log("RevenueCat: Full offerings object:", offerings);
+      console.log("RevenueCat: Current offering:", offerings.current);
+      console.log("RevenueCat: All offering keys:", Object.keys(offerings.all || {}));
+      
+      // Try to get packages from current offering
       if (offerings.current && offerings.current.availablePackages.length > 0) {
-        console.log("RevenueCat: Found", offerings.current.availablePackages.length, "packages");
+        console.log("RevenueCat: Found", offerings.current.availablePackages.length, "packages in current");
         setPackages(offerings.current.availablePackages);
-      } else {
-        console.log("RevenueCat: No current offering or no packages available");
-        console.log("RevenueCat: All offerings:", Object.keys(offerings.all || {}));
-        
-        if (retryCount < 2) {
-          console.log("RevenueCat: Retrying in 2 seconds...");
-          setTimeout(() => loadOfferings(retryCount + 1), 2000);
+        return;
+      }
+      
+      // Try to get packages from 'default' offering directly
+      if (offerings.all?.default?.availablePackages?.length > 0) {
+        console.log("RevenueCat: Found packages in 'default' offering");
+        setPackages(offerings.all.default.availablePackages);
+        return;
+      }
+      
+      // Try any available offering
+      const allOfferingsArray = Object.values(offerings.all || {});
+      for (const offering of allOfferingsArray) {
+        if (offering.availablePackages?.length > 0) {
+          console.log("RevenueCat: Found packages in offering:", offering.identifier);
+          setPackages(offering.availablePackages);
+          return;
         }
       }
-    } catch (error) {
+      
+      console.log("RevenueCat: No packages found in any offering");
+      setOfferingsDebug(JSON.stringify(offerings, null, 2));
+      
+      if (retryCount < 3) {
+        console.log("RevenueCat: Retrying in 3 seconds...");
+        setTimeout(() => loadOfferings(retryCount + 1), 3000);
+      }
+    } catch (error: any) {
       console.error("Failed to load offerings:", error);
-      if (retryCount < 2) {
-        setTimeout(() => loadOfferings(retryCount + 1), 2000);
+      console.error("Error details:", error?.message, error?.code);
+      setOfferingsDebug(`Error: ${error?.message || error}`);
+      if (retryCount < 3) {
+        setTimeout(() => loadOfferings(retryCount + 1), 3000);
       }
     }
   };
@@ -176,6 +204,11 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const reloadOfferings = async () => {
+    setOfferingsDebug("Reloading...");
+    await loadOfferings(0);
+  };
+
   return (
     <RevenueCatContext.Provider
       value={{
@@ -183,11 +216,13 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
         customerInfo,
         packages,
         isPro,
+        offeringsDebug,
         purchasePackage,
         restorePurchases,
         refreshCustomerInfo,
         identifyUser,
         logout,
+        reloadOfferings,
       }}
     >
       {children}
