@@ -20,7 +20,7 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const { theme, themeMode, setThemeMode } = useDesignTokens();
-  const { user, token, logout } = useAuth();
+  const { user, token, logout, checkSubscription, refreshUser } = useAuth();
   const { isPro, restorePurchases } = useRevenueCat();
 
   const [isDeleting, setIsDeleting] = useState(false);
@@ -59,6 +59,8 @@ export default function ProfileScreen() {
       const result = await restorePurchases();
 
       if (result.success) {
+        await checkSubscription();
+        await refreshUser();
         Alert.alert("Restored", "Your Pro subscription has been restored!");
       } else {
         Alert.alert("No Subscription Found", result.error || "No active subscription found for this Apple ID.");

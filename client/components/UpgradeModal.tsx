@@ -22,7 +22,7 @@ interface UpgradeModalProps {
 export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
   const { theme } = useDesignTokens();
   const { packages, purchasePackage, restorePurchases, isPro } = useRevenueCat();
-  const { refreshUser } = useAuth();
+  const { refreshUser, checkSubscription } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
 
@@ -50,6 +50,7 @@ export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
       const result = await purchasePackage(monthlyPackage);
 
       if (result.success) {
+        await checkSubscription();
         await refreshUser();
         onClose();
         Alert.alert("Success", "Welcome to Pocket Pricer Pro! You now have unlimited scans.");
@@ -75,6 +76,7 @@ export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
       const result = await restorePurchases();
 
       if (result.success) {
+        await checkSubscription();
         await refreshUser();
         onClose();
         Alert.alert("Restored", "Your Pro subscription has been restored!");
