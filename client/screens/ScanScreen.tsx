@@ -74,10 +74,28 @@ export default function ScanScreen() {
       : "Identifying product...");
     
     try {
+      if (!token) {
+        setIsAnalyzing(false);
+        setAnalyzingProgress("");
+        processingRef.current = false;
+        setErrorMessage("Please sign in to scan products.");
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        return;
+      }
+
       const analyzeResponse = await apiRequest("POST", "/api/analyze-image", {
         images: photos.map(p => p.base64),
       }, token);
       
+      if (analyzeResponse.status === 401) {
+        setIsAnalyzing(false);
+        setAnalyzingProgress("");
+        processingRef.current = false;
+        setErrorMessage("Session expired. Please sign out and sign back in.");
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        return;
+      }
+
       const analysisResult = await analyzeResponse.json();
       
       if (analyzeResponse.status === 403 && analysisResult.limitReached) {
