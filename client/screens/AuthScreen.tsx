@@ -43,6 +43,16 @@ export default function AuthScreen() {
   const [isResending, setIsResending] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const codeInputRefs = useRef<(TextInput | null)[]>([]);
+  
+  // Forgot password states
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
+  const [resetCode, setResetCode] = useState(["", "", "", "", "", ""]);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const resetCodeInputRefs = useRef<(TextInput | null)[]>([]);
 
   useEffect(() => {
     checkAppleAvailability();
@@ -116,6 +126,107 @@ export default function AuthScreen() {
       setError("Failed to resend code");
     } finally {
       setIsResending(false);
+    }
+  };
+
+  const handleResetCodeChange = (index: number, value: string) => {
+    if (value.length > 1) {
+      value = value.slice(-1);
+    }
+    
+    const newCode = [...resetCode];
+    newCode[index] = value;
+    setResetCode(newCode);
+    
+    if (value && index < 5) {
+      resetCodeInputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleResetCodeKeyPress = (index: number, key: string) => {
+    if (key === "Backspace" && !resetCode[index] && index > 0) {
+      resetCodeInputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!forgotPasswordEmail) {
+      setError("Please enter your email address");
+      return;
+    }
+    
+    setIsLoading(true);
+    setError("");
+    
+    try {
+      const response = await apiRequest("POST", "/api/auth/forgot-password", {
+        email: forgotPasswordEmail,
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        setShowForgotPassword(false);
+        setShowResetPassword(true);
+        setSuccessMessage("If an account exists with this email, a reset code has been sent.");
+      } else {
+        setError(data.error || "Failed to send reset code");
+      }
+    } catch (err) {
+      setError("Connection failed. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    const code = resetCode.join("");
+    if (code.length !== 6) {
+      setError("Please enter the 6-digit code");
+      return;
+    }
+    
+    if (!newPassword) {
+      setError("Please enter a new password");
+      return;
+    }
+    
+    if (newPassword.length < 6) {
+      setError("Password must be at least 6 characters");
+      return;
+    }
+    
+    if (newPassword !== confirmNewPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+    
+    setIsLoading(true);
+    setError("");
+    
+    try {
+      const response = await apiRequest("POST", "/api/auth/reset-password", {
+        email: forgotPasswordEmail,
+        code,
+        newPassword,
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        setShowResetPassword(false);
+        setResetCode(["", "", "", "", "", ""]);
+        setNewPassword("");
+        setConfirmNewPassword("");
+        setForgotPasswordEmail("");
+        setSuccessMessage("Password reset successfully! You can now log in.");
+      } else {
+        setError(data.error || "Failed to reset password");
+      }
+    } catch (err) {
+      setError("Connection failed. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -261,6 +372,216 @@ export default function AuthScreen() {
       }
     }
   };
+
+  // Forgot Password - Enter Email
+  if (showForgotPassword) {
+    return (
+      <KeyboardAvoidingView
+        style={[styles.container, { backgroundColor: theme.colors.background }]}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <ScrollView
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingTop: insets.top + 60, paddingBottom: insets.bottom + 40 },
+          ]}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.logoContainer}>
+            <View style={[styles.verifyIconContainer, { backgroundColor: theme.colors.primary + "20" }]}>
+              <Feather name="lock" size={48} color={theme.colors.primary} />
+            </View>
+            <Text style={[styles.appName, { color: theme.colors.foreground }]}>
+              Forgot Password?
+            </Text>
+            <Text style={[styles.tagline, { color: theme.colors.mutedForeground }]}>
+              Enter your email address and we'll send you a code to reset your password.
+            </Text>
+          </View>
+
+          <View style={styles.formContainer}>
+            <View style={[styles.inputContainer, { backgroundColor: theme.colors.card }]}>
+              <Feather name="mail" size={20} color={theme.colors.mutedForeground} />
+              <TextInput
+                style={[styles.input, { color: theme.colors.foreground }]}
+                placeholder="Email"
+                placeholderTextColor={theme.colors.mutedForeground}
+                value={forgotPasswordEmail}
+                onChangeText={setForgotPasswordEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                autoComplete="email"
+              />
+            </View>
+
+            {error ? (
+              <View style={styles.errorContainer}>
+                <Feather name="alert-circle" size={16} color="#ef4444" />
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            ) : null}
+
+            <Pressable
+              style={[
+                styles.submitButton,
+                { backgroundColor: theme.colors.primary },
+                isLoading && styles.buttonDisabled,
+              ]}
+              onPress={handleForgotPassword}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.submitButtonText}>Send Reset Code</Text>
+              )}
+            </Pressable>
+
+            <Pressable
+              style={styles.backButton}
+              onPress={() => {
+                setShowForgotPassword(false);
+                setForgotPasswordEmail("");
+                setError("");
+              }}
+            >
+              <Feather name="arrow-left" size={20} color={theme.colors.mutedForeground} />
+              <Text style={[styles.backButtonText, { color: theme.colors.mutedForeground }]}>
+                Back to Sign In
+              </Text>
+            </Pressable>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    );
+  }
+
+  // Reset Password - Enter Code and New Password
+  if (showResetPassword) {
+    return (
+      <KeyboardAvoidingView
+        style={[styles.container, { backgroundColor: theme.colors.background }]}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <ScrollView
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingTop: insets.top + 60, paddingBottom: insets.bottom + 40 },
+          ]}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.logoContainer}>
+            <View style={[styles.verifyIconContainer, { backgroundColor: theme.colors.primary + "20" }]}>
+              <Feather name="key" size={48} color={theme.colors.primary} />
+            </View>
+            <Text style={[styles.appName, { color: theme.colors.foreground }]}>
+              Reset Password
+            </Text>
+            <Text style={[styles.tagline, { color: theme.colors.mutedForeground }]}>
+              Enter the code sent to{"\n"}{forgotPasswordEmail}
+            </Text>
+          </View>
+
+          <View style={styles.formContainer}>
+            {successMessage ? (
+              <View style={[styles.successContainer, { backgroundColor: theme.colors.primary + "20" }]}>
+                <Feather name="check-circle" size={16} color={theme.colors.primary} />
+                <Text style={[styles.successText, { color: theme.colors.primary }]}>{successMessage}</Text>
+              </View>
+            ) : null}
+
+            <View style={styles.codeInputContainer}>
+              {resetCode.map((digit, index) => (
+                <TextInput
+                  key={index}
+                  ref={(ref) => (resetCodeInputRefs.current[index] = ref)}
+                  style={[
+                    styles.codeInput,
+                    {
+                      backgroundColor: theme.colors.card,
+                      color: theme.colors.foreground,
+                      borderColor: digit ? theme.colors.primary : theme.colors.border,
+                    },
+                  ]}
+                  value={digit}
+                  onChangeText={(value) => handleResetCodeChange(index, value)}
+                  onKeyPress={({ nativeEvent }) => handleResetCodeKeyPress(index, nativeEvent.key)}
+                  keyboardType="number-pad"
+                  maxLength={1}
+                  selectTextOnFocus
+                />
+              ))}
+            </View>
+
+            <View style={[styles.inputContainer, { backgroundColor: theme.colors.card }]}>
+              <Feather name="lock" size={20} color={theme.colors.mutedForeground} />
+              <TextInput
+                style={[styles.input, { color: theme.colors.foreground }]}
+                placeholder="New Password"
+                placeholderTextColor={theme.colors.mutedForeground}
+                value={newPassword}
+                onChangeText={setNewPassword}
+                secureTextEntry
+              />
+            </View>
+
+            <View style={[styles.inputContainer, { backgroundColor: theme.colors.card }]}>
+              <Feather name="lock" size={20} color={theme.colors.mutedForeground} />
+              <TextInput
+                style={[styles.input, { color: theme.colors.foreground }]}
+                placeholder="Confirm New Password"
+                placeholderTextColor={theme.colors.mutedForeground}
+                value={confirmNewPassword}
+                onChangeText={setConfirmNewPassword}
+                secureTextEntry
+              />
+            </View>
+
+            {error ? (
+              <View style={styles.errorContainer}>
+                <Feather name="alert-circle" size={16} color="#ef4444" />
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            ) : null}
+
+            <Pressable
+              style={[
+                styles.submitButton,
+                { backgroundColor: theme.colors.primary },
+                isLoading && styles.buttonDisabled,
+              ]}
+              onPress={handleResetPassword}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.submitButtonText}>Reset Password</Text>
+              )}
+            </Pressable>
+
+            <Pressable
+              style={styles.backButton}
+              onPress={() => {
+                setShowResetPassword(false);
+                setShowForgotPassword(true);
+                setResetCode(["", "", "", "", "", ""]);
+                setNewPassword("");
+                setConfirmNewPassword("");
+                setError("");
+                setSuccessMessage("");
+              }}
+            >
+              <Feather name="arrow-left" size={20} color={theme.colors.mutedForeground} />
+              <Text style={[styles.backButtonText, { color: theme.colors.mutedForeground }]}>
+                Back
+              </Text>
+            </Pressable>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    );
+  }
 
   if (showVerification) {
     return (
@@ -528,6 +849,13 @@ export default function AuthScreen() {
             </View>
           ) : null}
 
+          {successMessage ? (
+            <View style={[styles.successContainer, { backgroundColor: theme.colors.primary + "20" }]}>
+              <Feather name="check-circle" size={16} color={theme.colors.primary} />
+              <Text style={[styles.successText, { color: theme.colors.primary }]}>{successMessage}</Text>
+            </View>
+          ) : null}
+
           {error ? (
             <View style={styles.errorContainer}>
               <Feather name="alert-circle" size={16} color="#ef4444" />
@@ -552,6 +880,21 @@ export default function AuthScreen() {
               </Text>
             )}
           </Pressable>
+
+          {isLogin ? (
+            <Pressable
+              style={styles.forgotPasswordButton}
+              onPress={() => {
+                setShowForgotPassword(true);
+                setError("");
+                setSuccessMessage("");
+              }}
+            >
+              <Text style={[styles.forgotPasswordText, { color: theme.colors.primary }]}>
+                Forgot Password?
+              </Text>
+            </Pressable>
+          ) : null}
 
           <View style={styles.freeTrialInfo}>
             <Feather name="gift" size={16} color={theme.colors.primary} />
@@ -750,5 +1093,26 @@ const styles = StyleSheet.create({
   backButtonText: {
     fontSize: 16,
     fontWeight: "500",
+  },
+  successContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  successText: {
+    fontSize: 14,
+    flex: 1,
+  },
+  forgotPasswordButton: {
+    alignItems: "center",
+    paddingVertical: 12,
+    marginTop: 8,
+  },
+  forgotPasswordText: {
+    fontSize: 14,
+    fontWeight: "600",
   },
 });
