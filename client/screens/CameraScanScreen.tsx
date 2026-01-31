@@ -221,9 +221,11 @@ export default function CameraScanScreen() {
                 <Text style={styles.photoBadgeText}>{capturedPhotos.length}/{MAX_PHOTOS} photos</Text>
               </View>
             ) : (
-              <Text style={styles.instructions}>
-                Take photos from different angles
-              </Text>
+              <View style={styles.instructionsContainer}>
+                <Text style={styles.instructions}>
+                  Photograph labels, barcodes, or model numbers
+                </Text>
+              </View>
             )}
             <View style={{ width: 40 }} />
           </View>
@@ -234,6 +236,15 @@ export default function CameraScanScreen() {
             <View style={styles.cornerBL} />
             <View style={styles.cornerBR} />
           </View>
+
+          {capturedPhotos.length === 0 ? (
+            <View style={styles.tipBanner}>
+              <Feather name="info" size={14} color="#10B981" />
+              <Text style={styles.tipText}>
+                Tip: Labels and barcodes give the best results
+              </Text>
+            </View>
+          ) : null}
 
           {capturedPhotos.length > 0 ? (
             <View style={styles.thumbnailStrip}>
@@ -336,13 +347,37 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  instructionsContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   instructions: {
     color: "#fff",
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "500",
+    textAlign: "center",
     textShadowColor: "rgba(0,0,0,0.5)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
+    paddingHorizontal: 8,
+  },
+  tipBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(16, 185, 129, 0.15)",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    marginTop: 16,
+    alignSelf: "center",
+    gap: 8,
+  },
+  tipText: {
+    color: "#10B981",
+    fontSize: 13,
+    fontWeight: "500",
   },
   photoBadge: {
     backgroundColor: "rgba(16, 185, 129, 0.9)",

@@ -1369,19 +1369,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
       }));
 
+      const basePrompt = `You are a product identification expert for eBay resellers. Your goal is to extract the MOST SPECIFIC product identifiers possible.
+
+PRIORITY ORDER for identification (use the most specific you can find):
+1. UPC/Barcode number if visible
+2. Exact model number (e.g., "A2442", "NES-001", "SM-G991U")
+3. Brand + specific product line + version
+4. Product name with distinguishing features
+
+CRITICAL: Read ALL visible text including:
+- Labels, stickers, tags, packaging
+- Model numbers, serial numbers, SKUs
+- Brand logos and product names
+- Size, color, capacity specifications
+
+Return ONLY a JSON object (no markdown, no code blocks):
+{
+  "searchQuery": "optimized eBay search terms",
+  "brand": "brand if found",
+  "model": "exact model number if visible",
+  "upc": "UPC/barcode if visible",
+  "productName": "specific product name",
+  "specs": "key specs like size, color, capacity",
+  "condition": "new/used/refurbished based on appearance"
+}
+
+The "searchQuery" field is MOST IMPORTANT - it should combine brand + model + key identifiers for the best eBay search results.
+
+If you cannot identify: {"searchQuery": null, "error": "Could not identify product"}`;
+
       const promptText = imageList.length > 1
-        ? `These ${imageList.length} photos show the SAME product from different angles. Analyze all photos together to accurately identify this single product for eBay reselling. Use details from all angles to get the most accurate identification.
-
-Return ONLY a JSON object with this exact format (no markdown, no code blocks):
-{"productName": "brief product name for eBay search", "brand": "brand name if visible", "model": "model number if visible", "condition": "estimated condition", "category": "product category", "description": "brief description based on all angles"}
-
-Be specific but concise. Focus on searchable terms that would work well on eBay. If you cannot identify the product, return:
-{"productName": null, "error": "Could not identify product"}`
-        : `Identify this product for eBay reselling. Return ONLY a JSON object with this exact format (no markdown, no code blocks):
-{"productName": "brief product name for eBay search", "brand": "brand name if visible", "model": "model number if visible", "condition": "estimated condition", "category": "product category"}
-
-Be specific but concise. Focus on searchable terms that would work well on eBay. If you cannot identify the product, return:
-{"productName": null, "error": "Could not identify product"}`;
+        ? `${basePrompt}\n\nThese ${imageList.length} photos show the SAME product from different angles. Use ALL visible details from every angle.`
+        : basePrompt;
       
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash",
@@ -1402,12 +1421,30 @@ Be specific but concise. Focus on searchable terms that would work well on eBay.
         const cleanedText = text.replace(/```json\n?|\n?```/g, "").trim();
         const productInfo = JSON.parse(cleanedText);
         
+        // Ensure backwards compatibility - use searchQuery if available, fall back to productName
+        if (productInfo.searchQuery && !productInfo.productName) {
+          productInfo.productName = productInfo.searchQuery;
+        } else if (!productInfo.searchQuery && productInfo.productName) {
+          productInfo.searchQuery = productInfo.productName;
+        }
+        
+        // Build optimized search query from available data
+        if (productInfo.brand || productInfo.model) {
+          const parts = [];
+          if (productInfo.brand) parts.push(productInfo.brand);
+          if (productInfo.model) parts.push(productInfo.model);
+          if (productInfo.specs) parts.push(productInfo.specs);
+          if (parts.length > 0) {
+            productInfo.searchQuery = parts.join(" ");
+          }
+        }
+        
         await incrementSearchCount(user.id);
         
         res.json(productInfo);
       } catch (parseError) {
         console.error("Failed to parse AI response:", text);
-        res.json({ productName: text.substring(0, 100), raw: true });
+        res.json({ productName: text.substring(0, 100), searchQuery: text.substring(0, 100), raw: true });
       }
     } catch (error) {
       console.error("Image analysis error:", error);
