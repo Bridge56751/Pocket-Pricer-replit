@@ -480,6 +480,9 @@ export default function AuthScreen() {
             <Text style={[styles.tagline, { color: theme.colors.mutedForeground }]}>
               Enter the code sent to{"\n"}{forgotPasswordEmail}
             </Text>
+            <Text style={[styles.spamNote, { color: theme.colors.mutedForeground }]}>
+              Check your spam folder if you don't see it
+            </Text>
           </View>
 
           <View style={styles.formContainer}>
@@ -605,6 +608,9 @@ export default function AuthScreen() {
             </Text>
             <Text style={[styles.tagline, { color: theme.colors.mutedForeground }]}>
               We sent a 6-digit code to{"\n"}{verificationEmail}
+            </Text>
+            <Text style={[styles.spamNote, { color: theme.colors.mutedForeground }]}>
+              Check your spam folder if you don't see it
             </Text>
           </View>
 
@@ -1114,5 +1120,10 @@ const styles = StyleSheet.create({
   forgotPasswordText: {
     fontSize: 14,
     fontWeight: "600",
+  },
+  spamNote: {
+    fontSize: 13,
+    fontStyle: "italic",
+    marginTop: 8,
   },
 });
