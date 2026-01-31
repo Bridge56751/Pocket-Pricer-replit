@@ -101,6 +101,57 @@ export async function sendVerificationEmail(to: string, verificationCode: string
   }
 }
 
+export async function sendPasswordResetEmail(to: string, resetCode: string) {
+  console.log("Attempting to send password reset email to:", to);
+  
+  const { client, fromEmail } = await getUncachableResendClient();
+  
+  try {
+    const result = await client.emails.send({
+      to: to,
+      from: fromEmail,
+      subject: 'Reset your Pocket Pricer password',
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px;">
+          <div style="max-width: 480px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <div style="background-color: #10B981; padding: 32px; text-align: center;">
+              <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 700;">Pocket Pricer</h1>
+            </div>
+            <div style="padding: 32px;">
+              <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 20px;">Reset Your Password</h2>
+              <p style="color: #666666; font-size: 16px; line-height: 1.5; margin: 0 0 24px 0;">
+                We received a request to reset your password. Enter the code below in the app to create a new password:
+              </p>
+              <div style="background-color: #f0fdf4; border: 2px solid #10B981; border-radius: 8px; padding: 24px; text-align: center; margin-bottom: 24px;">
+                <span style="font-size: 32px; font-weight: 700; color: #10B981; letter-spacing: 8px;">${resetCode}</span>
+              </div>
+              <p style="color: #666666; font-size: 14px; line-height: 1.5; margin: 0;">
+                This code expires in 1 hour. If you didn't request a password reset, you can safely ignore this email.
+              </p>
+            </div>
+            <div style="background-color: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
+              <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+                Integrated Sales Solutions LLC
+              </p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    });
+    console.log("Password reset email sent successfully to:", to, result);
+  } catch (error: any) {
+    console.error("Resend error:", error);
+    throw new Error(`Resend error: ${error?.message || 'Failed to send email'}`);
+  }
+}
+
 export async function sendSubscriptionThankYouEmail(to: string) {
   const { client, fromEmail } = await getUncachableResendClient();
   

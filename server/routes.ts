@@ -6,7 +6,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { query } from "./db";
 import { getUncachableStripeClient, getStripePublishableKey } from "./stripeClient";
-import { sendVerificationEmail, sendSubscriptionThankYouEmail } from "./emailClient";
+import { sendVerificationEmail, sendPasswordResetEmail, sendSubscriptionThankYouEmail } from "./emailClient";
 
 function generateVerificationCode(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -434,6 +434,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Resend verification error:", error);
       res.status(500).json({ error: "Failed to resend verification code" });
+    }
+  });
+
+  // Password reset - request reset code
+  app.post("/api/auth/forgot-password", async (req: Request, res: Response) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ error: "Email is required" });
+      }
+      
+      const result = await query("SELECT * FROM users WHERE email = $1", [email.toLowerCase()]);
+      const user = result.rows[0];
+      
+      // Always return success to prevent email enumeration attacks
+      if (!user) {
+        return res.json({ success: true, message: "If an account exists with this email, a reset code has been sent" });
+      }
+      
+      // Check if account is deleted
+      if (user.deleted_at) {
+        return res.json({ success: true, message: "If an account exists with this email, a reset code has been sent" });
+      }
+      
+      // Generate reset code (expires in 1 hour)
+      const resetCode = generateVerificationCode();
+      const resetExpires = new Date(Date.now() + 60 * 60 * 1000);
+      
+      await query(
+        "UPDATE users SET verification_code = $1, verification_code_expires = $2 WHERE id = $3",
+        [resetCode, resetExpires, user.id]
+      );
+      
+      await sendPasswordResetEmail(email.toLowerCase(), resetCode);
+      
+      res.json({ success: true, message: "If an account exists with this email, a reset code has been sent" });
+    } catch (error) {
+      console.error("Forgot password error:", error);
+      res.status(500).json({ error: "Failed to send reset code" });
+    }
+  });
+
+  // Password reset - verify code and set new password
+  app.post("/api/auth/reset-password", async (req: Request, res: Response) => {
+    try {
+      const { email, code, newPassword } = req.body;
+      
+      if (!email || !code || !newPassword) {
+        return res.status(400).json({ error: "Email, code, and new password are required" });
+      }
+      
+      if (newPassword.length < 6) {
+        return res.status(400).json({ error: "Password must be at least 6 characters" });
+      }
+      
+      const result = await query(
+        "SELECT * FROM users WHERE email = $1 AND verification_code = $2",
+        [email.toLowerCase(), code]
+      );
+      const user = result.rows[0];
+      
+      if (!user) {
+        return res.status(400).json({ error: "Invalid or expired reset code" });
+      }
+      
+      if (new Date(user.verification_code_expires) < new Date()) {
+        return res.status(400).json({ error: "Reset code has expired. Please request a new one." });
+      }
+      
+      // Hash new password and update
+      const passwordHash = await bcrypt.hash(newPassword, 10);
+      
+      await query(
+        "UPDATE users SET password_hash = $1, verification_code = NULL, verification_code_expires = NULL WHERE id = $2",
+        [passwordHash, user.id]
+      );
+      
+      res.json({ success: true, message: "Password has been reset successfully" });
+    } catch (error) {
+      console.error("Reset password error:", error);
+      res.status(500).json({ error: "Failed to reset password" });
     }
   });
 
