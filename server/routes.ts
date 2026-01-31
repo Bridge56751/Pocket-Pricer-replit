@@ -645,11 +645,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (user) {
         // If account was soft-deleted, restore it but keep the search count
         if (user.deleted_at) {
+          console.log(`Restoring soft-deleted social login account: ${user.id}, keeping search count: ${user.total_searches}`);
           await query(
-            `UPDATE users SET deleted_at = NULL WHERE id = $1`,
+            `UPDATE users SET deleted_at = NULL, email_verified = true WHERE id = $1`,
             [user.id]
           );
           user.deleted_at = null;
+          user.email_verified = true;
         }
       } else {
         // Create new user only if no existing account found
