@@ -620,8 +620,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { provider, email, name, googleId, appleId } = req.body;
       
-      console.log(`[SOCIAL AUTH] Provider: ${provider}, Email: ${email}, AppleId: ${appleId?.substring(0, 20)}...`);
-      
       if (!provider || (!googleId && !appleId)) {
         return res.status(400).json({ error: "Invalid social login data" });
       }
@@ -630,17 +628,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const providerColumn = provider === "google" ? "google_id" : "apple_id";
       
       // Check for existing user by provider ID (including soft-deleted accounts)
-      console.log(`[SOCIAL AUTH] Searching by ${providerColumn}: ${providerId?.substring(0, 20)}...`);
       let result = await query(`SELECT * FROM users WHERE ${providerColumn} = $1`, [providerId]);
       let user = result.rows[0];
-      console.log(`[SOCIAL AUTH] Found by provider ID: ${user ? `Yes (id: ${user.id}, searches: ${user.total_searches}, deleted: ${user.deleted_at})` : 'No'}`);
       
       if (!user && email) {
         // Check by email (including soft-deleted accounts)
-        console.log(`[SOCIAL AUTH] Searching by email: ${email.toLowerCase()}`);
         result = await query("SELECT * FROM users WHERE email = $1", [email.toLowerCase()]);
         user = result.rows[0];
-        console.log(`[SOCIAL AUTH] Found by email: ${user ? `Yes (id: ${user.id}, searches: ${user.total_searches}, deleted: ${user.deleted_at})` : 'No'}`);
         
         if (user) {
           await query(`UPDATE users SET ${providerColumn} = $1 WHERE id = $2`, [providerId, user.id]);
@@ -651,18 +645,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (user) {
         // If account was soft-deleted, restore it but keep the search count
         if (user.deleted_at) {
-          console.log(`[SOCIAL AUTH] Restoring soft-deleted account, keeping search count: ${user.total_searches}`);
           await query(
             `UPDATE users SET deleted_at = NULL WHERE id = $1`,
             [user.id]
           );
           user.deleted_at = null;
-        } else {
-          console.log(`[SOCIAL AUTH] Existing active account found, searches: ${user.total_searches}`);
         }
       } else {
         // Create new user only if no existing account found
-        console.log(`[SOCIAL AUTH] Creating NEW user (no existing account found)`);
         const userEmail = email || `${provider}_${providerId}@priceit.app`;
         const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         const randomPassword = Math.random().toString(36).slice(-16);
