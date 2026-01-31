@@ -49,6 +49,7 @@ export default function ScanScreen() {
   const [analyzingProgress, setAnalyzingProgress] = useState("");
   const [analyzingCount, setAnalyzingCount] = useState({ current: 0, total: 0 });
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const processingRef = useRef(false);
 
   const loadRecentScans = useCallback(async () => {
@@ -66,6 +67,7 @@ export default function ScanScreen() {
     
     processingRef.current = true;
     setIsAnalyzing(true);
+    setErrorMessage(null);
     setAnalyzingCount({ current: 1, total: 2 });
     setAnalyzingProgress(photos.length > 1 
       ? `Analyzing ${photos.length} photos of your product...` 
@@ -90,6 +92,7 @@ export default function ScanScreen() {
         setIsAnalyzing(false);
         setAnalyzingProgress("");
         processingRef.current = false;
+        setErrorMessage(analysisResult.error || "Could not identify the product. Please try again with a clearer photo.");
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         return;
       }
@@ -143,6 +146,16 @@ export default function ScanScreen() {
       setIsAnalyzing(false);
       setAnalyzingProgress("");
       processingRef.current = false;
+      const errorMsg = error instanceof Error ? error.message : "Something went wrong. Please try again.";
+      if (errorMsg.includes("401") || errorMsg.includes("Not authenticated")) {
+        setErrorMessage("Session expired. Please sign in again.");
+      } else if (errorMsg.includes("429") || errorMsg.includes("rate")) {
+        setErrorMessage("Too many requests. Please wait a moment and try again.");
+      } else if (errorMsg.includes("500")) {
+        setErrorMessage("Server error. Please try again later.");
+      } else {
+        setErrorMessage(errorMsg);
+      }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
   }, [loadRecentScans, navigation]);
@@ -275,6 +288,19 @@ export default function ScanScreen() {
           </View>
         )}
 
+        {errorMessage ? (
+          <Pressable 
+            onPress={() => setErrorMessage(null)}
+            style={[styles.errorBanner, { backgroundColor: colors.destructive + "20" }]}
+          >
+            <Feather name="alert-circle" size={18} color={colors.destructive} />
+            <Text style={[styles.errorText, { color: colors.destructive }]}>
+              {errorMessage}
+            </Text>
+            <Feather name="x" size={16} color={colors.destructive} />
+          </Pressable>
+        ) : null}
+
         <View style={styles.sectionHeader}>
           <Feather name="clock" size={18} color={theme.colors.primary} />
           <Text style={[styles.sectionTitle, { color: theme.colors.foreground }]}>
@@ -402,6 +428,19 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 24,
     marginBottom: 24,
+  },
+  errorBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 16,
+    gap: 10,
+  },
+  errorText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: "500",
   },
   heroTitle: {
     fontSize: 22,
