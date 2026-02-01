@@ -1362,10 +1362,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       // Transform lens results to our format - filter out unreliable sources
-      const allProducts = lensResult.products.slice(0, 30);
+      const allProducts = lensResult.products.slice(0, 60);
       const productsWithPrices = allProducts.filter(p => 
         (p.price?.value || p.price?.extracted_value) && isReliableSource(p.source || '')
       );
+      
+      console.log(`After filtering: ${productsWithPrices.length} reliable products with prices (from ${allProducts.length})`);
       
       // Use products with prices for pricing calculations
       const prices = productsWithPrices
