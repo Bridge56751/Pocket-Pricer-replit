@@ -58,13 +58,12 @@ async function getAIProductDescription(imageBase64: string): Promise<string | nu
               },
             },
             {
-              text: `What product is this? Reply with a brief product description only.
+              text: `Identify this product. What is it?
 
-Rules:
-- Just the product name/description, nothing else
-- Include brand if visible
-- Keep it short and simple (under 50 characters)
-- No explanation or reasoning`,
+Respond with ONLY the product name - be specific and accurate.
+Include the brand name if you can see it.
+Keep your answer under 50 characters.
+Do not explain or describe - just name the product.`,
             },
           ],
         },
