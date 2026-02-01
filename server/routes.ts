@@ -1,7 +1,6 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "node:http";
 import { getJson } from "serpapi";
-import { GoogleGenAI } from "@google/genai";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { query } from "./db";
@@ -30,99 +29,6 @@ function isFreePro(email: string): boolean {
     // Exact email match
     return lowerEmail === pattern.toLowerCase();
   });
-}
-
-const ai = new GoogleGenAI({
-  apiKey: process.env.AI_INTEGRATIONS_GEMINI_API_KEY,
-  httpOptions: {
-    apiVersion: "",
-    baseUrl: process.env.AI_INTEGRATIONS_GEMINI_BASE_URL,
-  },
-});
-
-// Use Gemini AI to extract a clean product name/description from image
-async function getAIProductDescription(imageBase64: string): Promise<string | null> {
-  try {
-    const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, "");
-    
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: [
-        {
-          role: "user",
-          parts: [
-            {
-              inlineData: {
-                mimeType: "image/jpeg",
-                data: cleanBase64,
-              },
-            },
-            {
-              text: `Identify this product. What is it?
-
-Respond with ONLY the product name - be specific and accurate.
-Include the brand name if you can see it.
-Keep your answer under 50 characters.
-Do not explain or describe - just name the product.`,
-            },
-          ],
-        },
-      ],
-    });
-
-    let text = response.text?.trim();
-    console.log("Raw AI response:", text);
-    
-    if (!text || text.length < 3) {
-      return null;
-    }
-    
-    // Handle case where AI returns JSON instead of plain text
-    if (text.startsWith('{') || text.startsWith('[')) {
-      try {
-        const parsed = JSON.parse(text);
-        const extractedName = parsed.name || parsed.productName || parsed.product || 
-               (typeof parsed === 'string' ? parsed : null);
-        if (!extractedName || typeof extractedName !== 'string') return null;
-        text = extractedName;
-      } catch {
-        const beforeJson = text.split('{')[0].trim();
-        if (beforeJson.length > 3) {
-          text = beforeJson;
-        } else {
-          return null;
-        }
-      }
-    }
-    
-    // Remove any quotes, asterisks, markdown, or thinking artifacts
-    text = text.replace(/^["'*`]+|["'*`]+$/g, '').trim();
-    text = text.split('\n')[0].trim();
-    
-    // Filter out obvious garbage responses (single words that aren't brands/products)
-    const garbageWords = ['thought', 'think', 'image', 'product', 'item', 'object', 'thing', 'appears', 'looks', 'seems'];
-    const lowerText = text.toLowerCase();
-    if (garbageWords.includes(lowerText) || lowerText.startsWith('i think') || lowerText.startsWith('this is')) {
-      console.log("AI returned garbage response, ignoring:", text);
-      return null;
-    }
-    
-    // Must have at least 2 words for a valid product name, or be a well-known single word brand
-    const wordCount = text.split(/\s+/).length;
-    const singleWordBrands = ['nintendo', 'sony', 'apple', 'samsung', 'nike', 'adidas', 'pokemon', 'xbox'];
-    if (wordCount < 2 && !singleWordBrands.includes(lowerText)) {
-      console.log("AI response too short:", text);
-      return null;
-    }
-    
-    if (text.length > 5 && text.length < 100) {
-      return text;
-    }
-    return null;
-  } catch (error) {
-    console.error("AI product description error:", error);
-    return null;
-  }
 }
 
 // Upload image to temporary hosting for Google Lens (uses freeimage.host API)
