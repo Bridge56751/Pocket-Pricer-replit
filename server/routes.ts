@@ -1346,11 +1346,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Transform lens results to our format
-      const productsWithPrices = lensResult.products
-        .filter(p => p.price?.value || p.price?.extracted_value)
-        .slice(0, 30);
-
+      // Transform lens results to our format - prioritize items with prices, but include all
+      const allProducts = lensResult.products.slice(0, 50);
+      const productsWithPrices = allProducts.filter(p => p.price?.value || p.price?.extracted_value);
+      
+      // Use products with prices for pricing calculations
       const prices = productsWithPrices
         .map(p => p.price?.extracted_value || p.price?.value || 0)
         .filter(p => p > 0);
@@ -1358,7 +1358,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const avgListPrice = calculateMedian(prices);
       const bestBuyNow = prices.length > 0 ? Math.min(...prices) : 0;
 
-      const listings = productsWithPrices.map((item, index) => ({
+      // Show all products (with prices first, then without)
+      const sortedProducts = [
+        ...productsWithPrices,
+        ...allProducts.filter(p => !p.price?.value && !p.price?.extracted_value)
+      ];
+
+      const listings = sortedProducts.map((item, index) => ({
         id: `lens-${index}`,
         title: item.title || "Unknown Product",
         imageUrl: item.thumbnail || "",
