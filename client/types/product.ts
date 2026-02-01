@@ -58,11 +58,6 @@ export interface ListingItem {
 
 export interface SearchResultsData {
   query: string;
-  productName?: string;
-  productDescription?: string;
-  productBrand?: string | null;
-  productModel?: string | null;
-  productCategory?: string | null;
   totalListings: number;
   avgListPrice: number;
   avgSalePrice: number | null;
@@ -72,4 +67,10 @@ export interface SearchResultsData {
   listings: ListingItem[];
   scannedImageUri?: string;
   usedLens?: boolean;
+  productInfo?: {
+    name: string;
+    brand?: string;
+    category?: string;
+    description?: string;
+  };
 }

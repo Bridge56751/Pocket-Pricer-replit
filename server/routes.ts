@@ -41,15 +41,7 @@ const ai = new GoogleGenAI({
 });
 
 // Use Gemini AI to extract a clean product name/description from image
-interface AIProductInfo {
-  name: string;
-  brand: string | null;
-  model: string | null;
-  category: string | null;
-  description: string | null;
-}
-
-async function getAIProductDescription(imageBase64: string): Promise<AIProductInfo | null> {
+async function getAIProductDescription(imageBase64: string): Promise<string | null> {
   try {
     const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, "");
     
@@ -66,20 +58,7 @@ async function getAIProductDescription(imageBase64: string): Promise<AIProductIn
               },
             },
             {
-              text: `Analyze this product image and provide details in JSON format:
-{
-  "name": "Full product name (brand + model, max 60 chars)",
-  "brand": "Brand name only (e.g., Nike, Sony, Apple)",
-  "model": "Model name/number only",
-  "category": "Product category (e.g., Sneakers, Headphones, Trading Card, Electronics)",
-  "description": "Brief 1-sentence description of the product"
-}
-
-Rules:
-- Do NOT include sizes, conditions, or seller info
-- If brand/model not visible, use null
-- Keep name concise and accurate
-- Respond with ONLY valid JSON, no other text`,
+              text: "What product is shown in this image? Respond with ONLY the product name (brand and model if visible). Be concise - max 60 characters. Examples: 'Nike Air Jordan 1 Retro High', 'Sony WH-1000XM5 Headphones', 'Pokemon Charizard Holo Card'. Do not include sizes, conditions, or seller info.",
             },
           ],
         },
@@ -87,18 +66,8 @@ Rules:
     });
 
     const text = response.text?.trim();
-    if (!text) return null;
-    
-    // Extract JSON from response (handle markdown code blocks)
-    let jsonStr = text;
-    const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
-    if (jsonMatch) {
-      jsonStr = jsonMatch[1].trim();
-    }
-    
-    const parsed = JSON.parse(jsonStr) as AIProductInfo;
-    if (parsed.name && parsed.name.length > 3) {
-      return parsed;
+    if (text && text.length > 3 && text.length < 100) {
+      return text;
     }
     return null;
   } catch (error) {
@@ -1364,17 +1333,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Use AI description as primary source, fall back to listing title extraction
       let productName = "";
       let productDescription = "";
-      let productBrand: string | null = null;
-      let productModel: string | null = null;
-      let productCategory: string | null = null;
       
       if (aiProductName) {
-        // Use the clean AI-generated product info
-        productName = aiProductName.name;
-        productDescription = aiProductName.description || "";
-        productBrand = aiProductName.brand;
-        productModel = aiProductName.model;
-        productCategory = aiProductName.category;
+        // Use the clean AI-generated product name
+        productName = aiProductName;
       } else if (listings.length > 0) {
         // Fallback: Use the shortest, most descriptive title from top results
         const topTitles = listings.slice(0, 5).map(l => l.title);
@@ -1400,9 +1362,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         query: productName,
         productName,
         productDescription,
-        productBrand,
-        productModel,
-        productCategory,
         totalListings: listings.length,
         avgListPrice,
         avgSalePrice: null,

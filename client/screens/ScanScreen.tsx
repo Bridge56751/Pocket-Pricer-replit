@@ -346,7 +346,7 @@ export default function ScanScreen() {
                       style={[styles.scanTitle, { color: theme.colors.foreground }]}
                       numberOfLines={1}
                     >
-                      {(scan.results as any)?.productName || (scan.results as any)?.productInfo?.name || scan.product?.title || scan.query}
+                      {scan.results?.productInfo?.name || scan.product?.title || scan.query}
                     </Text>
                     <Text 
                       style={[styles.scanCondition, { color: theme.colors.mutedForeground }]}
