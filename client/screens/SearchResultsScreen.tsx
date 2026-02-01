@@ -68,7 +68,7 @@ export default function SearchResultsScreen() {
   }, [results.scannedImageId, results]);
 
   const [purchasePrice, setPurchasePrice] = useState("");
-  const [sellingPrice, setSellingPrice] = useState(results.avgListPrice.toFixed(2));
+  const [sellingPrice, setSellingPrice] = useState("");
   
   const suggestedPrice = results.avgListPrice;
   const EBAY_FEE_RATE = 0.13;
@@ -668,11 +668,13 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   suggestedHint: {
-    paddingVertical: 2,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 6,
   },
   suggestedHintText: {
-    fontSize: 12,
-    fontWeight: "600",
+    fontSize: 16,
+    fontWeight: "700",
   },
   calculatorValue: {
     fontSize: 16,
