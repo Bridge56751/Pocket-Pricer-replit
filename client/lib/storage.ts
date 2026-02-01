@@ -42,6 +42,7 @@ export async function getSearchHistory(): Promise<SearchHistoryItem[]> {
           avgPrice: parseFloat(scan.avg_price),
           bestPrice: parseFloat(scan.best_price),
           totalListings: scan.total_listings,
+          results: scan.results_json || null,
         }));
       }
     }
@@ -64,11 +65,12 @@ export async function addSearchHistory(item: SearchHistoryItem): Promise<void> {
         bestPrice: item.results.bestBuyNow,
         totalListings: item.results.totalListings,
         thumbnailUrl: thumbnail,
+        resultsJson: item.results,
       }, token);
     }
     const history = await AsyncStorage.getItem(STORAGE_KEYS.SEARCH_HISTORY);
     const parsed = history ? JSON.parse(history) : [];
-    const newHistory = [item, ...parsed.filter((h: SearchHistoryItem) => h.id !== item.id)].slice(0, 15);
+    const newHistory = [item, ...parsed.filter((h: SearchHistoryItem) => h.id !== item.id)].slice(0, 10);
     await AsyncStorage.setItem(STORAGE_KEYS.SEARCH_HISTORY, JSON.stringify(newHistory));
   } catch (error) {
     console.error("Failed to save search history:", error);

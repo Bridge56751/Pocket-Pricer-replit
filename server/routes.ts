@@ -1361,13 +1361,13 @@ Return ONLY a JSON object with no markdown:
         return res.status(401).json({ error: "Invalid token" });
       }
 
-      const { productName, queryUsed, avgPrice, bestPrice, totalListings, thumbnailUrl } = req.body;
+      const { productName, queryUsed, avgPrice, bestPrice, totalListings, thumbnailUrl, resultsJson } = req.body;
 
       if (!productName) {
         return res.status(400).json({ error: "Product name is required" });
       }
 
-      // Check how many scans user has, delete oldest if more than 15
+      // Check how many scans user has, delete oldest if more than 10
       const countResult = await query(
         "SELECT COUNT(*) as count FROM scan_history WHERE user_id = $1",
         [decoded.userId]
@@ -1375,24 +1375,24 @@ Return ONLY a JSON object with no markdown:
       
       const currentCount = parseInt(countResult.rows[0].count);
       
-      if (currentCount >= 15) {
-        // Delete oldest scans to make room (keep only 14, so new one makes 15)
+      if (currentCount >= 10) {
+        // Delete oldest scans to make room (keep only 9, so new one makes 10)
         await query(
           `DELETE FROM scan_history WHERE id IN (
             SELECT id FROM scan_history WHERE user_id = $1 
             ORDER BY scanned_at ASC 
             LIMIT $2
           )`,
-          [decoded.userId, currentCount - 14]
+          [decoded.userId, currentCount - 9]
         );
       }
 
-      // Insert new scan
+      // Insert new scan with full results
       const result = await query(
-        `INSERT INTO scan_history (user_id, product_name, query_used, avg_price, best_price, total_listings, thumbnail_url)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
+        `INSERT INTO scan_history (user_id, product_name, query_used, avg_price, best_price, total_listings, thumbnail_url, results_json)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          RETURNING *`,
-        [decoded.userId, productName, queryUsed || productName, avgPrice, bestPrice, totalListings, thumbnailUrl]
+        [decoded.userId, productName, queryUsed || productName, avgPrice, bestPrice, totalListings, thumbnailUrl, resultsJson ? JSON.stringify(resultsJson) : null]
       );
 
       res.json({ success: true, scan: result.rows[0] });
@@ -1419,7 +1419,7 @@ Return ONLY a JSON object with no markdown:
       }
 
       const result = await query(
-        `SELECT * FROM scan_history WHERE user_id = $1 ORDER BY scanned_at DESC LIMIT 15`,
+        `SELECT * FROM scan_history WHERE user_id = $1 ORDER BY scanned_at DESC LIMIT 10`,
         [decoded.userId]
       );
 
