@@ -40,6 +40,62 @@ const ai = new GoogleGenAI({
   },
 });
 
+// Cloud Vision OCR helper
+async function extractTextWithVision(imageBase64: string): Promise<string> {
+  const apiKey = process.env.GOOGLE_CLOUD_VISION_API_KEY;
+  if (!apiKey) return "";
+  
+  try {
+    const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+    
+    const response = await fetch(
+      `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          requests: [{
+            image: { content: cleanBase64 },
+            features: [
+              { type: "TEXT_DETECTION", maxResults: 10 },
+              { type: "LOGO_DETECTION", maxResults: 5 },
+            ],
+          }],
+        }),
+      }
+    );
+    
+    if (!response.ok) {
+      console.error("Vision API error:", response.status);
+      return "";
+    }
+    
+    const data = await response.json();
+    const result = data.responses?.[0];
+    
+    const texts: string[] = [];
+    
+    // Get full text annotation
+    if (result?.fullTextAnnotation?.text) {
+      texts.push(result.fullTextAnnotation.text);
+    }
+    
+    // Get logo descriptions
+    if (result?.logoAnnotations) {
+      for (const logo of result.logoAnnotations) {
+        if (logo.description) {
+          texts.push(`Brand: ${logo.description}`);
+        }
+      }
+    }
+    
+    return texts.join("\n").trim();
+  } catch (error) {
+    console.error("Vision OCR error:", error);
+    return "";
+  }
+}
+
 interface EbayResult {
   position?: number;
   title?: string;
@@ -1369,6 +1425,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
       }));
 
+      // Run Vision OCR in parallel on first image (fastest, most text usually on labels)
+      const visionOcrPromise = extractTextWithVision(imageList[0]);
+
       const basePrompt = `You are a product identification expert for eBay resellers. Your goal is to extract the MOST SPECIFIC product identifiers possible.
 
 PRIORITY ORDER for identification (use the most specific you can find):
@@ -1398,9 +1457,17 @@ The "searchQuery" field is MOST IMPORTANT - it should combine brand + model + ke
 
 If you cannot identify: {"searchQuery": null, "error": "Could not identify product"}`;
 
-      const promptText = imageList.length > 1
+      // Get OCR text first (runs in parallel with prompt preparation)
+      const ocrText = await visionOcrPromise;
+      
+      // Include OCR text in prompt if available
+      let promptText = imageList.length > 1
         ? `${basePrompt}\n\nThese ${imageList.length} photos show the SAME product from different angles. Use ALL visible details from every angle.`
         : basePrompt;
+      
+      if (ocrText) {
+        promptText += `\n\n--- OCR TEXT DETECTED FROM IMAGE ---\n${ocrText}\n--- END OCR TEXT ---\n\nUse this extracted text to help identify the product. Model numbers, UPCs, and brand names in this text are HIGHLY reliable.`;
+      }
       
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash",
@@ -1439,12 +1506,15 @@ If you cannot identify: {"searchQuery": null, "error": "Could not identify produ
           }
         }
         
+        // Add OCR debug info
+        productInfo.ocrDetected = !!ocrText;
+        
         await incrementSearchCount(user.id);
         
         res.json(productInfo);
       } catch (parseError) {
         console.error("Failed to parse AI response:", text);
-        res.json({ productName: text.substring(0, 100), searchQuery: text.substring(0, 100), raw: true });
+        res.json({ productName: text.substring(0, 100), searchQuery: text.substring(0, 100), raw: true, ocrDetected: !!ocrText });
       }
     } catch (error) {
       console.error("Image analysis error:", error);
