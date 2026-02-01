@@ -58,23 +58,13 @@ async function getAIProductDescription(imageBase64: string): Promise<string | nu
               },
             },
             {
-              text: `What product is in this image? Give me ONLY the product name.
+              text: `What product is this? Reply with a brief product description only.
 
-CRITICAL RULES:
-- Output ONLY the product name, nothing else
-- Do NOT include any thinking, reasoning, or explanation
-- Do NOT start with "I think" or "This appears to be"
+Rules:
+- Just the product name/description, nothing else
 - Include brand if visible
-- For trading cards: include game name, card name, and set if visible (e.g. "Pokemon Reshiram VSTAR 114/172")
-- For video game controllers: include console (e.g. "Sony PS5 DualSense Controller")
-- Maximum 60 characters
-
-EXAMPLES OF CORRECT OUTPUT:
-Pokemon Charizard VMAX 020/189
-Sony DualSense PS5 Controller
-Nike Air Jordan 1 Retro High
-Apple iPhone 15 Pro Max
-Yu-Gi-Oh Blue-Eyes White Dragon`,
+- Keep it short and simple (under 50 characters)
+- No explanation or reasoning`,
             },
           ],
         },
