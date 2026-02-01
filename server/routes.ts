@@ -65,8 +65,29 @@ async function getAIProductDescription(imageBase64: string): Promise<string | nu
       ],
     });
 
-    const text = response.text?.trim();
-    if (text && text.length > 3 && text.length < 100) {
+    let text = response.text?.trim();
+    if (!text || text.length < 3) {
+      return null;
+    }
+    
+    // Handle case where AI returns JSON instead of plain text
+    if (text.startsWith('{') || text.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(text);
+        // Extract name from various possible structures
+        const extractedName = parsed.name || parsed.productName || parsed.product || 
+               (typeof parsed === 'string' ? parsed : null);
+        if (!extractedName) return null;
+        text = extractedName;
+      } catch {
+        // Not valid JSON, use as-is
+      }
+    }
+    
+    // Remove any quotes around the text
+    text = text.replace(/^["']|["']$/g, '').trim();
+    
+    if (text.length > 3 && text.length < 100) {
       return text;
     }
     return null;
