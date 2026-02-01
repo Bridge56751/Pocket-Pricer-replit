@@ -102,7 +102,7 @@ export default function HistoryScreen() {
               style={[styles.productName, { color: theme.colors.foreground }]}
               numberOfLines={2}
             >
-              {item.results?.productInfo?.name || item.product?.title || item.query}
+              {(item.results as any)?.productName || (item.results as any)?.productInfo?.name || item.product?.title || item.query}
             </Text>
             
             <Text style={[styles.timestamp, { color: theme.colors.mutedForeground }]}>

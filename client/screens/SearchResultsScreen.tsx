@@ -101,7 +101,7 @@ export default function SearchResultsScreen() {
 
   const handleListOnEbay = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const searchQuery = encodeURIComponent(results.productInfo?.name || results.query);
+    const searchQuery = encodeURIComponent((results as any).productName || (results as any).productInfo?.name || results.query);
     await Linking.openURL(`https://www.ebay.com/sl/sell?keyword=${searchQuery}`);
   };
 
@@ -215,26 +215,14 @@ export default function SearchResultsScreen() {
                 />
                 <View style={styles.productDetails}>
                   <Text style={[styles.productName, { color: theme.colors.foreground }]}>
-                    {results.productName || results.query}
+                    {(results as any).productName || results.query}
                   </Text>
-                  {results.productBrand ? (
-                    <Text style={[styles.productBrand, { color: theme.colors.mutedForeground }]}>
-                      {results.productBrand}
-                    </Text>
-                  ) : null}
-                  {results.productCategory ? (
-                    <View style={[styles.categoryBadge, { backgroundColor: theme.colors.muted }]}>
-                      <Text style={[styles.categoryText, { color: theme.colors.foreground }]}>
-                        {results.productCategory}
-                      </Text>
-                    </View>
-                  ) : null}
-                  {results.productDescription ? (
+                  {(results as any).productDescription ? (
                     <Text 
                       style={[styles.productDescription, { color: theme.colors.mutedForeground }]}
                       numberOfLines={2}
                     >
-                      {results.productDescription}
+                      {(results as any).productDescription}
                     </Text>
                   ) : null}
                 </View>
