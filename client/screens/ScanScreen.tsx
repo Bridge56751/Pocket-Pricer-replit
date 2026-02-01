@@ -117,64 +117,17 @@ export default function ScanScreen() {
           };
         }
       } catch (lensError) {
-        console.log("Lens search failed, falling back to AI analysis");
+        console.log("Lens search failed:", lensError);
       }
 
-      // Fallback to text-based AI analysis if Lens didn't find results
+      // If Lens didn't find results, show error
       if (!results || !results.listings?.length) {
-        setAnalyzingProgress("Analyzing product details...");
-        
-        const analyzeResponse = await apiRequest("POST", "/api/analyze-image", {
-          images: photos.map(p => p.base64),
-        }, token);
-        
-        if (analyzeResponse.status === 401) {
-          setIsAnalyzing(false);
-          setAnalyzingProgress("");
-          processingRef.current = false;
-          setErrorMessage("Session expired. Please sign out and sign back in.");
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-          return;
-        }
-
-        const analysisResult = await analyzeResponse.json();
-        
-        if (analyzeResponse.status === 403 && analysisResult.limitReached) {
-          setIsAnalyzing(false);
-          setAnalyzingProgress("");
-          processingRef.current = false;
-          setShowUpgradeModal(true);
-          return;
-        }
-        
-        if (!analysisResult.productName) {
-          setIsAnalyzing(false);
-          setAnalyzingProgress("");
-          processingRef.current = false;
-          setErrorMessage(analysisResult.error || "Could not identify the product. Please try again with a clearer photo.");
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-          return;
-        }
-        
-        productInfo = {
-          name: analysisResult.productName,
-          brand: analysisResult.brand,
-          category: analysisResult.category,
-          description: analysisResult.description,
-        };
-
-        setAnalyzingCount({ current: 2, total: 2 });
-        setAnalyzingProgress("Searching listings...");
-
-        const searchQuery = [
-          analysisResult.brand,
-          analysisResult.productName,
-          analysisResult.model,
-        ].filter(Boolean).join(" ");
-        
-        const searchResponse = await apiRequest("POST", "/api/search", { query: searchQuery });
-        results = await searchResponse.json();
-        results.query = searchQuery;
+        setIsAnalyzing(false);
+        setAnalyzingProgress("");
+        processingRef.current = false;
+        setErrorMessage("Could not identify the product. Please try again with a clearer photo of the product or packaging.");
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        return;
       }
       
       await refreshUser();
