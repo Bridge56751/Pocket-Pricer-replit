@@ -1328,11 +1328,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Image data is required" });
       }
 
-      // Start AI description in parallel with image upload
-      console.log("Starting AI description and image upload in parallel...");
-      const aiDescriptionPromise = getAIProductDescription(imageBase64);
-      
       // Upload image temporarily for Google Lens
+      console.log("Uploading image for Google Lens search...");
       const imageUrl = await uploadImageForLens(imageBase64);
       
       if (!imageUrl) {
@@ -1341,10 +1338,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log("Searching with Google Lens...");
       const lensResult = await searchWithGoogleLens(imageUrl);
-      
-      // Get AI description result (should be ready by now since Lens takes longer)
-      const aiProductName = await aiDescriptionPromise;
-      console.log("AI product name:", aiProductName);
 
       if (lensResult.error || lensResult.products.length === 0) {
         return res.status(404).json({ 
@@ -1379,18 +1372,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         reviews: item.reviews,
       }));
 
-      // Use AI description as primary source, use generic fallback (never listing titles)
-      let productName = "";
-      
-      if (aiProductName) {
-        // Use the clean AI-generated product name
-        productName = aiProductName;
-      } else {
-        // Fallback: Use generic name - DO NOT use listing titles as they contain seller info
-        productName = lensResult.productName || "Scanned Product";
-      }
-      
-      console.log("Final product name:", productName);
+      // Use Google Lens knowledge graph name or generic fallback
+      const productName = lensResult.productName || "Scanned Product";
 
       if (user) {
         await incrementSearchCount(user.id);

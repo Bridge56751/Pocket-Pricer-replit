@@ -212,36 +212,9 @@ export default function SearchResultsScreen() {
               <View style={[styles.productCard, { backgroundColor: theme.colors.card }]}>
                 <Image
                   source={{ uri: scannedImageUri }}
-                  style={styles.scannedImage}
+                  style={styles.scannedImageLarge}
                   contentFit="cover"
                 />
-                <View style={styles.productDetails}>
-                  <Text style={[styles.productName, { color: theme.colors.foreground }]}>
-                    {typeof results.productInfo === 'object' && results.productInfo?.name 
-                      ? results.productInfo.name 
-                      : (typeof results.query === 'string' ? results.query : 'Scanned Product')}
-                  </Text>
-                  {results.productInfo?.brand ? (
-                    <Text style={[styles.productBrand, { color: theme.colors.mutedForeground }]}>
-                      {results.productInfo.brand}
-                    </Text>
-                  ) : null}
-                  {results.productInfo?.category ? (
-                    <View style={[styles.categoryBadge, { backgroundColor: theme.colors.muted }]}>
-                      <Text style={[styles.categoryText, { color: theme.colors.foreground }]}>
-                        {results.productInfo.category}
-                      </Text>
-                    </View>
-                  ) : null}
-                  {results.productInfo?.description ? (
-                    <Text 
-                      style={[styles.productDescription, { color: theme.colors.mutedForeground }]}
-                      numberOfLines={2}
-                    >
-                      {results.productInfo.description}
-                    </Text>
-                  ) : null}
-                </View>
               </View>
             ) : null}
 
@@ -479,6 +452,11 @@ const styles = StyleSheet.create({
   scannedImage: {
     width: 100,
     height: 100,
+    borderRadius: 12,
+  },
+  scannedImageLarge: {
+    width: "100%",
+    height: 200,
     borderRadius: 12,
   },
   productDetails: {
