@@ -186,6 +186,13 @@ interface GoogleShoppingResult {
   delivery?: string;
 }
 
+function calculateMedian(prices: number[]): number {
+  if (prices.length === 0) return 0;
+  const sorted = [...prices].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
 function parseShippingCost(shipping?: unknown): number {
   if (!shipping) return 8.50;
   
@@ -236,9 +243,7 @@ function transformEbayResults(results: EbayResult[]): {
   });
 
   const prices = listings.map(l => l.currentPrice).filter(p => p > 0);
-  const avgListPrice = prices.length > 0 
-    ? prices.reduce((a, b) => a + b, 0) / prices.length 
-    : 0;
+  const avgListPrice = calculateMedian(prices);
   const bestBuyNow = prices.length > 0 ? Math.min(...prices) : 0;
 
   return {
@@ -294,9 +299,7 @@ function transformGoogleShoppingResults(results: GoogleShoppingResult[]): {
   });
 
   const prices = listings.map(l => l.currentPrice).filter(p => p > 0);
-  const avgListPrice = prices.length > 0 
-    ? prices.reduce((a, b) => a + b, 0) / prices.length 
-    : 0;
+  const avgListPrice = calculateMedian(prices);
   const bestBuyNow = prices.length > 0 ? Math.min(...prices) : 0;
 
   return {
@@ -1554,9 +1557,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .map(p => p.price?.extracted_value || p.price?.value || 0)
         .filter(p => p > 0);
 
-      const avgListPrice = prices.length > 0 
-        ? prices.reduce((a, b) => a + b, 0) / prices.length 
-        : 0;
+      const avgListPrice = calculateMedian(prices);
       const bestBuyNow = prices.length > 0 ? Math.min(...prices) : 0;
 
       const listings = productsWithPrices.map((item, index) => ({
