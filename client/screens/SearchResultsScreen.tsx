@@ -215,26 +215,26 @@ export default function SearchResultsScreen() {
                 />
                 <View style={styles.productDetails}>
                   <Text style={[styles.productName, { color: theme.colors.foreground }]}>
-                    {results.productInfo?.name || results.query}
+                    {results.productName || results.query}
                   </Text>
-                  {results.productInfo?.brand ? (
+                  {results.productBrand ? (
                     <Text style={[styles.productBrand, { color: theme.colors.mutedForeground }]}>
-                      {results.productInfo.brand}
+                      {results.productBrand}
                     </Text>
                   ) : null}
-                  {results.productInfo?.category ? (
+                  {results.productCategory ? (
                     <View style={[styles.categoryBadge, { backgroundColor: theme.colors.muted }]}>
                       <Text style={[styles.categoryText, { color: theme.colors.foreground }]}>
-                        {results.productInfo.category}
+                        {results.productCategory}
                       </Text>
                     </View>
                   ) : null}
-                  {results.productInfo?.description ? (
+                  {results.productDescription ? (
                     <Text 
                       style={[styles.productDescription, { color: theme.colors.mutedForeground }]}
                       numberOfLines={2}
                     >
-                      {results.productInfo.description}
+                      {results.productDescription}
                     </Text>
                   ) : null}
                 </View>
