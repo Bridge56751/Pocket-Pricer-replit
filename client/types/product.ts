@@ -51,6 +51,9 @@ export interface ListingItem {
   shipping: number;
   link: string;
   seller?: string;
+  platform?: string;
+  rating?: number;
+  reviews?: number;
 }
 
 export interface SearchResultsData {

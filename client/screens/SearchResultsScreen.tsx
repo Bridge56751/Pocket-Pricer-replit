@@ -25,6 +25,9 @@ interface ListingItem {
   shipping: number;
   link: string;
   seller?: string;
+  platform?: string;
+  rating?: number;
+  reviews?: number;
 }
 
 interface SearchResultsData {
@@ -101,6 +104,29 @@ export default function SearchResultsScreen() {
     await Linking.openURL(`https://www.ebay.com/sl/sell?keyword=${searchQuery}`);
   };
 
+  const getPlatformColor = (platform?: string): string => {
+    const p = platform?.toLowerCase() || "";
+    if (p.includes("ebay")) return "#3665F3";
+    if (p.includes("amazon")) return "#FF9900";
+    if (p.includes("walmart")) return "#0071DC";
+    if (p.includes("target")) return "#CC0000";
+    if (p.includes("mercari")) return "#FF0211";
+    if (p.includes("poshmark")) return "#7F0353";
+    return "#6B7280";
+  };
+
+  const getPlatformName = (platform?: string, seller?: string): string => {
+    if (platform) return platform;
+    if (seller) {
+      const s = seller.toLowerCase();
+      if (s.includes("ebay")) return "eBay";
+      if (s.includes("amazon")) return "Amazon";
+      if (s.includes("walmart")) return "Walmart";
+      if (s.includes("target")) return "Target";
+      return seller.length > 15 ? seller.substring(0, 15) + "..." : seller;
+    }
+    return "Shop";
+  };
 
   const renderListing = ({ item, index }: { item: ListingItem; index: number }) => (
     <Animated.View 
@@ -113,8 +139,8 @@ export default function SearchResultsScreen() {
         contentFit="cover"
       />
       <View style={styles.listingContent}>
-        <View style={[styles.ebayBadge, { backgroundColor: "#3665F3" }]}>
-          <Text style={styles.ebayBadgeText}>eBay</Text>
+        <View style={[styles.ebayBadge, { backgroundColor: getPlatformColor(item.platform || item.seller) }]}>
+          <Text style={styles.ebayBadgeText}>{getPlatformName(item.platform, item.seller)}</Text>
         </View>
         <Text 
           style={[styles.listingTitle, { color: theme.colors.foreground }]}
