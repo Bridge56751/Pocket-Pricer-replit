@@ -1349,9 +1349,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Transform lens results to our format - prioritize items with prices, but include all
+      // Filter out unreliable sources (knockoffs, fakes)
+      const blockedSources = [
+        'alibaba', 'aliexpress', 'temu', 'wish', 'dhgate', 'banggood',
+        'tiktok', 'shein', 'made-in-china', 'lightinthebox', 'gearbest',
+        'tomtop', 'miniinthebox', 'sammydress', 'rosegal', 'zaful'
+      ];
+      
+      const isReliableSource = (source: string) => {
+        const lowerSource = (source || '').toLowerCase();
+        return !blockedSources.some(blocked => lowerSource.includes(blocked));
+      };
+
+      // Transform lens results to our format - filter out unreliable sources
       const allProducts = lensResult.products.slice(0, 30);
-      const productsWithPrices = allProducts.filter(p => p.price?.value || p.price?.extracted_value);
+      const productsWithPrices = allProducts.filter(p => 
+        (p.price?.value || p.price?.extracted_value) && isReliableSource(p.source || '')
+      );
       
       // Use products with prices for pricing calculations
       const prices = productsWithPrices
