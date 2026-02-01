@@ -1361,13 +1361,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const avgListPrice = calculateMedian(prices);
       const bestBuyNow = prices.length > 0 ? Math.min(...prices) : 0;
 
-      // Show all products (with prices first, then without)
-      const sortedProducts = [
-        ...productsWithPrices,
-        ...allProducts.filter(p => !p.price?.value && !p.price?.extracted_value)
-      ];
-
-      const listings = sortedProducts.map((item, index) => ({
+      // Only show products with prices
+      const listings = productsWithPrices.map((item, index) => ({
         id: `lens-${index}`,
         title: item.title || "Unknown Product",
         imageUrl: item.thumbnail || "",
