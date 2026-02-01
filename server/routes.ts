@@ -40,6 +40,42 @@ const ai = new GoogleGenAI({
   },
 });
 
+// Use Gemini AI to extract a clean product name/description from image
+async function getAIProductDescription(imageBase64: string): Promise<string | null> {
+  try {
+    const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+    
+    const response = await ai.models.generateContent({
+      model: "gemini-2.0-flash",
+      contents: [
+        {
+          role: "user",
+          parts: [
+            {
+              inlineData: {
+                mimeType: "image/jpeg",
+                data: cleanBase64,
+              },
+            },
+            {
+              text: "What product is shown in this image? Respond with ONLY the product name (brand and model if visible). Be concise - max 60 characters. Examples: 'Nike Air Jordan 1 Retro High', 'Sony WH-1000XM5 Headphones', 'Pokemon Charizard Holo Card'. Do not include sizes, conditions, or seller info.",
+            },
+          ],
+        },
+      ],
+    });
+
+    const text = response.text?.trim();
+    if (text && text.length > 3 && text.length < 100) {
+      return text;
+    }
+    return null;
+  } catch (error) {
+    console.error("AI product description error:", error);
+    return null;
+  }
+}
+
 // Upload image to temporary hosting for Google Lens (uses freeimage.host API)
 async function uploadImageForLens(imageBase64: string): Promise<string | null> {
   try {
@@ -1243,8 +1279,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Image data is required" });
       }
 
+      // Start AI description in parallel with image upload
+      console.log("Starting AI description and image upload in parallel...");
+      const aiDescriptionPromise = getAIProductDescription(imageBase64);
+      
       // Upload image temporarily for Google Lens
-      console.log("Uploading image for Google Lens...");
       const imageUrl = await uploadImageForLens(imageBase64);
       
       if (!imageUrl) {
@@ -1253,6 +1292,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log("Searching with Google Lens...");
       const lensResult = await searchWithGoogleLens(imageUrl);
+      
+      // Get AI description result (should be ready by now since Lens takes longer)
+      const aiProductName = await aiDescriptionPromise;
+      console.log("AI product name:", aiProductName);
 
       if (lensResult.error || lensResult.products.length === 0) {
         return res.status(404).json({ 
@@ -1287,14 +1330,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         reviews: item.reviews,
       }));
 
-      // Extract clean product name from listing titles (fast, no AI call)
+      // Use AI description as primary source, fall back to listing title extraction
       let productName = "";
       let productDescription = "";
       
-      if (listings.length > 0) {
-        // Use the shortest, most descriptive title from top results
+      if (aiProductName) {
+        // Use the clean AI-generated product name
+        productName = aiProductName;
+      } else if (listings.length > 0) {
+        // Fallback: Use the shortest, most descriptive title from top results
         const topTitles = listings.slice(0, 5).map(l => l.title);
-        // Find a good title - prefer shorter ones that aren't too short
         const goodTitle = topTitles
           .filter(t => t.length > 10 && t.length < 100)
           .sort((a, b) => a.length - b.length)[0] || topTitles[0];
@@ -1305,7 +1350,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .replace(/\s*\([^)]*\)\s*$/, "")
           .substring(0, 80)
           .trim() || "Product";
-        productDescription = "";
       } else {
         productName = lensResult.productName || "Product";
       }
