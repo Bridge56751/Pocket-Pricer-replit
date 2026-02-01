@@ -58,20 +58,23 @@ async function getAIProductDescription(imageBase64: string): Promise<string | nu
               },
             },
             {
-              text: `Identify this product. Reply with ONLY the product name in plain text, nothing else.
+              text: `What product is in this image? Give me ONLY the product name.
 
-Rules:
-- Include brand name if visible (e.g. Sony, Nike, Apple)
-- Include model name/number if visible
-- Maximum 50 characters
-- NO JSON, NO quotes, NO explanation
-- If it's a gaming controller, specify which console (PS5, Xbox, Switch)
+CRITICAL RULES:
+- Output ONLY the product name, nothing else
+- Do NOT include any thinking, reasoning, or explanation
+- Do NOT start with "I think" or "This appears to be"
+- Include brand if visible
+- For trading cards: include game name, card name, and set if visible (e.g. "Pokemon Reshiram VSTAR 114/172")
+- For video game controllers: include console (e.g. "Sony PS5 DualSense Controller")
+- Maximum 60 characters
 
-Examples of good responses:
+EXAMPLES OF CORRECT OUTPUT:
+Pokemon Charizard VMAX 020/189
 Sony DualSense PS5 Controller
-Apple iPhone 14 Pro
-Nike Air Jordan 1 High
-Canon EOS R5 Camera`,
+Nike Air Jordan 1 Retro High
+Apple iPhone 15 Pro Max
+Yu-Gi-Oh Blue-Eyes White Dragon`,
             },
           ],
         },
@@ -89,13 +92,11 @@ Canon EOS R5 Camera`,
     if (text.startsWith('{') || text.startsWith('[')) {
       try {
         const parsed = JSON.parse(text);
-        // Extract name from various possible structures
         const extractedName = parsed.name || parsed.productName || parsed.product || 
                (typeof parsed === 'string' ? parsed : null);
         if (!extractedName || typeof extractedName !== 'string') return null;
         text = extractedName;
       } catch {
-        // Not valid JSON, try to extract text before any JSON
         const beforeJson = text.split('{')[0].trim();
         if (beforeJson.length > 3) {
           text = beforeJson;
@@ -105,13 +106,27 @@ Canon EOS R5 Camera`,
       }
     }
     
-    // Remove any quotes, asterisks, or markdown around the text
+    // Remove any quotes, asterisks, markdown, or thinking artifacts
     text = text.replace(/^["'*`]+|["'*`]+$/g, '').trim();
-    
-    // Remove any trailing punctuation or extra content
     text = text.split('\n')[0].trim();
     
-    if (text.length > 3 && text.length < 100) {
+    // Filter out obvious garbage responses (single words that aren't brands/products)
+    const garbageWords = ['thought', 'think', 'image', 'product', 'item', 'object', 'thing', 'appears', 'looks', 'seems'];
+    const lowerText = text.toLowerCase();
+    if (garbageWords.includes(lowerText) || lowerText.startsWith('i think') || lowerText.startsWith('this is')) {
+      console.log("AI returned garbage response, ignoring:", text);
+      return null;
+    }
+    
+    // Must have at least 2 words for a valid product name, or be a well-known single word brand
+    const wordCount = text.split(/\s+/).length;
+    const singleWordBrands = ['nintendo', 'sony', 'apple', 'samsung', 'nike', 'adidas', 'pokemon', 'xbox'];
+    if (wordCount < 2 && !singleWordBrands.includes(lowerText)) {
+      console.log("AI response too short:", text);
+      return null;
+    }
+    
+    if (text.length > 5 && text.length < 100) {
       return text;
     }
     return null;
