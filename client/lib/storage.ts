@@ -23,6 +23,25 @@ async function getAuthToken(): Promise<string | null> {
   }
 }
 
+// Sanitize results to ensure productInfo.name is always a string
+function sanitizeResults(results: any): any {
+  if (!results) return null;
+  
+  // Fix productInfo if it's an object - extract just the name as a string
+  if (results.productInfo && typeof results.productInfo === 'object') {
+    results.productInfo = {
+      name: typeof results.productInfo.name === 'string' ? results.productInfo.name : 'Product',
+    };
+  }
+  
+  // Ensure query is always a string
+  if (results.query && typeof results.query !== 'string') {
+    results.query = 'Product';
+  }
+  
+  return results;
+}
+
 export async function getSearchHistory(): Promise<SearchHistoryItem[]> {
   try {
     const token = await getAuthToken();
@@ -30,24 +49,35 @@ export async function getSearchHistory(): Promise<SearchHistoryItem[]> {
       const response = await apiRequest("GET", "/api/history", undefined, token);
       if (response.ok) {
         const data = await response.json();
-        return data.scans.map((scan: any) => ({
-          id: scan.id,
-          query: scan.query_used || scan.product_name,
-          product: {
-            title: scan.product_name,
-            currentPrice: parseFloat(scan.avg_price) || 0,
-          },
-          searchedAt: scan.scanned_at,
-          thumbnailUrl: scan.thumbnail_url,
-          avgPrice: parseFloat(scan.avg_price),
-          bestPrice: parseFloat(scan.best_price),
-          totalListings: scan.total_listings,
-          results: scan.results_json || null,
-        }));
+        return data.scans.map((scan: any) => {
+          const sanitizedResults = sanitizeResults(scan.results_json);
+          return {
+            id: scan.id,
+            query: typeof scan.query_used === 'string' ? scan.query_used : (typeof scan.product_name === 'string' ? scan.product_name : 'Product'),
+            product: {
+              title: typeof scan.product_name === 'string' ? scan.product_name : 'Product',
+              currentPrice: parseFloat(scan.avg_price) || 0,
+            },
+            searchedAt: scan.scanned_at,
+            thumbnailUrl: scan.thumbnail_url,
+            avgPrice: parseFloat(scan.avg_price),
+            bestPrice: parseFloat(scan.best_price),
+            totalListings: scan.total_listings,
+            results: sanitizedResults,
+          };
+        });
       }
     }
     const data = await AsyncStorage.getItem(STORAGE_KEYS.SEARCH_HISTORY);
-    return data ? JSON.parse(data) : [];
+    if (data) {
+      const parsed = JSON.parse(data);
+      return parsed.map((item: any) => ({
+        ...item,
+        query: typeof item.query === 'string' ? item.query : 'Product',
+        results: sanitizeResults(item.results),
+      }));
+    }
+    return [];
   } catch {
     return [];
   }
