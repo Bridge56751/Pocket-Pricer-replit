@@ -56,7 +56,7 @@ export default function CameraScanScreen() {
     navigation.navigate("Home", { photosToProcess: capturedPhotos });
   };
 
-  const MAX_PHOTOS = 1;
+  const MAX_PHOTOS = 5;
 
   const handleCapture = async () => {
     if (!cameraRef.current) return;
