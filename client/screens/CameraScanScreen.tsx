@@ -14,14 +14,14 @@ import Animated, { useSharedValue, useAnimatedStyle, withTiming } from "react-na
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import type { RootStackParamList, CapturedPhoto } from "@/navigation/RootStackNavigator";
 
-const MAX_IMAGE_SIZE = 1024;
+const MAX_IMAGE_SIZE = 640;
 
 const resizeImage = async (uri: string): Promise<{ uri: string; base64: string } | null> => {
   try {
     const result = await ImageManipulator.manipulateAsync(
       uri,
       [{ resize: { width: MAX_IMAGE_SIZE } }],
-      { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+      { compress: 0.5, format: ImageManipulator.SaveFormat.JPEG, base64: true }
     );
     return result.base64 ? { uri: result.uri, base64: result.base64 } : null;
   } catch (error) {
@@ -69,7 +69,7 @@ export default function CameraScanScreen() {
     
     try {
       const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.9,
+        quality: 0.5,
       });
       
       if (photo?.uri) {
@@ -94,7 +94,7 @@ export default function CameraScanScreen() {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
-      quality: 0.9,
+      quality: 0.5,
       allowsMultipleSelection: true,
     });
 

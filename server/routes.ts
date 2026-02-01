@@ -1287,37 +1287,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         reviews: item.reviews,
       }));
 
-      // Always use AI to generate a clean product name from the listing titles for Lens results
+      // Extract clean product name from listing titles (fast, no AI call)
       let productName = "";
       let productDescription = "";
       
       if (listings.length > 0) {
-        try {
-          const topTitles = listings.slice(0, 5).map(l => l.title).join("\n");
-          const nameResponse = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: [{
-              role: "user",
-              parts: [{
-                text: `Based on these product listing titles, extract the EXACT product name (brand + model + key specs). Be concise and specific.
-
-Listing titles:
-${topTitles}
-
-Return ONLY a JSON object with no markdown:
-{"name": "Brand Product Model Specs", "description": "Brief 1-sentence description"}`
-              }],
-            }],
-          });
-          
-          const nameText = nameResponse.text?.replace(/```json\n?|\n?```/g, "").trim() || "";
-          const parsed = JSON.parse(nameText);
-          productName = parsed.name || listings[0]?.title || "Product";
-          productDescription = parsed.description || "";
-        } catch (e) {
-          // Fallback to first listing title
-          productName = listings[0]?.title?.substring(0, 60) || "Product";
-        }
+        // Use the shortest, most descriptive title from top results
+        const topTitles = listings.slice(0, 5).map(l => l.title);
+        // Find a good title - prefer shorter ones that aren't too short
+        const goodTitle = topTitles
+          .filter(t => t.length > 10 && t.length < 100)
+          .sort((a, b) => a.length - b.length)[0] || topTitles[0];
+        
+        // Clean up the title - remove common seller additions
+        productName = goodTitle
+          .replace(/\s*[-|]\s*(Free Shipping|Fast Ship|New|Used|Like New|Sealed).*$/i, "")
+          .replace(/\s*\([^)]*\)\s*$/, "")
+          .substring(0, 80)
+          .trim() || "Product";
+        productDescription = "";
       } else {
         productName = lensResult.productName || "Product";
       }
