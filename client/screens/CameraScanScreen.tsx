@@ -56,7 +56,7 @@ export default function CameraScanScreen() {
     navigation.navigate("Home", { photosToProcess: capturedPhotos });
   };
 
-  const MAX_PHOTOS = 5;
+  const MAX_PHOTOS = 1;
 
   const handleCapture = async () => {
     if (!cameraRef.current) return;
@@ -243,7 +243,7 @@ export default function CameraScanScreen() {
             ) : (
               <View style={styles.instructionsContainer}>
                 <Text style={styles.instructions}>
-                  Photograph labels, barcodes, or model numbers
+                  Photograph the product clearly
                 </Text>
               </View>
             )}
@@ -261,7 +261,7 @@ export default function CameraScanScreen() {
             <View style={styles.tipBanner}>
               <Feather name="info" size={14} color="#10B981" />
               <Text style={styles.tipText}>
-                Tip: Labels and barcodes give the best results
+                Tip: Clear, well-lit photos give the best results
               </Text>
             </View>
           ) : null}
