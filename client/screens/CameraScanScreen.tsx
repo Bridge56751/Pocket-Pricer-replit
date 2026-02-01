@@ -14,7 +14,7 @@ import Animated, { useSharedValue, useAnimatedStyle, withTiming } from "react-na
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import type { RootStackParamList, CapturedPhoto } from "@/navigation/RootStackNavigator";
 
-const MAX_IMAGE_SIZE = 640;
+const MAX_IMAGE_SIZE = 800;
 
 const resizeImage = async (uri: string): Promise<{ uri: string; base64: string } | null> => {
   try {
