@@ -1350,7 +1350,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Transform lens results to our format - prioritize items with prices, but include all
-      const allProducts = lensResult.products.slice(0, 50);
+      const allProducts = lensResult.products.slice(0, 30);
       const productsWithPrices = allProducts.filter(p => p.price?.value || p.price?.extracted_value);
       
       // Use products with prices for pricing calculations
