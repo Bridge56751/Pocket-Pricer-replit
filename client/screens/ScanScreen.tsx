@@ -118,7 +118,7 @@ export default function ScanScreen() {
       await refreshUser();
 
       setAnalyzingCount({ current: 2, total: 2 });
-      setAnalyzingProgress("Searching eBay listings...");
+      setAnalyzingProgress("Searching listings...");
 
       const searchQuery = [
         analysisResult.brand,
@@ -286,7 +286,7 @@ export default function ScanScreen() {
               Discover Product Values
             </Text>
             <Text style={[styles.heroDescription, { color: theme.colors.mutedForeground }]}>
-              Scan any product to instantly see what it's selling for on eBay and more.
+              Scan any product to instantly see prices across Amazon, Walmart, Target, and more.
             </Text>
 
             <Pressable
@@ -337,7 +337,7 @@ export default function ScanScreen() {
               No scans yet
             </Text>
             <Text style={[styles.emptyDescription, { color: theme.colors.mutedForeground }]}>
-              Tap "Scan Product" to identify items and see their eBay values
+              Tap "Scan Product" to identify items and see their market value
             </Text>
           </View>
         ) : (

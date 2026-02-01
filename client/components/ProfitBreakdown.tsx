@@ -38,7 +38,7 @@ export function ProfitBreakdown({ product, userCost }: ProfitBreakdownProps) {
       </View>
       
       <View style={styles.row}>
-        <ThemedText style={[styles.label, { color: theme.textSecondary }]}>eBay Fees (~13%)</ThemedText>
+        <ThemedText style={[styles.label, { color: theme.textSecondary }]}>Est. Fees (~13%)</ThemedText>
         <ThemedText style={[styles.value, { color: theme.danger }]}>-${ebayFees.toFixed(2)}</ThemedText>
       </View>
       

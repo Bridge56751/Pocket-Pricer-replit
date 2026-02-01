@@ -384,7 +384,7 @@ export default function SearchResultsScreen() {
 
               <View style={styles.calculatorRow}>
                 <Text style={[styles.calculatorLabel, { color: theme.colors.mutedForeground }]}>
-                  eBay Fees (~13%)
+                  Est. Fees (~13%)
                 </Text>
                 <Text style={[styles.calculatorValue, { color: theme.colors.danger }]}>
                   -${ebayFees.toFixed(2)}

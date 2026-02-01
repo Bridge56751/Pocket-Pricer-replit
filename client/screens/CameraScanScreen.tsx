@@ -135,7 +135,7 @@ export default function CameraScanScreen() {
           Camera Access Required
         </Text>
         <Text style={[styles.permissionMessage, { color: theme.colors.mutedForeground }]}>
-          We need camera access to scan products and find eBay listings
+          We need camera access to scan products and find listings
         </Text>
         <Pressable
           onPress={requestPermission}

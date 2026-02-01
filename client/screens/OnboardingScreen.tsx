@@ -39,14 +39,14 @@ const slides: OnboardingSlide[] = [
     id: "2",
     icon: "search",
     title: "Find Real Prices",
-    description: "See actual eBay listings and what similar items are selling for right now.",
+    description: "See real listings from Amazon, Walmart, Target, and more to find the best prices.",
     iconColor: "#3B82F6",
   },
   {
     id: "3",
     icon: "dollar-sign",
     title: "Calculate Your Profit",
-    description: "Enter your purchase price and instantly see your potential profit after eBay fees (~13%).",
+    description: "Enter your purchase price and instantly see your potential profit after estimated fees (~13%).",
     iconColor: "#F59E0B",
   },
 ];

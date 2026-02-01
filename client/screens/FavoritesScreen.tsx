@@ -60,8 +60,8 @@ export default function FavoritesScreen() {
             contentFit="cover"
           />
           <View style={styles.cardContent}>
-            <View style={[styles.ebayBadge, { backgroundColor: "#3665F3" }]}>
-              <Text style={styles.ebayBadgeText}>eBay</Text>
+            <View style={[styles.ebayBadge, { backgroundColor: "#10B981" }]}>
+              <Text style={styles.ebayBadgeText}>Saved</Text>
             </View>
             <Text 
               style={[styles.productTitle, { color: theme.colors.foreground }]}
