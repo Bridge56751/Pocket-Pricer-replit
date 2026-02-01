@@ -1762,13 +1762,47 @@ If you cannot identify: {"searchQuery": null, "error": "Could not identify produ
         reviews: item.reviews,
       }));
 
+      // Use AI to generate a clean product name from the listing titles
+      let productName = lensResult.productName || "";
+      let productDescription = "";
+      
+      if (!productName && listings.length > 0) {
+        try {
+          const topTitles = listings.slice(0, 5).map(l => l.title).join("\n");
+          const nameResponse = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: [{
+              role: "user",
+              parts: [{
+                text: `Based on these product listing titles, extract the EXACT product name (brand + model + key specs). Be concise and specific.
+
+Listing titles:
+${topTitles}
+
+Return ONLY a JSON object with no markdown:
+{"name": "Brand Product Model Specs", "description": "Brief 1-sentence description"}`
+              }],
+            }],
+          });
+          
+          const nameText = nameResponse.text?.replace(/```json\n?|\n?```/g, "").trim() || "";
+          const parsed = JSON.parse(nameText);
+          productName = parsed.name || listings[0]?.title || "Product";
+          productDescription = parsed.description || "";
+        } catch (e) {
+          // Fallback to first listing title
+          productName = listings[0]?.title?.substring(0, 60) || "Product";
+        }
+      }
+
       if (user) {
         await incrementSearchCount(user.id);
       }
 
       res.json({
-        query: lensResult.productName || "Visual Search",
-        productName: lensResult.productName,
+        query: productName,
+        productName,
+        productDescription,
         totalListings: listings.length,
         avgListPrice,
         avgSalePrice: null,

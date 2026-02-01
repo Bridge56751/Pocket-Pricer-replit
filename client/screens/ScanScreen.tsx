@@ -113,7 +113,7 @@ export default function ScanScreen() {
             name: results.productName || results.query,
             brand: "",
             category: "",
-            description: "",
+            description: results.productDescription || "",
           };
         }
       } catch (lensError) {
