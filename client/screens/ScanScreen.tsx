@@ -196,36 +196,11 @@ export default function ScanScreen() {
     navigation.navigate("CameraScan");
   };
 
-  const handleViewScan = async (scan: SearchHistoryItem) => {
+  const handleViewScan = (scan: SearchHistoryItem) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
     if (scan.results) {
       navigation.navigate("SearchResults", { results: scan.results });
-      return;
-    }
-    
-    // Re-search if we don't have full results (loaded from server)
-    setIsAnalyzing(true);
-    setAnalyzingProgress("Loading results...");
-    
-    try {
-      const searchResponse = await apiRequest("POST", "/api/search", { query: scan.query });
-      const results = await searchResponse.json();
-      
-      const enrichedResults = {
-        ...results,
-        productInfo: {
-          name: scan.product?.title || scan.query,
-        },
-      };
-      
-      setIsAnalyzing(false);
-      setAnalyzingProgress("");
-      navigation.navigate("SearchResults", { results: enrichedResults });
-    } catch (error) {
-      setIsAnalyzing(false);
-      setAnalyzingProgress("");
-      console.error("Failed to load results:", error);
     }
   };
 
