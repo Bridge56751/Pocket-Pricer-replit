@@ -18,8 +18,8 @@ This app allows resellers to:
 - **Backend**: Express.js with TypeScript
 - **Database**: PostgreSQL (Neon-backed via Replit)
 - **Authentication**: JWT tokens with bcrypt password hashing
-- **Payments**: RevenueCat for iOS/Android in-app purchases ($4.99/month Pro subscription)
-- **AI**: Google Lens for visual matching + Gemini for fallback identification + Google Cloud Vision for OCR
+- **Payments**: RevenueCat for iOS/Android in-app purchases ($8.99/month Pro subscription)
+- **Product Identification**: Google Lens (via SerpAPI) for visual product matching
 - **Product Data**: SerpAPI (Google Lens + Google Shopping for multi-platform results)
 - **State Management**: TanStack React Query
 - **Local Storage**: AsyncStorage for history, favorites, and auth tokens
@@ -28,11 +28,11 @@ This app allows resellers to:
 
 ## Environment Variables
 
-- `SERPAPI_API_KEY` - Required for eBay listing search (get from https://serpapi.com)
+- `SERPAPI_API_KEY` - Required for Google Lens + Shopping search (get from https://serpapi.com)
 - `SESSION_SECRET` - Used for JWT token signing
 - `REVENUECAT_API_KEY` - RevenueCat public API key for in-app purchases
 - `EXPO_PUBLIC_REVENUECAT_API_KEY` - Same key, exposed to frontend
-- `GOOGLE_CLOUD_VISION_API_KEY` - For OCR text extraction from product images
+- `RESEND_API_KEY` - For email verification (DO NOT REMOVE)
 
 ## Project Structure
 
@@ -180,7 +180,6 @@ Users can test on physical devices using Expo Go by scanning the QR code.
 - **Pro Tier**: $8.99/month for unlimited scans
 - Users see an upgrade modal when they hit the free limit
 - RevenueCat handles iOS/Android in-app purchases (prevents duplicate payments via Apple ID tracking)
-- Stripe available as web fallback
 
 ## Database Schema
 
@@ -202,9 +201,11 @@ CREATE TABLE users (
 
 ## Recent Changes
 
+- **Feb 2026**: Removed Stripe integration (fully on RevenueCat now)
+  - Deleted all Stripe endpoints, webhook handlers, and client code
+  - Removed unused Google Cloud Vision API key
 - **Feb 2026**: Added Google Lens visual matching for exact product identification
   - Uses SerpAPI Google Lens engine for image-based product search
-  - Falls back to Gemini AI text analysis if Lens doesn't find results
   - Much more accurate product matching (finds exact products, not similar ones)
 - **Feb 2026**: Multi-platform search (Amazon, Walmart, Target, eBay, Mercari, Poshmark)
   - Switched from eBay-only to Google Shopping for multi-platform results
@@ -224,5 +225,4 @@ CREATE TABLE users (
   - Upgrade modal when limit reached
   - Profile screen with subscription status and logout
 - Integrated SerpAPI for multi-platform product data
-- Added Gemini AI for fallback product identification
 - Added design tokens system for consistent theming
