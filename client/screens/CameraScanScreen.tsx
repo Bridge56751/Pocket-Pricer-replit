@@ -8,10 +8,27 @@ import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
+import * as ImageManipulator from "expo-image-manipulator";
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from "react-native-reanimated";
 
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import type { RootStackParamList, CapturedPhoto } from "@/navigation/RootStackNavigator";
+
+const MAX_IMAGE_SIZE = 1024;
+
+const resizeImage = async (uri: string): Promise<{ uri: string; base64: string } | null> => {
+  try {
+    const result = await ImageManipulator.manipulateAsync(
+      uri,
+      [{ resize: { width: MAX_IMAGE_SIZE } }],
+      { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+    );
+    return result.base64 ? { uri: result.uri, base64: result.base64 } : null;
+  } catch (error) {
+    console.error("Failed to resize image:", error);
+    return null;
+  }
+};
 
 export default function CameraScanScreen() {
   const insets = useSafeAreaInsets();
@@ -52,12 +69,14 @@ export default function CameraScanScreen() {
     
     try {
       const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.7,
-        base64: true,
+        quality: 0.9,
       });
       
-      if (photo?.uri && photo?.base64) {
-        setCapturedPhotos(prev => [...prev, { uri: photo.uri, base64: photo.base64 as string }]);
+      if (photo?.uri) {
+        const resized = await resizeImage(photo.uri);
+        if (resized) {
+          setCapturedPhotos(prev => [...prev, resized]);
+        }
       }
     } catch (error) {
       console.error("Failed to capture photo:", error);
@@ -75,19 +94,19 @@ export default function CameraScanScreen() {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
-      quality: 0.7,
-      base64: true,
+      quality: 0.9,
       allowsMultipleSelection: true,
     });
 
     if (!result.canceled && result.assets) {
-      const newPhotos = result.assets
-        .filter(asset => asset.uri && asset.base64)
-        .map(asset => ({ uri: asset.uri, base64: asset.base64! }));
-      setCapturedPhotos(prev => {
-        const combined = [...prev, ...newPhotos];
-        return combined.slice(0, MAX_PHOTOS);
-      });
+      const resizedPhotos = await Promise.all(
+        result.assets
+          .filter(asset => asset.uri)
+          .slice(0, MAX_PHOTOS - capturedPhotos.length)
+          .map(asset => resizeImage(asset.uri))
+      );
+      const validPhotos = resizedPhotos.filter((p): p is CapturedPhoto => p !== null);
+      setCapturedPhotos(prev => [...prev, ...validPhotos].slice(0, MAX_PHOTOS));
     }
   };
 
