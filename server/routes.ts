@@ -1762,11 +1762,11 @@ If you cannot identify: {"searchQuery": null, "error": "Could not identify produ
         reviews: item.reviews,
       }));
 
-      // Use AI to generate a clean product name from the listing titles
-      let productName = lensResult.productName || "";
+      // Always use AI to generate a clean product name from the listing titles for Lens results
+      let productName = "";
       let productDescription = "";
       
-      if (!productName && listings.length > 0) {
+      if (listings.length > 0) {
         try {
           const topTitles = listings.slice(0, 5).map(l => l.title).join("\n");
           const nameResponse = await ai.models.generateContent({
@@ -1793,6 +1793,8 @@ Return ONLY a JSON object with no markdown:
           // Fallback to first listing title
           productName = listings[0]?.title?.substring(0, 60) || "Product";
         }
+      } else {
+        productName = lensResult.productName || "Product";
       }
 
       if (user) {

@@ -41,6 +41,7 @@ interface SearchResultsData {
   listings: ListingItem[];
   scannedImageId?: string;
   scannedImageUri?: string;
+  usedLens?: boolean;
   productInfo?: {
     name: string;
     brand?: string;
@@ -269,65 +270,78 @@ export default function SearchResultsScreen() {
               </View>
               
               <View style={styles.demandContent}>
-                <View style={styles.demandBarContainer}>
-                  <View style={[styles.demandBarBg, { backgroundColor: theme.colors.muted }]}>
-                    <View 
-                      style={[
-                        styles.demandBarFill, 
-                        { 
-                          backgroundColor: results.totalListings >= 50 
-                            ? theme.colors.primary 
-                            : results.totalListings >= 20 
-                              ? theme.colors.warning 
-                              : theme.colors.danger,
-                          width: `${Math.min(100, (results.totalListings / 100) * 100)}%`
-                        }
-                      ]} 
-                    />
-                  </View>
-                  <View style={styles.demandLabels}>
-                    <Text style={[styles.demandLabelText, { color: theme.colors.mutedForeground }]}>Low</Text>
-                    <Text style={[styles.demandLabelText, { color: theme.colors.mutedForeground }]}>Medium</Text>
-                    <Text style={[styles.demandLabelText, { color: theme.colors.mutedForeground }]}>High</Text>
-                  </View>
-                </View>
-                
-                <View style={styles.demandStats}>
-                  <View style={[
-                    styles.demandBadge, 
-                    { 
-                      backgroundColor: results.totalListings >= 50 
-                        ? theme.colors.primary + '20'
-                        : results.totalListings >= 20 
-                          ? theme.colors.warning + '20'
-                          : theme.colors.danger + '20'
-                    }
-                  ]}>
-                    <Text style={[
-                      styles.demandBadgeText, 
-                      { 
-                        color: results.totalListings >= 50 
-                          ? theme.colors.primary 
-                          : results.totalListings >= 20 
-                            ? theme.colors.warning 
-                            : theme.colors.danger
-                      }
-                    ]}>
-                      {results.totalListings >= 50 ? 'High Demand' : results.totalListings >= 20 ? 'Medium Demand' : 'Low Demand'}
-                    </Text>
-                  </View>
-                  <Text style={[styles.listingCount, { color: theme.colors.foreground }]}>
-                    {results.totalListings} active listings
-                  </Text>
-                </View>
+                {(() => {
+                  const isLens = results.usedLens;
+                  const highThreshold = isLens ? 15 : 50;
+                  const medThreshold = isLens ? 5 : 20;
+                  const maxForBar = isLens ? 30 : 100;
+                  const isHigh = results.totalListings >= highThreshold;
+                  const isMed = results.totalListings >= medThreshold;
+                  
+                  return (
+                    <>
+                      <View style={styles.demandBarContainer}>
+                        <View style={[styles.demandBarBg, { backgroundColor: theme.colors.muted }]}>
+                          <View 
+                            style={[
+                              styles.demandBarFill, 
+                              { 
+                                backgroundColor: isHigh
+                                  ? theme.colors.primary 
+                                  : isMed
+                                    ? theme.colors.warning 
+                                    : theme.colors.danger,
+                                width: `${Math.min(100, (results.totalListings / maxForBar) * 100)}%`
+                              }
+                            ]} 
+                          />
+                        </View>
+                        <View style={styles.demandLabels}>
+                          <Text style={[styles.demandLabelText, { color: theme.colors.mutedForeground }]}>Low</Text>
+                          <Text style={[styles.demandLabelText, { color: theme.colors.mutedForeground }]}>Medium</Text>
+                          <Text style={[styles.demandLabelText, { color: theme.colors.mutedForeground }]}>High</Text>
+                        </View>
+                      </View>
+                      
+                      <View style={styles.demandStats}>
+                        <View style={[
+                          styles.demandBadge, 
+                          { 
+                            backgroundColor: isHigh
+                              ? theme.colors.primary + '20'
+                              : isMed
+                                ? theme.colors.warning + '20'
+                                : theme.colors.danger + '20'
+                          }
+                        ]}>
+                          <Text style={[
+                            styles.demandBadgeText, 
+                            { 
+                              color: isHigh
+                                ? theme.colors.primary 
+                                : isMed
+                                  ? theme.colors.warning 
+                                  : theme.colors.danger
+                            }
+                          ]}>
+                            {isHigh ? 'High Demand' : isMed ? 'Medium Demand' : 'Low Demand'}
+                          </Text>
+                        </View>
+                        <Text style={[styles.listingCount, { color: theme.colors.foreground }]}>
+                          {results.totalListings} active listings
+                        </Text>
+                      </View>
 
-                <Text style={[styles.demandHint, { color: theme.colors.mutedForeground }]}>
-                  {results.totalListings >= 50 
-                    ? 'Popular item with competitive market. Price competitively!'
-                    : results.totalListings >= 20 
-                      ? 'Moderate competition. Good opportunity for sellers.'
-                      : 'Limited competition. Consider pricing higher!'}
-                </Text>
+                      <Text style={[styles.demandHint, { color: theme.colors.mutedForeground }]}>
+                        {isHigh
+                          ? 'Popular item with competitive market. Price competitively!'
+                          : isMed
+                            ? 'Moderate competition. Good opportunity for sellers.'
+                            : 'Limited competition. Consider pricing higher!'}
+                      </Text>
+                    </>
+                  );
+                })()}
               </View>
             </View>
 
