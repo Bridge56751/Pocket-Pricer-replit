@@ -140,9 +140,13 @@ export default function ScanScreen() {
         usedLens,
       };
 
+      const queryString = typeof results.query === 'string' 
+        ? results.query 
+        : (typeof productInfo?.name === 'string' ? productInfo.name : "Visual Search");
+      
       const historyItem: SearchHistoryItem = {
         id: Date.now().toString(),
-        query: results.query || productInfo?.name || "Visual Search",
+        query: queryString,
         product: results.listings?.[0] || null,
         searchedAt: new Date().toISOString(),
         results: enrichedResults,
@@ -346,7 +350,9 @@ export default function ScanScreen() {
                       style={[styles.scanTitle, { color: theme.colors.foreground }]}
                       numberOfLines={1}
                     >
-                      {scan.results?.productInfo?.name || scan.product?.title || scan.query}
+                      {(typeof scan.results?.productInfo === 'object' ? scan.results?.productInfo?.name : null) 
+                        || scan.product?.title 
+                        || (typeof scan.query === 'string' ? scan.query : 'Product')}
                     </Text>
                     <Text 
                       style={[styles.scanCondition, { color: theme.colors.mutedForeground }]}

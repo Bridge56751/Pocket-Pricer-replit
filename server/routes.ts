@@ -58,7 +58,20 @@ async function getAIProductDescription(imageBase64: string): Promise<string | nu
               },
             },
             {
-              text: "What product is shown in this image? Respond with ONLY the product name (brand and model if visible). Be concise - max 60 characters. Examples: 'Nike Air Jordan 1 Retro High', 'Sony WH-1000XM5 Headphones', 'Pokemon Charizard Holo Card'. Do not include sizes, conditions, or seller info.",
+              text: `Identify this product. Reply with ONLY the product name in plain text, nothing else.
+
+Rules:
+- Include brand name if visible (e.g. Sony, Nike, Apple)
+- Include model name/number if visible
+- Maximum 50 characters
+- NO JSON, NO quotes, NO explanation
+- If it's a gaming controller, specify which console (PS5, Xbox, Switch)
+
+Examples of good responses:
+Sony DualSense PS5 Controller
+Apple iPhone 14 Pro
+Nike Air Jordan 1 High
+Canon EOS R5 Camera`,
             },
           ],
         },
@@ -66,6 +79,8 @@ async function getAIProductDescription(imageBase64: string): Promise<string | nu
     });
 
     let text = response.text?.trim();
+    console.log("Raw AI response:", text);
+    
     if (!text || text.length < 3) {
       return null;
     }
@@ -77,15 +92,24 @@ async function getAIProductDescription(imageBase64: string): Promise<string | nu
         // Extract name from various possible structures
         const extractedName = parsed.name || parsed.productName || parsed.product || 
                (typeof parsed === 'string' ? parsed : null);
-        if (!extractedName) return null;
+        if (!extractedName || typeof extractedName !== 'string') return null;
         text = extractedName;
       } catch {
-        // Not valid JSON, use as-is
+        // Not valid JSON, try to extract text before any JSON
+        const beforeJson = text.split('{')[0].trim();
+        if (beforeJson.length > 3) {
+          text = beforeJson;
+        } else {
+          return null;
+        }
       }
     }
     
-    // Remove any quotes around the text
-    text = text.replace(/^["']|["']$/g, '').trim();
+    // Remove any quotes, asterisks, or markdown around the text
+    text = text.replace(/^["'*`]+|["'*`]+$/g, '').trim();
+    
+    // Remove any trailing punctuation or extra content
+    text = text.split('\n')[0].trim();
     
     if (text.length > 3 && text.length < 100) {
       return text;
@@ -1351,29 +1375,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         reviews: item.reviews,
       }));
 
-      // Use AI description as primary source, fall back to listing title extraction
+      // Use AI description as primary source, use generic fallback (never listing titles)
       let productName = "";
-      let productDescription = "";
       
       if (aiProductName) {
         // Use the clean AI-generated product name
         productName = aiProductName;
-      } else if (listings.length > 0) {
-        // Fallback: Use the shortest, most descriptive title from top results
-        const topTitles = listings.slice(0, 5).map(l => l.title);
-        const goodTitle = topTitles
-          .filter(t => t.length > 10 && t.length < 100)
-          .sort((a, b) => a.length - b.length)[0] || topTitles[0];
-        
-        // Clean up the title - remove common seller additions
-        productName = goodTitle
-          .replace(/\s*[-|]\s*(Free Shipping|Fast Ship|New|Used|Like New|Sealed).*$/i, "")
-          .replace(/\s*\([^)]*\)\s*$/, "")
-          .substring(0, 80)
-          .trim() || "Product";
       } else {
-        productName = lensResult.productName || "Product";
+        // Fallback: Use generic name - DO NOT use listing titles as they contain seller info
+        productName = lensResult.productName || "Scanned Product";
       }
+      
+      console.log("Final product name:", productName);
 
       if (user) {
         await incrementSearchCount(user.id);
@@ -1382,7 +1395,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         query: productName,
         productName,
-        productDescription,
+        productInfo: {
+          name: productName,
+        },
         totalListings: listings.length,
         avgListPrice,
         avgSalePrice: null,

@@ -101,7 +101,9 @@ export default function SearchResultsScreen() {
 
   const handleListOnEbay = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const searchQuery = encodeURIComponent(results.productInfo?.name || results.query);
+    const productName = typeof results.productInfo === 'object' ? results.productInfo?.name : null;
+    const queryStr = typeof results.query === 'string' ? results.query : 'product';
+    const searchQuery = encodeURIComponent(productName || queryStr);
     await Linking.openURL(`https://www.ebay.com/sl/sell?keyword=${searchQuery}`);
   };
 
@@ -215,7 +217,9 @@ export default function SearchResultsScreen() {
                 />
                 <View style={styles.productDetails}>
                   <Text style={[styles.productName, { color: theme.colors.foreground }]}>
-                    {results.productInfo?.name || results.query}
+                    {typeof results.productInfo === 'object' && results.productInfo?.name 
+                      ? results.productInfo.name 
+                      : (typeof results.query === 'string' ? results.query : 'Scanned Product')}
                   </Text>
                   {results.productInfo?.brand ? (
                     <Text style={[styles.productBrand, { color: theme.colors.mutedForeground }]}>
