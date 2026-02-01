@@ -198,6 +198,7 @@ async function searchWithGoogleLens(imageUrl: string): Promise<{
       url: imageUrl,
       hl: "en",
       country: "us",
+      no_cache: true,
       api_key: apiKey,
     }) as GoogleLensResponse;
 
@@ -208,6 +209,8 @@ async function searchWithGoogleLens(imageUrl: string): Promise<{
 
     const products = response.visual_matches || [];
     const productName = response.knowledge_graph?.[0]?.title;
+    
+    console.log(`Google Lens found ${products.length} visual matches`);
 
     return { products, productName };
   } catch (error) {
