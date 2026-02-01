@@ -19,7 +19,7 @@ This app allows eBay resellers to:
 - **Database**: PostgreSQL (Neon-backed via Replit)
 - **Authentication**: JWT tokens with bcrypt password hashing
 - **Payments**: RevenueCat for iOS/Android in-app purchases ($4.99/month Pro subscription)
-- **AI**: Gemini for product image identification
+- **AI**: Gemini for product image identification + Google Cloud Vision for OCR
 - **eBay Data**: SerpAPI (real-time eBay listing search)
 - **State Management**: TanStack React Query
 - **Local Storage**: AsyncStorage for history, favorites, and auth tokens
@@ -32,6 +32,7 @@ This app allows eBay resellers to:
 - `SESSION_SECRET` - Used for JWT token signing
 - `REVENUECAT_API_KEY` - RevenueCat public API key for in-app purchases
 - `EXPO_PUBLIC_REVENUECAT_API_KEY` - Same key, exposed to frontend
+- `GOOGLE_CLOUD_VISION_API_KEY` - For OCR text extraction from product images
 
 ## Project Structure
 
