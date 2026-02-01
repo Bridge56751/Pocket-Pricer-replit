@@ -1,14 +1,14 @@
 # Pocket Pricer
 
-An Expo React Native mobile app that helps eBay sellers discover product values by scanning items with AI or searching eBay listings.
+An Expo React Native mobile app that helps resellers discover product values by scanning items with Google Lens visual matching and searching across multiple platforms.
 
 ## Overview
 
-This app allows eBay resellers to:
-- Scan products with camera (AI-powered identification via Gemini)
-- Search for products by name and see real active eBay listings
-- View current eBay selling prices from live data
-- Calculate estimated profit based on their costs (includes ~13% eBay fees)
+This app allows resellers to:
+- Scan products with camera using Google Lens visual matching (exact product identification)
+- Search across Amazon, Walmart, Target, eBay, and more platforms
+- View current prices from live multi-platform data
+- Calculate estimated profit based on their costs (includes ~13% estimated fees)
 - Save favorite products for later
 - Track search and scan history
 
@@ -19,8 +19,8 @@ This app allows eBay resellers to:
 - **Database**: PostgreSQL (Neon-backed via Replit)
 - **Authentication**: JWT tokens with bcrypt password hashing
 - **Payments**: RevenueCat for iOS/Android in-app purchases ($4.99/month Pro subscription)
-- **AI**: Gemini for product image identification + Google Cloud Vision for OCR
-- **eBay Data**: SerpAPI (real-time eBay listing search)
+- **AI**: Google Lens for visual matching + Gemini for fallback identification + Google Cloud Vision for OCR
+- **Product Data**: SerpAPI (Google Lens + Google Shopping for multi-platform results)
 - **State Management**: TanStack React Query
 - **Local Storage**: AsyncStorage for history, favorites, and auth tokens
 - **Navigation**: React Navigation (bottom tabs + native stack)
@@ -202,6 +202,14 @@ CREATE TABLE users (
 
 ## Recent Changes
 
+- **Feb 2026**: Added Google Lens visual matching for exact product identification
+  - Uses SerpAPI Google Lens engine for image-based product search
+  - Falls back to Gemini AI text analysis if Lens doesn't find results
+  - Much more accurate product matching (finds exact products, not similar ones)
+- **Feb 2026**: Multi-platform search (Amazon, Walmart, Target, eBay, Mercari, Poshmark)
+  - Switched from eBay-only to Google Shopping for multi-platform results
+  - Dynamic platform badges show which marketplace each listing is from
+  - Updated UI to remove eBay-specific language
 - **Jan 2026**: Switched from Stripe to RevenueCat for iOS in-app purchases
   - RevenueCat handles Apple/Google payment processing
   - Prevents duplicate payments via Apple ID tracking
@@ -215,6 +223,6 @@ CREATE TABLE users (
   - Free tier with 5 lifetime scans limit
   - Upgrade modal when limit reached
   - Profile screen with subscription status and logout
-- Integrated SerpAPI for real eBay listing data
-- Added Gemini AI for product image identification
+- Integrated SerpAPI for multi-platform product data
+- Added Gemini AI for fallback product identification
 - Added design tokens system for consistent theming
