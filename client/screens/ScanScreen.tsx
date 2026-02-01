@@ -83,67 +83,113 @@ export default function ScanScreen() {
         return;
       }
 
-      const analyzeResponse = await apiRequest("POST", "/api/analyze-image", {
-        images: photos.map(p => p.base64),
-      }, token);
+      // Try Google Lens first for exact product matching
+      setAnalyzingProgress("Searching with visual matching...");
       
-      if (analyzeResponse.status === 401) {
-        setIsAnalyzing(false);
-        setAnalyzingProgress("");
-        processingRef.current = false;
-        setErrorMessage("Session expired. Please sign out and sign back in.");
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        return;
+      let results: any = null;
+      let productInfo: any = null;
+      let usedLens = false;
+
+      try {
+        const lensResponse = await apiRequest("POST", "/api/scan-with-lens", {
+          imageBase64: `data:image/jpeg;base64,${photos[0].base64}`,
+        }, token);
+        
+        if (lensResponse.status === 403) {
+          const lensData = await lensResponse.json();
+          if (lensData.limitReached) {
+            setIsAnalyzing(false);
+            setAnalyzingProgress("");
+            processingRef.current = false;
+            setShowUpgradeModal(true);
+            return;
+          }
+        }
+
+        if (lensResponse.ok) {
+          results = await lensResponse.json();
+          usedLens = true;
+          productInfo = {
+            name: results.productName || results.query,
+            brand: "",
+            category: "",
+            description: "",
+          };
+        }
+      } catch (lensError) {
+        console.log("Lens search failed, falling back to AI analysis");
       }
 
-      const analysisResult = await analyzeResponse.json();
-      
-      if (analyzeResponse.status === 403 && analysisResult.limitReached) {
-        setIsAnalyzing(false);
-        setAnalyzingProgress("");
-        processingRef.current = false;
-        setShowUpgradeModal(true);
-        return;
-      }
-      
-      if (!analysisResult.productName) {
-        setIsAnalyzing(false);
-        setAnalyzingProgress("");
-        processingRef.current = false;
-        setErrorMessage(analysisResult.error || "Could not identify the product. Please try again with a clearer photo.");
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        return;
+      // Fallback to text-based AI analysis if Lens didn't find results
+      if (!results || !results.listings?.length) {
+        setAnalyzingProgress("Analyzing product details...");
+        
+        const analyzeResponse = await apiRequest("POST", "/api/analyze-image", {
+          images: photos.map(p => p.base64),
+        }, token);
+        
+        if (analyzeResponse.status === 401) {
+          setIsAnalyzing(false);
+          setAnalyzingProgress("");
+          processingRef.current = false;
+          setErrorMessage("Session expired. Please sign out and sign back in.");
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          return;
+        }
+
+        const analysisResult = await analyzeResponse.json();
+        
+        if (analyzeResponse.status === 403 && analysisResult.limitReached) {
+          setIsAnalyzing(false);
+          setAnalyzingProgress("");
+          processingRef.current = false;
+          setShowUpgradeModal(true);
+          return;
+        }
+        
+        if (!analysisResult.productName) {
+          setIsAnalyzing(false);
+          setAnalyzingProgress("");
+          processingRef.current = false;
+          setErrorMessage(analysisResult.error || "Could not identify the product. Please try again with a clearer photo.");
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          return;
+        }
+        
+        productInfo = {
+          name: analysisResult.productName,
+          brand: analysisResult.brand,
+          category: analysisResult.category,
+          description: analysisResult.description,
+        };
+
+        setAnalyzingCount({ current: 2, total: 2 });
+        setAnalyzingProgress("Searching listings...");
+
+        const searchQuery = [
+          analysisResult.brand,
+          analysisResult.productName,
+          analysisResult.model,
+        ].filter(Boolean).join(" ");
+        
+        const searchResponse = await apiRequest("POST", "/api/search", { query: searchQuery });
+        results = await searchResponse.json();
+        results.query = searchQuery;
       }
       
       await refreshUser();
-
-      setAnalyzingCount({ current: 2, total: 2 });
-      setAnalyzingProgress("Searching listings...");
-
-      const searchQuery = [
-        analysisResult.brand,
-        analysisResult.productName,
-        analysisResult.model,
-      ].filter(Boolean).join(" ");
-      
-      const searchResponse = await apiRequest("POST", "/api/search", { query: searchQuery });
-      const results = await searchResponse.json();
 
       const scannedImageId = storeImage(`data:image/jpeg;base64,${photos[0].base64}`);
       const enrichedResults = {
         ...results,
         scannedImageId,
-        productInfo: {
-          name: analysisResult.productName,
-          brand: analysisResult.brand,
-          category: analysisResult.category,
-          description: analysisResult.description,
-        },
+        productInfo,
+        usedLens,
       };
 
       const historyItem: SearchHistoryItem = {
         id: Date.now().toString(),
-        query: searchQuery,
+        query: results.query || productInfo?.name || "Visual Search",
         product: results.listings?.[0] || null,
         searchedAt: new Date().toISOString(),
         results: enrichedResults,
@@ -309,13 +355,13 @@ export default function ScanScreen() {
         {errorMessage ? (
           <Pressable 
             onPress={() => setErrorMessage(null)}
-            style={[styles.errorBanner, { backgroundColor: colors.destructive + "20" }]}
+            style={[styles.errorBanner, { backgroundColor: theme.colors.danger + "20" }]}
           >
-            <Feather name="alert-circle" size={18} color={colors.destructive} />
-            <Text style={[styles.errorText, { color: colors.destructive }]}>
+            <Feather name="alert-circle" size={18} color={theme.colors.danger} />
+            <Text style={[styles.errorText, { color: theme.colors.danger }]}>
               {errorMessage}
             </Text>
-            <Feather name="x" size={16} color={colors.destructive} />
+            <Feather name="x" size={16} color={theme.colors.danger} />
           </Pressable>
         ) : null}
 

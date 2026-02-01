@@ -96,6 +96,97 @@ async function extractTextWithVision(imageBase64: string): Promise<string> {
   }
 }
 
+// Upload image to temporary hosting for Google Lens (uses freeimage.host API)
+async function uploadImageForLens(imageBase64: string): Promise<string | null> {
+  try {
+    const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+    
+    const formData = new URLSearchParams();
+    formData.append("key", "6d207e02198a847aa98d0a2a901485a5"); // Free public API key
+    formData.append("source", cleanBase64);
+    formData.append("format", "json");
+    
+    const response = await fetch("https://freeimage.host/api/1/upload", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: formData.toString(),
+    });
+    
+    const data = await response.json();
+    if (data.status_code === 200 && data.image?.url) {
+      return data.image.url;
+    }
+    console.error("Image upload failed:", data);
+    return null;
+  } catch (error) {
+    console.error("Image upload error:", error);
+    return null;
+  }
+}
+
+// Google Lens API response interfaces
+interface GoogleLensProduct {
+  position?: number;
+  title?: string;
+  link?: string;
+  source?: string;
+  price?: {
+    value?: number;
+    extracted_value?: number;
+    currency?: string;
+  };
+  thumbnail?: string;
+  rating?: number;
+  reviews?: number;
+}
+
+interface GoogleLensResponse {
+  visual_matches?: GoogleLensProduct[];
+  knowledge_graph?: {
+    title?: string;
+    description?: string;
+  }[];
+  search_metadata?: {
+    status?: string;
+  };
+  error?: string;
+}
+
+// Search using Google Lens for exact product matching
+async function searchWithGoogleLens(imageUrl: string): Promise<{
+  products: GoogleLensProduct[];
+  productName?: string;
+  error?: string;
+}> {
+  try {
+    const apiKey = process.env.SERPAPI_API_KEY;
+    if (!apiKey) {
+      return { products: [], error: "SerpAPI key not configured" };
+    }
+
+    const response = await getJson({
+      engine: "google_lens",
+      url: imageUrl,
+      hl: "en",
+      country: "us",
+      api_key: apiKey,
+    }) as GoogleLensResponse;
+
+    if (response.error) {
+      console.error("Google Lens error:", response.error);
+      return { products: [], error: response.error };
+    }
+
+    const products = response.visual_matches || [];
+    const productName = response.knowledge_graph?.[0]?.title;
+
+    return { products, productName };
+  } catch (error) {
+    console.error("Google Lens search error:", error);
+    return { products: [], error: "Search failed" };
+  }
+}
+
 interface EbayResult {
   position?: number;
   title?: string;
@@ -1600,6 +1691,96 @@ If you cannot identify: {"searchQuery": null, "error": "Could not identify produ
     } catch (error) {
       console.error("Image analysis error:", error);
       res.status(500).json({ error: "Failed to analyze image" });
+    }
+  });
+
+  // Google Lens powered exact product search
+  app.post("/api/scan-with-lens", async (req: Request, res: Response) => {
+    try {
+      const user = await getUserFromToken(req);
+      
+      if (user && user.subscriptionStatus !== "pro") {
+        const rateLimit = await checkRateLimit(user.id);
+        if (!rateLimit.allowed) {
+          return res.status(403).json({
+            error: "Free scan limit reached",
+            limitReached: true,
+            searchesRemaining: 0,
+          });
+        }
+      }
+      
+      const { imageBase64 } = req.body;
+      
+      if (!imageBase64) {
+        return res.status(400).json({ error: "Image data is required" });
+      }
+
+      // Upload image temporarily for Google Lens
+      console.log("Uploading image for Google Lens...");
+      const imageUrl = await uploadImageForLens(imageBase64);
+      
+      if (!imageUrl) {
+        return res.status(500).json({ error: "Failed to prepare image for search" });
+      }
+
+      console.log("Searching with Google Lens...");
+      const lensResult = await searchWithGoogleLens(imageUrl);
+
+      if (lensResult.error || lensResult.products.length === 0) {
+        return res.status(404).json({ 
+          error: "No products found",
+          fallbackToText: true 
+        });
+      }
+
+      // Transform lens results to our format
+      const productsWithPrices = lensResult.products
+        .filter(p => p.price?.value || p.price?.extracted_value)
+        .slice(0, 30);
+
+      const prices = productsWithPrices
+        .map(p => p.price?.extracted_value || p.price?.value || 0)
+        .filter(p => p > 0);
+
+      const avgListPrice = prices.length > 0 
+        ? prices.reduce((a, b) => a + b, 0) / prices.length 
+        : 0;
+      const bestBuyNow = prices.length > 0 ? Math.min(...prices) : 0;
+
+      const listings = productsWithPrices.map((item, index) => ({
+        id: `lens-${index}`,
+        title: item.title || "Unknown Product",
+        imageUrl: item.thumbnail || "",
+        currentPrice: item.price?.extracted_value || item.price?.value || 0,
+        condition: "New",
+        shipping: 0,
+        link: item.link || "",
+        seller: item.source || "",
+        platform: item.source || "Shop",
+        rating: item.rating,
+        reviews: item.reviews,
+      }));
+
+      if (user) {
+        await incrementSearchCount(user.id);
+      }
+
+      res.json({
+        query: lensResult.productName || "Visual Search",
+        productName: lensResult.productName,
+        totalListings: listings.length,
+        avgListPrice,
+        avgSalePrice: null,
+        soldCount: 0,
+        bestBuyNow,
+        topSalePrice: null,
+        listings,
+        usedLens: true,
+      });
+    } catch (error) {
+      console.error("Lens scan error:", error);
+      res.status(500).json({ error: "Failed to scan product" });
     }
   });
 
