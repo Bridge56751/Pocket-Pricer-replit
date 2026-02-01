@@ -123,6 +123,7 @@ interface EbayResult {
 
 interface SerpApiResponse {
   organic_results?: EbayResult[];
+  shopping_results?: GoogleShoppingResult[];
   search_metadata?: {
     status?: string;
   };
@@ -130,6 +131,24 @@ interface SerpApiResponse {
     total_results?: number;
   };
   error?: string;
+}
+
+interface GoogleShoppingResult {
+  position?: number;
+  title?: string;
+  link?: string;
+  product_link?: string;
+  product_id?: string;
+  serpapi_product_api?: string;
+  source?: string;
+  price?: string;
+  extracted_price?: number;
+  old_price?: string;
+  extracted_old_price?: number;
+  rating?: number;
+  reviews?: number;
+  thumbnail?: string;
+  delivery?: string;
 }
 
 function parseShippingCost(shipping?: unknown): number {
@@ -177,6 +196,65 @@ function transformEbayResults(results: EbayResult[]): {
       shipping,
       link: result.link || "",
       seller: result.seller?.name || "Unknown Seller",
+      platform: "eBay",
+    };
+  });
+
+  const prices = listings.map(l => l.currentPrice).filter(p => p > 0);
+  const avgListPrice = prices.length > 0 
+    ? prices.reduce((a, b) => a + b, 0) / prices.length 
+    : 0;
+  const bestBuyNow = prices.length > 0 ? Math.min(...prices) : 0;
+
+  return {
+    listings,
+    avgListPrice,
+    bestBuyNow,
+    totalListings: listings.length,
+  };
+}
+
+function transformGoogleShoppingResults(results: GoogleShoppingResult[]): {
+  listings: any[];
+  avgListPrice: number;
+  bestBuyNow: number;
+  totalListings: number;
+} {
+  const listings = results.map((result, index) => {
+    const price = result.extracted_price || 0;
+    const originalPrice = result.extracted_old_price;
+    
+    // Estimate shipping from delivery text or default
+    let shipping = 8.50;
+    if (result.delivery) {
+      if (result.delivery.toLowerCase().includes("free")) {
+        shipping = 0;
+      }
+    }
+
+    // Determine platform from source
+    const source = result.source || "Unknown";
+    let platform = source;
+    if (source.toLowerCase().includes("ebay")) platform = "eBay";
+    else if (source.toLowerCase().includes("amazon")) platform = "Amazon";
+    else if (source.toLowerCase().includes("walmart")) platform = "Walmart";
+    else if (source.toLowerCase().includes("target")) platform = "Target";
+    else if (source.toLowerCase().includes("mercari")) platform = "Mercari";
+    else if (source.toLowerCase().includes("poshmark")) platform = "Poshmark";
+
+    return {
+      id: `shop-${Date.now()}-${index}`,
+      title: result.title || "Unknown Product",
+      imageUrl: result.thumbnail || "https://via.placeholder.com/400",
+      currentPrice: price,
+      originalPrice: originalPrice && originalPrice > price ? originalPrice : undefined,
+      condition: "Not specified",
+      shipping,
+      link: result.product_link || result.link || "",
+      seller: source,
+      platform,
+      rating: result.rating,
+      reviews: result.reviews,
     };
   });
 
@@ -1299,11 +1377,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: "SerpAPI key not configured" });
       }
 
+      // Use Google Shopping for multi-platform results
       const response = await getJson({
-        engine: "ebay",
-        _nkw: query,
-        ebay_domain: "ebay.com",
-        _ipg: 25,
+        engine: "google_shopping",
+        q: query,
+        location: "United States",
+        hl: "en",
+        gl: "us",
+        num: 30,
         api_key: apiKey,
       }) as SerpApiResponse;
 
@@ -1312,13 +1393,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: "Search failed" });
       }
 
-      const results = response.organic_results || [];
+      const results = response.shopping_results || [];
       
       if (results.length === 0) {
         return res.status(404).json({ error: "No products found" });
       }
 
-      const { listings, avgListPrice, bestBuyNow, totalListings } = transformEbayResults(results);
+      const { listings, avgListPrice, bestBuyNow, totalListings } = transformGoogleShoppingResults(results);
 
       const searchResults = {
         query,
@@ -1531,15 +1612,17 @@ If you cannot identify: {"searchQuery": null, "error": "Could not identify produ
       }
 
       const response = await getJson({
-        engine: "ebay",
-        _nkw: "trending electronics",
-        ebay_domain: "ebay.com",
-        _ipg: 8,
+        engine: "google_shopping",
+        q: "trending electronics 2025",
+        location: "United States",
+        hl: "en",
+        gl: "us",
+        num: 10,
         api_key: apiKey,
       }) as SerpApiResponse;
 
-      const results = response.organic_results || [];
-      const { listings } = transformEbayResults(results);
+      const results = response.shopping_results || [];
+      const { listings } = transformGoogleShoppingResults(results);
       
       res.json(listings);
     } catch (error) {
