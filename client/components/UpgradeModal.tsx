@@ -166,7 +166,7 @@ export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
             {isLoading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.upgradeButtonText}>Subscribe Now — {getPrice()}/month</Text>
+              <Text style={styles.upgradeButtonText}>Subscribe Now</Text>
             )}
           </Pressable>
 
