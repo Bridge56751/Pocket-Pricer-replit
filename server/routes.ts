@@ -273,36 +273,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (isFreePro(email)) {
         subscriptionStatus = "active";
         console.log(`Granting free Pro access to whitelisted email: ${email}`);
-      } else {
-        // Check if there's an existing Stripe customer with an active subscription for this email
-        try {
-          const stripe = await getUncachableStripeClient();
-          if (stripe) {
-            // Search for existing customer by email
-            const customers = await stripe.customers.list({ email: email.toLowerCase(), limit: 1 });
-            
-            if (customers.data.length > 0) {
-              const customer = customers.data[0];
-              stripeCustomerId = customer.id;
-              
-              // Check for active subscriptions
-              const subscriptions = await stripe.subscriptions.list({
-                customer: customer.id,
-                status: "active",
-                limit: 1,
-              });
-              
-              if (subscriptions.data.length > 0) {
-                stripeSubscriptionId = subscriptions.data[0].id;
-                subscriptionStatus = "active";
-                console.log(`Restoring Pro subscription for returning user: ${email}`);
-              }
-            }
-          }
-        } catch (stripeError) {
-          console.error("Failed to check Stripe subscription:", stripeError);
-          // Continue with free account if Stripe check fails
-        }
       }
       
       // Generate email verification code
@@ -851,134 +821,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/subscription/cancel", async (req: Request, res: Response) => {
-    try {
-      const user = await getUserFromToken(req);
-      if (!user) {
-        return res.status(401).json({ error: "Not authenticated" });
-      }
-      
-      const stripe = await getUncachableStripeClient();
-      
-      // First, try to find the active subscription from Stripe
-      let subscriptionId = user.stripe_subscription_id;
-      
-      if (user.stripe_customer_id) {
-        try {
-          const subscriptions = await stripe.subscriptions.list({
-            customer: user.stripe_customer_id,
-            status: 'active',
-            limit: 1,
-          });
-          
-          if (subscriptions.data.length > 0) {
-            subscriptionId = subscriptions.data[0].id;
-            // Update stored subscription ID if different
-            if (subscriptionId !== user.stripe_subscription_id) {
-              await query(
-                "UPDATE users SET stripe_subscription_id = $1 WHERE id = $2",
-                [subscriptionId, user.id]
-              );
-            }
-          }
-        } catch (listError: any) {
-          console.error("Error listing subscriptions:", listError?.message);
-        }
-      }
-      
-      if (!subscriptionId) {
-        return res.status(400).json({ error: "No active subscription found" });
-      }
-      
-      const subscription = await stripe.subscriptions.update(subscriptionId, {
-        cancel_at_period_end: true,
-      }) as any;
-      
-      console.log("Subscription cancelled at period end:", subscription.id);
-      
-      let accessUntil = null;
-      if (subscription.current_period_end) {
-        const periodEndDate = new Date(subscription.current_period_end * 1000);
-        accessUntil = periodEndDate.toISOString();
-        console.log(`Subscription ${subscription.id} set to cancel at ${accessUntil}`);
-      }
-      
-      res.json({ 
-        success: true, 
-        message: "Your subscription will be cancelled at the end of your billing period.",
-        accessUntil
-      });
-    } catch (error: any) {
-      console.error("Cancel subscription error:", error?.message || error);
-      res.status(500).json({ error: "Failed to cancel subscription", details: error?.message });
-    }
-  });
-
-  app.post("/api/subscription/reactivate", async (req: Request, res: Response) => {
-    try {
-      const user = await getUserFromToken(req);
-      if (!user) {
-        return res.status(401).json({ error: "Not authenticated" });
-      }
-      
-      const stripe = await getUncachableStripeClient();
-      
-      // Find the subscription from Stripe by customer ID
-      let subscriptionId = user.stripe_subscription_id;
-      
-      if (user.stripe_customer_id) {
-        try {
-          const subscriptions = await stripe.subscriptions.list({
-            customer: user.stripe_customer_id,
-            limit: 1,
-          });
-          
-          if (subscriptions.data.length > 0) {
-            subscriptionId = subscriptions.data[0].id;
-            if (subscriptionId !== user.stripe_subscription_id) {
-              await query(
-                "UPDATE users SET stripe_subscription_id = $1 WHERE id = $2",
-                [subscriptionId, user.id]
-              );
-            }
-          }
-        } catch (listError: any) {
-          console.error("Error listing subscriptions:", listError?.message);
-        }
-      }
-      
-      if (!subscriptionId) {
-        return res.status(400).json({ error: "No subscription found" });
-      }
-      
-      await stripe.subscriptions.update(subscriptionId, {
-        cancel_at_period_end: false,
-      });
-      
-      console.log(`Subscription ${subscriptionId} reactivated`);
-      
-      res.json({ 
-        success: true, 
-        message: "Your subscription has been reactivated."
-      });
-    } catch (error: any) {
-      console.error("Reactivate subscription error:", error?.message || error);
-      res.status(500).json({ error: "Failed to reactivate subscription", details: error?.message });
-    }
-  });
+  // Subscription management is handled via Apple/Google through RevenueCat
+  // Users manage subscriptions in Settings → Apple ID → Subscriptions
 
   // Google Lens powered exact product search
   app.post("/api/scan-with-lens", async (req: Request, res: Response) => {
     try {
       const user = await getUserFromToken(req);
       
-      if (user && user.subscriptionStatus !== "pro") {
-        const rateLimit = await checkRateLimit(user.id);
-        if (!rateLimit.allowed) {
+      // Check if free user has remaining scans
+      if (user && user.subscription_status !== "active") {
+        const { allowed, remaining } = await canUserSearch(user);
+        if (!allowed) {
           return res.status(403).json({
             error: "Free scan limit reached",
             limitReached: true,
             searchesRemaining: 0,
+          });
+        }
+      }
+      
+      // Also apply rate limiting to prevent abuse
+      if (user) {
+        const rateLimit = await checkRateLimit(user.id);
+        if (!rateLimit.allowed) {
+          return res.status(429).json({
+            error: rateLimit.message || "Too many requests",
           });
         }
       }
