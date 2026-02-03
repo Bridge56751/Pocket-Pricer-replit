@@ -13,7 +13,9 @@ import * as Haptics from "expo-haptics";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useDesignTokens } from "@/hooks/useDesignTokens";
-import { getApiUrl } from "@/lib/query-client";
+
+const PRIVACY_URL = "https://pocket-pricer.com/privacy";
+const TERMS_URL = "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/";
 
 interface LegalAgreementModalProps {
   visible: boolean;
@@ -61,11 +63,7 @@ export function LegalAgreementModal({
   };
 
   const getDocumentUrl = (doc: "privacy" | "terms") => {
-    try {
-      return new URL(`/${doc}`, getApiUrl()).toString();
-    } catch {
-      return "";
-    }
+    return doc === "privacy" ? PRIVACY_URL : TERMS_URL;
   };
 
   if (viewingDocument) {
