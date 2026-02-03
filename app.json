@@ -11,7 +11,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.ebayprofit.app",
-      "buildNumber": "35"
+      "buildNumber": "36"
     },
     "android": {
       "adaptiveIcon": {

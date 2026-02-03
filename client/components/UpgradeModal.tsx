@@ -126,21 +126,16 @@ export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
           </View>
 
           <Text style={[styles.title, { color: theme.colors.foreground }]}>
-            Upgrade to Pro
+            Pocket Pricer Pro
           </Text>
 
           <Text style={[styles.subtitle, { color: theme.colors.mutedForeground }]}>
-            You've used all 5 of your free scans
+            Monthly subscription — {getPrice()}/month
           </Text>
 
-          <View style={styles.priceContainer}>
-            <Text style={[styles.price, { color: theme.colors.foreground }]}>
-              {getPrice()}
-            </Text>
-            <Text style={[styles.period, { color: theme.colors.mutedForeground }]}>
-              /month
-            </Text>
-          </View>
+          <Text style={[styles.freeScansNote, { color: theme.colors.mutedForeground }]}>
+            You've used all 5 of your free scans
+          </Text>
 
           <View style={styles.features}>
             <View style={styles.featureRow}>
@@ -255,22 +250,14 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 15,
+    fontSize: 16,
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  freeScansNote: {
+    fontSize: 14,
     textAlign: "center",
     marginBottom: 20,
-  },
-  priceContainer: {
-    flexDirection: "row",
-    alignItems: "baseline",
-    marginBottom: 24,
-  },
-  price: {
-    fontSize: 40,
-    fontWeight: "700",
-  },
-  period: {
-    fontSize: 16,
-    marginLeft: 4,
   },
   features: {
     width: "100%",
