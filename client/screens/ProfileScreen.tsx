@@ -239,6 +239,10 @@ export default function ProfileScreen() {
                 </Text>
               )}
             </Pressable>
+            
+            <Text style={[styles.subscriptionDisclosure, { color: theme.colors.mutedForeground }]}>
+              Payment will be charged to your Apple ID account. Subscription automatically renews unless canceled at least 24 hours before the end of the current period. Manage or cancel in Settings → Apple ID → Subscriptions.
+            </Text>
           </>
         ) : (
           <>
@@ -513,6 +517,12 @@ const styles = StyleSheet.create({
   restoreButtonText: {
     fontSize: 15,
     fontWeight: "500",
+  },
+  subscriptionDisclosure: {
+    fontSize: 11,
+    textAlign: "center",
+    lineHeight: 16,
+    marginTop: 12,
   },
   manageButton: {
     flexDirection: "row",

@@ -195,6 +195,10 @@ export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
             </Text>
           </Pressable>
 
+          <Text style={[styles.subscriptionDisclosure, { color: theme.colors.mutedForeground }]}>
+            Payment will be charged to your Apple ID account. Subscription automatically renews unless canceled at least 24 hours before the end of the current period. Manage or cancel in Settings → Apple ID → Subscriptions.
+          </Text>
+
           <View style={styles.legalLinks}>
             <Pressable onPress={() => Linking.openURL(PRIVACY_URL)}>
               <Text style={[styles.legalText, { color: theme.colors.mutedForeground }]}>
@@ -305,10 +309,17 @@ const styles = StyleSheet.create({
     fontSize: 15,
     paddingVertical: 8,
   },
+  subscriptionDisclosure: {
+    fontSize: 11,
+    textAlign: "center",
+    lineHeight: 16,
+    marginTop: 16,
+    paddingHorizontal: 8,
+  },
   legalLinks: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 16,
+    marginTop: 12,
   },
   legalText: {
     fontSize: 12,
