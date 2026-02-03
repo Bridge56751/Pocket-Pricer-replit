@@ -95,7 +95,7 @@ export default function ProfileScreen() {
   const handleOpenPrivacyPolicy = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
-      const privacyUrl = new URL("/privacy", getApiUrl()).toString();
+      const privacyUrl = "https://pocket-pricer.com/privacy";
       await WebBrowser.openBrowserAsync(privacyUrl);
     } catch (error) {
       console.error("Failed to open privacy policy:", error);
@@ -105,7 +105,7 @@ export default function ProfileScreen() {
   const handleOpenTermsOfService = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
-      const termsUrl = new URL("/terms", getApiUrl()).toString();
+      const termsUrl = "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/";
       await WebBrowser.openBrowserAsync(termsUrl);
     } catch (error) {
       console.error("Failed to open terms of service:", error);

@@ -8,11 +8,15 @@ import {
   ActivityIndicator,
   Platform,
   Alert,
+  Linking,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { useRevenueCat } from "@/contexts/RevenueCatContext";
 import { useAuth } from "@/contexts/AuthContext";
+
+const PRIVACY_URL = "https://pocket-pricer.com/privacy";
+const TERMS_URL = "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/";
 
 interface UpgradeModalProps {
   visible: boolean;
@@ -190,6 +194,22 @@ export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
               Maybe later
             </Text>
           </Pressable>
+
+          <View style={styles.legalLinks}>
+            <Pressable onPress={() => Linking.openURL(PRIVACY_URL)}>
+              <Text style={[styles.legalText, { color: theme.colors.mutedForeground }]}>
+                Privacy Policy
+              </Text>
+            </Pressable>
+            <Text style={[styles.legalSeparator, { color: theme.colors.mutedForeground }]}>
+              {" | "}
+            </Text>
+            <Pressable onPress={() => Linking.openURL(TERMS_URL)}>
+              <Text style={[styles.legalText, { color: theme.colors.mutedForeground }]}>
+                Terms of Use
+              </Text>
+            </Pressable>
+          </View>
         </View>
       </View>
     </Modal>
@@ -284,5 +304,16 @@ const styles = StyleSheet.create({
   laterText: {
     fontSize: 15,
     paddingVertical: 8,
+  },
+  legalLinks: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 16,
+  },
+  legalText: {
+    fontSize: 12,
+  },
+  legalSeparator: {
+    fontSize: 12,
   },
 });
