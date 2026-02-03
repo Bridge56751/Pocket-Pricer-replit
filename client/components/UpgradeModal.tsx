@@ -26,7 +26,10 @@ interface UpgradeModalProps {
 export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
   const { theme } = useDesignTokens();
   const { packages, purchasePackage, restorePurchases, isPro } = useRevenueCat();
-  const { refreshUser, checkSubscription } = useAuth();
+  const { refreshUser, checkSubscription, user } = useAuth();
+  
+  const scansRemaining = Math.max(0, user?.searchesRemaining || 0);
+  const hasUsedAllScans = scansRemaining === 0;
   const [isLoading, setIsLoading] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
 
@@ -133,9 +136,15 @@ export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
             Monthly subscription — {getPrice()}/month
           </Text>
 
-          <Text style={[styles.freeScansNote, { color: theme.colors.mutedForeground }]}>
-            You've used all 5 of your free scans
-          </Text>
+          {hasUsedAllScans ? (
+            <Text style={[styles.freeScansNote, { color: theme.colors.mutedForeground }]}>
+              You've used all 5 of your free scans
+            </Text>
+          ) : (
+            <Text style={[styles.freeScansNote, { color: theme.colors.mutedForeground }]}>
+              {scansRemaining} free scan{scansRemaining === 1 ? '' : 's'} remaining
+            </Text>
+          )}
 
           <View style={styles.features}>
             <View style={styles.featureRow}>
