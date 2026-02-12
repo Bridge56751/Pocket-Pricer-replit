@@ -190,7 +190,7 @@ export default function ScanScreen() {
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
-  }, [loadRecentScans, navigation]);
+  }, [loadRecentScans, navigation, isGuest, token, getGuestScansUsed, incrementGuestScans, refreshUser]);
 
   useEffect(() => {
     const photosToProcess = route.params?.photosToProcess;
@@ -206,7 +206,17 @@ export default function ScanScreen() {
     }, [loadRecentScans])
   );
 
-  const handleScanProduct = () => {
+  const handleScanProduct = async () => {
+    if (isGuest) {
+      const guestScansUsed = await getGuestScansUsed();
+      if (guestScansUsed >= 5) {
+        setShowUpgradeModal(true);
+        return;
+      }
+    } else if (user && user.searchesRemaining === 0 && user.subscriptionStatus !== "active") {
+      setShowUpgradeModal(true);
+      return;
+    }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     navigation.navigate("CameraScan");
   };
