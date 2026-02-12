@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { View, StyleSheet, Pressable, Text, Platform, ActivityIndicator, ScrollView } from "react-native";
+import { View, StyleSheet, Pressable, Text, Platform, ActivityIndicator, ScrollView, Linking } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -129,6 +129,8 @@ export default function CameraScanScreen() {
   }
 
   if (!permission.granted) {
+    const permanentlyDenied = permission.status === "denied" && !permission.canAskAgain;
+    
     return (
       <View style={[styles.container, styles.centered, { backgroundColor: theme.colors.background }]}>
         <Feather name="camera-off" size={64} color={theme.colors.mutedForeground} />
@@ -136,17 +138,37 @@ export default function CameraScanScreen() {
           Camera Access Required
         </Text>
         <Text style={[styles.permissionMessage, { color: theme.colors.mutedForeground }]}>
-          We need camera access to scan products and find listings
+          {permanentlyDenied
+            ? "Camera access was denied. Please enable it in your device Settings to scan products."
+            : "We need camera access to scan products and find listings"}
         </Text>
-        <Pressable
-          onPress={requestPermission}
-          style={({ pressed }) => [
-            styles.primaryButton,
-            { backgroundColor: theme.colors.primary, opacity: pressed ? 0.7 : 1 }
-          ]}
-        >
-          <Text style={styles.primaryButtonText}>Enable Camera</Text>
-        </Pressable>
+        {permanentlyDenied && Platform.OS !== "web" ? (
+          <Pressable
+            onPress={async () => {
+              try {
+                await Linking.openSettings();
+              } catch (error) {
+                console.log("Could not open settings:", error);
+              }
+            }}
+            style={({ pressed }) => [
+              styles.primaryButton,
+              { backgroundColor: theme.colors.primary, opacity: pressed ? 0.7 : 1 }
+            ]}
+          >
+            <Text style={styles.primaryButtonText}>Open Settings</Text>
+          </Pressable>
+        ) : (
+          <Pressable
+            onPress={requestPermission}
+            style={({ pressed }) => [
+              styles.primaryButton,
+              { backgroundColor: theme.colors.primary, opacity: pressed ? 0.7 : 1 }
+            ]}
+          >
+            <Text style={styles.primaryButtonText}>Enable Camera</Text>
+          </Pressable>
+        )}
         
         <Pressable
           onPress={handlePickImage}
