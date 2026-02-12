@@ -828,11 +828,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/scan-with-lens", async (req: Request, res: Response) => {
     try {
       const user = await getUserFromToken(req);
+      const deviceId = req.headers["x-device-id"] as string | undefined;
       
       // Check if free user has remaining scans
       if (user && user.subscription_status !== "active") {
         const { allowed, remaining } = await canUserSearch(user);
         if (!allowed) {
+          return res.status(403).json({
+            error: "Free scan limit reached",
+            limitReached: true,
+            searchesRemaining: 0,
+          });
+        }
+      }
+      
+      // Guest scan limit enforcement (no auth token)
+      if (!user && deviceId) {
+        const guestResult = await query(
+          "SELECT scan_count FROM guest_scans WHERE device_id = $1",
+          [deviceId]
+        );
+        const guestCount = guestResult.rows[0]?.scan_count || 0;
+        if (guestCount >= FREE_LIFETIME_SEARCHES) {
           return res.status(403).json({
             error: "Free scan limit reached",
             limitReached: true,
@@ -923,6 +940,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (user) {
         await incrementSearchCount(user.id);
+      } else if (deviceId) {
+        await query(
+          `INSERT INTO guest_scans (device_id, scan_count, last_scan_at) 
+           VALUES ($1, 1, CURRENT_TIMESTAMP)
+           ON CONFLICT (device_id) 
+           DO UPDATE SET scan_count = guest_scans.scan_count + 1, last_scan_at = CURRENT_TIMESTAMP`,
+          [deviceId]
+        );
       }
 
       res.json({

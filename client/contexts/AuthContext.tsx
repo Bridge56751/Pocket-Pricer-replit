@@ -43,6 +43,7 @@ interface AuthContextType {
   continueAsGuest: () => void;
   getGuestScansUsed: () => Promise<number>;
   incrementGuestScans: () => Promise<number>;
+  getDeviceId: () => Promise<string>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -381,6 +382,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         continueAsGuest,
         getGuestScansUsed,
         incrementGuestScans,
+        getDeviceId: getOrCreateDeviceId,
       }}
     >
       {children}

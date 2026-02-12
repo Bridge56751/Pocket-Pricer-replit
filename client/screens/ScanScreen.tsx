@@ -11,7 +11,7 @@ import Animated, { FadeInDown } from "react-native-reanimated";
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { SkeletonLoader } from "@/components/SkeletonLoader";
 import { getSearchHistory, addSearchHistory } from "@/lib/storage";
-import { apiRequest } from "@/lib/query-client";
+import { apiRequest, getApiUrl } from "@/lib/query-client";
 import { storeImage } from "@/lib/image-store";
 import { useAuth } from "@/contexts/AuthContext";
 import UpgradeModal from "@/components/UpgradeModal";
@@ -41,7 +41,7 @@ export default function ScanScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<ScanScreenRouteProp>();
 
-  const { user, token, refreshUser, isGuest, getGuestScansUsed, incrementGuestScans } = useAuth();
+  const { user, token, refreshUser, isGuest, getGuestScansUsed, incrementGuestScans, getDeviceId } = useAuth();
   
   const [recentScans, setRecentScans] = useState<SearchHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -99,9 +99,22 @@ export default function ScanScreen() {
       let usedLens = false;
 
       try {
-        const lensResponse = await apiRequest("POST", "/api/scan-with-lens", {
-          imageBase64: `data:image/jpeg;base64,${photos[0].base64}`,
-        }, token || undefined);
+        const deviceId = await getDeviceId();
+        const scanHeaders: Record<string, string> = {
+          "Content-Type": "application/json",
+          "X-Device-Id": deviceId,
+        };
+        if (token) {
+          scanHeaders["Authorization"] = `Bearer ${token}`;
+        }
+        const lensResponse = await fetch(
+          new URL("/api/scan-with-lens", getApiUrl()).toString(),
+          {
+            method: "POST",
+            headers: scanHeaders,
+            body: JSON.stringify({ imageBase64: `data:image/jpeg;base64,${photos[0].base64}` }),
+          }
+        );
         
         if (lensResponse.status === 403) {
           const lensData = await lensResponse.json();
@@ -190,7 +203,7 @@ export default function ScanScreen() {
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
-  }, [loadRecentScans, navigation, isGuest, token, getGuestScansUsed, incrementGuestScans, refreshUser]);
+  }, [loadRecentScans, navigation, isGuest, token, getGuestScansUsed, incrementGuestScans, refreshUser, getDeviceId]);
 
   useEffect(() => {
     const photosToProcess = route.params?.photosToProcess;
