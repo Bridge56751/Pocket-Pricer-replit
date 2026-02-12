@@ -163,12 +163,6 @@ export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
                 Unlimited searches
               </Text>
             </View>
-            <View style={styles.featureRow}>
-              <Feather name="check" size={20} color={theme.colors.primary} />
-              <Text style={[styles.featureText, { color: theme.colors.foreground }]}>
-                Full scan history
-              </Text>
-            </View>
           </View>
 
           {isGuest ? (
