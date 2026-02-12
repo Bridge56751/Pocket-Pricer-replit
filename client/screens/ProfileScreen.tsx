@@ -233,64 +233,64 @@ export default function ProfileScreen() {
               </View>
             </View>
 
-        {!isSubscribed ? (
-          <>
-            <Text style={[styles.upgradeHint, { color: theme.colors.mutedForeground }]}>
-              {user?.searchesRemaining === -1 
-                ? "Unlimited scans" 
-                : `${Math.max(0, user?.searchesRemaining || 0)} free scans remaining`}
-            </Text>
-            <Pressable
-              onPress={handleUpgrade}
-              style={({ pressed }) => [
-                styles.upgradeButton,
-                { backgroundColor: theme.colors.primary, opacity: pressed ? 0.7 : 1 }
-              ]}
-            >
-              <Feather name="zap" size={18} color="#fff" />
-              <Text style={styles.upgradeButtonText}>Upgrade to Pro</Text>
-            </Pressable>
-            
-            <Pressable
-              onPress={handleRestorePurchases}
-              disabled={isRestoring}
-              style={({ pressed }) => [
-                styles.restoreButton,
-                { opacity: pressed || isRestoring ? 0.7 : 1 }
-              ]}
-            >
-              {isRestoring ? (
-                <ActivityIndicator size="small" color={theme.colors.primary} />
-              ) : (
-                <Text style={[styles.restoreButtonText, { color: theme.colors.primary }]}>
-                  Restore Purchase
+            {!isSubscribed ? (
+              <>
+                <Text style={[styles.upgradeHint, { color: theme.colors.mutedForeground }]}>
+                  {user?.searchesRemaining === -1 
+                    ? "Unlimited scans" 
+                    : `${Math.max(0, user?.searchesRemaining || 0)} free scans remaining`}
                 </Text>
-              )}
-            </Pressable>
-            
-            <Text style={[styles.subscriptionDisclosure, { color: theme.colors.mutedForeground }]}>
-              Payment will be charged to your Apple ID account. Subscription automatically renews unless canceled at least 24 hours before the end of the current period. Manage or cancel in Settings → Apple ID → Subscriptions.
-            </Text>
-          </>
-        ) : (
-          <>
-            <Text style={[styles.upgradeHint, { color: theme.colors.mutedForeground }]}>
-              Unlimited product scans
-            </Text>
-            <Pressable
-              onPress={handleManageSubscription}
-              style={({ pressed }) => [
-                styles.manageButton,
-                { borderColor: theme.colors.border, opacity: pressed ? 0.7 : 1 }
-              ]}
-            >
-              <Feather name="settings" size={18} color={theme.colors.foreground} />
-              <Text style={[styles.manageButtonText, { color: theme.colors.foreground }]}>
-                Manage Subscription
-              </Text>
-            </Pressable>
-          </>
-        )}
+                <Pressable
+                  onPress={handleUpgrade}
+                  style={({ pressed }) => [
+                    styles.upgradeButton,
+                    { backgroundColor: theme.colors.primary, opacity: pressed ? 0.7 : 1 }
+                  ]}
+                >
+                  <Feather name="zap" size={18} color="#fff" />
+                  <Text style={styles.upgradeButtonText}>Upgrade to Pro</Text>
+                </Pressable>
+                
+                <Pressable
+                  onPress={handleRestorePurchases}
+                  disabled={isRestoring}
+                  style={({ pressed }) => [
+                    styles.restoreButton,
+                    { opacity: pressed || isRestoring ? 0.7 : 1 }
+                  ]}
+                >
+                  {isRestoring ? (
+                    <ActivityIndicator size="small" color={theme.colors.primary} />
+                  ) : (
+                    <Text style={[styles.restoreButtonText, { color: theme.colors.primary }]}>
+                      Restore Purchase
+                    </Text>
+                  )}
+                </Pressable>
+                
+                <Text style={[styles.subscriptionDisclosure, { color: theme.colors.mutedForeground }]}>
+                  Payment will be charged to your Apple ID account. Subscription automatically renews unless canceled at least 24 hours before the end of the current period. Manage or cancel in Settings → Apple ID → Subscriptions.
+                </Text>
+              </>
+            ) : (
+              <>
+                <Text style={[styles.upgradeHint, { color: theme.colors.mutedForeground }]}>
+                  Unlimited product scans
+                </Text>
+                <Pressable
+                  onPress={handleManageSubscription}
+                  style={({ pressed }) => [
+                    styles.manageButton,
+                    { borderColor: theme.colors.border, opacity: pressed ? 0.7 : 1 }
+                  ]}
+                >
+                  <Feather name="settings" size={18} color={theme.colors.foreground} />
+                  <Text style={[styles.manageButtonText, { color: theme.colors.foreground }]}>
+                    Manage Subscription
+                  </Text>
+                </Pressable>
+              </>
+            )}
           </>
         )}
       </View>
