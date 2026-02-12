@@ -1,0 +1,65 @@
+Guideline 5.1.1 - Legal - Privacy - Data Collection and Storage
+
+Issue Description
+
+One or more purpose strings in the app do not sufficiently explain the use of protected resources. Purpose strings must clearly and completely describe the app's use of data and, in most cases, provide an example of how the data will be used.
+
+Next Steps
+
+Update the photo library purpose string to explain how the app will use the requested information and provide a specific example of how the data will be used. See the attached screenshot.
+
+Resources
+
+Purpose strings must clearly describe how an app uses the ability, data, or resource. The following are hypothetical examples of unclear purpose strings that would not pass review: 
+
+- "App would like to access your Contacts"
+- "App needs microphone access"
+
+See examples of helpful, informative purpose strings.
+
+
+Guideline 5.1.1 - Legal - Privacy - Data Collection and Storage
+
+
+Issue Description
+
+The app requires users to register or log in to access features that are not account based.
+
+Specifically, the app requires users to register before accessing. Apps may not require users to enter personal information to function, except when directly relevant to the core functionality of the app or required by law. 
+
+Next Steps
+
+Revise the app to let users freely access the app's features that are not account based. The app may still require registration for other features that are account based.
+
+Resources 
+
+Learn more about requirements for apps with account-based content and features in guideline 5.1.1(v) - Account Sign-In.
+
+
+Guideline 2.3.3 - Performance - Accurate Metadata
+
+Issue Description
+
+The iPad Pro (2nd Gen) screenshots show an iPhone image that has been modified or stretched to appear to be an iPad image. Screenshots should highlight the app's core concept to help users understand the app’s functionality and value. 
+
+Next Steps
+
+Upload new screenshots that resolve the issues identified above and accurately reflect the app in use on each of the supported devices.
+
+Note some screenshots may only be viewed and updated by selecting "View All Sizes in Media Manager" in the Previews and Screenshots section of App Store Connect.
+d screenshots in App Store Connect.
+
+
+Guideline 1.5 - Safety
+
+Issue Description
+
+The Support URL provided in App Store Connect, https://pocket-pricer.com, does not direct to a website with information users can use to ask questions and request support.
+
+Next Steps
+
+Update the specified Support URL to direct users to a functional webpage with support information.
+
+Resources
+
+Learn about Support URLs and other platform version information on App Store Connect Help.
