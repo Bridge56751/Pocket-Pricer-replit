@@ -211,29 +211,27 @@ export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
             </Text>
           </Pressable>
 
-          {isGuest ? null : (
-            <>
-              <Text style={[styles.subscriptionDisclosure, { color: theme.colors.mutedForeground }]}>
-                Payment will be charged to your Apple ID account. Subscription automatically renews unless canceled at least 24 hours before the end of the current period. Manage or cancel in Settings → Apple ID → Subscriptions.
-              </Text>
+          {!isGuest ? (
+            <Text style={[styles.subscriptionDisclosure, { color: theme.colors.mutedForeground }]}>
+              Payment will be charged to your Apple ID account. Subscription automatically renews unless canceled at least 24 hours before the end of the current period. Manage or cancel in Settings → Apple ID → Subscriptions.
+            </Text>
+          ) : null}
 
-              <View style={styles.legalLinks}>
-                <Pressable onPress={() => Linking.openURL(PRIVACY_URL)}>
-                  <Text style={[styles.legalText, { color: theme.colors.mutedForeground }]}>
-                    Privacy Policy
-                  </Text>
-                </Pressable>
-                <Text style={[styles.legalSeparator, { color: theme.colors.mutedForeground }]}>
-                  {" | "}
-                </Text>
-                <Pressable onPress={() => Linking.openURL(TERMS_URL)}>
-                  <Text style={[styles.legalText, { color: theme.colors.mutedForeground }]}>
-                    Terms of Use
-                  </Text>
-                </Pressable>
-              </View>
-            </>
-          )}
+          <View style={styles.legalLinks}>
+            <Pressable onPress={() => Linking.openURL(PRIVACY_URL)}>
+              <Text style={[styles.legalText, { color: theme.colors.mutedForeground }]}>
+                Privacy Policy
+              </Text>
+            </Pressable>
+            <Text style={[styles.legalSeparator, { color: theme.colors.mutedForeground }]}>
+              {" | "}
+            </Text>
+            <Pressable onPress={() => Linking.openURL(TERMS_URL)}>
+              <Text style={[styles.legalText, { color: theme.colors.mutedForeground }]}>
+                Terms of Use
+              </Text>
+            </Pressable>
+          </View>
         </View>
       </View>
     </Modal>

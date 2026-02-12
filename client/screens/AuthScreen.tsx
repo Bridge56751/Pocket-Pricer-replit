@@ -497,7 +497,7 @@ export default function AuthScreen() {
               {resetCode.map((digit, index) => (
                 <TextInput
                   key={index}
-                  ref={(ref) => (resetCodeInputRefs.current[index] = ref)}
+                  ref={(ref) => { resetCodeInputRefs.current[index] = ref; }}
                   style={[
                     styles.codeInput,
                     {
