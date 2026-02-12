@@ -20,7 +20,7 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const { theme, themeMode, setThemeMode } = useDesignTokens();
-  const { user, token, logout, checkSubscription, refreshUser } = useAuth();
+  const { user, token, logout, checkSubscription, refreshUser, isGuest } = useAuth();
   const { isPro, restorePurchases } = useRevenueCat();
 
   const [isDeleting, setIsDeleting] = useState(false);
@@ -188,22 +188,50 @@ export default function ProfileScreen() {
           </Text>
         </View>
 
-        <View style={styles.accountInfo}>
-          <Text style={[styles.emailText, { color: theme.colors.foreground }]}>
-            {user?.email}
-          </Text>
-          <View style={[
-            styles.planBadge, 
-            { backgroundColor: isSubscribed ? theme.colors.primary : theme.colors.muted }
-          ]}>
-            <Text style={[
-              styles.planBadgeText, 
-              { color: isSubscribed ? "#fff" : theme.colors.foreground }
-            ]}>
-              {isSubscribed ? "Pro" : "Free"}
+        {isGuest ? (
+          <>
+            <View style={styles.accountInfo}>
+              <Text style={[styles.emailText, { color: theme.colors.mutedForeground }]}>
+                Guest
+              </Text>
+              <View style={[styles.planBadge, { backgroundColor: theme.colors.muted }]}>
+                <Text style={[styles.planBadgeText, { color: theme.colors.foreground }]}>
+                  Free
+                </Text>
+              </View>
+            </View>
+            <Text style={[styles.upgradeHint, { color: theme.colors.mutedForeground }]}>
+              Sign in to save your progress and unlock Pro features
             </Text>
-          </View>
-        </View>
+            <Pressable
+              onPress={logout}
+              style={({ pressed }) => [
+                styles.upgradeButton,
+                { backgroundColor: theme.colors.primary, opacity: pressed ? 0.7 : 1 }
+              ]}
+            >
+              <Feather name="log-in" size={18} color="#fff" />
+              <Text style={styles.upgradeButtonText}>Sign In or Create Account</Text>
+            </Pressable>
+          </>
+        ) : (
+          <>
+            <View style={styles.accountInfo}>
+              <Text style={[styles.emailText, { color: theme.colors.foreground }]}>
+                {user?.email}
+              </Text>
+              <View style={[
+                styles.planBadge, 
+                { backgroundColor: isSubscribed ? theme.colors.primary : theme.colors.muted }
+              ]}>
+                <Text style={[
+                  styles.planBadgeText, 
+                  { color: isSubscribed ? "#fff" : theme.colors.foreground }
+                ]}>
+                  {isSubscribed ? "Pro" : "Free"}
+                </Text>
+              </View>
+            </View>
 
         {!isSubscribed ? (
           <>
@@ -261,6 +289,8 @@ export default function ProfileScreen() {
                 Manage Subscription
               </Text>
             </Pressable>
+          </>
+        )}
           </>
         )}
       </View>
@@ -345,48 +375,52 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      <View style={[styles.section, styles.dangerSection, { backgroundColor: theme.colors.card }]}>
-        <View style={styles.sectionHeader}>
-          <Feather name="alert-triangle" size={20} color={theme.colors.danger} />
-          <Text style={[styles.sectionTitle, { color: theme.colors.foreground }]}>
-            Account
-          </Text>
-        </View>
+      {!isGuest ? (
+        <>
+          <View style={[styles.section, styles.dangerSection, { backgroundColor: theme.colors.card }]}>
+            <View style={styles.sectionHeader}>
+              <Feather name="alert-triangle" size={20} color={theme.colors.danger} />
+              <Text style={[styles.sectionTitle, { color: theme.colors.foreground }]}>
+                Account
+              </Text>
+            </View>
 
-        <Text style={[styles.warningText, { color: theme.colors.mutedForeground }]}>
-          Deleting your account will permanently remove all your scan history, favorites, and saved data.
-        </Text>
+            <Text style={[styles.warningText, { color: theme.colors.mutedForeground }]}>
+              Deleting your account will permanently remove all your scan history, favorites, and saved data.
+            </Text>
 
-        <Pressable
-          onPress={handleDeleteAccount}
-          disabled={isDeleting}
-          style={({ pressed }) => [
-            styles.deleteButton,
-            { 
-              backgroundColor: theme.colors.danger,
-              opacity: pressed || isDeleting ? 0.7 : 1 
-            }
-          ]}
-        >
-          <Feather name="trash-2" size={18} color="#fff" />
-          <Text style={styles.deleteButtonText}>
-            {isDeleting ? "Deleting..." : "Delete All Data"}
-          </Text>
-        </Pressable>
-      </View>
+            <Pressable
+              onPress={handleDeleteAccount}
+              disabled={isDeleting}
+              style={({ pressed }) => [
+                styles.deleteButton,
+                { 
+                  backgroundColor: theme.colors.danger,
+                  opacity: pressed || isDeleting ? 0.7 : 1 
+                }
+              ]}
+            >
+              <Feather name="trash-2" size={18} color="#fff" />
+              <Text style={styles.deleteButtonText}>
+                {isDeleting ? "Deleting..." : "Delete All Data"}
+              </Text>
+            </Pressable>
+          </View>
 
-      <Pressable
-        onPress={handleLogout}
-        style={({ pressed }) => [
-          styles.logoutButton,
-          { borderColor: theme.colors.border, opacity: pressed ? 0.7 : 1 }
-        ]}
-      >
-        <Feather name="log-out" size={18} color={theme.colors.mutedForeground} />
-        <Text style={[styles.logoutButtonText, { color: theme.colors.mutedForeground }]}>
-          Log Out
-        </Text>
-      </Pressable>
+          <Pressable
+            onPress={handleLogout}
+            style={({ pressed }) => [
+              styles.logoutButton,
+              { borderColor: theme.colors.border, opacity: pressed ? 0.7 : 1 }
+            ]}
+          >
+            <Feather name="log-out" size={18} color={theme.colors.mutedForeground} />
+            <Text style={[styles.logoutButtonText, { color: theme.colors.mutedForeground }]}>
+              Log Out
+            </Text>
+          </Pressable>
+        </>
+      ) : null}
       
       <UpgradeModal 
         visible={showUpgradeModal} 

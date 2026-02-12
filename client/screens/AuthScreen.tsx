@@ -25,7 +25,7 @@ WebBrowser.maybeCompleteAuthSession();
 export default function AuthScreen() {
   const { theme } = useDesignTokens();
   const insets = useSafeAreaInsets();
-  const { login, signup, socialLogin, verifyEmail } = useAuth();
+  const { login, signup, socialLogin, verifyEmail, continueAsGuest } = useAuth();
   
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
@@ -909,6 +909,15 @@ export default function AuthScreen() {
             </Text>
           </View>
 
+          <Pressable
+            style={styles.guestButton}
+            onPress={continueAsGuest}
+          >
+            <Text style={[styles.guestButtonText, { color: theme.colors.mutedForeground }]}>
+              Continue without an account
+            </Text>
+          </Pressable>
+
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -1125,5 +1134,15 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontStyle: "italic",
     marginTop: 8,
+  },
+  guestButton: {
+    alignItems: "center",
+    paddingVertical: 16,
+    marginTop: 8,
+  },
+  guestButtonText: {
+    fontSize: 15,
+    fontWeight: "500",
+    textDecorationLine: "underline",
   },
 });

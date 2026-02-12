@@ -17,7 +17,7 @@ const LEGAL_ACCEPTED_KEY = "@pocket_pricer_legal_accepted";
 
 export function AppContent() {
   const { isDarkMode, theme } = useDesignTokens();
-  const { isAuthenticated, isLoading, checkSubscription } = useAuth();
+  const { isAuthenticated, isGuest, isLoading, checkSubscription } = useAuth();
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
   const [legalAccepted, setLegalAccepted] = useState<boolean | null>(null);
   const [showLegalModal, setShowLegalModal] = useState(false);
@@ -98,7 +98,7 @@ export function AppContent() {
     );
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated && !isGuest) {
     if (showDeclinedMessage) {
       return (
         <View style={[styles.declinedContainer, { backgroundColor: theme.colors.background }]}>

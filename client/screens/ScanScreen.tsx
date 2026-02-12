@@ -41,7 +41,7 @@ export default function ScanScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<ScanScreenRouteProp>();
 
-  const { user, token, refreshUser } = useAuth();
+  const { user, token, refreshUser, isGuest, getGuestScansUsed, incrementGuestScans } = useAuth();
   
   const [recentScans, setRecentScans] = useState<SearchHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -74,7 +74,16 @@ export default function ScanScreen() {
       : "Identifying product...");
     
     try {
-      if (!token) {
+      if (isGuest) {
+        const guestScansUsed = await getGuestScansUsed();
+        if (guestScansUsed >= 5) {
+          setIsAnalyzing(false);
+          setAnalyzingProgress("");
+          processingRef.current = false;
+          setShowUpgradeModal(true);
+          return;
+        }
+      } else if (!token) {
         setIsAnalyzing(false);
         setAnalyzingProgress("");
         processingRef.current = false;
@@ -83,7 +92,6 @@ export default function ScanScreen() {
         return;
       }
 
-      // Try Google Lens first for exact product matching
       setAnalyzingProgress("Searching with visual matching...");
       
       let results: any = null;
@@ -93,7 +101,7 @@ export default function ScanScreen() {
       try {
         const lensResponse = await apiRequest("POST", "/api/scan-with-lens", {
           imageBase64: `data:image/jpeg;base64,${photos[0].base64}`,
-        }, token);
+        }, token || undefined);
         
         if (lensResponse.status === 403) {
           const lensData = await lensResponse.json();
@@ -120,7 +128,6 @@ export default function ScanScreen() {
         console.log("Lens search failed:", lensError);
       }
 
-      // If Lens didn't find results, show error
       if (!results || !results.listings?.length) {
         setIsAnalyzing(false);
         setAnalyzingProgress("");
@@ -130,7 +137,11 @@ export default function ScanScreen() {
         return;
       }
       
-      await refreshUser();
+      if (isGuest) {
+        await incrementGuestScans();
+      } else {
+        await refreshUser();
+      }
 
       const scannedImageId = storeImage(`data:image/jpeg;base64,${photos[0].base64}`);
       const enrichedResults = {

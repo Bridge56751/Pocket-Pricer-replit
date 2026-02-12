@@ -32,6 +32,7 @@ interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  isGuest: boolean;
   login: (email: string, password: string) => Promise<AuthResult>;
   signup: (email: string, password: string) => Promise<AuthResult>;
   verifyEmail: (email: string, code: string) => Promise<AuthResult>;
@@ -39,12 +40,17 @@ interface AuthContextType {
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   checkSubscription: () => Promise<void>;
+  continueAsGuest: () => void;
+  getGuestScansUsed: () => Promise<number>;
+  incrementGuestScans: () => Promise<number>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const AUTH_TOKEN_KEY = "@pocket_pricer_auth_token";
 const DEVICE_ID_KEY = "@pocket_pricer_device_id";
+const GUEST_MODE_KEY = "@pocket_pricer_guest_mode";
+const GUEST_SCANS_KEY = "@pocket_pricer_guest_scans";
 
 const getDeviceName = (): string => {
   if (Platform.OS === "web") {
@@ -72,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isGuest, setIsGuest] = useState(false);
 
   useEffect(() => {
     loadStoredAuth();
@@ -83,6 +90,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (storedToken) {
         setToken(storedToken);
         await fetchUser(storedToken);
+      } else {
+        const guestMode = await AsyncStorage.getItem(GUEST_MODE_KEY);
+        if (guestMode === "true") {
+          setIsGuest(true);
+        }
       }
     } catch (error) {
       console.error("Failed to load auth:", error);
@@ -280,13 +292,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     
     await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
+    await AsyncStorage.removeItem(GUEST_MODE_KEY);
     setToken(null);
     setUser(null);
+    setIsGuest(false);
   };
 
   const refreshUser = async () => {
     if (token) {
       await fetchUser(token);
+    }
+  };
+
+  const continueAsGuest = async () => {
+    await AsyncStorage.setItem(GUEST_MODE_KEY, "true");
+    setIsGuest(true);
+  };
+
+  const getGuestScansUsed = async (): Promise<number> => {
+    try {
+      const scans = await AsyncStorage.getItem(GUEST_SCANS_KEY);
+      return scans ? parseInt(scans, 10) : 0;
+    } catch {
+      return 0;
+    }
+  };
+
+  const incrementGuestScans = async (): Promise<number> => {
+    try {
+      const current = await getGuestScansUsed();
+      const newCount = current + 1;
+      await AsyncStorage.setItem(GUEST_SCANS_KEY, newCount.toString());
+      return newCount;
+    } catch {
+      return 0;
     }
   };
 
@@ -331,6 +370,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         token,
         isLoading,
         isAuthenticated: !!user,
+        isGuest,
         login,
         signup,
         verifyEmail,
@@ -338,6 +378,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout,
         refreshUser,
         checkSubscription,
+        continueAsGuest,
+        getGuestScansUsed,
+        incrementGuestScans,
       }}
     >
       {children}
