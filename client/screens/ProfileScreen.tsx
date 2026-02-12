@@ -368,6 +368,22 @@ export default function ProfileScreen() {
           <Feather name="chevron-right" size={20} color={theme.colors.mutedForeground} />
         </Pressable>
 
+        <Pressable 
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            Linking.openURL("mailto:pricerpocket@gmail.com");
+          }}
+          style={({ pressed }) => [
+            styles.menuItem, 
+            { borderBottomColor: theme.colors.border, opacity: pressed ? 0.7 : 1 }
+          ]}
+        >
+          <Text style={[styles.menuItemText, { color: theme.colors.foreground }]}>
+            Contact Support
+          </Text>
+          <Feather name="chevron-right" size={20} color={theme.colors.mutedForeground} />
+        </Pressable>
+
         <View style={styles.versionContainer}>
           <Text style={[styles.versionText, { color: theme.colors.mutedForeground }]}>
             Version 1.0.0
