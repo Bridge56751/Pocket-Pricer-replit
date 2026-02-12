@@ -43,7 +43,13 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow Pocket Pricer to access your camera to scan and identify products."
+          "cameraPermission": "Pocket Pricer uses your camera to take photos of products so it can identify them and show you current prices across stores like Amazon, Walmart, and Target. For example, you can photograph a pair of shoes to instantly see what they sell for online."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Pocket Pricer accesses your photo library so you can select product images to scan. For example, you can choose a saved photo of an item to look up its current market value across multiple stores."
         }
       ]
     ],
