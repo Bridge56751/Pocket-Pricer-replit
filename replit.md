@@ -12,27 +12,26 @@ This app allows resellers to:
 - Save favorite products for later
 - Track search and scan history
 
+**No account required** - the app works immediately without registration. Subscriptions are tied to Apple ID / Google Play account via RevenueCat.
+
 ## Tech Stack
 
 - **Frontend**: Expo React Native with TypeScript
 - **Backend**: Express.js with TypeScript
-- **Database**: PostgreSQL (Neon-backed via Replit)
-- **Authentication**: JWT tokens with bcrypt password hashing
+- **Database**: PostgreSQL (Neon-backed via Replit) - used only for guest scan tracking
 - **Payments**: RevenueCat for iOS/Android in-app purchases ($8.99/month Pro subscription)
 - **Product Identification**: Google Lens (via SerpAPI) for visual product matching
 - **Product Data**: SerpAPI (Google Lens + Google Shopping for multi-platform results)
 - **State Management**: TanStack React Query
-- **Local Storage**: AsyncStorage for history, favorites, and auth tokens
+- **Local Storage**: AsyncStorage for history, favorites, scan counts, and device ID
 - **Navigation**: React Navigation (bottom tabs + native stack)
 - **Styling**: Custom design tokens system with dark theme
 
 ## Environment Variables
 
 - `SERPAPI_API_KEY` - Required for Google Lens + Shopping search (get from https://serpapi.com)
-- `SESSION_SECRET` - Used for JWT token signing
 - `REVENUECAT_API_KEY` - RevenueCat public API key for in-app purchases
 - `EXPO_PUBLIC_REVENUECAT_API_KEY` - Same key, exposed to frontend
-- `RESEND_API_KEY` - For email verification (DO NOT REMOVE)
 
 ## Project Structure
 
@@ -48,7 +47,8 @@ client/
 │   ├── ProfitBreakdown.tsx
 │   ├── ProductCard.tsx
 │   ├── SearchBar.tsx
-│   └── SkeletonLoader.tsx
+│   ├── SkeletonLoader.tsx
+│   └── UpgradeModal.tsx       # Pro subscription upgrade modal
 ├── constants/
 │   ├── design-tokens.ts       # Design system (colors, spacing, components)
 │   └── theme.ts               # Legacy theme (kept for compatibility)
@@ -58,33 +58,30 @@ client/
 │   └── useScreenOptions.ts    # Navigation screen options
 ├── lib/
 │   ├── query-client.ts        # React Query + API utilities
-│   └── storage.ts             # AsyncStorage helpers
+│   └── storage.ts             # AsyncStorage helpers (local-only)
 ├── navigation/
 │   ├── RootStackNavigator.tsx # Main navigation
 │   ├── MainTabNavigator.tsx   # Bottom tab bar
 │   └── *StackNavigator.tsx    # Individual tab stacks
 ├── screens/
-│   ├── AuthScreen.tsx         # Login/signup authentication
 │   ├── OnboardingScreen.tsx   # First-launch tutorial (4 slides)
 │   ├── ScanScreen.tsx         # Product search (home)
 │   ├── CameraScanScreen.tsx   # AI camera scanning
-│   ├── HistoryScreen.tsx      # Search history
-│   ├── FavoritesScreen.tsx    # Saved products
-│   ├── ProfileScreen.tsx      # User settings & subscription
+│   ├── HistoryScreen.tsx      # Search history (local)
+│   ├── FavoritesScreen.tsx    # Saved products (local)
+│   ├── ProfileScreen.tsx      # Settings & subscription
 │   └── ProductDetailScreen.tsx # Product profit breakdown
 ├── contexts/
-│   ├── AuthContext.tsx        # Authentication state management
+│   ├── AuthContext.tsx        # Device ID and scan count management (no accounts)
 │   └── RevenueCatContext.tsx  # In-app purchase management
-├── components/
-│   └── UpgradeModal.tsx       # Pro subscription upgrade modal
 └── types/
     └── product.ts             # TypeScript types
 
 server/
 ├── index.ts                   # Express server setup
-├── routes.ts                  # API endpoints
-├── stripeClient.ts            # Stripe integration
-└── seed-products.ts           # Create Stripe products
+├── routes.ts                  # API endpoints (scan-with-lens only)
+├── db.ts                      # PostgreSQL connection
+└── templates/                 # Landing page
 ```
 
 ## Design System
@@ -120,39 +117,14 @@ function MyComponent() {
 
 ## API Endpoints
 
-### Authentication
-- `POST /api/auth/signup` - Create new account
-  - Body: `{ email: string, password: string }`
-  - Returns: `{ token: string, user: { id, email, subscriptionStatus, searchesRemaining } }`
-
-- `POST /api/auth/login` - Login existing account
-  - Body: `{ email: string, password: string }`
-  - Returns: Same as signup
-
-- `GET /api/auth/user` - Get current user info (requires Bearer token)
-  - Returns: User object with subscription status
-
-### Product Search
-- `POST /api/search` - Search for a product on eBay via SerpAPI
-  - Body: `{ query: string }`
-  - Headers: `Authorization: Bearer <token>` (optional but tracks usage)
-  - Returns: Top matching product with real eBay pricing and profit estimates
-
-- `POST /api/search/all` - Get all matching listings
-  - Body: `{ query: string, page?: number }`
-  - Returns: `{ products: Product[], total: number }`
-
-- `GET /api/trending` - Get trending products
-
-### Payments (RevenueCat)
-- `POST /api/subscription/sync` - Sync subscription status from RevenueCat
-  - Headers: `Authorization: Bearer <token>`
-  - Body: `{ isPro: boolean, revenuecatUserId: string }`
-  - Called automatically after in-app purchase on iOS/Android
-
-- Stripe endpoints kept for legacy/web support:
-  - `POST /api/create-checkout-session` - Web checkout fallback
-  - `POST /api/stripe-webhook` - Handle Stripe webhook events
+### Product Scan
+- `POST /api/scan-with-lens` - Scan a product image using Google Lens
+  - Body: `{ imageBase64: string }` (base64 encoded image)
+  - Headers:
+    - `X-Device-Id: <device-uuid>` - Unique device identifier
+    - `X-Is-Pro: "true"|"false"` - Whether user has Pro subscription
+  - Returns: Product identification with multi-platform pricing data
+  - Free users limited to 5 lifetime scans (tracked by device ID in guest_scans table)
 
 ## Running the App
 
@@ -164,65 +136,47 @@ Users can test on physical devices using Expo Go by scanning the QR code.
 
 ## Features
 
-1. **Real eBay Search**: Search any product to see current active listings
-2. **AI Camera Scanning**: Take photos of products for AI-powered identification
+1. **AI Camera Scanning**: Take photos of products for AI-powered identification via Google Lens
+2. **Multi-Platform Pricing**: See prices from Amazon, Walmart, Target, eBay, and more
 3. **Profit Calculator**: Enter your cost to see net profit breakdown
-4. **eBay Fee Estimation**: Automatically calculates ~13% eBay fees
-5. **Search History**: Track all previous searches
-6. **Favorites**: Save profitable products for later
+4. **Fee Estimation**: Automatically calculates ~13% estimated selling fees
+5. **Search History**: Track all previous searches (stored locally)
+6. **Favorites**: Save profitable products for later (stored locally)
 7. **Custom Settings**: Set default costs and target profit margins
-8. **User Authentication**: Secure signup/login with JWT, Google Sign-In, and Apple Sign-In
-9. **Subscription Tiers**: Free (5 lifetime scans) or Pro ($8.99/mo unlimited)
+8. **Subscription Tiers**: Free (5 lifetime scans) or Pro ($8.99/mo unlimited)
 
 ## Subscription Model
 
-- **Free Tier**: 5 lifetime product scans
+- **Free Tier**: 5 lifetime product scans (tracked per device)
 - **Pro Tier**: $8.99/month for unlimited scans
 - Users see an upgrade modal when they hit the free limit
-- RevenueCat handles iOS/Android in-app purchases (prevents duplicate payments via Apple ID tracking)
+- RevenueCat handles iOS/Android in-app purchases (tied to Apple ID / Google Play account)
+- **No account required** - subscriptions managed entirely through app store accounts
 
 ## Database Schema
 
 ```sql
-CREATE TABLE users (
-  id VARCHAR(50) PRIMARY KEY,
-  email VARCHAR(255) UNIQUE NOT NULL,
-  password_hash TEXT NOT NULL,
-  google_id VARCHAR(255),
-  apple_id VARCHAR(255),
-  stripe_customer_id VARCHAR(100),
-  stripe_subscription_id VARCHAR(100),
-  revenuecat_user_id VARCHAR(255),
-  subscription_status VARCHAR(20) DEFAULT 'free',
-  total_searches INTEGER DEFAULT 0,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE guest_scans (
+  device_id VARCHAR(255) PRIMARY KEY,
+  scan_count INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
 ## Recent Changes
 
+- **Feb 2026**: Removed entire authentication system for Apple App Store compliance
+  - Removed user accounts, signup/login, email verification, JWT tokens
+  - Removed Resend email integration
+  - App now works without any account creation (Apple guideline 5.1.1 compliance)
+  - Subscriptions tied directly to Apple ID / Google Play account via RevenueCat
+  - Scan limits tracked per device ID (AsyncStorage + guest_scans database table)
+  - Replaced users table with guest_scans table
+  - Simplified server to single scan endpoint
 - **Feb 2026**: Removed Stripe integration (fully on RevenueCat now)
-  - Deleted all Stripe endpoints, webhook handlers, and client code
-  - Removed unused Google Cloud Vision API key
 - **Feb 2026**: Added Google Lens visual matching for exact product identification
-  - Uses SerpAPI Google Lens engine for image-based product search
-  - Much more accurate product matching (finds exact products, not similar ones)
 - **Feb 2026**: Multi-platform search (Amazon, Walmart, Target, eBay, Mercari, Poshmark)
-  - Switched from eBay-only to Google Shopping for multi-platform results
-  - Dynamic platform badges show which marketplace each listing is from
-  - Updated UI to remove eBay-specific language
 - **Jan 2026**: Switched from Stripe to RevenueCat for iOS in-app purchases
-  - RevenueCat handles Apple/Google payment processing
-  - Prevents duplicate payments via Apple ID tracking
-  - User subscription status syncs with backend
-  - Restore purchases functionality added
-- **Jan 2026**: Added authentication and subscription system
-  - JWT-based signup/login with email/password
-  - Email verification with 6-digit codes via Resend
-  - Google Sign-In (native apps)
-  - Apple Sign-In (iOS)
-  - Free tier with 5 lifetime scans limit
-  - Upgrade modal when limit reached
-  - Profile screen with subscription status and logout
 - Integrated SerpAPI for multi-platform product data
 - Added design tokens system for consistent theming
