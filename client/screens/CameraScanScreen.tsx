@@ -13,7 +13,7 @@ import { useDesignTokens } from "@/hooks/useDesignTokens";
 import type { RootStackParamList, CapturedPhoto } from "@/navigation/RootStackNavigator";
 
 const MAX_IMAGE_SIZE = 750;
-const IMAGE_QUALITY = 0.5;
+const IMAGE_QUALITY = 0.6;
 const MAX_PHOTOS = 5;
 
 const resizeImage = async (uri: string): Promise<{ uri: string; base64: string } | null> => {
