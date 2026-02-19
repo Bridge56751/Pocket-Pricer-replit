@@ -13,6 +13,7 @@ import { useRevenueCat } from "@/contexts/RevenueCatContext";
 import UpgradeModal from "@/components/UpgradeModal";
 import { resetOnboarding } from "@/screens/OnboardingScreen";
 import { triggerOnboardingReplay } from "@/components/AppContent";
+import { clearSearchHistory, clearFavorites } from "@/lib/storage";
 
 type ThemeOption = "light" | "dark" | "system";
 
@@ -26,6 +27,8 @@ export default function ProfileScreen() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [scansUsed, setScansUsed] = useState(0);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     getScansUsed().then(setScansUsed);
@@ -96,6 +99,20 @@ export default function ProfileScreen() {
       await WebBrowser.openBrowserAsync(termsUrl);
     } catch (error) {
       console.error("Failed to open terms of service:", error);
+    }
+  };
+
+  const handleDeleteLocalData = async () => {
+    setIsDeleting(true);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    try {
+      await clearSearchHistory();
+      await clearFavorites();
+      setShowDeleteConfirm(false);
+    } catch (error) {
+      console.error("Failed to delete local data:", error);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -232,6 +249,72 @@ export default function ProfileScreen() {
             </Pressable>
           ))}
         </View>
+      </View>
+
+      <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
+        <View style={styles.sectionHeader}>
+          <Feather name="database" size={20} color={theme.colors.primary} />
+          <Text style={[styles.sectionTitle, { color: theme.colors.foreground }]}>
+            Data Management
+          </Text>
+        </View>
+
+        <Text style={[styles.dataDescription, { color: theme.colors.mutedForeground }]}>
+          Your scan history and saved favorites are stored locally on this device.
+        </Text>
+
+        {showDeleteConfirm ? (
+          <View style={[styles.deleteConfirmBox, { backgroundColor: theme.colors.danger + '10', borderColor: theme.colors.danger + '30' }]}>
+            <Feather name="alert-triangle" size={20} color={theme.colors.danger} />
+            <Text style={[styles.deleteConfirmText, { color: theme.colors.foreground }]}>
+              This will permanently delete your scan history and saved favorites. Your scan count and subscription will not be affected.
+            </Text>
+            <View style={styles.deleteConfirmButtons}>
+              <Pressable
+                onPress={() => setShowDeleteConfirm(false)}
+                disabled={isDeleting}
+                style={({ pressed }) => [
+                  styles.deleteConfirmCancel,
+                  { backgroundColor: theme.colors.muted, opacity: pressed ? 0.7 : 1 }
+                ]}
+              >
+                <Text style={[styles.deleteConfirmCancelText, { color: theme.colors.foreground }]}>
+                  Cancel
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={handleDeleteLocalData}
+                disabled={isDeleting}
+                style={({ pressed }) => [
+                  styles.deleteConfirmAction,
+                  { backgroundColor: theme.colors.danger, opacity: pressed || isDeleting ? 0.7 : 1 }
+                ]}
+              >
+                {isDeleting ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.deleteConfirmActionText}>Delete Data</Text>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        ) : (
+          <Pressable
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              setShowDeleteConfirm(true);
+            }}
+            style={({ pressed }) => [
+              styles.deleteDataButton,
+              { borderColor: theme.colors.danger, opacity: pressed ? 0.7 : 1 }
+            ]}
+          >
+            <Feather name="trash-2" size={18} color={theme.colors.danger} />
+            <Text style={[styles.deleteDataButtonText, { color: theme.colors.danger }]}>
+              Delete Local Data
+            </Text>
+          </Pressable>
+        )}
       </View>
 
       <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
@@ -444,5 +527,61 @@ const styles = StyleSheet.create({
   manageButtonText: {
     fontSize: 15,
     fontWeight: "500",
+  },
+  dataDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  deleteDataButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 8,
+  },
+  deleteDataButtonText: {
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  deleteConfirmBox: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 16,
+    gap: 12,
+  },
+  deleteConfirmText: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  deleteConfirmButtons: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 4,
+  },
+  deleteConfirmCancel: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    borderRadius: 10,
+  },
+  deleteConfirmCancelText: {
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  deleteConfirmAction: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    borderRadius: 10,
+  },
+  deleteConfirmActionText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "600",
   },
 });
