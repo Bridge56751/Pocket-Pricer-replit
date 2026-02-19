@@ -112,7 +112,15 @@ export default function SearchResultsScreen() {
     try {
       const productName = typeof results.productInfo === 'object' ? results.productInfo?.name : null;
       const queryStr = typeof results.query === 'string' ? results.query : 'product';
-      const searchQuery = productName || queryStr;
+      const topListingTitles = (results.listings || [])
+        .slice(0, 3)
+        .map((l: ListingItem) => l.title)
+        .filter(Boolean);
+      const searchQuery = productName && productName !== "Scanned Product"
+        ? productName
+        : topListingTitles.length > 0
+          ? topListingTitles[0]
+          : queryStr;
 
       const response = await fetch(
         new URL("/api/deep-search", getApiUrl()).toString(),

@@ -221,7 +221,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post("/api/deep-search", async (req: Request, res: Response) => {
     try {
-      const { query: searchQuery } = req.body;
+      const { query: searchQuery, existingTitles } = req.body;
 
       if (!searchQuery) {
         return res.status(400).json({ error: "Query is required" });
@@ -246,8 +246,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const shoppingResults = (response as any).shopping_results || [];
 
+      const queryWords = searchQuery.toLowerCase().split(/\s+/).filter((w: string) => w.length > 2);
+
       const listings = shoppingResults
         .filter((item: any) => isReliableSource(item.source || ''))
+        .filter((item: any) => {
+          const title = (item.title || '').toLowerCase();
+          const matchCount = queryWords.filter((w: string) => title.includes(w)).length;
+          return matchCount >= Math.max(1, Math.floor(queryWords.length * 0.3));
+        })
         .map((item: any, index: number) => ({
           id: `shopping-${index}`,
           title: item.title || "Unknown Product",
