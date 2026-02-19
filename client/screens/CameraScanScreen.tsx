@@ -64,11 +64,11 @@ export default function CameraScanScreen() {
       if (!result.canceled && result.assets?.[0]?.uri) {
         const resized = await resizeImage(result.assets[0].uri);
         if (resized) {
-          setCapturedPhotos(prev => [...prev, resized].slice(0, MAX_PHOTOS));
+          navigation.navigate("Home", { photosToProcess: [resized] });
+          return;
         }
-      } else if (capturedPhotos.length === 0) {
-        navigation.goBack();
       }
+      navigation.goBack();
     } catch (error) {
       console.error("Camera launch error:", error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
