@@ -103,6 +103,17 @@ function calculateMedian(prices: number[]): number {
   return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
 
+const blockedSources = [
+  'alibaba', 'aliexpress', 'temu', 'wish', 'dhgate', 'banggood',
+  'tiktok', 'shein', 'made-in-china', 'lightinthebox', 'gearbest',
+  'tomtop', 'miniinthebox', 'sammydress', 'rosegal', 'zaful'
+];
+
+const isReliableSource = (source: string) => {
+  const lowerSource = (source || '').toLowerCase();
+  return !blockedSources.some(blocked => lowerSource.includes(blocked));
+};
+
 export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/scan-with-lens", async (req: Request, res: Response) => {
     try {
@@ -146,17 +157,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           fallbackToText: true 
         });
       }
-
-      const blockedSources = [
-        'alibaba', 'aliexpress', 'temu', 'wish', 'dhgate', 'banggood',
-        'tiktok', 'shein', 'made-in-china', 'lightinthebox', 'gearbest',
-        'tomtop', 'miniinthebox', 'sammydress', 'rosegal', 'zaful'
-      ];
-      
-      const isReliableSource = (source: string) => {
-        const lowerSource = (source || '').toLowerCase();
-        return !blockedSources.some(blocked => lowerSource.includes(blocked));
-      };
 
       const allProducts = lensResult.products.slice(0, 60);
       const productsWithPrices = allProducts.filter(p => 
@@ -219,6 +219,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  app.post("/api/deep-search", async (req: Request, res: Response) => {
+    try {
+      const { query: searchQuery } = req.body;
+
+      if (!searchQuery) {
+        return res.status(400).json({ error: "Query is required" });
+      }
+
+      const apiKey = process.env.SERPAPI_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ error: "SerpAPI key not configured" });
+      }
+
+      console.log(`Deep search for: ${searchQuery}`);
+
+      const response = await getJson({
+        engine: "google_shopping",
+        q: searchQuery,
+        hl: "en",
+        gl: "us",
+        num: 40,
+        no_cache: true,
+        api_key: apiKey,
+      });
+
+      const shoppingResults = (response as any).shopping_results || [];
+
+      const listings = shoppingResults
+        .filter((item: any) => isReliableSource(item.source || ''))
+        .map((item: any, index: number) => ({
+          id: `shopping-${index}`,
+          title: item.title || "Unknown Product",
+          imageUrl: item.thumbnail || "",
+          currentPrice: item.extracted_price || item.price ? parseFloat(String(item.price).replace(/[^0-9.]/g, '')) : 0,
+          condition: item.second_hand_condition || "New",
+          shipping: 0,
+          link: item.link || "",
+          seller: item.source || "",
+          platform: item.source || "Shop",
+          rating: item.rating,
+          reviews: item.reviews,
+        }))
+        .filter((item: any) => item.currentPrice > 0);
+
+      const prices = listings.map((item: any) => item.currentPrice);
+      const avgListPrice = calculateMedian(prices);
+      const bestBuyNow = prices.length > 0 ? Math.min(...prices) : 0;
+
+      console.log(`Deep search found ${listings.length} listings`);
+
+      res.json({
+        query: searchQuery,
+        totalListings: listings.length,
+        avgListPrice,
+        avgSalePrice: null,
+        soldCount: 0,
+        bestBuyNow,
+        topSalePrice: null,
+        listings,
+        usedLens: false,
+      });
+    } catch (error) {
+      console.error("Deep search error:", error);
+      res.status(500).json({ error: "Failed to perform deep search" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
