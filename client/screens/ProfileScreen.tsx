@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, StyleSheet, Pressable, Text, Alert, Platform, ActivityIndicator, Linking } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -8,10 +8,8 @@ import * as WebBrowser from "expo-web-browser";
 import { ScrollView } from "react-native";
 
 import { useDesignTokens } from "@/hooks/useDesignTokens";
-import { clearSearchHistory, clearFavorites } from "@/lib/storage";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRevenueCat } from "@/contexts/RevenueCatContext";
-import { getApiUrl } from "@/lib/query-client";
 import UpgradeModal from "@/components/UpgradeModal";
 
 type ThemeOption = "light" | "dark" | "system";
@@ -20,12 +18,16 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const { theme, themeMode, setThemeMode } = useDesignTokens();
-  const { user, token, logout, checkSubscription, refreshUser, isGuest } = useAuth();
+  const { getScansUsed } = useAuth();
   const { isPro, restorePurchases } = useRevenueCat();
 
-  const [isDeleting, setIsDeleting] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
+  const [scansUsed, setScansUsed] = useState(0);
+
+  useEffect(() => {
+    getScansUsed().then(setScansUsed);
+  }, []);
 
   const handleUpgrade = () => {
     setShowUpgradeModal(true);
@@ -59,8 +61,6 @@ export default function ProfileScreen() {
       const result = await restorePurchases();
 
       if (result.success) {
-        await checkSubscription();
-        await refreshUser();
         Alert.alert("Restored", "Your Pro subscription has been restored!");
       } else {
         Alert.alert("No Subscription Found", result.error || "No active subscription found for this Apple ID.");
@@ -69,21 +69,6 @@ export default function ProfileScreen() {
       Alert.alert("Error", error?.message || "Failed to restore purchases.");
     } finally {
       setIsRestoring(false);
-    }
-  };
-
-  const handleLogout = () => {
-    if (Platform.OS === "web") {
-      logout();
-    } else {
-      Alert.alert(
-        "Log Out",
-        "Are you sure you want to log out?",
-        [
-          { text: "Cancel", style: "cancel" },
-          { text: "Log Out", onPress: logout },
-        ]
-      );
     }
   };
 
@@ -112,62 +97,13 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleDeleteAccount = () => {
-    if (Platform.OS === "web") {
-      if (confirm("Are you sure you want to delete all your data? This action cannot be undone.")) {
-        performDeleteAccount();
-      }
-    } else {
-      Alert.alert(
-        "Delete Account Data",
-        "Are you sure you want to delete all your data? This action cannot be undone.",
-        [
-          { text: "Cancel", style: "cancel" },
-          { text: "Delete", style: "destructive", onPress: performDeleteAccount },
-        ]
-      );
-    }
-  };
-
-  const performDeleteAccount = async () => {
-    setIsDeleting(true);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    try {
-      await clearSearchHistory();
-      await clearFavorites();
-      
-      const response = await fetch(new URL("/api/auth/account", getApiUrl()).toString(), {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error("Failed to delete account");
-      }
-      
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      await logout();
-    } catch (error) {
-      console.error("Failed to delete account:", error);
-      if (Platform.OS === "web") {
-        alert("Failed to delete account. Please try again.");
-      } else {
-        Alert.alert("Error", "Failed to delete account. Please try again.");
-      }
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
   const themeOptions: { value: ThemeOption; label: string; icon: string }[] = [
     { value: "light", label: "Light", icon: "sun" },
     { value: "dark", label: "Dark", icon: "moon" },
     { value: "system", label: "System", icon: "smartphone" },
   ];
 
-  const isSubscribed = user?.subscriptionStatus === "active" || isPro;
+  const freeScansRemaining = Math.max(0, 5 - scansUsed);
 
   return (
     <ScrollView
@@ -182,115 +118,77 @@ export default function ProfileScreen() {
     >
       <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
         <View style={styles.sectionHeader}>
-          <Feather name="user" size={20} color={theme.colors.primary} />
+          <Feather name="zap" size={20} color={theme.colors.primary} />
           <Text style={[styles.sectionTitle, { color: theme.colors.foreground }]}>
-            Account
+            Subscription
           </Text>
+          <View style={[
+            styles.planBadge,
+            { backgroundColor: isPro ? theme.colors.primary : theme.colors.muted }
+          ]}>
+            <Text style={[
+              styles.planBadgeText,
+              { color: isPro ? "#fff" : theme.colors.foreground }
+            ]}>
+              {isPro ? "Pro" : "Free"}
+            </Text>
+          </View>
         </View>
 
-        {isGuest ? (
+        {isPro ? (
           <>
-            <View style={styles.accountInfo}>
-              <Text style={[styles.emailText, { color: theme.colors.mutedForeground }]}>
-                Guest
-              </Text>
-              <View style={[styles.planBadge, { backgroundColor: theme.colors.muted }]}>
-                <Text style={[styles.planBadgeText, { color: theme.colors.foreground }]}>
-                  Free
-                </Text>
-              </View>
-            </View>
             <Text style={[styles.upgradeHint, { color: theme.colors.mutedForeground }]}>
-              Sign in to save your progress and unlock Pro features
+              Unlimited product scans
             </Text>
             <Pressable
-              onPress={logout}
+              onPress={handleManageSubscription}
+              style={({ pressed }) => [
+                styles.manageButton,
+                { borderColor: theme.colors.border, opacity: pressed ? 0.7 : 1 }
+              ]}
+            >
+              <Feather name="settings" size={18} color={theme.colors.foreground} />
+              <Text style={[styles.manageButtonText, { color: theme.colors.foreground }]}>
+                Manage Subscription
+              </Text>
+            </Pressable>
+          </>
+        ) : (
+          <>
+            <Text style={[styles.upgradeHint, { color: theme.colors.mutedForeground }]}>
+              {freeScansRemaining} free {freeScansRemaining === 1 ? "scan" : "scans"} remaining
+            </Text>
+            <Pressable
+              onPress={handleUpgrade}
               style={({ pressed }) => [
                 styles.upgradeButton,
                 { backgroundColor: theme.colors.primary, opacity: pressed ? 0.7 : 1 }
               ]}
             >
-              <Feather name="log-in" size={18} color="#fff" />
-              <Text style={styles.upgradeButtonText}>Sign In or Create Account</Text>
+              <Feather name="zap" size={18} color="#fff" />
+              <Text style={styles.upgradeButtonText}>Upgrade to Pro</Text>
             </Pressable>
-          </>
-        ) : (
-          <>
-            <View style={styles.accountInfo}>
-              <Text style={[styles.emailText, { color: theme.colors.foreground }]}>
-                {user?.email}
-              </Text>
-              <View style={[
-                styles.planBadge, 
-                { backgroundColor: isSubscribed ? theme.colors.primary : theme.colors.muted }
-              ]}>
-                <Text style={[
-                  styles.planBadgeText, 
-                  { color: isSubscribed ? "#fff" : theme.colors.foreground }
-                ]}>
-                  {isSubscribed ? "Pro" : "Free"}
+            
+            <Pressable
+              onPress={handleRestorePurchases}
+              disabled={isRestoring}
+              style={({ pressed }) => [
+                styles.restoreButton,
+                { opacity: pressed || isRestoring ? 0.7 : 1 }
+              ]}
+            >
+              {isRestoring ? (
+                <ActivityIndicator size="small" color={theme.colors.primary} />
+              ) : (
+                <Text style={[styles.restoreButtonText, { color: theme.colors.primary }]}>
+                  Restore Purchase
                 </Text>
-              </View>
-            </View>
-
-            {!isSubscribed ? (
-              <>
-                <Text style={[styles.upgradeHint, { color: theme.colors.mutedForeground }]}>
-                  {user?.searchesRemaining === -1 
-                    ? "Unlimited scans" 
-                    : `${Math.max(0, user?.searchesRemaining || 0)} free scans remaining`}
-                </Text>
-                <Pressable
-                  onPress={handleUpgrade}
-                  style={({ pressed }) => [
-                    styles.upgradeButton,
-                    { backgroundColor: theme.colors.primary, opacity: pressed ? 0.7 : 1 }
-                  ]}
-                >
-                  <Feather name="zap" size={18} color="#fff" />
-                  <Text style={styles.upgradeButtonText}>Upgrade to Pro</Text>
-                </Pressable>
-                
-                <Pressable
-                  onPress={handleRestorePurchases}
-                  disabled={isRestoring}
-                  style={({ pressed }) => [
-                    styles.restoreButton,
-                    { opacity: pressed || isRestoring ? 0.7 : 1 }
-                  ]}
-                >
-                  {isRestoring ? (
-                    <ActivityIndicator size="small" color={theme.colors.primary} />
-                  ) : (
-                    <Text style={[styles.restoreButtonText, { color: theme.colors.primary }]}>
-                      Restore Purchase
-                    </Text>
-                  )}
-                </Pressable>
-                
-                <Text style={[styles.subscriptionDisclosure, { color: theme.colors.mutedForeground }]}>
-                  Payment will be charged to your Apple ID account. Subscription automatically renews unless canceled at least 24 hours before the end of the current period. Manage or cancel in Settings → Apple ID → Subscriptions.
-                </Text>
-              </>
-            ) : (
-              <>
-                <Text style={[styles.upgradeHint, { color: theme.colors.mutedForeground }]}>
-                  Unlimited product scans
-                </Text>
-                <Pressable
-                  onPress={handleManageSubscription}
-                  style={({ pressed }) => [
-                    styles.manageButton,
-                    { borderColor: theme.colors.border, opacity: pressed ? 0.7 : 1 }
-                  ]}
-                >
-                  <Feather name="settings" size={18} color={theme.colors.foreground} />
-                  <Text style={[styles.manageButtonText, { color: theme.colors.foreground }]}>
-                    Manage Subscription
-                  </Text>
-                </Pressable>
-              </>
-            )}
+              )}
+            </Pressable>
+            
+            <Text style={[styles.subscriptionDisclosure, { color: theme.colors.mutedForeground }]}>
+              Payment will be charged to your Apple ID account. Subscription automatically renews unless canceled at least 24 hours before the end of the current period. Manage or cancel in Settings → Apple ID → Subscriptions.
+            </Text>
           </>
         )}
       </View>
@@ -408,53 +306,6 @@ export default function ProfileScreen() {
           </Text>
         </View>
       </View>
-
-      {!isGuest ? (
-        <>
-          <View style={[styles.section, styles.dangerSection, { backgroundColor: theme.colors.card }]}>
-            <View style={styles.sectionHeader}>
-              <Feather name="alert-triangle" size={20} color={theme.colors.danger} />
-              <Text style={[styles.sectionTitle, { color: theme.colors.foreground }]}>
-                Account
-              </Text>
-            </View>
-
-            <Text style={[styles.warningText, { color: theme.colors.mutedForeground }]}>
-              Deleting your account will permanently remove all your scan history, favorites, and saved data.
-            </Text>
-
-            <Pressable
-              onPress={handleDeleteAccount}
-              disabled={isDeleting}
-              style={({ pressed }) => [
-                styles.deleteButton,
-                { 
-                  backgroundColor: theme.colors.danger,
-                  opacity: pressed || isDeleting ? 0.7 : 1 
-                }
-              ]}
-            >
-              <Feather name="trash-2" size={18} color="#fff" />
-              <Text style={styles.deleteButtonText}>
-                {isDeleting ? "Deleting..." : "Delete All Data"}
-              </Text>
-            </Pressable>
-          </View>
-
-          <Pressable
-            onPress={handleLogout}
-            style={({ pressed }) => [
-              styles.logoutButton,
-              { borderColor: theme.colors.border, opacity: pressed ? 0.7 : 1 }
-            ]}
-          >
-            <Feather name="log-out" size={18} color={theme.colors.mutedForeground} />
-            <Text style={[styles.logoutButtonText, { color: theme.colors.mutedForeground }]}>
-              Log Out
-            </Text>
-          </Pressable>
-        </>
-      ) : null}
       
       <UpgradeModal 
         visible={showUpgradeModal} 
@@ -475,9 +326,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     marginBottom: 20,
-  },
-  dangerSection: {
-    marginTop: 8,
   },
   sectionHeader: {
     flexDirection: "row",
@@ -522,33 +370,6 @@ const styles = StyleSheet.create({
   },
   versionText: {
     fontSize: 13,
-  },
-  warningText: {
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 20,
-  },
-  deleteButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 14,
-    borderRadius: 12,
-    gap: 8,
-  },
-  deleteButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  accountInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 12,
-  },
-  emailText: {
-    fontSize: 16,
   },
   planBadge: {
     paddingHorizontal: 12,
@@ -603,20 +424,6 @@ const styles = StyleSheet.create({
   },
   manageButtonText: {
     fontSize: 15,
-    fontWeight: "500",
-  },
-  logoutButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    gap: 8,
-    marginBottom: 20,
-  },
-  logoutButtonText: {
-    fontSize: 16,
     fontWeight: "500",
   },
 });

@@ -7,17 +7,14 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Feather } from "@expo/vector-icons";
 
 import RootStackNavigator from "@/navigation/RootStackNavigator";
-import AuthScreen from "@/screens/AuthScreen";
 import OnboardingScreen, { checkOnboardingComplete } from "@/screens/OnboardingScreen";
 import { LegalAgreementModal } from "@/components/LegalAgreementModal";
 import { useDesignTokens } from "@/hooks/useDesignTokens";
-import { useAuth } from "@/contexts/AuthContext";
 
 const LEGAL_ACCEPTED_KEY = "@pocket_pricer_legal_accepted";
 
 export function AppContent() {
   const { isDarkMode, theme } = useDesignTokens();
-  const { isAuthenticated, isGuest, isLoading, checkSubscription } = useAuth();
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
   const [legalAccepted, setLegalAccepted] = useState<boolean | null>(null);
   const [showLegalModal, setShowLegalModal] = useState(false);
@@ -59,10 +56,9 @@ export function AppContent() {
     const handleDeepLink = (event: { url: string }) => {
       const { url } = event;
       console.log("Deep link received:", url);
-      
+
       if (url.includes("subscription-success")) {
-        console.log("Subscription successful, refreshing user...");
-        checkSubscription();
+        console.log("Subscription successful via deep link");
       }
     };
 
@@ -71,16 +67,15 @@ export function AppContent() {
     Linking.getInitialURL().then((url) => {
       if (url && url.includes("subscription-success")) {
         console.log("App opened with subscription success URL");
-        checkSubscription();
       }
     });
 
     return () => {
       subscription.remove();
     };
-  }, [checkSubscription]);
+  }, []);
 
-  if (isLoading || showOnboarding === null || legalAccepted === null) {
+  if (showOnboarding === null || legalAccepted === null) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -98,45 +93,36 @@ export function AppContent() {
     );
   }
 
-  if (!isAuthenticated && !isGuest) {
-    if (showDeclinedMessage) {
-      return (
-        <View style={[styles.declinedContainer, { backgroundColor: theme.colors.background }]}>
-          <View style={[styles.declinedCard, { backgroundColor: theme.colors.card }]}>
-            <View style={[styles.declinedIconContainer, { backgroundColor: theme.colors.muted }]}>
-              <Feather name="alert-circle" size={32} color={theme.colors.mutedForeground} />
-            </View>
-            <Text style={[styles.declinedTitle, { color: theme.colors.foreground }]}>
-              Agreement Required
-            </Text>
-            <Text style={[styles.declinedMessage, { color: theme.colors.mutedForeground }]}>
-              To use Pocket Pricer, you must agree to our Terms of Service and Privacy Policy. We cannot provide access to the app without your acceptance.
-            </Text>
-            <Pressable
-              onPress={handleReviewTerms}
-              style={({ pressed }) => [
-                styles.reviewButton,
-                { backgroundColor: theme.colors.primary, opacity: pressed ? 0.9 : 1 },
-              ]}
-            >
-              <Text style={styles.reviewButtonText}>Review Terms</Text>
-            </Pressable>
-          </View>
-          <StatusBar style={isDarkMode ? "light" : "dark"} />
-        </View>
-      );
-    }
-
+  if (showDeclinedMessage) {
     return (
-      <>
-        <AuthScreen />
+      <View style={[styles.declinedContainer, { backgroundColor: theme.colors.background }]}>
+        <View style={[styles.declinedCard, { backgroundColor: theme.colors.card }]}>
+          <View style={[styles.declinedIconContainer, { backgroundColor: theme.colors.muted }]}>
+            <Feather name="alert-circle" size={32} color={theme.colors.mutedForeground} />
+          </View>
+          <Text style={[styles.declinedTitle, { color: theme.colors.foreground }]}>
+            Agreement Required
+          </Text>
+          <Text style={[styles.declinedMessage, { color: theme.colors.mutedForeground }]}>
+            To use Pocket Pricer, you must agree to our Terms of Service and Privacy Policy. We cannot provide access to the app without your acceptance.
+          </Text>
+          <Pressable
+            onPress={handleReviewTerms}
+            style={({ pressed }) => [
+              styles.reviewButton,
+              { backgroundColor: theme.colors.primary, opacity: pressed ? 0.9 : 1 },
+            ]}
+          >
+            <Text style={styles.reviewButtonText}>Review Terms</Text>
+          </Pressable>
+        </View>
         <LegalAgreementModal
           visible={showLegalModal}
           onAgree={handleLegalAgree}
           onCancel={handleLegalCancel}
         />
         <StatusBar style={isDarkMode ? "light" : "dark"} />
-      </>
+      </View>
     );
   }
 
@@ -145,6 +131,11 @@ export function AppContent() {
       <NavigationContainer>
         <RootStackNavigator />
       </NavigationContainer>
+      <LegalAgreementModal
+        visible={showLegalModal || (!legalAccepted && !showOnboarding)}
+        onAgree={handleLegalAgree}
+        onCancel={handleLegalCancel}
+      />
       <StatusBar style={isDarkMode ? "light" : "dark"} />
     </>
   );

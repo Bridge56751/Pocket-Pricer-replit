@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -26,12 +26,20 @@ interface UpgradeModalProps {
 export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
   const { theme } = useDesignTokens();
   const { packages, purchasePackage, restorePurchases, isPro } = useRevenueCat();
-  const { refreshUser, checkSubscription, user, isGuest, logout } = useAuth();
+  const { getScansUsed } = useAuth();
   
-  const scansRemaining = isGuest ? 0 : Math.max(0, user?.searchesRemaining || 0);
-  const hasUsedAllScans = isGuest || scansRemaining === 0;
+  const [scansUsed, setScansUsed] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
+
+  useEffect(() => {
+    if (visible) {
+      getScansUsed().then((count) => setScansUsed(count));
+    }
+  }, [visible]);
+
+  const scansRemaining = Math.max(0, 5 - scansUsed);
+  const hasUsedAllScans = scansRemaining === 0;
 
   const handleUpgrade = async () => {
     if (Platform.OS === "web") {
@@ -57,8 +65,6 @@ export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
       const result = await purchasePackage(monthlyPackage);
 
       if (result.success) {
-        await checkSubscription();
-        await refreshUser();
         onClose();
         Alert.alert("Success", "Welcome to Pocket Pricer Pro! You now have unlimited scans.");
       } else if (result.error && result.error !== "Purchase cancelled") {
@@ -83,8 +89,6 @@ export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
       const result = await restorePurchases();
 
       if (result.success) {
-        await checkSubscription();
-        await refreshUser();
         onClose();
         Alert.alert("Restored", "Your Pro subscription has been restored!");
       } else {
@@ -136,11 +140,7 @@ export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
             Monthly subscription — {getPrice()}/month
           </Text>
 
-          {isGuest ? (
-            <Text style={[styles.freeScansNote, { color: theme.colors.mutedForeground }]}>
-              You've used all 5 of your free scans. Create an account to continue or upgrade to Pro for unlimited scans.
-            </Text>
-          ) : hasUsedAllScans ? (
+          {hasUsedAllScans ? (
             <Text style={[styles.freeScansNote, { color: theme.colors.mutedForeground }]}>
               You've used all 5 of your free scans
             </Text>
@@ -165,45 +165,31 @@ export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
             </View>
           </View>
 
-          {isGuest ? (
-            <Pressable
-              style={[styles.upgradeButton, { backgroundColor: theme.colors.primary }]}
-              onPress={() => {
-                onClose();
-                logout();
-              }}
-            >
-              <Text style={styles.upgradeButtonText}>Create Account</Text>
-            </Pressable>
-          ) : (
-            <>
-              <Pressable
-                style={[styles.upgradeButton, { backgroundColor: theme.colors.primary }]}
-                onPress={handleUpgrade}
-                disabled={isLoading || isRestoring}
-              >
-                {isLoading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.upgradeButtonText}>Subscribe Now</Text>
-                )}
-              </Pressable>
+          <Pressable
+            style={[styles.upgradeButton, { backgroundColor: theme.colors.primary }]}
+            onPress={handleUpgrade}
+            disabled={isLoading || isRestoring}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.upgradeButtonText}>Subscribe Now</Text>
+            )}
+          </Pressable>
 
-              <Pressable 
-                onPress={handleRestore}
-                disabled={isLoading || isRestoring}
-                style={styles.restoreButton}
-              >
-                {isRestoring ? (
-                  <ActivityIndicator size="small" color={theme.colors.primary} />
-                ) : (
-                  <Text style={[styles.restoreText, { color: theme.colors.primary }]}>
-                    Restore Purchase
-                  </Text>
-                )}
-              </Pressable>
-            </>
-          )}
+          <Pressable 
+            onPress={handleRestore}
+            disabled={isLoading || isRestoring}
+            style={styles.restoreButton}
+          >
+            {isRestoring ? (
+              <ActivityIndicator size="small" color={theme.colors.primary} />
+            ) : (
+              <Text style={[styles.restoreText, { color: theme.colors.primary }]}>
+                Restore Purchase
+              </Text>
+            )}
+          </Pressable>
 
           <Pressable onPress={onClose}>
             <Text style={[styles.laterText, { color: theme.colors.mutedForeground }]}>
@@ -211,11 +197,9 @@ export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
             </Text>
           </Pressable>
 
-          {!isGuest ? (
-            <Text style={[styles.subscriptionDisclosure, { color: theme.colors.mutedForeground }]}>
-              Payment will be charged to your Apple ID account. Subscription automatically renews unless canceled at least 24 hours before the end of the current period. Manage or cancel in Settings → Apple ID → Subscriptions.
-            </Text>
-          ) : null}
+          <Text style={[styles.subscriptionDisclosure, { color: theme.colors.mutedForeground }]}>
+            Payment will be charged to your Apple ID account. Subscription automatically renews unless canceled at least 24 hours before the end of the current period. Manage or cancel in Settings → Apple ID → Subscriptions.
+          </Text>
 
           <View style={styles.legalLinks}>
             <Pressable onPress={() => Linking.openURL(PRIVACY_URL)}>

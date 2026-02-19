@@ -14,6 +14,7 @@ import { getSearchHistory, addSearchHistory } from "@/lib/storage";
 import { apiRequest, getApiUrl } from "@/lib/query-client";
 import { storeImage } from "@/lib/image-store";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRevenueCat } from "@/contexts/RevenueCatContext";
 import UpgradeModal from "@/components/UpgradeModal";
 import type { SearchHistoryItem } from "@/types/product";
 import type { RootStackParamList, CapturedPhoto } from "@/navigation/RootStackNavigator";
@@ -41,7 +42,8 @@ export default function ScanScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<ScanScreenRouteProp>();
 
-  const { user, token, refreshUser, isGuest, getGuestScansUsed, incrementGuestScans, getDeviceId } = useAuth();
+  const { getDeviceId, getScansUsed, incrementScans } = useAuth();
+  const { isPro } = useRevenueCat();
   
   const [recentScans, setRecentScans] = useState<SearchHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -74,22 +76,15 @@ export default function ScanScreen() {
       : "Identifying product...");
     
     try {
-      if (isGuest) {
-        const guestScansUsed = await getGuestScansUsed();
-        if (guestScansUsed >= 5) {
+      if (!isPro) {
+        const scansUsed = await getScansUsed();
+        if (scansUsed >= 5) {
           setIsAnalyzing(false);
           setAnalyzingProgress("");
           processingRef.current = false;
           setShowUpgradeModal(true);
           return;
         }
-      } else if (!token) {
-        setIsAnalyzing(false);
-        setAnalyzingProgress("");
-        processingRef.current = false;
-        setErrorMessage("Please sign in to scan products.");
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        return;
       }
 
       setAnalyzingProgress("Searching with visual matching...");
@@ -103,10 +98,8 @@ export default function ScanScreen() {
         const scanHeaders: Record<string, string> = {
           "Content-Type": "application/json",
           "X-Device-Id": deviceId,
+          "X-Is-Pro": isPro ? "true" : "false",
         };
-        if (token) {
-          scanHeaders["Authorization"] = `Bearer ${token}`;
-        }
         const lensResponse = await fetch(
           new URL("/api/scan-with-lens", getApiUrl()).toString(),
           {
@@ -150,11 +143,7 @@ export default function ScanScreen() {
         return;
       }
       
-      if (isGuest) {
-        await incrementGuestScans();
-      } else {
-        await refreshUser();
-      }
+      await incrementScans();
 
       const scannedImageId = storeImage(`data:image/jpeg;base64,${photos[0].base64}`);
       const enrichedResults = {
@@ -193,7 +182,7 @@ export default function ScanScreen() {
       processingRef.current = false;
       const errorMsg = error instanceof Error ? error.message : "Something went wrong. Please try again.";
       if (errorMsg.includes("401") || errorMsg.includes("Not authenticated")) {
-        setErrorMessage("Session expired. Please sign in again.");
+        setErrorMessage("Authentication error. Please try again.");
       } else if (errorMsg.includes("429") || errorMsg.includes("rate")) {
         setErrorMessage("Too many requests. Please wait a moment and try again.");
       } else if (errorMsg.includes("500")) {
@@ -203,7 +192,7 @@ export default function ScanScreen() {
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
-  }, [loadRecentScans, navigation, isGuest, token, getGuestScansUsed, incrementGuestScans, refreshUser, getDeviceId]);
+  }, [loadRecentScans, navigation, isPro, getScansUsed, incrementScans, getDeviceId]);
 
   useEffect(() => {
     const photosToProcess = route.params?.photosToProcess;
@@ -220,15 +209,12 @@ export default function ScanScreen() {
   );
 
   const handleScanProduct = async () => {
-    if (isGuest) {
-      const guestScansUsed = await getGuestScansUsed();
-      if (guestScansUsed >= 5) {
+    if (!isPro) {
+      const scansUsed = await getScansUsed();
+      if (scansUsed >= 5) {
         setShowUpgradeModal(true);
         return;
       }
-    } else if (user && user.searchesRemaining === 0 && user.subscriptionStatus !== "active") {
-      setShowUpgradeModal(true);
-      return;
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     navigation.navigate("CameraScan");
