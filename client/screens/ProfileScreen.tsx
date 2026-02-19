@@ -11,6 +11,7 @@ import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRevenueCat } from "@/contexts/RevenueCatContext";
 import UpgradeModal from "@/components/UpgradeModal";
+import { resetOnboarding } from "@/screens/OnboardingScreen";
 
 type ThemeOption = "light" | "dark" | "system";
 
@@ -298,6 +299,26 @@ export default function ProfileScreen() {
           <Text style={[styles.menuItemText, { color: theme.colors.mutedForeground }]}>
             pricerpocket@gmail.com
           </Text>
+        </Pressable>
+
+        <Pressable 
+          onPress={async () => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            await resetOnboarding();
+            Alert.alert(
+              "Tutorial Reset",
+              "The tutorial will show next time you open the app."
+            );
+          }}
+          style={({ pressed }) => [
+            styles.menuItem, 
+            { borderBottomColor: theme.colors.border, opacity: pressed ? 0.7 : 1 }
+          ]}
+        >
+          <Text style={[styles.menuItemText, { color: theme.colors.foreground }]}>
+            Replay Tutorial
+          </Text>
+          <Feather name="chevron-right" size={20} color={theme.colors.mutedForeground} />
         </Pressable>
 
         <View style={styles.versionContainer}>

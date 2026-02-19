@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
-import Animated, { FadeIn, FadeInUp } from "react-native-reanimated";
+import Animated, { FadeInUp, FadeInDown } from "react-native-reanimated";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { useDesignTokens } from "@/hooks/useDesignTokens";
@@ -25,29 +25,62 @@ interface OnboardingSlide {
   title: string;
   description: string;
   iconColor: string;
+  tipIcon?: keyof typeof Feather.glyphMap;
+  tip?: string;
 }
 
 const slides: OnboardingSlide[] = [
   {
-    id: "1",
-    icon: "camera",
-    title: "Scan Any Product",
-    description: "Take photos of items you want to sell. Our AI identifies products instantly from multiple angles.",
+    id: "welcome",
+    icon: "tag",
+    title: "Welcome to\nPocket Pricer",
+    description: "Your personal product scanner that helps you find the best prices and maximize your reselling profit.",
     iconColor: "#10B981",
   },
   {
-    id: "2",
-    icon: "search",
-    title: "Find Real Prices",
-    description: "See real listings from Amazon, Walmart, Target, and more to find the best prices.",
+    id: "scan",
+    icon: "camera",
+    title: "Scan Any Product",
+    description: "Point your camera at any item to instantly identify it. Works with clothing, electronics, toys, collectibles, and more.",
     iconColor: "#3B82F6",
+    tipIcon: "zap",
+    tip: "For best results, scan in good lighting with the product label or front visible.",
   },
   {
-    id: "3",
+    id: "prices",
+    icon: "bar-chart-2",
+    title: "Compare Prices",
+    description: "See real-time prices from Amazon, Walmart, Target, eBay, and other major platforms in one place.",
+    iconColor: "#8B5CF6",
+    tipIcon: "search",
+    tip: "Tap 'Find More Listings' to search across even more platforms.",
+  },
+  {
+    id: "profit",
     icon: "dollar-sign",
-    title: "Calculate Your Profit",
-    description: "Enter your purchase price and instantly see your potential profit after estimated fees (~13%).",
+    title: "Calculate Profit",
+    description: "Enter what you paid and see your estimated profit after ~13% selling fees. Know before you buy if it's worth flipping.",
     iconColor: "#F59E0B",
+    tipIcon: "trending-up",
+    tip: "Check the Market Demand indicator to see how fast items sell.",
+  },
+  {
+    id: "save",
+    icon: "heart",
+    title: "Save & Track",
+    description: "Favorite profitable finds for later and review your scan history anytime. All data stays on your device.",
+    iconColor: "#EF4444",
+    tipIcon: "clock",
+    tip: "Your last 10 scans are saved automatically in the History tab.",
+  },
+  {
+    id: "pro",
+    icon: "award",
+    title: "Ready to Start",
+    description: "You get 5 free scans to try it out. Upgrade to Pro for unlimited scans at $8.99/month, cancel anytime.",
+    iconColor: "#10B981",
+    tipIcon: "shield",
+    tip: "No account needed. Subscriptions are managed through your App Store account.",
   },
 ];
 
@@ -90,34 +123,61 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
     itemVisiblePercentThreshold: 50,
   }).current;
 
-  const renderSlide = ({ item, index }: { item: OnboardingSlide; index: number }) => (
+  const renderSlide = ({ item }: { item: OnboardingSlide }) => (
     <View style={[styles.slide, { width }]}>
-      <Animated.View 
-        entering={FadeInUp.delay(200).duration(600)}
-        style={[styles.iconContainer, { backgroundColor: item.iconColor + "20" }]}
+      <Animated.View
+        entering={FadeInUp.delay(150).duration(500)}
+        style={[styles.iconContainer, { backgroundColor: item.iconColor + "15" }]}
       >
-        <Feather name={item.icon} size={64} color={item.iconColor} />
+        <View style={[styles.iconInner, { backgroundColor: item.iconColor + "25" }]}>
+          <Feather name={item.icon} size={48} color={item.iconColor} />
+        </View>
       </Animated.View>
-      <Animated.Text 
-        entering={FadeInUp.delay(400).duration(600)}
+      <Animated.Text
+        entering={FadeInUp.delay(300).duration(500)}
         style={[styles.title, { color: theme.colors.foreground }]}
       >
         {item.title}
       </Animated.Text>
-      <Animated.Text 
-        entering={FadeInUp.delay(600).duration(600)}
+      <Animated.Text
+        entering={FadeInUp.delay(450).duration(500)}
         style={[styles.description, { color: theme.colors.mutedForeground }]}
       >
         {item.description}
       </Animated.Text>
+      {item.tip ? (
+        <Animated.View
+          entering={FadeInDown.delay(600).duration(500)}
+          style={[styles.tipCard, { backgroundColor: item.iconColor + "10", borderColor: item.iconColor + "30" }]}
+        >
+          <Feather name={item.tipIcon || "info"} size={16} color={item.iconColor} />
+          <Text style={[styles.tipText, { color: theme.colors.foreground }]}>
+            {item.tip}
+          </Text>
+        </Animated.View>
+      ) : null}
     </View>
   );
 
   const isLastSlide = currentIndex === slides.length - 1;
+  const isFirstSlide = currentIndex === 0;
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+        {isFirstSlide ? (
+          <View style={styles.stepIndicator}>
+            <Text style={[styles.stepText, { color: theme.colors.mutedForeground }]}>
+              Quick Tour
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.stepIndicator}>
+            <Text style={[styles.stepText, { color: theme.colors.mutedForeground }]}>
+              {currentIndex} of {slides.length - 1}
+            </Text>
+          </View>
+        )}
         <Pressable onPress={handleSkip} style={styles.skipButton}>
           <Text style={[styles.skipText, { color: theme.colors.mutedForeground }]}>
             Skip
@@ -165,10 +225,10 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
           ]}
         >
           <Text style={styles.nextButtonText}>
-            {isLastSlide ? "Get Started" : "Next"}
+            {isLastSlide ? "Start Scanning" : isFirstSlide ? "Take the Tour" : "Next"}
           </Text>
           <Feather
-            name={isLastSlide ? "check" : "arrow-right"}
+            name={isLastSlide ? "arrow-right" : isFirstSlide ? "play" : "arrow-right"}
             size={20}
             color="#fff"
           />
@@ -197,9 +257,18 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: "row",
-    justifyContent: "flex-end",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 24,
     paddingBottom: 16,
+  },
+  stepIndicator: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  stepText: {
+    fontSize: 14,
+    fontWeight: "500",
   },
   skipButton: {
     padding: 8,
@@ -212,7 +281,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 40,
+    paddingHorizontal: 32,
   },
   iconContainer: {
     width: 140,
@@ -220,18 +289,44 @@ const styles = StyleSheet.create({
     borderRadius: 70,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 40,
+    marginBottom: 32,
+  },
+  iconInner: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    alignItems: "center",
+    justifyContent: "center",
   },
   title: {
     fontSize: 28,
-    fontWeight: "700",
+    fontWeight: "800",
     textAlign: "center",
-    marginBottom: 16,
+    marginBottom: 14,
+    lineHeight: 36,
   },
   description: {
-    fontSize: 17,
+    fontSize: 16,
     textAlign: "center",
-    lineHeight: 26,
+    lineHeight: 24,
+    paddingHorizontal: 8,
+  },
+  tipCard: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+    marginTop: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginHorizontal: 8,
+  },
+  tipText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 19,
+    fontWeight: "500",
   },
   footer: {
     paddingHorizontal: 24,
