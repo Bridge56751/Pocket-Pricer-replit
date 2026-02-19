@@ -65,6 +65,15 @@ const slides: OnboardingSlide[] = [
     tip: "Check the Market Demand indicator to see how fast items sell.",
   },
   {
+    id: "listings",
+    icon: "external-link",
+    title: "View Live Listings",
+    description: "Tap any result to open the actual listing on Amazon, eBay, Walmart, or wherever it's sold. See full details and buy or compare directly.",
+    iconColor: "#EF4444",
+    tipIcon: "shopping-cart",
+    tip: "Each listing links straight to the platform so you can check reviews, stock, and seller info.",
+  },
+  {
     id: "pro",
     icon: "award",
     title: "Ready to Start",
