@@ -85,7 +85,7 @@ export default function ProfileScreen() {
   const handleOpenPrivacyPolicy = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
-      const privacyUrl = "https://pocket-pricer.com/privacy";
+      const privacyUrl = "https://pocket-pricer.com/pocket-pricer-privacy-policy-v4.html";
       await WebBrowser.openBrowserAsync(privacyUrl);
     } catch (error) {
       console.error("Failed to open privacy policy:", error);
