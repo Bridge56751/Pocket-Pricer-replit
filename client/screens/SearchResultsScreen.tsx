@@ -79,10 +79,49 @@ export default function SearchResultsScreen() {
     const selling = parseFloat(sellingPrice) || suggestedPrice;
     const ebayFees = selling * EBAY_FEE_RATE;
     const profit = selling - purchase - ebayFees;
-    return { ebayFees, profit, selling };
+    return { ebayFees, profit, selling, purchase };
   };
   
-  const { ebayFees, profit, selling } = calculateProfit();
+  const { ebayFees, profit, selling, purchase } = calculateProfit();
+
+  const getBuyScore = () => {
+    if (purchase <= 0) return null;
+    const margin = selling > 0 ? (profit / selling) * 100 : 0;
+    const roi = purchase > 0 ? (profit / purchase) * 100 : 0;
+    let score = 50;
+    if (margin > 40) score += 30;
+    else if (margin > 25) score += 20;
+    else if (margin > 15) score += 10;
+    else if (margin > 5) score += 0;
+    else if (margin > 0) score -= 10;
+    else if (margin > -10) score -= 25;
+    else score -= 40;
+    if (roi > 100) score += 15;
+    else if (roi > 50) score += 10;
+    else if (roi > 20) score += 5;
+    else if (roi < 0) score -= 10;
+    if (results.totalListings >= 10) score += 5;
+    else if (results.totalListings <= 2) score -= 5;
+    return Math.max(0, Math.min(100, Math.round(score)));
+  };
+
+  const buyScore = getBuyScore();
+
+  const getBuyLabel = (score: number) => {
+    if (score >= 80) return "Strong Buy";
+    if (score >= 65) return "Good Buy";
+    if (score >= 50) return "Fair Deal";
+    if (score >= 35) return "Risky";
+    return "Pass";
+  };
+
+  const getBuyColor = (score: number) => {
+    if (score >= 80) return "#10B981";
+    if (score >= 65) return "#34D399";
+    if (score >= 50) return "#F59E0B";
+    if (score >= 35) return "#F97316";
+    return "#EF4444";
+  };
   
   const useSuggestedPrice = () => {
     setSellingPrice(suggestedPrice.toFixed(2));
@@ -400,6 +439,44 @@ export default function SearchResultsScreen() {
               <Text style={[styles.calculatorNote, { color: theme.colors.mutedForeground }]}>
                 Based on {results.totalListings} active listings
               </Text>
+
+              {buyScore !== null ? (
+                <View style={[styles.buyScoreCard, { backgroundColor: getBuyColor(buyScore) + '12', borderColor: getBuyColor(buyScore) + '30' }]}>
+                  <View style={styles.buyScoreHeader}>
+                    <Feather 
+                      name={buyScore >= 50 ? "thumbs-up" : "thumbs-down"} 
+                      size={20} 
+                      color={getBuyColor(buyScore)} 
+                    />
+                    <Text style={[styles.buyScoreLabel, { color: getBuyColor(buyScore) }]}>
+                      {getBuyLabel(buyScore)}
+                    </Text>
+                    <Text style={[styles.buyScoreValue, { color: getBuyColor(buyScore) }]}>
+                      {buyScore}/100
+                    </Text>
+                  </View>
+                  <View style={[styles.buyScoreTrack, { backgroundColor: theme.colors.muted }]}>
+                    <View 
+                      style={[
+                        styles.buyScoreFill, 
+                        { width: `${buyScore}%`, backgroundColor: getBuyColor(buyScore) }
+                      ]} 
+                    />
+                  </View>
+                  <View style={styles.buyScoreScale}>
+                    <Text style={[styles.buyScoreScaleText, { color: theme.colors.mutedForeground }]}>Pass</Text>
+                    <Text style={[styles.buyScoreScaleText, { color: theme.colors.mutedForeground }]}>Fair</Text>
+                    <Text style={[styles.buyScoreScaleText, { color: theme.colors.mutedForeground }]}>Strong Buy</Text>
+                  </View>
+                </View>
+              ) : (
+                <View style={[styles.buyScoreHint, { backgroundColor: theme.colors.muted }]}>
+                  <Feather name="info" size={14} color={theme.colors.mutedForeground} />
+                  <Text style={[styles.buyScoreHintText, { color: theme.colors.mutedForeground }]}>
+                    Enter your purchase price to see the Buy Score
+                  </Text>
+                </View>
+              )}
             </View>
 
             <Text style={[styles.sectionTitle, { color: theme.colors.foreground }]}>
@@ -833,5 +910,54 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "600",
+  },
+  buyScoreCard: {
+    marginTop: 14,
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 10,
+  },
+  buyScoreHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  buyScoreLabel: {
+    fontSize: 17,
+    fontWeight: "700",
+    flex: 1,
+  },
+  buyScoreValue: {
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  buyScoreTrack: {
+    height: 10,
+    borderRadius: 5,
+    overflow: "hidden",
+  },
+  buyScoreFill: {
+    height: "100%",
+    borderRadius: 5,
+  },
+  buyScoreScale: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  buyScoreScaleText: {
+    fontSize: 11,
+  },
+  buyScoreHint: {
+    marginTop: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    padding: 12,
+    borderRadius: 10,
+  },
+  buyScoreHintText: {
+    fontSize: 13,
+    flex: 1,
   },
 });
