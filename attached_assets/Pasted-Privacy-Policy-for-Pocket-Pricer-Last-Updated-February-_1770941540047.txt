@@ -1,0 +1,109 @@
+Privacy Policy for Pocket Pricer
+
+Last Updated: February 12, 2026
+
+1. Information We Collect
+
+Account Information
+If you choose to create an account, we collect your email address and an encrypted password. Creating an account is optional — you can use Pocket Pricer as a guest.
+
+Device Identifiers (Guest Users)
+For guest users, we collect a device identifier to track scan usage and enforce free-tier limits.
+
+Product Images
+Photos you take or select from your photo library are transmitted to our servers solely for real-time product identification and price lookup. Images are processed immediately and are not stored permanently.
+
+Usage Data
+We collect information such as product search queries, scan results, and scan history to provide features like history and favorites.
+
+Subscription Data
+Your subscription status is managed through RevenueCat using Apple’s in-app purchase system. We do not collect or store your payment card details.
+
+⸻
+
+2. How We Use Your Information
+
+We use your information to:
+    •    Identify products using images and provide pricing data
+    •    Enforce scan limits for free-tier and guest users
+    •    Manage your account and subscription status
+    •    Maintain your search history and saved favorites
+    •    Send email verification codes when you create an account
+
+⸻
+
+3. Tracking
+
+Pocket Pricer does not track you across other companies’ apps or websites. We do not use advertising identifiers, do not participate in ad networks, and do not use your data for advertising or ad targeting purposes.
+
+⸻
+
+4. Third-Party Services We Use
+
+We share limited data with the following services solely to provide core app functionality:
+
+SerpAPI / Google Lens
+    •    Data shared: Product images
+    •    Purpose: Visual product identification
+
+RevenueCat
+    •    Data shared: User ID, subscription status
+    •    Purpose: In-app purchase and subscription management
+
+Resend
+    •    Data shared: Email address
+    •    Purpose: Sending email verification codes
+
+Privacy policies:
+    •    SerpAPI: https://serpapi.com/privacy
+    •    RevenueCat: https://www.revenuecat.com/privacy
+    •    Resend: https://resend.com/legal/privacy-policy
+
+We do not sell your personal data.
+We do not use your data for advertising.
+We do not use your data to train AI or machine learning models.
+
+⸻
+
+5. Data Retention and Deletion
+    •    Account data is retained until you choose to delete your account.
+    •    Guest device identifiers and scan counts are retained to enforce usage limits.
+    •    You can delete your account and all associated data directly from the Profile screen inside the app.
+    •    When you delete your account, your email, password, scan history, and favorites are permanently removed.
+    •    Anonymized usage records (such as scan counts without identifying information) may be retained to prevent abuse.
+
+Any active subscriptions must be canceled through your Apple ID settings. Deleting your account does not automatically cancel your subscription with Apple.
+
+⸻
+
+6. Data Security
+    •    Passwords are encrypted and never stored in plain text
+    •    Authentication uses secure tokens
+    •    All data is transmitted over encrypted HTTPS connections
+    •    We use a secure database for data storage
+
+⸻
+
+7. Your Rights and Choices
+    •    Use as guest: You can use the app without creating an account
+    •    Delete your account: Tap “Delete All Data” in the Profile screen
+    •    Manage subscriptions: Go to Settings > Apple ID > Subscriptions on your device
+    •    Request information: Contact us using the email below
+
+⸻
+
+8. Children’s Privacy
+
+Pocket Pricer is not intended for children under 13. We do not knowingly collect personal information from children under 13. If you believe a child has provided personal data, please contact us and we will delete it.
+
+⸻
+
+9. Changes to This Policy
+
+We may update this privacy policy from time to time. Any changes will be posted at this URL with an updated date. Your continued use of the app after changes are posted constitutes acceptance of the updated policy.
+
+⸻
+
+10. Contact Us
+
+If you have any questions about this privacy policy or your data:
