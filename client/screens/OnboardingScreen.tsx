@@ -65,15 +65,6 @@ const slides: OnboardingSlide[] = [
     tip: "Check the Market Demand indicator to see how fast items sell.",
   },
   {
-    id: "save",
-    icon: "heart",
-    title: "Save & Track",
-    description: "Favorite profitable finds for later and review your scan history anytime. All data stays on your device.",
-    iconColor: "#EF4444",
-    tipIcon: "clock",
-    tip: "Your last 10 scans are saved automatically in the History tab.",
-  },
-  {
     id: "pro",
     icon: "award",
     title: "Ready to Start",
