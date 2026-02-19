@@ -260,14 +260,14 @@ export default function ProfileScreen() {
         </View>
 
         <Text style={[styles.dataDescription, { color: theme.colors.mutedForeground }]}>
-          Your scan history and saved favorites are stored locally on this device.
+          Your scan history is stored locally on this device.
         </Text>
 
         {showDeleteConfirm ? (
           <View style={[styles.deleteConfirmBox, { backgroundColor: theme.colors.danger + '10', borderColor: theme.colors.danger + '30' }]}>
             <Feather name="alert-triangle" size={20} color={theme.colors.danger} />
             <Text style={[styles.deleteConfirmText, { color: theme.colors.foreground }]}>
-              This will permanently delete your scan history and saved favorites. Your scan count and subscription will not be affected.
+              This will permanently delete your scan history. Your scan count and subscription will not be affected.
             </Text>
             <View style={styles.deleteConfirmButtons}>
               <Pressable
