@@ -362,7 +362,7 @@ export default function ProfileScreen() {
           ]}
         >
           <Text style={[styles.menuItemText, { color: theme.colors.foreground }]}>
-            Support Website
+            Website
           </Text>
           <Feather name="chevron-right" size={20} color={theme.colors.mutedForeground} />
         </Pressable>
