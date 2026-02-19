@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 
-const PRIVACY_URL = "https://pocket-pricer.com/privacy";
+const PRIVACY_URL = "https://pocket-pricer.com/pocket-pricer-privacy-policy-v4.html";
 const TERMS_URL = "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/";
 
 interface LegalAgreementModalProps {
