@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo } from "react";
 import { View, StyleSheet, FlatList, Pressable, Text, Linking, TextInput, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -70,9 +70,6 @@ export default function SearchResultsScreen() {
 
   const [purchasePrice, setPurchasePrice] = useState("");
   const [sellingPrice, setSellingPrice] = useState("");
-  const [deepSearchLoading, setDeepSearchLoading] = useState(false);
-  const [deepSearchListings, setDeepSearchListings] = useState<ListingItem[]>([]);
-  const [deepSearchDone, setDeepSearchDone] = useState(false);
   
   const suggestedPrice = results.avgListPrice;
   const EBAY_FEE_RATE = 0.13;
@@ -98,50 +95,7 @@ export default function SearchResultsScreen() {
     }
   };
 
-  const allListings = useMemo(() => {
-    const existingIds = new Set(results.listings.map((l: ListingItem) => l.title.toLowerCase()));
-    const uniqueDeep = deepSearchListings.filter(
-      (l) => !existingIds.has(l.title.toLowerCase())
-    );
-    return [...results.listings, ...uniqueDeep];
-  }, [results.listings, deepSearchListings]);
-
-  const handleDeepSearch = useCallback(async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setDeepSearchLoading(true);
-    try {
-      const productName = typeof results.productInfo === 'object' ? results.productInfo?.name : null;
-      const queryStr = typeof results.query === 'string' ? results.query : 'product';
-      const topListingTitles = (results.listings || [])
-        .slice(0, 3)
-        .map((l: ListingItem) => l.title)
-        .filter(Boolean);
-      const searchQuery = productName && productName !== "Scanned Product"
-        ? productName
-        : topListingTitles.length > 0
-          ? topListingTitles[0]
-          : queryStr;
-
-      const response = await fetch(
-        new URL("/api/deep-search", getApiUrl()).toString(),
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query: searchQuery }),
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        setDeepSearchListings(data.listings || []);
-      }
-    } catch (error) {
-      console.error("Deep search error:", error);
-    } finally {
-      setDeepSearchLoading(false);
-      setDeepSearchDone(true);
-    }
-  }, [results]);
+  const allListings = results.listings;
 
   const handleNewSearch = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -454,53 +408,7 @@ export default function SearchResultsScreen() {
           </View>
         }
         renderItem={renderListing}
-        ListFooterComponent={
-          <View style={styles.deepSearchContainer}>
-            {deepSearchLoading ? (
-              <View style={[styles.deepSearchButton, { backgroundColor: theme.colors.muted }]}>
-                <ActivityIndicator size="small" color={theme.colors.primary} />
-                <Text style={[styles.deepSearchText, { color: theme.colors.mutedForeground }]}>
-                  Searching for more listings...
-                </Text>
-              </View>
-            ) : deepSearchDone ? (
-              deepSearchListings.length > 0 ? (
-                <View style={[styles.deepSearchDone, { backgroundColor: theme.colors.primary + '15' }]}>
-                  <Feather name="check-circle" size={16} color={theme.colors.primary} />
-                  <Text style={[styles.deepSearchDoneText, { color: theme.colors.primary }]}>
-                    Found {deepSearchListings.length} additional listings
-                  </Text>
-                </View>
-              ) : (
-                <View style={[styles.deepSearchDone, { backgroundColor: theme.colors.muted }]}>
-                  <Feather name="info" size={16} color={theme.colors.mutedForeground} />
-                  <Text style={[styles.deepSearchDoneText, { color: theme.colors.mutedForeground }]}>
-                    No additional listings found
-                  </Text>
-                </View>
-              )
-            ) : (
-              <Pressable
-                onPress={handleDeepSearch}
-                style={({ pressed }) => [
-                  styles.deepSearchButton,
-                  { backgroundColor: theme.colors.card, opacity: pressed ? 0.7 : 1 }
-                ]}
-              >
-                <Feather name="search" size={18} color={theme.colors.primary} />
-                <View>
-                  <Text style={[styles.deepSearchText, { color: theme.colors.foreground }]}>
-                    Find More Listings
-                  </Text>
-                  <Text style={[styles.deepSearchSubtext, { color: theme.colors.mutedForeground }]}>
-                    Search across more platforms
-                  </Text>
-                </View>
-                <Feather name="chevron-right" size={18} color={theme.colors.mutedForeground} style={{ marginLeft: 'auto' }} />
-              </Pressable>
-            )}
-          </View>
-        }
+        
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={[styles.emptyText, { color: theme.colors.mutedForeground }]}>
@@ -924,37 +832,6 @@ const styles = StyleSheet.create({
   newSearchText: {
     color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: "600",
-  },
-  deepSearchContainer: {
-    marginTop: 8,
-    marginBottom: 16,
-  },
-  deepSearchButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 16,
-    borderRadius: 12,
-    gap: 12,
-  },
-  deepSearchText: {
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  deepSearchSubtext: {
-    fontSize: 12,
-    marginTop: 2,
-  },
-  deepSearchDone: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 14,
-    borderRadius: 12,
-    gap: 8,
-    justifyContent: "center",
-  },
-  deepSearchDoneText: {
-    fontSize: 14,
     fontWeight: "600",
   },
 });
