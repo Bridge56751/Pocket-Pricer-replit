@@ -6,30 +6,49 @@ import { query } from "./db";
 const FREE_LIFETIME_SEARCHES = 5;
 
 async function uploadImageForLens(imageBase64: string): Promise<string | null> {
-  try {
-    const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, "");
-    
-    const formData = new URLSearchParams();
-    formData.append("key", "6d207e02198a847aa98d0a2a901485a5");
-    formData.append("source", cleanBase64);
-    formData.append("format", "json");
-    
-    const response = await fetch("https://freeimage.host/api/1/upload", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: formData.toString(),
-    });
-    
-    const data = await response.json();
-    if (data.status_code === 200 && data.image?.url) {
-      return data.image.url;
+  const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+
+  const uploadServices = [
+    async () => {
+      const formData = new URLSearchParams();
+      formData.append("key", "6d207e02198a847aa98d0a2a901485a5");
+      formData.append("source", cleanBase64);
+      formData.append("format", "json");
+      const response = await fetch("https://freeimage.host/api/1/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: formData.toString(),
+      });
+      const data = await response.json();
+      if (data.status_code === 200 && data.image?.url) return data.image.url;
+      return null;
+    },
+    async () => {
+      const formData = new URLSearchParams();
+      formData.append("key", "b4e0e3a7e5e0c4b2d6a8f9c1e3b5d7a9");
+      formData.append("image", cleanBase64);
+      const response = await fetch("https://api.imgbb.com/1/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: formData.toString(),
+      });
+      const data = await response.json();
+      if (data.success && data.data?.url) return data.data.url;
+      return null;
+    },
+  ];
+
+  for (const upload of uploadServices) {
+    try {
+      const url = await upload();
+      if (url) return url;
+    } catch (error) {
+      console.error("Image upload attempt failed:", error);
     }
-    console.error("Image upload failed:", data);
-    return null;
-  } catch (error) {
-    console.error("Image upload error:", error);
-    return null;
   }
+
+  console.error("All image upload services failed");
+  return null;
 }
 
 interface GoogleLensProduct {
@@ -75,7 +94,6 @@ async function searchWithGoogleLens(imageUrl: string): Promise<{
       url: imageUrl,
       hl: "en",
       country: "us",
-      no_cache: true,
       api_key: apiKey,
     }) as GoogleLensResponse;
 
