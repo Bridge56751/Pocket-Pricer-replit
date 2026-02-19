@@ -53,7 +53,7 @@ const slides: OnboardingSlide[] = [
     description: "See real-time prices from Amazon, Walmart, Target, eBay, and other major platforms in one place.",
     iconColor: "#8B5CF6",
     tipIcon: "search",
-    tip: "Tap 'Find More Listings' to search across even more platforms.",
+    tip: "Prices update in real-time from major retailers and marketplaces.",
   },
   {
     id: "profit",
@@ -86,13 +86,16 @@ const slides: OnboardingSlide[] = [
 
 interface OnboardingScreenProps {
   onComplete: () => void;
+  isReplay?: boolean;
 }
 
-export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
+export default function OnboardingScreen({ onComplete, isReplay = false }: OnboardingScreenProps) {
   const insets = useSafeAreaInsets();
   const { theme } = useDesignTokens();
   const flatListRef = useRef<FlatList>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+
+  const activeSlides = isReplay ? slides.filter(s => s.id !== "pro") : slides;
 
   const handleComplete = async () => {
     await AsyncStorage.setItem(ONBOARDING_COMPLETE_KEY, "true");
@@ -100,7 +103,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
   };
 
   const handleNext = () => {
-    if (currentIndex < slides.length - 1) {
+    if (currentIndex < activeSlides.length - 1) {
       flatListRef.current?.scrollToIndex({ index: currentIndex + 1 });
     } else {
       handleComplete();
@@ -159,7 +162,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
     </View>
   );
 
-  const isLastSlide = currentIndex === slides.length - 1;
+  const isLastSlide = currentIndex === activeSlides.length - 1;
   const isFirstSlide = currentIndex === 0;
 
   return (
@@ -174,7 +177,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
         ) : (
           <View style={styles.stepIndicator}>
             <Text style={[styles.stepText, { color: theme.colors.mutedForeground }]}>
-              {currentIndex} of {slides.length - 1}
+              {currentIndex} of {activeSlides.length - 1}
             </Text>
           </View>
         )}
@@ -187,7 +190,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
 
       <FlatList
         ref={flatListRef}
-        data={slides}
+        data={activeSlides}
         renderItem={renderSlide}
         keyExtractor={(item) => item.id}
         horizontal
@@ -200,7 +203,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + 24 }]}>
         <View style={styles.pagination}>
-          {slides.map((_, index) => (
+          {activeSlides.map((_, index) => (
             <View
               key={index}
               style={[

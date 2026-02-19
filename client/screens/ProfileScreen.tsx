@@ -12,6 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRevenueCat } from "@/contexts/RevenueCatContext";
 import UpgradeModal from "@/components/UpgradeModal";
 import { resetOnboarding } from "@/screens/OnboardingScreen";
+import { triggerOnboardingReplay } from "@/components/AppContent";
 
 type ThemeOption = "light" | "dark" | "system";
 
@@ -305,10 +306,7 @@ export default function ProfileScreen() {
           onPress={async () => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             await resetOnboarding();
-            Alert.alert(
-              "Tutorial Reset",
-              "The tutorial will show next time you open the app."
-            );
+            triggerOnboardingReplay();
           }}
           style={({ pressed }) => [
             styles.menuItem, 

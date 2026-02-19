@@ -11,22 +11,36 @@ import OnboardingScreen, { checkOnboardingComplete } from "@/screens/OnboardingS
 import { LegalAgreementModal } from "@/components/LegalAgreementModal";
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 
+let _triggerReplay: (() => void) | null = null;
+export function triggerOnboardingReplay() {
+  _triggerReplay?.();
+}
+
 const LEGAL_ACCEPTED_KEY = "@pocket_pricer_legal_accepted";
 
 export function AppContent() {
   const { isDarkMode, theme } = useDesignTokens();
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
+  const [isOnboardingReplay, setIsOnboardingReplay] = useState(false);
+  const hasCompletedOnboardingOnce = React.useRef(false);
   const [legalAccepted, setLegalAccepted] = useState<boolean | null>(null);
   const [showLegalModal, setShowLegalModal] = useState(false);
   const [showDeclinedMessage, setShowDeclinedMessage] = useState(false);
 
   useEffect(() => {
     checkOnboardingComplete().then((complete) => {
+      hasCompletedOnboardingOnce.current = complete;
       setShowOnboarding(!complete);
     });
     AsyncStorage.getItem(LEGAL_ACCEPTED_KEY).then((value) => {
       setLegalAccepted(value === "true");
     });
+
+    _triggerReplay = () => {
+      setIsOnboardingReplay(true);
+      setShowOnboarding(true);
+    };
+    return () => { _triggerReplay = null; };
   }, []);
 
   const handleLegalAgree = async () => {
@@ -47,6 +61,7 @@ export function AppContent() {
 
   const handleOnboardingComplete = () => {
     setShowOnboarding(false);
+    setIsOnboardingReplay(false);
     if (!legalAccepted) {
       setShowLegalModal(true);
     }
@@ -87,7 +102,7 @@ export function AppContent() {
   if (showOnboarding) {
     return (
       <>
-        <OnboardingScreen onComplete={handleOnboardingComplete} />
+        <OnboardingScreen onComplete={handleOnboardingComplete} isReplay={isOnboardingReplay} />
         <StatusBar style={isDarkMode ? "light" : "dark"} />
       </>
     );
