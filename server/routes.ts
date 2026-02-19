@@ -94,6 +94,7 @@ async function searchWithGoogleLens(imageUrl: string): Promise<{
       url: imageUrl,
       hl: "en",
       country: "us",
+      no_cache: true,
       api_key: apiKey,
     }) as GoogleLensResponse;
 
