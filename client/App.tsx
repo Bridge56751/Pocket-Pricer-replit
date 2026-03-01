@@ -42,6 +42,12 @@ export default function App() {
     const initFacebookSDK = async () => {
       if (Platform.OS === "web") return;
       try {
+        const Constants = await import("expo-constants");
+        const isExpoGo = Constants.default?.appOwnership === "expo";
+        if (isExpoGo) {
+          console.log("Facebook SDK: Skipping in Expo Go (requires native build)");
+          return;
+        }
         const { Settings } = await import("react-native-fbsdk-next");
         await Settings.initializeSDK();
         if (Platform.OS === "ios") {
