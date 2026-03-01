@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { View, StyleSheet, FlatList, Pressable, Text, Linking, TextInput, ActivityIndicator } from "react-native";
+import { View, StyleSheet, FlatList, Pressable, Text, Linking, TextInput, ActivityIndicator, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useRoute, RouteProp, useNavigation } from "@react-navigation/native";
@@ -424,7 +424,12 @@ export default function SearchResultsScreen() {
             </Text>
 
             {allListings.length > 0 ? (
-              <View style={styles.sortContainer}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.sortContainer}
+                contentContainerStyle={styles.sortContent}
+              >
                 {sortOptions.map((option) => (
                   <Pressable
                     key={option}
@@ -453,7 +458,7 @@ export default function SearchResultsScreen() {
                     </Text>
                   </Pressable>
                 ))}
-              </View>
+              </ScrollView>
             ) : null}
           </View>
         }
@@ -884,20 +889,21 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   sortContainer: {
-    flexDirection: "row",
-    gap: 8,
     marginTop: 12,
     marginBottom: 8,
   },
+  sortContent: {
+    gap: 8,
+    paddingRight: 4,
+  },
   sortChip: {
-    flex: 1,
-    alignItems: "center",
+    paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
   },
   sortChipText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "600",
   },
 });
