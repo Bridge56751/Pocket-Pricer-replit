@@ -6,8 +6,6 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
-import { Settings } from "react-native-fbsdk-next";
-import { requestTrackingPermissionsAsync } from "expo-tracking-transparency";
 import {
   useFonts,
   Inter_400Regular,
@@ -44,8 +42,10 @@ export default function App() {
     const initFacebookSDK = async () => {
       if (Platform.OS === "web") return;
       try {
+        const { Settings } = await import("react-native-fbsdk-next");
         await Settings.initializeSDK();
         if (Platform.OS === "ios") {
+          const { requestTrackingPermissionsAsync } = await import("expo-tracking-transparency");
           const { status } = await requestTrackingPermissionsAsync();
           await Settings.setAdvertiserTrackingEnabled(status === "granted");
         }
