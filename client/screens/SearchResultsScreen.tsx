@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { View, StyleSheet, FlatList, Pressable, Text, Linking, TextInput, ActivityIndicator, ScrollView } from "react-native";
+import { View, StyleSheet, FlatList, Pressable, Text, Linking, TextInput, ActivityIndicator, ScrollView, Keyboard } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useRoute, RouteProp, useNavigation } from "@react-navigation/native";
@@ -223,6 +223,8 @@ export default function SearchResultsScreen() {
           { paddingTop: headerHeight + theme.spacing.lg, paddingBottom: 100 }
         ]}
         scrollIndicatorInsets={{ bottom: insets.bottom }}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
         data={sortedListings}
         keyExtractor={(item) => item.id}
         ListHeaderComponent={
@@ -369,6 +371,8 @@ export default function SearchResultsScreen() {
                     placeholder={suggestedPrice.toFixed(2)}
                     placeholderTextColor={theme.colors.mutedForeground}
                     keyboardType="decimal-pad"
+                    returnKeyType="done"
+                    onSubmitEditing={() => Keyboard.dismiss()}
                   />
                 </View>
               </View>
@@ -386,6 +390,8 @@ export default function SearchResultsScreen() {
                     placeholder="0.00"
                     placeholderTextColor={theme.colors.mutedForeground}
                     keyboardType="decimal-pad"
+                    returnKeyType="done"
+                    onSubmitEditing={() => Keyboard.dismiss()}
                   />
                 </View>
               </View>
