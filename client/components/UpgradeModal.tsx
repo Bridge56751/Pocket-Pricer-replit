@@ -15,7 +15,7 @@ import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { useRevenueCat } from "@/contexts/RevenueCatContext";
 import { useAuth } from "@/contexts/AuthContext";
 
-const PRIVACY_URL = "https://pocket-pricer.com/pocket-pricer-privacy-policy-v4.html";
+const PRIVACY_URL = "https://pocket-pricer.com/pocket-pricer-privacy-policy-v5.html";
 const TERMS_URL = "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/";
 
 interface UpgradeModalProps {
