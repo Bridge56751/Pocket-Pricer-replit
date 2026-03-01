@@ -885,19 +885,19 @@ const styles = StyleSheet.create({
   },
   sortContainer: {
     flexDirection: "row",
-    flexWrap: "wrap",
     gap: 8,
     marginTop: 12,
     marginBottom: 8,
   },
   sortChip: {
-    paddingHorizontal: 14,
+    flex: 1,
+    alignItems: "center",
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
   },
   sortChipText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "600",
   },
 });
