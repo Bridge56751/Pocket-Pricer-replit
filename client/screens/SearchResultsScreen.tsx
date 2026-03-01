@@ -98,7 +98,7 @@ export default function SearchResultsScreen() {
 
   const allListings = results.listings;
 
-  const sortOptions = ["Best Match", "Price: Low to High", "Price: High to Low", "Free Shipping"];
+  const sortOptions = ["Best Match", "Price: Low to High", "Price: High to Low"];
 
   const sortedListings = useMemo(() => {
     if (sortOption === "Best Match") return [...allListings];
@@ -108,12 +108,6 @@ export default function SearchResultsScreen() {
         return sorted.sort((a, b) => a.currentPrice - b.currentPrice);
       case "Price: High to Low":
         return sorted.sort((a, b) => b.currentPrice - a.currentPrice);
-      case "Free Shipping":
-        return sorted.sort((a, b) => {
-          if (a.shipping === 0 && b.shipping !== 0) return -1;
-          if (a.shipping !== 0 && b.shipping === 0) return 1;
-          return a.currentPrice - b.currentPrice;
-        });
       default:
         return [...allListings];
     }
