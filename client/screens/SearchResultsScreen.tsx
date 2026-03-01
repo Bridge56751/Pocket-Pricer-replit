@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { View, StyleSheet, FlatList, Pressable, Text, Linking, TextInput, ActivityIndicator } from "react-native";
+import { View, StyleSheet, FlatList, Pressable, Text, Linking, TextInput, ActivityIndicator, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useRoute, RouteProp, useNavigation } from "@react-navigation/native";
@@ -70,6 +70,7 @@ export default function SearchResultsScreen() {
 
   const [purchasePrice, setPurchasePrice] = useState("");
   const [sellingPrice, setSellingPrice] = useState("");
+  const [sortOption, setSortOption] = useState<string>("Best Match");
   
   const suggestedPrice = results.avgListPrice;
   const EBAY_FEE_RATE = 0.13;
@@ -96,6 +97,27 @@ export default function SearchResultsScreen() {
   };
 
   const allListings = results.listings;
+
+  const sortOptions = ["Best Match", "Price: Low to High", "Price: High to Low", "Free Shipping"];
+
+  const sortedListings = useMemo(() => {
+    if (sortOption === "Best Match") return [...allListings];
+    const sorted = [...allListings];
+    switch (sortOption) {
+      case "Price: Low to High":
+        return sorted.sort((a, b) => a.currentPrice - b.currentPrice);
+      case "Price: High to Low":
+        return sorted.sort((a, b) => b.currentPrice - a.currentPrice);
+      case "Free Shipping":
+        return sorted.sort((a, b) => {
+          if (a.shipping === 0 && b.shipping !== 0) return -1;
+          if (a.shipping !== 0 && b.shipping === 0) return 1;
+          return a.currentPrice - b.currentPrice;
+        });
+      default:
+        return [...allListings];
+    }
+  }, [allListings, sortOption]);
 
   const handleNewSearch = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -207,7 +229,7 @@ export default function SearchResultsScreen() {
           { paddingTop: headerHeight + theme.spacing.lg, paddingBottom: 100 }
         ]}
         scrollIndicatorInsets={{ bottom: insets.bottom }}
-        data={allListings}
+        data={sortedListings}
         keyExtractor={(item) => item.id}
         ListHeaderComponent={
           <View>
@@ -406,10 +428,47 @@ export default function SearchResultsScreen() {
             <Text style={[styles.sectionTitle, { color: theme.colors.foreground }]}>
               Active Listings ({allListings.length})
             </Text>
+
+            {allListings.length > 0 ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.sortContainer}
+                contentContainerStyle={styles.sortContent}
+              >
+                {sortOptions.map((option) => (
+                  <Pressable
+                    key={option}
+                    testID={`button-sort-${option.toLowerCase().replace(/[: ]/g, "-")}`}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setSortOption(option);
+                    }}
+                    style={[
+                      styles.sortChip,
+                      {
+                        backgroundColor: sortOption === option ? theme.colors.primary : theme.colors.muted,
+                        borderColor: sortOption === option ? theme.colors.primary : theme.colors.border,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.sortChipText,
+                        {
+                          color: sortOption === option ? "#FFFFFF" : theme.colors.mutedForeground,
+                        },
+                      ]}
+                    >
+                      {option}
+                    </Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            ) : null}
           </View>
         }
         renderItem={renderListing}
-        
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={[styles.emptyText, { color: theme.colors.mutedForeground }]}>
@@ -833,6 +892,24 @@ const styles = StyleSheet.create({
   newSearchText: {
     color: "#FFFFFF",
     fontSize: 16,
+    fontWeight: "600",
+  },
+  sortContainer: {
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  sortContent: {
+    gap: 8,
+    paddingRight: 4,
+  },
+  sortChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  sortChipText: {
+    fontSize: 13,
     fontWeight: "600",
   },
 });
