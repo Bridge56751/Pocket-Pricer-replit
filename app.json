@@ -51,6 +51,18 @@
         {
           "photosPermission": "Pocket Pricer accesses your photo library so you can select product images to scan. For example, you can choose a saved photo of an item to look up its current market value across multiple stores."
         }
+      ],
+      [
+        "react-native-fbsdk-next",
+        {
+          "appID": "901142736144530",
+          "clientToken": "dd2306374faf28e8dc2facbb05f0bbe0",
+          "displayName": "Pocket Pricer",
+          "advertiserIDCollectionEnabled": true,
+          "autoLogAppEventsEnabled": true,
+          "isAutoInitEnabled": true,
+          "iosUserTrackingPermission": "Pocket Pricer uses this identifier to deliver personalized ads and measure ad performance. You can opt out at any time."
+        }
       ]
     ],
     "experiments": {

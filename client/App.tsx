@@ -1,11 +1,13 @@
 import React, { useEffect } from "react";
-import { StyleSheet, useColorScheme } from "react-native";
+import { StyleSheet, useColorScheme, Platform } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
+import { Settings } from "react-native-fbsdk-next";
+import { requestTrackingPermissionsAsync } from "expo-tracking-transparency";
 import {
   useFonts,
   Inter_400Regular,
@@ -37,6 +39,22 @@ export default function App() {
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded, fontError]);
+
+  useEffect(() => {
+    const initFacebookSDK = async () => {
+      if (Platform.OS === "web") return;
+      try {
+        await Settings.initializeSDK();
+        if (Platform.OS === "ios") {
+          const { status } = await requestTrackingPermissionsAsync();
+          await Settings.setAdvertiserTrackingEnabled(status === "granted");
+        }
+      } catch (error) {
+        console.log("Facebook SDK init:", error);
+      }
+    };
+    initFacebookSDK();
+  }, []);
 
   if (!fontsLoaded && !fontError) {
     return null;

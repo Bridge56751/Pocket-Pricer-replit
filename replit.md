@@ -166,6 +166,12 @@ CREATE TABLE guest_scans (
 
 ## Recent Changes
 
+- **Mar 2026**: Integrated Facebook SDK (react-native-fbsdk-next) for Meta Ads tracking
+  - App ID: 901142736144530
+  - Auto-initializes on app launch with App Tracking Transparency prompt
+  - Configured in app.json as Expo plugin
+  - Requires native build (EAS Build) - does not work in Expo Go
+- **Mar 2026**: Added sort options on search results screen (Best Match, Price Low to High, Price High to Low)
 - **Feb 2026**: Removed entire authentication system for Apple App Store compliance
   - Removed user accounts, signup/login, email verification, JWT tokens
   - Removed Resend email integration
