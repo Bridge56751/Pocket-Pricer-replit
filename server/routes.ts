@@ -205,7 +205,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         reviews: item.reviews,
       }));
 
-      const productName = lensResult.productName || "Scanned Product";
+      const productName = lensResult.productName
+        || listings[0]?.title
+        || "Scanned Product";
 
       if (!isPro && deviceId) {
         await query(

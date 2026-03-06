@@ -89,7 +89,10 @@ export default function SearchResultsScreen() {
   const [ebaySoldError, setEbaySoldError] = useState(false);
 
   const fetchEbaySold = useCallback(async () => {
-    const productName = results.productInfo?.name || results.query;
+    let productName = results.productInfo?.name || results.query;
+    if (productName === "Scanned Product" && results.listings?.length > 0) {
+      productName = results.listings[0].title;
+    }
     if (!productName) return;
     setEbaySoldLoading(true);
     setEbaySoldError(false);
