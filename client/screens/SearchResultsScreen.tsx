@@ -183,21 +183,6 @@ export default function SearchResultsScreen() {
             {item.condition}
           </Text>
         </View>
-        {item.shipping > 0 ? (
-          <View style={styles.shippingRow}>
-            <Feather name="truck" size={12} color={theme.colors.mutedForeground} />
-            <Text style={[styles.shippingText, { color: theme.colors.mutedForeground }]}>
-              +${item.shipping.toFixed(2)} delivery
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.shippingRow}>
-            <Feather name="truck" size={12} color={theme.colors.primary} />
-            <Text style={[styles.shippingText, { color: theme.colors.primary }]}>
-              Free shipping
-            </Text>
-          </View>
-        )}
         <Pressable
           onPress={() => handleViewListing(item.link)}
           style={({ pressed }) => [
@@ -844,15 +829,6 @@ const styles = StyleSheet.create({
     textDecorationLine: "line-through",
   },
   condition: {
-    fontSize: 12,
-  },
-  shippingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    marginBottom: 10,
-  },
-  shippingText: {
     fontSize: 12,
   },
   viewButton: {
