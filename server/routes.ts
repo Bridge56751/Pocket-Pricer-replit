@@ -38,13 +38,13 @@ async function uploadImageForLens(imageBase64: string): Promise<string | null> {
     },
   ];
 
-  for (const upload of uploadServices) {
-    try {
-      const url = await upload();
-      if (url) return url;
-    } catch (error) {
-      console.error("Image upload attempt failed:", error);
+  try {
+    const results = await Promise.allSettled(uploadServices.map(fn => fn()));
+    for (const result of results) {
+      if (result.status === "fulfilled" && result.value) return result.value;
     }
+  } catch (error) {
+    console.error("Image upload failed:", error);
   }
 
   console.error("All image upload services failed");
@@ -94,7 +94,6 @@ async function searchWithGoogleLens(imageUrl: string): Promise<{
       url: imageUrl,
       hl: "en",
       country: "us",
-      no_cache: true,
       api_key: apiKey,
     }) as GoogleLensResponse;
 
