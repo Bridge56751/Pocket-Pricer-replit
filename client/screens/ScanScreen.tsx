@@ -1,12 +1,21 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
-import { View, StyleSheet, Pressable, Text, ScrollView, Image, ActivityIndicator, Alert } from "react-native";
+import { View, StyleSheet, Pressable, Text, ScrollView, Image, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useFocusEffect, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import Animated, {
+  FadeInDown,
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+  withSequence,
+  Easing,
+  withSpring,
+} from "react-native-reanimated";
 
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { SkeletonLoader } from "@/components/SkeletonLoader";
@@ -20,6 +29,60 @@ import type { SearchHistoryItem } from "@/types/product";
 import type { RootStackParamList, CapturedPhoto } from "@/navigation/RootStackNavigator";
 
 type ScanScreenRouteProp = RouteProp<RootStackParamList, "Home">;
+
+const SCAN_STEPS = [
+  { label: "Uploading image...", icon: "upload" as const },
+  { label: "Matching product...", icon: "search" as const },
+  { label: "Finding best prices...", icon: "dollar-sign" as const },
+];
+
+function PulsingImage({ uri, style }: { uri: string; style: any }) {
+  const opacity = useSharedValue(1);
+
+  useEffect(() => {
+    opacity.value = withRepeat(
+      withSequence(
+        withTiming(0.7, { duration: 1000, easing: Easing.inOut(Easing.ease) }),
+        withTiming(1, { duration: 1000, easing: Easing.inOut(Easing.ease) })
+      ),
+      -1,
+      false
+    );
+  }, []);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+  }));
+
+  return (
+    <Animated.Image
+      source={{ uri }}
+      style={[style, animatedStyle]}
+      resizeMode="cover"
+    />
+  );
+}
+
+function AnimatedProgressBar({ step, totalSteps, color, trackColor }: { step: number; totalSteps: number; color: string; trackColor: string }) {
+  const progress = useSharedValue(0);
+
+  useEffect(() => {
+    const target = Math.min((step + 1) / totalSteps, 1);
+    progress.value = withSpring(target, { damping: 15, stiffness: 60 });
+  }, [step, totalSteps]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    width: `${progress.value * 100}%` as any,
+  }));
+
+  return (
+    <View style={[styles.scanOverlayProgressBar, { backgroundColor: trackColor }]}>
+      <Animated.View
+        style={[styles.scanOverlayProgressFill, { backgroundColor: color }, animatedStyle]}
+      />
+    </View>
+  );
+}
 
 function formatTimeAgo(dateString: string): string {
   const date = new Date(dateString);
@@ -51,6 +114,7 @@ export default function ScanScreen() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analyzingProgress, setAnalyzingProgress] = useState("");
   const [analyzingCount, setAnalyzingCount] = useState({ current: 0, total: 0 });
+  const [currentStep, setCurrentStep] = useState(0);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [scannedPhotoUri, setScannedPhotoUri] = useState<string | null>(null);
@@ -73,10 +137,9 @@ export default function ScanScreen() {
     setIsAnalyzing(true);
     setErrorMessage(null);
     setScannedPhotoUri(photos[0].uri);
-    setAnalyzingCount({ current: 1, total: 2 });
-    setAnalyzingProgress(photos.length > 1 
-      ? `Analyzing ${photos.length} photos of your product...` 
-      : "Identifying product...");
+    setCurrentStep(0);
+    setAnalyzingCount({ current: 1, total: 3 });
+    setAnalyzingProgress(SCAN_STEPS[0].label);
     
     try {
       if (!isPro) {
@@ -90,7 +153,9 @@ export default function ScanScreen() {
         }
       }
 
-      setAnalyzingProgress("Searching with visual matching...");
+      setCurrentStep(1);
+      setAnalyzingProgress(SCAN_STEPS[1].label);
+      setAnalyzingCount({ current: 2, total: 3 });
       
       let results: any = null;
       let productInfo: any = null;
@@ -145,6 +210,10 @@ export default function ScanScreen() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         return;
       }
+
+      setCurrentStep(2);
+      setAnalyzingProgress(SCAN_STEPS[2].label);
+      setAnalyzingCount({ current: 3, total: 3 });
       
       await incrementScans();
 
@@ -404,10 +473,9 @@ export default function ScanScreen() {
           <View style={{ paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20, flex: 1, paddingHorizontal: 24 }}>
             {scannedPhotoUri ? (
               <View style={styles.scanOverlayImageContainer}>
-                <Image
-                  source={{ uri: scannedPhotoUri }}
+                <PulsingImage
+                  uri={scannedPhotoUri}
                   style={styles.scanOverlayImage}
-                  resizeMode="cover"
                 />
               </View>
             ) : null}
@@ -416,21 +484,49 @@ export default function ScanScreen() {
                 PLEASE WAIT
               </Text>
               <Text style={[styles.scanOverlayTitle, { color: theme.colors.foreground }]}>
-                Identifying item...
+                {SCAN_STEPS[Math.min(currentStep, SCAN_STEPS.length - 1)].label}
               </Text>
-              <View style={[styles.scanOverlayProgressBar, { backgroundColor: theme.colors.muted }]}>
-                <Animated.View
-                  style={[
-                    styles.scanOverlayProgressFill,
-                    { backgroundColor: theme.colors.primary, width: analyzingCount.total > 0 ? `${(analyzingCount.current / analyzingCount.total) * 100}%` : '50%' }
-                  ]}
-                />
-              </View>
-              <View style={styles.scanOverlayStatusRow}>
-                <ActivityIndicator size="small" color={theme.colors.mutedForeground} />
-                <Text style={[styles.scanOverlayStatusText, { color: theme.colors.mutedForeground }]}>
-                  {analyzingProgress || "Searching marketplaces"}
-                </Text>
+              <AnimatedProgressBar
+                step={currentStep}
+                totalSteps={SCAN_STEPS.length}
+                color={theme.colors.primary}
+                trackColor={theme.colors.muted}
+              />
+              <View style={styles.scanStepIndicators}>
+                {SCAN_STEPS.map((step, index) => (
+                  <View key={index} style={styles.scanStepRow}>
+                    <View
+                      style={[
+                        styles.scanStepDot,
+                        index < currentStep
+                          ? { backgroundColor: theme.colors.primary }
+                          : index === currentStep
+                          ? { backgroundColor: theme.colors.primary, opacity: 0.8 }
+                          : { backgroundColor: theme.colors.muted },
+                      ]}
+                    >
+                      {index < currentStep ? (
+                        <Feather name="check" size={10} color="#fff" />
+                      ) : index === currentStep ? (
+                        <ActivityIndicator size={10} color="#fff" />
+                      ) : null}
+                    </View>
+                    <Text
+                      style={[
+                        styles.scanStepLabel,
+                        {
+                          color:
+                            index <= currentStep
+                              ? theme.colors.foreground
+                              : theme.colors.mutedForeground,
+                          fontWeight: index === currentStep ? "600" : "400",
+                        },
+                      ]}
+                    >
+                      {step.label}
+                    </Text>
+                  </View>
+                ))}
               </View>
             </View>
           </View>
@@ -647,6 +743,26 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   scanOverlayStatusText: {
+    fontSize: 14,
+  },
+  scanStepIndicators: {
+    width: "80%",
+    marginTop: 16,
+    gap: 12,
+  },
+  scanStepRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  scanStepDot: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  scanStepLabel: {
     fontSize: 14,
   },
   scanErrorTitle: {

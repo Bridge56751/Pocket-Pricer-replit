@@ -11,7 +11,7 @@ import * as Haptics from "expo-haptics";
 import { ThemedText } from "@/components/ThemedText";
 import { ProfitBadge } from "@/components/ProfitBadge";
 import { useTheme } from "@/hooks/useTheme";
-import { BorderRadius, Spacing } from "@/constants/theme";
+import { BorderRadius, Spacing } from "@/constants/design-tokens";
 import type { Product } from "@/types/product";
 
 interface ProductCardProps {

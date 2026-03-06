@@ -50,8 +50,7 @@ client/
 │   ├── SkeletonLoader.tsx
 │   └── UpgradeModal.tsx       # Pro subscription upgrade modal
 ├── constants/
-│   ├── design-tokens.ts       # Design system (colors, spacing, components)
-│   └── theme.ts               # Legacy theme (kept for compatibility)
+│   └── design-tokens.ts       # Unified design system (colors, spacing, typography, components)
 ├── hooks/
 │   ├── useDesignTokens.ts     # Hook for accessing design tokens
 │   ├── useTheme.ts            # Theme hook
@@ -166,6 +165,15 @@ CREATE TABLE guest_scans (
 
 ## Recent Changes
 
+- **Mar 2026**: Consolidated dual theme system (`theme.ts` + `design-tokens.ts`) into single `design-tokens.ts`
+  - All components now import from `@/constants/design-tokens`
+  - `useTheme` hook updated to use design-tokens as source of truth
+  - Deleted legacy `client/constants/theme.ts`
+- **Mar 2026**: Polished scan loading overlay with multi-step progress
+  - 3-step progress indicator: "Uploading image...", "Matching product...", "Finding best prices..."
+  - Animated progress bar with spring physics
+  - Pulsing photo animation using react-native-reanimated
+  - Step indicators with checkmarks for completed steps
 - **Mar 2026**: Integrated Facebook SDK (react-native-fbsdk-next) for Meta Ads tracking
   - App ID: 901142736144530
   - Auto-initializes on app launch with App Tracking Transparency prompt
