@@ -258,10 +258,10 @@ export default function ScanScreen() {
 
         <View style={[styles.heroCard, { backgroundColor: theme.colors.card }]}>
             <Text style={[styles.heroTitle, { color: theme.colors.foreground }]}>
-              Discover Product Values
+              Scan & Price
             </Text>
             <Text style={[styles.heroDescription, { color: theme.colors.mutedForeground }]}>
-              Scan any product to instantly see prices across Amazon, Walmart, Target, and more.
+              Point your camera at any product to get instant market pricing
             </Text>
 
             <Pressable
@@ -298,7 +298,7 @@ export default function ScanScreen() {
               No scans yet
             </Text>
             <Text style={[styles.emptyDescription, { color: theme.colors.mutedForeground }]}>
-              Tap "Scan Product" to identify items and see their market value
+              Scan a product to see its value
             </Text>
           </View>
         ) : (
