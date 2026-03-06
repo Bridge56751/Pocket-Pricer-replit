@@ -184,8 +184,6 @@ export default function ScanScreen() {
     setAnalyzingCount({ current: 1, total: 3 });
     setAnalyzingProgress(SCAN_STEPS[0].label);
     
-    const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
-
     try {
       if (!isPro) {
         const scansUsed = await getScansUsed();
@@ -197,8 +195,6 @@ export default function ScanScreen() {
           return;
         }
       }
-
-      await delay(400);
 
       setCurrentStep(1);
       setAnalyzingProgress(SCAN_STEPS[1].label);
