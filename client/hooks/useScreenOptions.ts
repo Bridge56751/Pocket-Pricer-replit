@@ -2,7 +2,6 @@ import { Platform } from "react-native";
 import { NativeStackNavigationOptions } from "@react-navigation/native-stack";
 import { isLiquidGlassAvailable } from "expo-glass-effect";
 
-import { useTheme } from "@/hooks/useTheme";
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 
 interface UseScreenOptionsParams {
@@ -12,13 +11,12 @@ interface UseScreenOptionsParams {
 export function useScreenOptions({
   transparent = true,
 }: UseScreenOptionsParams = {}): NativeStackNavigationOptions {
-  const { theme, isDark } = useTheme();
-  const { theme: designTheme } = useDesignTokens();
+  const { theme: designTheme, isDarkMode } = useDesignTokens();
 
   return {
     headerTitleAlign: "center",
     headerTransparent: transparent,
-    headerBlurEffect: isDark ? "dark" : "light",
+    headerBlurEffect: isDarkMode ? "dark" : "light",
     headerTintColor: designTheme.colors.foreground,
     headerStyle: {
       backgroundColor: Platform.select({
