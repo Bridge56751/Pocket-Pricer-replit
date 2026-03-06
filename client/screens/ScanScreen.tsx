@@ -244,10 +244,16 @@ export default function ScanScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <View style={styles.headerSpacer} />
-          <Text style={[styles.appName, { color: theme.colors.primary }]}>
-            Pocket Pricer
-          </Text>
+          <View style={styles.headerLeft}>
+            <Image
+              source={require("../../assets/images/icon.png")}
+              style={styles.headerAppIcon}
+              resizeMode="contain"
+            />
+            <Text style={[styles.appName, { color: theme.colors.primary }]}>
+              Pocket Pricer
+            </Text>
+          </View>
           <Pressable 
             style={styles.headerIcon}
             onPress={() => navigation.navigate("Settings")}
@@ -484,8 +490,15 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 20,
   },
-  headerSpacer: {
-    width: 40,
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  headerAppIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
   },
   logo: {
     width: 36,
