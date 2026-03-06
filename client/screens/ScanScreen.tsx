@@ -254,6 +254,12 @@ export default function ScanScreen() {
         return;
       }
 
+      setCurrentStep(2);
+      setAnalyzingProgress(SCAN_STEPS[2].label);
+      setAnalyzingCount({ current: 3, total: 3 });
+
+      await incrementScans();
+
       const scannedImageId = storeImage(`data:image/jpeg;base64,${photos[0].base64}`);
       const enrichedResults = {
         ...results,
@@ -261,14 +267,6 @@ export default function ScanScreen() {
         productInfo,
         usedLens,
       };
-
-      setIsAnalyzing(false);
-      setAnalyzingProgress("");
-      setScannedPhotoUri(null);
-      processingRef.current = false;
-      
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      navigation.navigate("SearchResults", { results: enrichedResults });
 
       const queryString = typeof results.query === 'string' 
         ? results.query 
@@ -282,7 +280,14 @@ export default function ScanScreen() {
         results: enrichedResults,
       };
 
-      incrementScans().catch(() => {});
+      setIsAnalyzing(false);
+      setAnalyzingProgress("");
+      setScannedPhotoUri(null);
+      processingRef.current = false;
+      
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      navigation.navigate("SearchResults", { results: enrichedResults });
+
       addSearchHistory(historyItem).catch(() => {});
       loadRecentScans();
       
