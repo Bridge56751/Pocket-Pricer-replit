@@ -37,30 +37,73 @@ const SCAN_STEPS = [
   { label: "Finding best prices...", icon: "dollar-sign" as const },
 ];
 
-function PulsingImage({ uri, style }: { uri: string; style: any }) {
-  const opacity = useSharedValue(1);
+function ScanningImage({ uri, style, containerStyle }: { uri: string; style: any; containerStyle?: any }) {
+  const shimmerTranslate = useSharedValue(-1);
+  const glowOpacity = useSharedValue(0);
 
   useEffect(() => {
-    opacity.value = withRepeat(
+    shimmerTranslate.value = withRepeat(
+      withTiming(1, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
+      -1,
+      false
+    );
+    glowOpacity.value = withRepeat(
       withSequence(
-        withTiming(0.7, { duration: 1000, easing: Easing.inOut(Easing.ease) }),
-        withTiming(1, { duration: 1000, easing: Easing.inOut(Easing.ease) })
+        withTiming(0.8, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
+        withTiming(0.2, { duration: 1200, easing: Easing.inOut(Easing.ease) })
       ),
       -1,
       false
     );
   }, []);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
+  const shimmerStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: shimmerTranslate.value * 400 }],
+  }));
+
+  const glowStyle = useAnimatedStyle(() => ({
+    opacity: glowOpacity.value,
   }));
 
   return (
-    <Animated.Image
-      source={{ uri }}
-      style={[style, animatedStyle]}
-      resizeMode="cover"
-    />
+    <View style={[containerStyle, { position: "relative" }]}>
+      <Animated.View
+        style={[
+          {
+            position: "absolute",
+            top: -3,
+            left: -3,
+            right: -3,
+            bottom: -3,
+            borderRadius: 19,
+            borderWidth: 2.5,
+            borderColor: "#10B981",
+          },
+          glowStyle,
+        ]}
+      />
+      <View style={{ borderRadius: 16, overflow: "hidden", flex: 1 }}>
+        <Image source={{ uri }} style={style} resizeMode="cover" />
+        <Animated.View
+          style={[
+            {
+              position: "absolute",
+              top: 0,
+              bottom: 0,
+              width: 120,
+            },
+            shimmerStyle,
+          ]}
+        >
+          <LinearGradient
+            colors={["transparent", "rgba(255,255,255,0.15)", "transparent"]}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={{ flex: 1 }}
+          />
+        </Animated.View>
+      </View>
+    </View>
   );
 }
 
@@ -616,12 +659,11 @@ export default function ScanScreen() {
         <View style={[styles.scanOverlay, { backgroundColor: theme.colors.background }]}>
           <View style={{ paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20, flex: 1, paddingHorizontal: 24 }}>
             {scannedPhotoUri ? (
-              <View style={styles.scanOverlayImageContainer}>
-                <PulsingImage
-                  uri={scannedPhotoUri}
-                  style={styles.scanOverlayImage}
-                />
-              </View>
+              <ScanningImage
+                uri={scannedPhotoUri}
+                style={styles.scanOverlayImage}
+                containerStyle={styles.scanOverlayImageContainer}
+              />
             ) : null}
             <View style={styles.scanOverlayContent}>
               <Text style={[styles.scanOverlayTitle, { color: theme.colors.foreground }]}>
@@ -808,7 +850,6 @@ const styles = StyleSheet.create({
   scanOverlayImageContainer: {
     flex: 1,
     borderRadius: 16,
-    overflow: "hidden",
     maxHeight: "60%",
   },
   scanOverlayImageError: {
