@@ -434,7 +434,7 @@ export default function ScanScreen() {
                   setScannedPhotoUri(null);
                   navigation.navigate("CameraScan");
                 }}
-                style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}
+                style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1, width: "100%" }]}
               >
                 <LinearGradient
                   colors={["#EF4444", "#DC2626", "#B91C1C"]}
@@ -563,6 +563,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingTop: 24,
     gap: 8,
+    width: "100%",
   },
   scanOverlayLabel: {
     fontSize: 12,
