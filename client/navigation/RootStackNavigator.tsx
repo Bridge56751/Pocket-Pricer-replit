@@ -21,7 +21,7 @@ interface ListingItem {
   imageUrl: string;
   currentPrice: number;
   originalPrice?: number;
-  condition: string;
+  condition?: string;
   shipping: number;
   link: string;
   seller?: string;
