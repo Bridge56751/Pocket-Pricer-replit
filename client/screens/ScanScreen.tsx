@@ -52,6 +52,7 @@ export default function ScanScreen() {
   const [analyzingCount, setAnalyzingCount] = useState({ current: 0, total: 0 });
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [scannedPhotoUri, setScannedPhotoUri] = useState<string | null>(null);
   const processingRef = useRef(false);
 
   const loadRecentScans = useCallback(async () => {
@@ -70,6 +71,7 @@ export default function ScanScreen() {
     processingRef.current = true;
     setIsAnalyzing(true);
     setErrorMessage(null);
+    setScannedPhotoUri(photos[0].uri);
     setAnalyzingCount({ current: 1, total: 2 });
     setAnalyzingProgress(photos.length > 1 
       ? `Analyzing ${photos.length} photos of your product...` 
@@ -170,6 +172,7 @@ export default function ScanScreen() {
       
       setIsAnalyzing(false);
       setAnalyzingProgress("");
+      setScannedPhotoUri(null);
       processingRef.current = false;
       
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -253,33 +256,7 @@ export default function ScanScreen() {
           </Pressable>
         </View>
 
-        {isAnalyzing ? (
-          <View style={[styles.analyzingCard, { backgroundColor: theme.colors.card }]}>
-            <View style={styles.analyzingContent}>
-              <ActivityIndicator size="large" color={theme.colors.primary} />
-              <View style={styles.analyzingText}>
-                <Text style={[styles.analyzingTitle, { color: theme.colors.foreground }]}>
-                  Analyzing your product...
-                </Text>
-                <Text style={[styles.analyzingSubtitle, { color: theme.colors.mutedForeground }]}>
-                  {analyzingProgress}
-                </Text>
-              </View>
-            </View>
-            <View style={[styles.progressBar, { backgroundColor: theme.colors.muted }]}>
-              <View 
-                style={[
-                  styles.progressFill, 
-                  { 
-                    backgroundColor: theme.colors.primary,
-                    width: `${(analyzingCount.current / analyzingCount.total) * 100}%` 
-                  }
-                ]} 
-              />
-            </View>
-          </View>
-        ) : (
-          <View style={[styles.heroCard, { backgroundColor: theme.colors.card }]}>
+        <View style={[styles.heroCard, { backgroundColor: theme.colors.card }]}>
             <Text style={[styles.heroTitle, { color: theme.colors.foreground }]}>
               Discover Product Values
             </Text>
@@ -302,20 +279,6 @@ export default function ScanScreen() {
               </LinearGradient>
             </Pressable>
           </View>
-        )}
-
-        {errorMessage ? (
-          <Pressable 
-            onPress={() => setErrorMessage(null)}
-            style={[styles.errorBanner, { backgroundColor: theme.colors.danger + "20" }]}
-          >
-            <Feather name="alert-circle" size={18} color={theme.colors.danger} />
-            <Text style={[styles.errorText, { color: theme.colors.danger }]}>
-              {errorMessage}
-            </Text>
-            <Feather name="x" size={16} color={theme.colors.danger} />
-          </Pressable>
-        ) : null}
 
         <View style={styles.sectionHeader}>
           <Feather name="clock" size={18} color={theme.colors.primary} />
@@ -404,6 +367,103 @@ export default function ScanScreen() {
         visible={showUpgradeModal} 
         onClose={() => setShowUpgradeModal(false)} 
       />
+
+      {isAnalyzing ? (
+        <View style={[styles.scanOverlay, { backgroundColor: theme.colors.background }]}>
+          <View style={{ paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20, flex: 1, paddingHorizontal: 24 }}>
+            {scannedPhotoUri ? (
+              <View style={styles.scanOverlayImageContainer}>
+                <Image
+                  source={{ uri: scannedPhotoUri }}
+                  style={styles.scanOverlayImage}
+                  resizeMode="cover"
+                />
+              </View>
+            ) : null}
+            <View style={styles.scanOverlayContent}>
+              <Text style={[styles.scanOverlayLabel, { color: theme.colors.mutedForeground }]}>
+                PLEASE WAIT
+              </Text>
+              <Text style={[styles.scanOverlayTitle, { color: theme.colors.foreground }]}>
+                Identifying item...
+              </Text>
+              <View style={[styles.scanOverlayProgressBar, { backgroundColor: theme.colors.muted }]}>
+                <Animated.View
+                  style={[
+                    styles.scanOverlayProgressFill,
+                    { backgroundColor: theme.colors.primary, width: analyzingCount.total > 0 ? `${(analyzingCount.current / analyzingCount.total) * 100}%` : '50%' }
+                  ]}
+                />
+              </View>
+              <View style={styles.scanOverlayStatusRow}>
+                <ActivityIndicator size="small" color={theme.colors.mutedForeground} />
+                <Text style={[styles.scanOverlayStatusText, { color: theme.colors.mutedForeground }]}>
+                  {analyzingProgress || "Searching marketplaces"}
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+      ) : null}
+
+      {errorMessage ? (
+        <View style={[styles.scanOverlay, { backgroundColor: theme.colors.background }]}>
+          <View style={{ paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20, flex: 1, paddingHorizontal: 24 }}>
+            {scannedPhotoUri ? (
+              <View style={[styles.scanOverlayImageContainer, styles.scanOverlayImageError]}>
+                <Image
+                  source={{ uri: scannedPhotoUri }}
+                  style={styles.scanOverlayImage}
+                  resizeMode="cover"
+                />
+                <View style={styles.scanErrorIconContainer}>
+                  <Feather name="alert-circle" size={24} color={theme.colors.danger} />
+                </View>
+              </View>
+            ) : null}
+            <View style={styles.scanOverlayContent}>
+              <Text style={[styles.scanErrorTitle, { color: theme.colors.foreground }]}>
+                Scan failed
+              </Text>
+              <Text style={[styles.scanErrorMessage, { color: theme.colors.mutedForeground }]}>
+                {errorMessage}
+              </Text>
+              <Pressable
+                onPress={() => {
+                  setErrorMessage(null);
+                  setScannedPhotoUri(null);
+                  navigation.navigate("CameraScan");
+                }}
+                style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}
+              >
+                <LinearGradient
+                  colors={["#EF4444", "#DC2626", "#B91C1C"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.scanErrorRetryButton}
+                >
+                  <Feather name="camera" size={18} color="#fff" />
+                  <Text style={styles.scanErrorRetryText}>Try again</Text>
+                </LinearGradient>
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  setErrorMessage(null);
+                  setScannedPhotoUri(null);
+                }}
+                style={({ pressed }) => [
+                  styles.scanErrorBackButton,
+                  { backgroundColor: theme.colors.muted, opacity: pressed ? 0.7 : 1 }
+                ]}
+              >
+                <Text style={[styles.scanErrorBackText, { color: theme.colors.foreground }]}>
+                  Go back
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -447,19 +507,6 @@ const styles = StyleSheet.create({
     padding: 24,
     marginBottom: 24,
   },
-  errorBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 16,
-    gap: 10,
-  },
-  errorText: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: "500",
-  },
   heroTitle: {
     fontSize: 22,
     fontWeight: "700",
@@ -483,36 +530,103 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: "600",
   },
-  analyzingCard: {
-    borderRadius: 20,
-    padding: 24,
-    marginBottom: 24,
+  scanOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 100,
   },
-  analyzingContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 16,
-    marginBottom: 16,
-  },
-  analyzingText: {
+  scanOverlayImageContainer: {
     flex: 1,
+    borderRadius: 16,
+    overflow: "hidden",
+    maxHeight: "60%",
   },
-  analyzingTitle: {
-    fontSize: 18,
+  scanOverlayImageError: {
+    borderWidth: 3,
+    borderColor: "#EF4444",
+  },
+  scanOverlayImage: {
+    width: "100%",
+    height: "100%",
+  },
+  scanErrorIconContainer: {
+    position: "absolute",
+    bottom: -12,
+    alignSelf: "center",
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  scanOverlayContent: {
+    alignItems: "center",
+    paddingTop: 24,
+    gap: 8,
+  },
+  scanOverlayLabel: {
+    fontSize: 12,
     fontWeight: "600",
-    marginBottom: 4,
+    letterSpacing: 2,
   },
-  analyzingSubtitle: {
-    fontSize: 14,
+  scanOverlayTitle: {
+    fontSize: 26,
+    fontWeight: "700",
   },
-  progressBar: {
+  scanOverlayProgressBar: {
     height: 6,
     borderRadius: 3,
     overflow: "hidden",
+    width: "80%",
+    marginTop: 8,
   },
-  progressFill: {
+  scanOverlayProgressFill: {
     height: "100%",
     borderRadius: 3,
+  },
+  scanOverlayStatusRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 8,
+  },
+  scanOverlayStatusText: {
+    fontSize: 14,
+  },
+  scanErrorTitle: {
+    fontSize: 26,
+    fontWeight: "700",
+  },
+  scanErrorMessage: {
+    fontSize: 15,
+    textAlign: "center",
+    lineHeight: 22,
+    marginBottom: 12,
+  },
+  scanErrorRetryButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 16,
+    borderRadius: 14,
+    gap: 10,
+    width: "100%",
+  },
+  scanErrorRetryText: {
+    color: "#fff",
+    fontSize: 17,
+    fontWeight: "600",
+  },
+  scanErrorBackButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 16,
+    borderRadius: 14,
+    width: "100%",
+  },
+  scanErrorBackText: {
+    fontSize: 17,
+    fontWeight: "600",
   },
   sectionHeader: {
     flexDirection: "row",
