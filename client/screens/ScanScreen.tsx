@@ -250,7 +250,7 @@ export default function ScanScreen() {
               style={styles.headerAppIcon}
               resizeMode="contain"
             />
-            <Text style={[styles.appName, { color: theme.colors.primary }]}>
+            <Text style={[styles.appName, { color: theme.colors.foreground }]}>
               Pocket Pricer
             </Text>
           </View>
