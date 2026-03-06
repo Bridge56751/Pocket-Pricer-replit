@@ -238,6 +238,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  app.post("/api/ebay-sold", async (req: Request, res: Response) => {
+    try {
+      const { query } = req.body;
+
+      if (!query || typeof query !== "string") {
+        return res.status(400).json({ error: "Product query is required" });
+      }
+
+      console.log(`Fetching eBay sold listings for: ${query}`);
+
+      const searchQuery = encodeURIComponent(query);
+      const ebayUrl = `https://www.ebay.com/sch/i.html?_nkw=${searchQuery}&LH_Complete=1&LH_Sold=1&_sop=13&rt=nc`;
+
+      const response = await fetch(ebayUrl, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.9",
+        },
+      });
+
+      if (!response.ok) {
+        console.error(`eBay fetch failed with status: ${response.status}`);
+        return res.status(502).json({ error: "Failed to fetch eBay data" });
+      }
+
+      const html = await response.text();
+
+      const soldItems: Array<{
+        title: string;
+        price: number;
+        soldDate: string;
+        url: string;
+        imageUrl: string;
+      }> = [];
+
+      const resultsIdx = html.indexOf("srp-results");
+      if (resultsIdx === -1) {
+        console.log("eBay: Could not find results section");
+        return res.json({ query, soldCount: 0, avgSoldPrice: 0, recentSales: [] });
+      }
+
+      const resultsHtml = html.substring(resultsIdx);
+      const cards = resultsHtml.split(/(?=data-listingid=\d)/);
+
+      for (let i = 1; i < cards.length; i++) {
+        const card = cards[i];
+
+        const idMatch = card.match(/data-listingid=(\d+)/);
+        if (!idMatch) continue;
+
+        const titleMatch = card.match(/alt="([^"]{10,200})"/i);
+        const title = titleMatch ? titleMatch[1].trim() : "";
+
+        if (!title || title.toLowerCase().includes("shop on ebay")) continue;
+
+        const priceMatch = card.match(/\$[\d,.]+/);
+        const priceValue = priceMatch ? parseFloat(priceMatch[0].replace(/[^0-9.]/g, "")) : 0;
+
+        if (!priceValue || priceValue <= 0) continue;
+
+        const dateMatch = card.match(/Sold\s+([A-Za-z]+\s+\d{1,2},?\s*\d{0,4})/i);
+        const soldDate = dateMatch ? dateMatch[1].trim() : "";
+
+        const urlMatch = card.match(/href=(https:\/\/www\.ebay\.com\/itm\/\d+)/);
+        const url = urlMatch ? urlMatch[1] : "";
+
+        const imgMatch = card.match(/src=(https:\/\/i\.ebayimg\.com[^\s>"']+)/);
+        const imageUrl = imgMatch ? imgMatch[1] : "";
+
+        soldItems.push({ title, price: priceValue, soldDate, url, imageUrl });
+      }
+
+      const validItems = soldItems.slice(0, 20);
+      const prices = validItems.map(item => item.price);
+      const avgSoldPrice = prices.length > 0
+        ? prices.reduce((sum, p) => sum + p, 0) / prices.length
+        : 0;
+
+      console.log(`eBay sold: found ${validItems.length} sold items for "${query}"`);
+
+      res.json({
+        query,
+        soldCount: validItems.length,
+        avgSoldPrice: Math.round(avgSoldPrice * 100) / 100,
+        recentSales: validItems,
+      });
+    } catch (error) {
+      console.error("eBay sold fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch sales data" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

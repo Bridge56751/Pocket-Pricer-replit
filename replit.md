@@ -79,7 +79,7 @@ client/
 
 server/
 ├── index.ts                   # Express server setup
-├── routes.ts                  # API endpoints (scan-with-lens only)
+├── routes.ts                  # API endpoints (scan-with-lens, ebay-sold)
 ├── db.ts                      # PostgreSQL connection
 └── templates/                 # Landing page
 ```
@@ -126,6 +126,14 @@ function MyComponent() {
   - Returns: Product identification with multi-platform pricing data
   - Free users limited to 5 lifetime scans (tracked by device ID in guest_scans table)
 
+### eBay Sold Listings
+- `POST /api/ebay-sold` - Fetch recent eBay sold/completed listings
+  - Body: `{ query: string }` (product name to search)
+  - Returns: `{ soldCount, avgSoldPrice, recentSales: [{ title, price, soldDate, url, imageUrl }] }`
+  - No authentication needed — supplementary data endpoint
+  - Data source: eBay web scraping (no API key required)
+  - Returns up to 20 most recent sold items
+
 ## Running the App
 
 The app runs on two workflows:
@@ -144,6 +152,7 @@ Users can test on physical devices using Expo Go by scanning the QR code.
 6. **Favorites**: Save profitable products for later (stored locally)
 7. **Custom Settings**: Set default costs and target profit margins
 8. **Subscription Tiers**: Free (5 lifetime scans) or Pro ($8.99/mo unlimited)
+9. **eBay Sold History**: Check recent eBay sold listings for real market value data
 
 ## Subscription Model
 
@@ -171,6 +180,10 @@ CREATE TABLE guest_scans (
   - Auto-initializes on app launch with App Tracking Transparency prompt
   - Configured in app.json as Expo plugin
   - Requires native build (EAS Build) - does not work in Expo Go
+- **Mar 2026**: Added eBay sold listings feature (Check Recent Sales button on search results)
+  - New endpoint: `POST /api/ebay-sold` scrapes eBay completed/sold listings
+  - Shows sold count, average sold price, and up to 5 recent sales with images
+  - Tapping a sold item opens the eBay listing; refresh button to re-fetch
 - **Mar 2026**: Added sort options on search results screen (Best Match, Price Low to High, Price High to Low)
 - **Feb 2026**: Removed entire authentication system for Apple App Store compliance
   - Removed user accounts, signup/login, email verification, JWT tokens
