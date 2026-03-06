@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
-import { View, StyleSheet, Pressable, Text, ScrollView, Image, ActivityIndicator } from "react-native";
+import { View, StyleSheet, Pressable, Text, ScrollView, Image } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useFocusEffect, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -15,6 +15,7 @@ import Animated, {
   withSequence,
   Easing,
   withSpring,
+  ZoomIn,
 } from "react-native-reanimated";
 
 import { useDesignTokens } from "@/hooks/useDesignTokens";
@@ -80,6 +81,145 @@ function AnimatedProgressBar({ step, totalSteps, color, trackColor }: { step: nu
       <Animated.View
         style={[styles.scanOverlayProgressFill, { backgroundColor: color }, animatedStyle]}
       />
+    </View>
+  );
+}
+
+function SpinningLoader({ color, size = 20 }: { color: string; size?: number }) {
+  const rotation = useSharedValue(0);
+
+  useEffect(() => {
+    rotation.value = withRepeat(
+      withTiming(360, { duration: 1000, easing: Easing.linear }),
+      -1,
+      false
+    );
+  }, []);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${rotation.value}deg` }],
+  }));
+
+  return (
+    <Animated.View style={[{ width: size, height: size, alignItems: "center", justifyContent: "center" }, animatedStyle]}>
+      <View style={{
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        borderWidth: 2.5,
+        borderColor: color + "40",
+        borderTopColor: color,
+      }} />
+    </Animated.View>
+  );
+}
+
+function AnimatedCheckmark({ color, size = 16 }: { color: string; size?: number }) {
+  return (
+    <Animated.View entering={ZoomIn.springify().damping(12).stiffness(200)}>
+      <Feather name="check" size={size} color={color} />
+    </Animated.View>
+  );
+}
+
+function AnimatedStepRow({
+  step,
+  index,
+  isCompleted,
+  isActive,
+  primaryColor,
+  mutedColor,
+  foregroundColor,
+  mutedForegroundColor,
+}: {
+  step: { label: string; icon: string };
+  index: number;
+  isCompleted: boolean;
+  isActive: boolean;
+  primaryColor: string;
+  mutedColor: string;
+  foregroundColor: string;
+  mutedForegroundColor: string;
+}) {
+  const dotScale = useSharedValue(isActive ? 1 : 0.85);
+  const dotBg = isCompleted || isActive ? primaryColor : mutedColor;
+  const glowOpacity = useSharedValue(0);
+
+  useEffect(() => {
+    if (isActive) {
+      dotScale.value = withSpring(1, { damping: 10, stiffness: 150 });
+      glowOpacity.value = withRepeat(
+        withSequence(
+          withTiming(0.5, { duration: 800, easing: Easing.inOut(Easing.ease) }),
+          withTiming(0, { duration: 800, easing: Easing.inOut(Easing.ease) })
+        ),
+        -1,
+        false
+      );
+    } else if (isCompleted) {
+      dotScale.value = withSequence(
+        withSpring(1.2, { damping: 8, stiffness: 200 }),
+        withSpring(1, { damping: 12, stiffness: 150 })
+      );
+      glowOpacity.value = withTiming(0, { duration: 200 });
+    } else {
+      dotScale.value = withTiming(0.85, { duration: 200 });
+      glowOpacity.value = 0;
+    }
+  }, [isActive, isCompleted]);
+
+  const dotAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: dotScale.value }],
+  }));
+
+  const glowAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: glowOpacity.value,
+  }));
+
+  return (
+    <View style={styles.scanStepRow}>
+      <View style={{ position: "relative", width: 36, height: 36, alignItems: "center", justifyContent: "center" }}>
+        {isActive ? (
+          <Animated.View
+            style={[
+              {
+                position: "absolute",
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                backgroundColor: primaryColor,
+              },
+              glowAnimatedStyle,
+            ]}
+          />
+        ) : null}
+        <Animated.View
+          style={[
+            styles.scanStepDot,
+            { backgroundColor: dotBg },
+            dotAnimatedStyle,
+          ]}
+        >
+          {isCompleted ? (
+            <AnimatedCheckmark color="#fff" size={16} />
+          ) : isActive ? (
+            <SpinningLoader color="#fff" size={18} />
+          ) : (
+            <Text style={styles.scanStepNumber}>{index + 1}</Text>
+          )}
+        </Animated.View>
+      </View>
+      <Text
+        style={[
+          styles.scanStepLabel,
+          {
+            color: isCompleted || isActive ? foregroundColor : mutedForegroundColor,
+            fontWeight: isActive ? "700" : isCompleted ? "500" : "400",
+          },
+        ]}
+      >
+        {step.label}
+      </Text>
     </View>
   );
 }
@@ -497,45 +637,19 @@ export default function ScanScreen() {
                 trackColor={theme.colors.muted}
               />
               <View style={styles.scanStepIndicators}>
-                {SCAN_STEPS.map((step, index) => {
-                  const isCompleted = index < currentStep;
-                  const isActive = index === currentStep;
-                  return (
-                    <View key={index} style={styles.scanStepRow}>
-                      <View
-                        style={[
-                          styles.scanStepDot,
-                          isCompleted
-                            ? { backgroundColor: theme.colors.primary }
-                            : isActive
-                            ? { backgroundColor: theme.colors.primary }
-                            : { backgroundColor: theme.colors.muted },
-                        ]}
-                      >
-                        {isCompleted ? (
-                          <Feather name="check" size={16} color="#fff" />
-                        ) : isActive ? (
-                          <ActivityIndicator size={16} color="#fff" />
-                        ) : (
-                          <Text style={styles.scanStepNumber}>{index + 1}</Text>
-                        )}
-                      </View>
-                      <Text
-                        style={[
-                          styles.scanStepLabel,
-                          {
-                            color: isCompleted || isActive
-                              ? theme.colors.foreground
-                              : theme.colors.mutedForeground,
-                            fontWeight: isActive ? "700" : isCompleted ? "500" : "400",
-                          },
-                        ]}
-                      >
-                        {step.label}
-                      </Text>
-                    </View>
-                  );
-                })}
+                {SCAN_STEPS.map((step, index) => (
+                  <AnimatedStepRow
+                    key={index}
+                    step={step}
+                    index={index}
+                    isCompleted={index < currentStep}
+                    isActive={index === currentStep}
+                    primaryColor={theme.colors.primary}
+                    mutedColor={theme.colors.muted}
+                    foregroundColor={theme.colors.foreground}
+                    mutedForegroundColor={theme.colors.mutedForeground}
+                  />
+                ))}
               </View>
             </View>
           </View>
