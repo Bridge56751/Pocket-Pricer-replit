@@ -13,6 +13,7 @@ import SearchResultsScreen from "@/screens/SearchResultsScreen";
 import { useScreenOptions } from "@/hooks/useScreenOptions";
 import { HeaderTitle } from "@/components/HeaderTitle";
 import { useTheme } from "@/hooks/useTheme";
+import { useDesignTokens } from "@/hooks/useDesignTokens";
 
 interface ListingItem {
   id: string;
@@ -64,6 +65,7 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export default function RootStackNavigator() {
   const screenOptions = useScreenOptions();
   const { theme } = useTheme();
+  const { theme: designTheme } = useDesignTokens();
 
   const renderBackButton = (navigation: any) => (
     <HeaderButton
@@ -79,7 +81,7 @@ export default function RootStackNavigator() {
       }}
       pressOpacity={0.7}
     >
-      <Feather name="arrow-left" size={24} color={theme.text} />
+      <Feather name="arrow-left" size={24} color={designTheme.colors.foreground} />
     </HeaderButton>
   );
 
