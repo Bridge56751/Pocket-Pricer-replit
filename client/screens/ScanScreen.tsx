@@ -46,6 +46,7 @@ export default function ScanScreen() {
   const { isPro } = useRevenueCat();
   
   const [recentScans, setRecentScans] = useState<SearchHistoryItem[]>([]);
+  const [scansUsed, setScansUsed] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analyzingProgress, setAnalyzingProgress] = useState("");
@@ -208,7 +209,8 @@ export default function ScanScreen() {
   useFocusEffect(
     useCallback(() => {
       loadRecentScans();
-    }, [loadRecentScans])
+      getScansUsed().then(setScansUsed);
+    }, [loadRecentScans, getScansUsed])
   );
 
   const handleScanProduct = async () => {
@@ -284,6 +286,29 @@ export default function ScanScreen() {
                 <Text style={styles.scanButtonText}>Scan Product</Text>
               </LinearGradient>
             </Pressable>
+
+            {!isPro ? (
+              <View style={styles.scansRemainingContainer}>
+                <View style={styles.scanDots}>
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <View
+                      key={i}
+                      style={[
+                        styles.scanDot,
+                        {
+                          backgroundColor: i < (5 - scansUsed)
+                            ? theme.colors.primary
+                            : theme.colors.muted,
+                        },
+                      ]}
+                    />
+                  ))}
+                </View>
+                <Text style={[styles.scansRemainingText, { color: theme.colors.mutedForeground }]}>
+                  {Math.max(0, 5 - scansUsed)} free scans remaining
+                </Text>
+              </View>
+            ) : null}
           </View>
 
         <View style={styles.sectionHeader}>
@@ -542,6 +567,23 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 17,
     fontWeight: "600",
+  },
+  scansRemainingContainer: {
+    alignItems: "center",
+    marginTop: 16,
+    gap: 8,
+  },
+  scanDots: {
+    flexDirection: "row",
+    gap: 6,
+  },
+  scanDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  scansRemainingText: {
+    fontSize: 13,
   },
   scanOverlay: {
     ...StyleSheet.absoluteFillObject,
