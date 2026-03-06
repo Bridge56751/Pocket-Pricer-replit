@@ -480,11 +480,8 @@ export default function ScanScreen() {
               </View>
             ) : null}
             <View style={styles.scanOverlayContent}>
-              <Text style={[styles.scanOverlayLabel, { color: theme.colors.mutedForeground }]}>
-                PLEASE WAIT
-              </Text>
               <Text style={[styles.scanOverlayTitle, { color: theme.colors.foreground }]}>
-                {SCAN_STEPS[Math.min(currentStep, SCAN_STEPS.length - 1)].label}
+                Scanning product
               </Text>
               <AnimatedProgressBar
                 step={currentStep}
@@ -493,40 +490,45 @@ export default function ScanScreen() {
                 trackColor={theme.colors.muted}
               />
               <View style={styles.scanStepIndicators}>
-                {SCAN_STEPS.map((step, index) => (
-                  <View key={index} style={styles.scanStepRow}>
-                    <View
-                      style={[
-                        styles.scanStepDot,
-                        index < currentStep
-                          ? { backgroundColor: theme.colors.primary }
-                          : index === currentStep
-                          ? { backgroundColor: theme.colors.primary, opacity: 0.8 }
-                          : { backgroundColor: theme.colors.muted },
-                      ]}
-                    >
-                      {index < currentStep ? (
-                        <Feather name="check" size={10} color="#fff" />
-                      ) : index === currentStep ? (
-                        <ActivityIndicator size={10} color="#fff" />
-                      ) : null}
-                    </View>
-                    <Text
-                      style={[
-                        styles.scanStepLabel,
-                        {
-                          color:
-                            index <= currentStep
+                {SCAN_STEPS.map((step, index) => {
+                  const isCompleted = index < currentStep;
+                  const isActive = index === currentStep;
+                  return (
+                    <View key={index} style={styles.scanStepRow}>
+                      <View
+                        style={[
+                          styles.scanStepDot,
+                          isCompleted
+                            ? { backgroundColor: theme.colors.primary }
+                            : isActive
+                            ? { backgroundColor: theme.colors.primary }
+                            : { backgroundColor: theme.colors.muted },
+                        ]}
+                      >
+                        {isCompleted ? (
+                          <Feather name="check" size={16} color="#fff" />
+                        ) : isActive ? (
+                          <ActivityIndicator size={16} color="#fff" />
+                        ) : (
+                          <Text style={styles.scanStepNumber}>{index + 1}</Text>
+                        )}
+                      </View>
+                      <Text
+                        style={[
+                          styles.scanStepLabel,
+                          {
+                            color: isCompleted || isActive
                               ? theme.colors.foreground
                               : theme.colors.mutedForeground,
-                          fontWeight: index === currentStep ? "600" : "400",
-                        },
-                      ]}
-                    >
-                      {step.label}
-                    </Text>
-                  </View>
-                ))}
+                            fontWeight: isActive ? "700" : isCompleted ? "500" : "400",
+                          },
+                        ]}
+                      >
+                        {step.label}
+                      </Text>
+                    </View>
+                  );
+                })}
               </View>
             </View>
           </View>
@@ -712,58 +714,49 @@ const styles = StyleSheet.create({
   },
   scanOverlayContent: {
     alignItems: "center",
-    paddingTop: 24,
-    gap: 8,
+    paddingTop: 28,
+    gap: 12,
     width: "100%",
   },
-  scanOverlayLabel: {
-    fontSize: 12,
-    fontWeight: "600",
-    letterSpacing: 2,
-  },
   scanOverlayTitle: {
-    fontSize: 26,
+    fontSize: 22,
     fontWeight: "700",
+    marginBottom: 4,
   },
   scanOverlayProgressBar: {
-    height: 6,
-    borderRadius: 3,
+    height: 4,
+    borderRadius: 2,
     overflow: "hidden",
-    width: "80%",
-    marginTop: 8,
+    width: "85%",
+    marginBottom: 8,
   },
   scanOverlayProgressFill: {
     height: "100%",
-    borderRadius: 3,
-  },
-  scanOverlayStatusRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 8,
-  },
-  scanOverlayStatusText: {
-    fontSize: 14,
+    borderRadius: 2,
   },
   scanStepIndicators: {
-    width: "80%",
-    marginTop: 16,
-    gap: 12,
+    width: "85%",
+    gap: 16,
   },
   scanStepRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 14,
   },
   scanStepDot: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
   },
+  scanStepNumber: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "600",
+  },
   scanStepLabel: {
-    fontSize: 14,
+    fontSize: 16,
   },
   scanErrorTitle: {
     fontSize: 26,
