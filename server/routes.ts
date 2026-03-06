@@ -200,7 +200,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         title: item.title || "Unknown Product",
         imageUrl: item.thumbnail || "",
         currentPrice: item.price?.extracted_value || item.price?.value || 0,
-        condition: "New",
         shipping: 0,
         link: item.link || "",
         seller: item.source || "",

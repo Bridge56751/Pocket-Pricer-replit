@@ -9,7 +9,7 @@ export interface Product {
   avgShipping?: number;
   ebayFees?: number;
   category?: string;
-  condition: string;
+  condition?: string;
   shipping?: number;
   link?: string;
   seller?: string;
@@ -47,7 +47,7 @@ export interface ListingItem {
   imageUrl: string;
   currentPrice: number;
   originalPrice?: number;
-  condition: string;
+  condition?: string;
   shipping: number;
   link: string;
   seller?: string;

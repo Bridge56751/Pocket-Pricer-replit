@@ -21,7 +21,7 @@ interface ListingItem {
   imageUrl: string;
   currentPrice: number;
   originalPrice?: number;
-  condition: string;
+  condition?: string;
   shipping: number;
   link: string;
   seller?: string;
@@ -178,9 +178,6 @@ export default function SearchResultsScreen() {
               ${item.originalPrice.toFixed(2)}
             </Text>
           ) : null}
-          <Text style={[styles.condition, { color: theme.colors.mutedForeground }]}>
-            {item.condition}
-          </Text>
         </View>
         <Pressable
           onPress={() => handleViewListing(item.link)}
@@ -827,9 +824,6 @@ const styles = StyleSheet.create({
   originalPrice: {
     fontSize: 14,
     textDecorationLine: "line-through",
-  },
-  condition: {
-    fontSize: 12,
   },
   viewButton: {
     flexDirection: "row",
