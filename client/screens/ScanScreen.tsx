@@ -141,6 +141,8 @@ export default function ScanScreen() {
     setAnalyzingCount({ current: 1, total: 3 });
     setAnalyzingProgress(SCAN_STEPS[0].label);
     
+    const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
+
     try {
       if (!isPro) {
         const scansUsed = await getScansUsed();
@@ -152,6 +154,8 @@ export default function ScanScreen() {
           return;
         }
       }
+
+      await delay(800);
 
       setCurrentStep(1);
       setAnalyzingProgress(SCAN_STEPS[1].label);
@@ -215,7 +219,10 @@ export default function ScanScreen() {
       setAnalyzingProgress(SCAN_STEPS[2].label);
       setAnalyzingCount({ current: 3, total: 3 });
       
-      await incrementScans();
+      await Promise.all([
+        incrementScans(),
+        delay(600),
+      ]);
 
       const scannedImageId = storeImage(`data:image/jpeg;base64,${photos[0].base64}`);
       const enrichedResults = {
