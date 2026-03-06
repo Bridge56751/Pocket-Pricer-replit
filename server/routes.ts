@@ -139,7 +139,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const deviceId = req.headers["x-device-id"] as string | undefined;
       const isPro = req.headers["x-is-pro"] === "true";
 
-      if (!isPro && deviceId) {
+      if (!deviceId) {
+        return res.status(400).json({ error: "Device ID is required" });
+      }
+
+      if (!isPro) {
         const guestResult = await query(
           "SELECT scan_count FROM guest_scans WHERE device_id = $1",
           [deviceId]
@@ -209,7 +213,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         || listings[0]?.title
         || "Scanned Product";
 
-      if (!isPro && deviceId) {
+      if (!isPro) {
         await query(
           `INSERT INTO guest_scans (device_id, scan_count, last_scan_at) 
            VALUES ($1, 1, CURRENT_TIMESTAMP)
@@ -240,12 +244,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  const ebaySoldCache = new Map<string, { data: any; timestamp: number }>();
+  const EBAY_CACHE_TTL = 5 * 60 * 1000;
+
   app.post("/api/ebay-sold", async (req: Request, res: Response) => {
     try {
       const { query } = req.body;
 
       if (!query || typeof query !== "string") {
         return res.status(400).json({ error: "Product query is required" });
+      }
+
+      if (query.length > 200) {
+        return res.status(400).json({ error: "Query too long" });
+      }
+
+      const cacheKey = query.toLowerCase().trim();
+      const cached = ebaySoldCache.get(cacheKey);
+      if (cached && Date.now() - cached.timestamp < EBAY_CACHE_TTL) {
+        console.log(`eBay sold: returning cached results for "${query}"`);
+        return res.json(cached.data);
       }
 
       console.log(`Fetching eBay sold listings for: ${query}`);
@@ -321,12 +339,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`eBay sold: found ${validItems.length} sold items for "${query}"`);
 
-      res.json({
+      const responseData = {
         query,
         soldCount: validItems.length,
         avgSoldPrice: Math.round(avgSoldPrice * 100) / 100,
         recentSales: validItems,
-      });
+      };
+
+      ebaySoldCache.set(cacheKey, { data: responseData, timestamp: Date.now() });
+
+      res.json(responseData);
     } catch (error) {
       console.error("eBay sold fetch error:", error);
       res.status(500).json({ error: "Failed to fetch sales data" });
