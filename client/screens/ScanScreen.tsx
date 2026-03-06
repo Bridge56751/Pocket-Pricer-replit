@@ -254,12 +254,6 @@ export default function ScanScreen() {
         return;
       }
 
-      setCurrentStep(2);
-      setAnalyzingProgress(SCAN_STEPS[2].label);
-      setAnalyzingCount({ current: 3, total: 3 });
-
-      await incrementScans();
-
       const scannedImageId = storeImage(`data:image/jpeg;base64,${photos[0].base64}`);
       const enrichedResults = {
         ...results,
@@ -288,6 +282,7 @@ export default function ScanScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       navigation.navigate("SearchResults", { results: enrichedResults });
 
+      incrementScans().catch(() => {});
       addSearchHistory(historyItem).catch(() => {});
       loadRecentScans();
       
