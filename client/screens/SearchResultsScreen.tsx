@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo } from "react";
 import { View, StyleSheet, FlatList, Pressable, Text, Linking, TextInput, ActivityIndicator, ScrollView, Keyboard } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -11,7 +11,6 @@ import Animated, { FadeInDown } from "react-native-reanimated";
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { SkeletonLoader } from "@/components/SkeletonLoader";
 import { getImage } from "@/lib/image-store";
-import { getApiUrl } from "@/lib/query-client";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
 type SearchResultsRouteProp = RouteProp<RootStackParamList, "SearchResults">;
@@ -72,48 +71,6 @@ export default function SearchResultsScreen() {
   const [sellingPrice, setSellingPrice] = useState("");
   const [sortOption, setSortOption] = useState<string>("Best Match");
 
-  interface EbaySoldItem {
-    title: string;
-    price: number;
-    soldDate: string;
-    url: string;
-    imageUrl: string;
-  }
-  interface EbaySoldData {
-    soldCount: number;
-    avgSoldPrice: number;
-    recentSales: EbaySoldItem[];
-  }
-  const [ebaySoldData, setEbaySoldData] = useState<EbaySoldData | null>(null);
-  const [ebaySoldLoading, setEbaySoldLoading] = useState(false);
-  const [ebaySoldError, setEbaySoldError] = useState(false);
-
-  const fetchEbaySold = useCallback(async () => {
-    let productName = results.productInfo?.name || results.query;
-    if (productName === "Scanned Product" && results.listings?.length > 0) {
-      productName = results.listings[0].title;
-    }
-    if (!productName) return;
-    setEbaySoldLoading(true);
-    setEbaySoldError(false);
-    try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      const url = new URL("/api/ebay-sold", getApiUrl());
-      const resp = await fetch(url.toString(), {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: productName }),
-      });
-      if (!resp.ok) throw new Error("Failed");
-      const data = await resp.json();
-      setEbaySoldData(data);
-    } catch {
-      setEbaySoldError(true);
-    } finally {
-      setEbaySoldLoading(false);
-    }
-  }, [results]);
-  
   const suggestedPrice = results.avgListPrice;
   const EBAY_FEE_RATE = 0.13;
   
@@ -368,110 +325,6 @@ export default function SearchResultsScreen() {
                   );
                 })()}
 
-                {ebaySoldData ? (
-                  <View style={styles.soldSection}>
-                    <View style={[styles.soldDivider, { backgroundColor: theme.colors.border }]} />
-                    <View style={styles.soldHeader}>
-                      <Feather name="trending-up" size={16} color="#3665F3" />
-                      <Text style={[styles.soldHeaderTitle, { color: theme.colors.foreground }]}>
-                        eBay Sold History
-                      </Text>
-                    </View>
-                    <View style={styles.soldStatsRow}>
-                      <View style={[styles.soldStatBox, { backgroundColor: theme.colors.muted }]}>
-                        <Text style={[styles.soldStatValue, { color: theme.colors.foreground }]}>
-                          {ebaySoldData.soldCount}
-                        </Text>
-                        <Text style={[styles.soldStatLabel, { color: theme.colors.mutedForeground }]}>
-                          Recent Sales
-                        </Text>
-                      </View>
-                      <View style={[styles.soldStatBox, { backgroundColor: theme.colors.muted }]}>
-                        <Text style={[styles.soldStatValue, { color: theme.colors.primary }]}>
-                          ${ebaySoldData.avgSoldPrice.toFixed(0)}
-                        </Text>
-                        <Text style={[styles.soldStatLabel, { color: theme.colors.mutedForeground }]}>
-                          Avg Sold Price
-                        </Text>
-                      </View>
-                    </View>
-                    {ebaySoldData.recentSales.length > 0 ? (
-                      <View style={styles.soldList}>
-                        {ebaySoldData.recentSales.slice(0, 5).map((sale, idx) => (
-                          <Pressable
-                            key={idx}
-                            style={[styles.soldItem, { backgroundColor: theme.colors.muted }]}
-                            onPress={() => {
-                              if (sale.url) {
-                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                Linking.openURL(sale.url);
-                              }
-                            }}
-                            testID={`sold-item-${idx}`}
-                          >
-                            {sale.imageUrl ? (
-                              <Image
-                                source={{ uri: sale.imageUrl }}
-                                style={styles.soldItemImage}
-                                contentFit="cover"
-                              />
-                            ) : (
-                              <View style={[styles.soldItemImage, { backgroundColor: theme.colors.border, alignItems: "center", justifyContent: "center" }]}>
-                                <Feather name="package" size={16} color={theme.colors.mutedForeground} />
-                              </View>
-                            )}
-                            <View style={styles.soldItemContent}>
-                              <Text style={[styles.soldItemTitle, { color: theme.colors.foreground }]} numberOfLines={2}>
-                                {sale.title}
-                              </Text>
-                              <View style={styles.soldItemBottom}>
-                                <Text style={[styles.soldItemPrice, { color: theme.colors.primary }]}>
-                                  ${sale.price.toFixed(2)}
-                                </Text>
-                                {sale.soldDate ? (
-                                  <Text style={[styles.soldItemDate, { color: theme.colors.mutedForeground }]}>
-                                    {sale.soldDate}
-                                  </Text>
-                                ) : null}
-                              </View>
-                            </View>
-                            {sale.url ? (
-                              <Feather name="external-link" size={14} color={theme.colors.mutedForeground} style={{ alignSelf: "center" }} />
-                            ) : null}
-                          </Pressable>
-                        ))}
-                      </View>
-                    ) : null}
-                    <Pressable
-                      onPress={fetchEbaySold}
-                      style={[styles.refreshSoldButton, { borderColor: theme.colors.border }]}
-                      testID="button-refresh-sold"
-                    >
-                      <Feather name="refresh-cw" size={14} color={theme.colors.mutedForeground} />
-                      <Text style={[styles.refreshSoldText, { color: theme.colors.mutedForeground }]}>
-                        Refresh
-                      </Text>
-                    </Pressable>
-                  </View>
-                ) : (
-                  <Pressable
-                    onPress={fetchEbaySold}
-                    disabled={ebaySoldLoading}
-                    style={[styles.checkSalesButton, { backgroundColor: "#3665F3" }]}
-                    testID="button-check-sales"
-                  >
-                    {ebaySoldLoading ? (
-                      <ActivityIndicator size="small" color="#FFFFFF" />
-                    ) : (
-                      <>
-                        <Feather name="trending-up" size={16} color="#FFFFFF" />
-                        <Text style={styles.checkSalesText}>
-                          {ebaySoldError ? "Retry Check Sales" : "Check Recent Sales"}
-                        </Text>
-                      </>
-                    )}
-                  </Pressable>
-                )}
               </View>
             </View>
 
@@ -1034,108 +887,5 @@ const styles = StyleSheet.create({
   sortChipText: {
     fontSize: 13,
     fontWeight: "600",
-  },
-  checkSalesButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 12,
-    borderRadius: 10,
-    marginTop: 16,
-  },
-  checkSalesText: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  soldSection: {
-    marginTop: 4,
-  },
-  soldDivider: {
-    height: 1,
-    marginVertical: 16,
-  },
-  soldHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 12,
-  },
-  soldHeaderTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-  },
-  soldStatsRow: {
-    flexDirection: "row",
-    gap: 12,
-    marginBottom: 12,
-  },
-  soldStatBox: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: 12,
-    borderRadius: 10,
-  },
-  soldStatValue: {
-    fontSize: 20,
-    fontWeight: "700",
-  },
-  soldStatLabel: {
-    fontSize: 12,
-    fontWeight: "500",
-    marginTop: 2,
-  },
-  soldList: {
-    gap: 8,
-  },
-  soldItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 10,
-    overflow: "hidden",
-    gap: 10,
-    paddingRight: 12,
-  },
-  soldItemImage: {
-    width: 52,
-    height: 52,
-    borderRadius: 8,
-  },
-  soldItemContent: {
-    flex: 1,
-    paddingVertical: 8,
-  },
-  soldItemTitle: {
-    fontSize: 13,
-    fontWeight: "500",
-    lineHeight: 16,
-  },
-  soldItemBottom: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 4,
-  },
-  soldItemPrice: {
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  soldItemDate: {
-    fontSize: 12,
-  },
-  refreshSoldButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    marginTop: 12,
-  },
-  refreshSoldText: {
-    fontSize: 13,
-    fontWeight: "500",
   },
 });
