@@ -20,8 +20,8 @@ This app allows resellers to:
 - **Backend**: Express.js with TypeScript
 - **Database**: PostgreSQL (Neon-backed via Replit) - used only for guest scan tracking
 - **Payments**: RevenueCat for iOS/Android in-app purchases ($8.99/month Pro subscription)
-- **Product Identification**: Google Lens (via SerpAPI) for visual product matching
-- **Product Data**: SerpAPI (Google Lens + Google Shopping for multi-platform results)
+- **Product Identification**: Google Lens (via SearchAPI.io) for visual product matching
+- **Product Data**: SearchAPI.io (Google Lens for multi-platform results)
 - **State Management**: TanStack React Query
 - **Local Storage**: AsyncStorage for history, favorites, scan counts, and device ID
 - **Navigation**: React Navigation (bottom tabs + native stack)
@@ -29,7 +29,7 @@ This app allows resellers to:
 
 ## Environment Variables
 
-- `SERPAPI_API_KEY` - Required for Google Lens + Shopping search (get from https://serpapi.com)
+- `SEARCHAPI_API_KEY` - Required for Google Lens search (get from https://searchapi.io)
 - `REVENUECAT_API_KEY` - RevenueCat public API key for in-app purchases
 - `EXPO_PUBLIC_REVENUECAT_API_KEY` - Same key, exposed to frontend
 
@@ -192,5 +192,5 @@ CREATE TABLE guest_scans (
 - **Feb 2026**: Added Google Lens visual matching for exact product identification
 - **Feb 2026**: Multi-platform search (Amazon, Walmart, Target, eBay, Mercari, Poshmark)
 - **Jan 2026**: Switched from Stripe to RevenueCat for iOS in-app purchases
-- Integrated SerpAPI for multi-platform product data
+- Switched from SerpAPI to SearchAPI.io for lower cost Google Lens searches
 - Added design tokens system for consistent theming

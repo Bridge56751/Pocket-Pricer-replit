@@ -1,6 +1,5 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "node:http";
-import { getJson } from "serpapi";
 import { query } from "./db";
 
 const FREE_LIFETIME_SEARCHES = 5;
@@ -66,8 +65,19 @@ interface GoogleLensProduct {
   reviews?: number;
 }
 
-interface GoogleLensResponse {
-  visual_matches?: GoogleLensProduct[];
+interface SearchApiLensResponse {
+  visual_matches?: {
+    position?: number;
+    title?: string;
+    link?: string;
+    source?: string;
+    price?: string;
+    extracted_price?: number;
+    currency?: string;
+    thumbnail?: string;
+    rating?: number;
+    reviews?: number;
+  }[];
   knowledge_graph?: {
     title?: string;
     description?: string;
@@ -84,27 +94,44 @@ async function searchWithGoogleLens(imageUrl: string): Promise<{
   error?: string;
 }> {
   try {
-    const apiKey = process.env.SERPAPI_API_KEY;
+    const apiKey = process.env.SEARCHAPI_API_KEY;
     if (!apiKey) {
-      return { products: [], error: "SerpAPI key not configured" };
+      return { products: [], error: "SearchAPI key not configured" };
     }
 
-    const response = await getJson({
+    const params = new URLSearchParams({
       engine: "google_lens",
       url: imageUrl,
       hl: "en",
       country: "us",
-      no_cache: true,
+      no_cache: "true",
       api_key: apiKey,
-    }) as GoogleLensResponse;
+    });
 
-    if (response.error) {
-      console.error("Google Lens error:", response.error);
-      return { products: [], error: response.error };
+    const response = await fetch(`https://www.searchapi.io/api/v1/search?${params.toString()}`);
+    const data = await response.json() as SearchApiLensResponse;
+
+    if (data.error) {
+      console.error("Google Lens error:", data.error);
+      return { products: [], error: data.error };
     }
 
-    const products = response.visual_matches || [];
-    const productName = response.knowledge_graph?.[0]?.title;
+    const products: GoogleLensProduct[] = (data.visual_matches || []).map(item => ({
+      position: item.position,
+      title: item.title,
+      link: item.link,
+      source: item.source,
+      price: {
+        value: item.extracted_price,
+        extracted_value: item.extracted_price,
+        currency: item.currency,
+      },
+      thumbnail: item.thumbnail,
+      rating: item.rating,
+      reviews: item.reviews,
+    }));
+
+    const productName = data.knowledge_graph?.[0]?.title;
     
     console.log(`Google Lens found ${products.length} visual matches`);
 
