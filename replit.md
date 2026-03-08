@@ -176,6 +176,7 @@ CREATE TABLE guest_scans (
 
 ## Recent Changes
 
+- **Mar 2026**: eBay search query cleaning: strips trailing dash+slash color specs (e.g., "- Navy/Gold/White"), uncommon color suffixes (Peacoat, Ivory, etc.), sizes, fluff words, @mentions, URLs; preserves inline colors and product details; 10-word / 80-char cap
 - **Mar 2026**: Added per-device rate limiting (20 requests/minute) on both API endpoints
   - In-memory sliding window rate limiter keyed by device ID
   - Returns 429 "Too many requests" when exceeded

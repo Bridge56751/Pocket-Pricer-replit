@@ -364,21 +364,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .replace(/\(.*?\)/g, "")
         .replace(/@\w+/g, "")
         .replace(/https?:\/\/\S+/g, "")
-        .replace(/\b(Men's|Women's|Men|Women|Unisex|Boy's|Girl's|Kids|Youth)\b/gi, "")
         .replace(/\b(Size|Sz)\s*\d+[\w.]*/gi, "")
-        .replace(/\b[2-5]?X?[SML]\b/g, "")
-        .replace(/\b(XXS|XXL|XXXL)\b/gi, "")
-        .replace(/\s*-\s*(Black|White|Red|Blue|Green|Navy|Gold|Silver|Gray|Grey|Pink|Purple|Orange|Brown|Beige|Tan|Cream|Ivory|Coral|Teal|Maroon|Burgundy|Olive|Charcoal|Peacoat|Yellow)\b.*/i, "")
-        .replace(/\b(Black|White|Red|Blue|Green|Navy|Gold|Silver|Gray|Grey|Pink|Purple|Orange|Brown|Beige|Tan|Cream|Ivory|Coral|Teal|Maroon|Burgundy|Olive|Charcoal|Peacoat|Yellow)\b/gi, "")
-        .replace(/\b(Adjustable|Premium|Official|Authentic|Genuine|Brand New|New|Used|NWT|NWOT|NWB|Limited Edition|Exclusive|Classic|Vintage|Retro|Modern|Updated|Latest|Original|OG)\b/gi, "")
-        .replace(/\b(Fit|Style|Edition|Series|Collection|Pack|Set|Bundle|Lot)\b/gi, "")
+        .replace(/\s*-\s*[\w\s]*\/[\w\s/]*$/i, "")
+        .replace(/\s*-\s*(?:Peacoat|Navy|Gold|Silver|Ivory|Coral|Teal|Maroon|Burgundy|Olive|Charcoal|Beige|Tan|Cream)[\w\s/]*$/i, "")
+        .replace(/\b(Adjustable|Premium|Official|Authentic|Genuine|Brand New|NWT|NWOT|NWB|Exclusive)\b/gi, "")
+        .replace(/\b(Fit|Style|Collection|Pack|Bundle|Lot)\b/gi, "")
         .replace(/[\/,&]+/g, " ")
         .replace(/\s+/g, " ")
         .trim();
 
       const words = cleanQuery.split(" ").filter(w => w.length > 0);
-      if (words.length > 8) {
-        cleanQuery = words.slice(0, 8).join(" ");
+      if (words.length > 10) {
+        cleanQuery = words.slice(0, 10).join(" ");
       }
 
       cleanQuery = cleanQuery.slice(0, 80) || searchQuery.trim().slice(0, 80);
