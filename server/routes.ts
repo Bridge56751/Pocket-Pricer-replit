@@ -288,6 +288,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  app.post("/api/ebay-sold-search", async (req: Request, res: Response) => {
+    try {
+      const deviceId = req.headers["x-device-id"] as string | undefined;
+      const isPro = req.headers["x-is-pro"] === "true";
+
+      if (!deviceId) {
+        return res.status(400).json({ error: "Device ID is required" });
+      }
+
+      if (!isPro) {
+        const guestResult = await query(
+          "SELECT scan_count FROM guest_scans WHERE device_id = $1",
+          [deviceId]
+        );
+        const guestCount = guestResult.rows[0]?.scan_count || 0;
+        if (guestCount >= FREE_LIFETIME_SEARCHES) {
+          return res.status(403).json({
+            error: "Free scan limit reached",
+            limitReached: true,
+          });
+        }
+      }
+
+      const { searchQuery } = req.body;
+      if (!searchQuery) {
+        return res.status(400).json({ error: "Search query is required" });
+      }
+
+      const apiKey = process.env.SEARCHAPI_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ error: "Search API key not configured" });
+      }
+
+      console.log(`eBay sold search for: "${searchQuery}"`);
+
+      const params = new URLSearchParams({
+        engine: "ebay_search",
+        q: searchQuery,
+        show_only: "sold_items",
+        api_key: apiKey,
+      });
+
+      const response = await fetch(`https://www.searchapi.io/api/v1/search?${params.toString()}`);
+      const data = await response.json() as {
+        organic_results?: {
+          position?: number;
+          item_id?: string;
+          title?: string;
+          price?: string;
+          extracted_price?: number;
+          condition?: string;
+          shipping?: string;
+          extracted_shipping?: number;
+          link?: string;
+          thumbnail?: string;
+        }[];
+        search_information?: {
+          total_results?: number;
+        };
+        error?: string;
+      };
+
+      if (data.error) {
+        console.error("eBay sold search error:", data.error);
+        return res.status(500).json({ error: "eBay search failed" });
+      }
+
+      const results = data.organic_results || [];
+      console.log(`eBay sold search returned ${results.length} results`);
+
+      const items = results
+        .filter(r => r.extracted_price && r.extracted_price > 0)
+        .map((r, index) => ({
+          id: `ebay-sold-${index}`,
+          title: r.title || "Unknown Item",
+          price: r.extracted_price || 0,
+          condition: r.condition,
+          shipping: r.extracted_shipping || 0,
+          link: r.link || "",
+          imageUrl: r.thumbnail || "",
+        }));
+
+      const prices = items.map(i => i.price);
+      const sortedPrices = [...prices].sort((a, b) => a - b);
+      const mid = Math.floor(sortedPrices.length / 2);
+      const medianSoldPrice = sortedPrices.length === 0
+        ? 0
+        : sortedPrices.length % 2 !== 0
+          ? sortedPrices[mid]
+          : (sortedPrices[mid - 1] + sortedPrices[mid]) / 2;
+
+      const avgSoldPrice = prices.length > 0
+        ? prices.reduce((a, b) => a + b, 0) / prices.length
+        : 0;
+
+      res.json({
+        avgSoldPrice,
+        medianSoldPrice,
+        lowPrice: prices.length > 0 ? Math.min(...prices) : 0,
+        highPrice: prices.length > 0 ? Math.max(...prices) : 0,
+        totalSold: data.search_information?.total_results || items.length,
+        items,
+      });
+    } catch (error) {
+      console.error("eBay sold search error:", error);
+      res.status(500).json({ error: "Failed to search eBay sold data" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

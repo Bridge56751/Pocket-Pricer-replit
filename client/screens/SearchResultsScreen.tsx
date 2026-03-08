@@ -11,7 +11,11 @@ import Animated, { FadeInDown } from "react-native-reanimated";
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { SkeletonLoader } from "@/components/SkeletonLoader";
 import { getImage } from "@/lib/image-store";
+import { getApiUrl } from "@/lib/query-client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRevenueCat } from "@/contexts/RevenueCatContext";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
+import type { EbaySoldData, EbaySoldItem } from "@/types/product";
 
 type SearchResultsRouteProp = RouteProp<RootStackParamList, "SearchResults">;
 
@@ -67,9 +71,15 @@ export default function SearchResultsScreen() {
     return resultsAny.scannedImageUri;
   }, [results.scannedImageId, results]);
 
+  const { getDeviceId } = useAuth();
+  const { isPro } = useRevenueCat();
   const [purchasePrice, setPurchasePrice] = useState("");
   const [sellingPrice, setSellingPrice] = useState("");
   const [sortOption, setSortOption] = useState<string>("Best Match");
+  const [ebaySoldData, setEbaySoldData] = useState<EbaySoldData | null>(null);
+  const [ebaySoldLoading, setEbaySoldLoading] = useState(false);
+  const [ebaySoldError, setEbaySoldError] = useState<string | null>(null);
+  const [showEbaySold, setShowEbaySold] = useState(false);
 
   const suggestedPrice = results.avgListPrice;
   const EBAY_FEE_RATE = 0.13;
@@ -116,6 +126,42 @@ export default function SearchResultsScreen() {
   const handleNewSearch = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     navigation.goBack();
+  };
+
+  const handleEbaySoldSearch = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    if (ebaySoldData) {
+      setShowEbaySold(!showEbaySold);
+      return;
+    }
+    setEbaySoldLoading(true);
+    setEbaySoldError(null);
+    try {
+      const productName = results.productInfo?.name || results.query;
+      const deviceId = await getDeviceId();
+      const baseUrl = getApiUrl();
+      const url = new URL("/api/ebay-sold-search", baseUrl);
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Device-Id": deviceId,
+          "X-Is-Pro": isPro ? "true" : "false",
+        },
+        body: JSON.stringify({ searchQuery: productName }),
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || "Search failed");
+      }
+      const data: EbaySoldData = await res.json();
+      setEbaySoldData(data);
+      setShowEbaySold(true);
+    } catch (err: any) {
+      setEbaySoldError(err.message || "Failed to load sales data");
+    } finally {
+      setEbaySoldLoading(false);
+    }
   };
 
   const handleListOnEbay = async () => {
@@ -329,6 +375,130 @@ export default function SearchResultsScreen() {
               </Text>
 
             </View>
+
+            <Pressable
+              testID="button-ebay-sold-search"
+              onPress={handleEbaySoldSearch}
+              style={({ pressed }) => [
+                styles.ebaySoldButton,
+                { opacity: pressed ? 0.7 : 1 }
+              ]}
+            >
+              {ebaySoldLoading ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <>
+                  <Feather name="trending-up" size={18} color="#FFFFFF" />
+                  <Text style={styles.ebaySoldButtonText}>
+                    {ebaySoldData ? (showEbaySold ? "Hide Sales Data" : "Show Sales Data") : "See eBay Sales Data"}
+                  </Text>
+                </>
+              )}
+            </Pressable>
+
+            {ebaySoldError ? (
+              <Text style={[styles.ebaySoldErrorText, { color: theme.colors.danger }]}>
+                {ebaySoldError}
+              </Text>
+            ) : null}
+
+            {ebaySoldData && showEbaySold ? (
+              <View>
+                <View style={[styles.ebaySoldSummary, { backgroundColor: theme.colors.card }]}>
+                  <View style={styles.ebaySoldSummaryHeader}>
+                    <Feather name="bar-chart-2" size={18} color="#3665F3" />
+                    <Text style={[styles.ebaySoldSummaryTitle, { color: theme.colors.foreground }]}>
+                      eBay Sales Summary
+                    </Text>
+                  </View>
+                  <Text style={[styles.ebaySoldSummarySubtitle, { color: theme.colors.mutedForeground }]}>
+                    {ebaySoldData.totalSold.toLocaleString()} sold on eBay
+                  </Text>
+
+                  <View style={styles.ebaySoldStatsRow}>
+                    <View style={styles.ebaySoldStat}>
+                      <Text style={[styles.ebaySoldStatLabel, { color: theme.colors.mutedForeground }]}>
+                        Avg Sold
+                      </Text>
+                      <Text style={[styles.ebaySoldStatValue, { color: theme.colors.primary }]}>
+                        ${ebaySoldData.avgSoldPrice.toFixed(0)}
+                      </Text>
+                    </View>
+                    <View style={[styles.ebaySoldStatDivider, { backgroundColor: theme.colors.border }]} />
+                    <View style={styles.ebaySoldStat}>
+                      <Text style={[styles.ebaySoldStatLabel, { color: theme.colors.mutedForeground }]}>
+                        Median
+                      </Text>
+                      <Text style={[styles.ebaySoldStatValue, { color: theme.colors.foreground }]}>
+                        ${ebaySoldData.medianSoldPrice.toFixed(0)}
+                      </Text>
+                    </View>
+                    <View style={[styles.ebaySoldStatDivider, { backgroundColor: theme.colors.border }]} />
+                    <View style={styles.ebaySoldStat}>
+                      <Text style={[styles.ebaySoldStatLabel, { color: theme.colors.mutedForeground }]}>
+                        Range
+                      </Text>
+                      <Text style={[styles.ebaySoldStatValue, { color: theme.colors.foreground }]}>
+                        ${ebaySoldData.lowPrice.toFixed(0)}-${ebaySoldData.highPrice.toFixed(0)}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                <Text style={[styles.sectionTitle, { color: theme.colors.foreground }]}>
+                  Recent eBay Sales ({ebaySoldData.items.length})
+                </Text>
+
+                {ebaySoldData.items.slice(0, 20).map((item, index) => (
+                  <Animated.View
+                    key={item.id}
+                    entering={FadeInDown.delay(index * 40).duration(250)}
+                    style={[styles.listingCard, { backgroundColor: theme.colors.card }]}
+                  >
+                    <Image
+                      source={{ uri: item.imageUrl }}
+                      style={styles.listingImage}
+                      contentFit="cover"
+                    />
+                    <View style={styles.listingContent}>
+                      <View style={[styles.ebayBadge, { backgroundColor: "#3665F3" }]}>
+                        <Text style={styles.ebayBadgeText}>SOLD</Text>
+                      </View>
+                      <Text
+                        style={[styles.listingTitle, { color: theme.colors.foreground }]}
+                        numberOfLines={2}
+                      >
+                        {item.title}
+                      </Text>
+                      <View style={styles.priceRow}>
+                        <Text style={[styles.currentPrice, { color: theme.colors.primary }]}>
+                          ${item.price.toFixed(2)}
+                        </Text>
+                        {item.condition ? (
+                          <Text style={[styles.ebaySoldCondition, { color: theme.colors.mutedForeground }]}>
+                            {item.condition}
+                          </Text>
+                        ) : null}
+                      </View>
+                      <Pressable
+                        onPress={() => handleViewListing(item.link)}
+                        style={({ pressed }) => [
+                          styles.viewButton,
+                          { backgroundColor: theme.colors.muted, opacity: pressed ? 0.7 : 1 }
+                        ]}
+                      >
+                        <Feather name="external-link" size={14} color={theme.colors.foreground} />
+                        <Text style={[styles.viewButtonText, { color: theme.colors.foreground }]}>
+                          View Listing
+                        </Text>
+                      </Pressable>
+                    </View>
+                  </Animated.View>
+                ))}
+
+                <View style={{ height: 16 }} />
+              </View>
+            ) : null}
 
             <Text style={[styles.sectionTitle, { color: theme.colors.foreground }]}>
               Active Listings ({allListings.length})
@@ -744,5 +914,69 @@ const styles = StyleSheet.create({
   sortChipText: {
     fontSize: 13,
     fontWeight: "600",
+  },
+  ebaySoldButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#3665F3",
+    paddingVertical: 14,
+    borderRadius: 12,
+    marginBottom: 16,
+    gap: 10,
+  },
+  ebaySoldButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  ebaySoldErrorText: {
+    fontSize: 14,
+    textAlign: "center",
+    marginBottom: 16,
+  },
+  ebaySoldSummary: {
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+  },
+  ebaySoldSummaryHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 4,
+  },
+  ebaySoldSummaryTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  ebaySoldSummarySubtitle: {
+    fontSize: 13,
+    marginBottom: 16,
+  },
+  ebaySoldStatsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  ebaySoldStat: {
+    flex: 1,
+    alignItems: "center",
+  },
+  ebaySoldStatDivider: {
+    width: 1,
+    height: 36,
+  },
+  ebaySoldStatLabel: {
+    fontSize: 12,
+    fontWeight: "500",
+    marginBottom: 4,
+  },
+  ebaySoldStatValue: {
+    fontSize: 20,
+    fontWeight: "700",
+  },
+  ebaySoldCondition: {
+    fontSize: 12,
+    fontWeight: "500",
   },
 });

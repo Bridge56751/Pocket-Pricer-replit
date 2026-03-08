@@ -56,6 +56,25 @@ export interface ListingItem {
   reviews?: number;
 }
 
+export interface EbaySoldItem {
+  id: string;
+  title: string;
+  price: number;
+  condition?: string;
+  shipping?: number;
+  link: string;
+  imageUrl: string;
+}
+
+export interface EbaySoldData {
+  avgSoldPrice: number;
+  medianSoldPrice: number;
+  lowPrice: number;
+  highPrice: number;
+  totalSold: number;
+  items: EbaySoldItem[];
+}
+
 export interface SearchResultsData {
   query: string;
   totalListings: number;

@@ -125,6 +125,14 @@ function MyComponent() {
   - Returns: Product identification with multi-platform pricing data
   - Free users limited to 5 lifetime scans (tracked by device ID in guest_scans table)
 
+### eBay Sold Search (Advanced Search)
+- `POST /api/ebay-sold-search` - Fetch eBay sold/completed item data
+  - Body: `{ searchQuery: string }` (product name from scan results)
+  - Headers: Same as scan (X-Device-Id, X-Is-Pro)
+  - Returns: `EbaySoldData` with avgSoldPrice, medianSoldPrice, lowPrice, highPrice, totalSold, items[]
+  - Uses SearchAPI.io `ebay_search` engine with `show_only=sold_items` filter
+  - Does NOT count as a scan (no scan increment)
+
 ## Running the App
 
 The app runs on two workflows:
@@ -137,7 +145,8 @@ Users can test on physical devices using Expo Go by scanning the QR code.
 
 1. **AI Camera Scanning**: Take photos of products for AI-powered identification via Google Lens
 2. **Multi-Platform Pricing**: See prices from Amazon, Walmart, Target, eBay, and more
-3. **Profit Calculator**: Enter your cost to see net profit breakdown
+3. **eBay Sales Data (Advanced Search)**: See actual eBay sold prices with avg/median/range stats
+4. **Profit Calculator**: Enter your cost to see net profit breakdown
 4. **Fee Estimation**: Automatically calculates ~13% estimated selling fees
 5. **Search History**: Track all previous searches (stored locally)
 6. **Favorites**: Save profitable products for later (stored locally)
