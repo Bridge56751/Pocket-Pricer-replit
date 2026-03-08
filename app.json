@@ -15,7 +15,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#1F2937",
+        "backgroundColor": "#2E7D5B",
         "foregroundImage": "./assets/images/icon.png"
       },
       "package": "com.ebayprofit.app",
@@ -33,9 +33,9 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#1F2937",
+          "backgroundColor": "#2E7D5B",
           "dark": {
-            "backgroundColor": "#1F2937"
+            "backgroundColor": "#2E7D5B"
           }
         }
       ],
