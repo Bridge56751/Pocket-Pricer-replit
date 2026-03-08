@@ -601,7 +601,7 @@ export default function SearchResultsScreen() {
                     <Text style={[styles.avgPerMonthLabel, { color: theme.colors.mutedForeground }]}>
                       Avg Sold/Month
                     </Text>
-                    <Text style={[styles.avgPerMonthValue, { color: theme.colors.foreground }]}>
+                    <Text style={[styles.avgPerMonthValue, { color: ebaySoldData.avgSoldPerMonth >= 30 ? "#22C55E" : ebaySoldData.avgSoldPerMonth >= 10 ? "#F59E0B" : theme.colors.foreground }]}>
                       {ebaySoldData.avgSoldPerMonth > 0 ? `~${ebaySoldData.avgSoldPerMonth.toLocaleString()}` : "N/A"}
                     </Text>
                   </View>
