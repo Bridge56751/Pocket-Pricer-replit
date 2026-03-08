@@ -476,7 +476,7 @@ export default function SearchResultsScreen() {
                   <Feather name="zap" size={16} color="#FFFFFF" />
                   <Text style={styles.advancedSearchLabel}>Advanced Search</Text>
                 </View>
-                <View style={[styles.ebaySoldSummary, { backgroundColor: "rgba(16, 185, 129, 0.08)" }]}>
+                <View style={[styles.ebaySoldSummary, { backgroundColor: theme.colors.card }]}>
                   <View style={styles.ebaySoldSummaryHeader}>
                     <Feather name="info" size={18} color="#10B981" />
                     <Text style={[styles.ebaySoldSummaryTitle, { color: theme.colors.foreground }]}>
@@ -499,7 +499,7 @@ export default function SearchResultsScreen() {
 
                 <Animated.View
                   entering={FadeInDown.duration(400)}
-                  style={[styles.buyScoreCard, { backgroundColor: "rgba(16, 185, 129, 0.08)" }]}
+                  style={[styles.buyScoreCard, { backgroundColor: theme.colors.card }]}
                 >
                   <View style={styles.buyScoreHeader}>
                     <View style={{ flex: 1 }}>
@@ -552,7 +552,7 @@ export default function SearchResultsScreen() {
                   </View>
                 </Animated.View>
 
-                <View style={[styles.ebaySoldSummary, { backgroundColor: "rgba(16, 185, 129, 0.08)" }]}>
+                <View style={[styles.ebaySoldSummary, { backgroundColor: theme.colors.card }]}>
                   <View style={styles.ebaySoldSummaryHeader}>
                     <Feather name="bar-chart-2" size={18} color="#10B981" />
                     <Text style={[styles.ebaySoldSummaryTitle, { color: theme.colors.foreground }]}>
@@ -572,7 +572,7 @@ export default function SearchResultsScreen() {
                         ${(ebaySoldData.avgSoldPrice || 0).toFixed(0)}
                       </Text>
                     </View>
-                    <View style={[styles.ebaySoldStatDivider, { backgroundColor: "rgba(16, 185, 129, 0.2)" }]} />
+                    <View style={[styles.ebaySoldStatDivider, { backgroundColor: theme.colors.border }]} />
                     <View style={styles.ebaySoldStat}>
                       <Text style={[styles.ebaySoldStatLabel, { color: theme.colors.mutedForeground }]}>
                         Median
@@ -581,7 +581,7 @@ export default function SearchResultsScreen() {
                         ${(ebaySoldData.medianSoldPrice || 0).toFixed(0)}
                       </Text>
                     </View>
-                    <View style={[styles.ebaySoldStatDivider, { backgroundColor: "rgba(16, 185, 129, 0.2)" }]} />
+                    <View style={[styles.ebaySoldStatDivider, { backgroundColor: theme.colors.border }]} />
                     <View style={styles.ebaySoldStat}>
                       <Text style={[styles.ebaySoldStatLabel, { color: theme.colors.mutedForeground }]}>
                         Range
@@ -615,7 +615,7 @@ export default function SearchResultsScreen() {
                   <Animated.View
                     key={item.id}
                     entering={FadeInDown.delay(index * 40).duration(250)}
-                    style={[styles.listingCard, { backgroundColor: "rgba(16, 185, 129, 0.06)" }]}
+                    style={[styles.listingCard, { backgroundColor: theme.colors.card }]}
                   >
                     <Image
                       source={{ uri: item.imageUrl }}
@@ -651,7 +651,7 @@ export default function SearchResultsScreen() {
                         onPress={() => handleViewListing(item.link)}
                         style={({ pressed }) => [
                           styles.viewButton,
-                          { backgroundColor: "rgba(16, 185, 129, 0.12)", opacity: pressed ? 0.7 : 1 }
+                          { backgroundColor: theme.colors.muted, opacity: pressed ? 0.7 : 1 }
                         ]}
                       >
                         <Feather name="external-link" size={14} color="#10B981" />
@@ -1213,7 +1213,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#10B981",
+    backgroundColor: "#3665F3",
     paddingVertical: 14,
     borderRadius: 12,
     marginBottom: 16,
