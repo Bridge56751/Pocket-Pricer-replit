@@ -711,24 +711,6 @@ export default function SearchResultsScreen() {
                   </Animated.View>
                 ))}
 
-                {!broadSoldData ? (
-                  <Pressable
-                    testID="button-broad-ebay-search-more"
-                    style={styles.broadSearchButton}
-                    onPress={() => handleEbaySoldSearch(true)}
-                    disabled={ebaySoldLoading}
-                  >
-                    {ebaySoldLoading ? (
-                      <ActivityIndicator size="small" color="#FFFFFF" />
-                    ) : (
-                      <>
-                        <Feather name="search" size={16} color="#FFFFFF" />
-                        <Text style={styles.broadSearchButtonText}>Search Similar Items</Text>
-                      </>
-                    )}
-                  </Pressable>
-                ) : null}
-
                 <View style={{ height: 8 }} />
               </View>
             ) : null}
@@ -846,20 +828,6 @@ export default function SearchResultsScreen() {
                 ))}
 
                 <View style={{ height: 8 }} />
-              </View>
-            ) : null}
-
-            {broadSoldData && showEbaySold && broadSoldData.noResults && ebaySoldData && !ebaySoldData.noResults ? (
-              <View style={[styles.ebaySoldSummary, { backgroundColor: theme.colors.card, marginBottom: 16 }]}>
-                <View style={styles.ebaySoldSummaryHeader}>
-                  <Feather name="info" size={18} color="#F59E0B" />
-                  <Text style={[styles.ebaySoldSummaryTitle, { color: theme.colors.foreground }]}>
-                    No Similar Items Found
-                  </Text>
-                </View>
-                <Text style={[styles.ebaySoldSummarySubtitle, { color: theme.colors.mutedForeground }]}>
-                  No additional similar items were found beyond the exact matches shown above.
-                </Text>
               </View>
             ) : null}
 
