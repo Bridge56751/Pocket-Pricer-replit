@@ -633,7 +633,7 @@ export default function SearchResultsScreen() {
                         {item.title}
                       </Text>
                       <View style={styles.priceRow}>
-                        <Text style={[styles.currentPrice, { color: "#10B981" }]}>
+                        <Text style={[styles.currentPrice, { color: theme.colors.foreground }]}>
                           ${item.price.toFixed(2)}
                         </Text>
                         {item.condition ? (
@@ -654,8 +654,8 @@ export default function SearchResultsScreen() {
                           { backgroundColor: theme.colors.muted, opacity: pressed ? 0.7 : 1 }
                         ]}
                       >
-                        <Feather name="external-link" size={14} color="#10B981" />
-                        <Text style={[styles.viewButtonText, { color: "#10B981" }]}>
+                        <Feather name="external-link" size={14} color={theme.colors.foreground} />
+                        <Text style={[styles.viewButtonText, { color: theme.colors.foreground }]}>
                           View Listing
                         </Text>
                       </Pressable>
