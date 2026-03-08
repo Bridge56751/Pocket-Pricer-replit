@@ -459,7 +459,7 @@ export default function SearchResultsScreen() {
 
             <Pressable
               testID="button-ebay-sold-search"
-              onPress={handleEbaySoldSearch}
+              onPress={() => handleEbaySoldSearch()}
               style={({ pressed }) => [
                 styles.ebaySoldButton,
                 { opacity: pressed ? 0.7 : 1 }
