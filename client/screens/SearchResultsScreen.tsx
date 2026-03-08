@@ -542,7 +542,7 @@ export default function SearchResultsScreen() {
                     </Text>
                   </View>
                   <Text style={[styles.ebaySoldSummarySubtitle, { color: theme.colors.mutedForeground }]}>
-                    {ebaySoldData.totalSold.toLocaleString()} sold on eBay
+                    {ebaySoldData.totalSold.toLocaleString()} matching sold {ebaySoldData.totalSold === 1 ? "listing" : "listings"} found on eBay
                   </Text>
 
                   <View style={styles.ebaySoldStatsRow}>
