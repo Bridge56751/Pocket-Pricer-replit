@@ -588,7 +588,7 @@ export default function SearchResultsScreen() {
                       </View>
                       {item.soldDate ? (
                         <Text style={[styles.ebaySoldDate, { color: theme.colors.mutedForeground }]}>
-                          Sold {item.soldDate}
+                          {item.soldDate.startsWith("Sold") ? item.soldDate : `Sold ${item.soldDate}`}
                         </Text>
                       ) : null}
                       <Pressable
