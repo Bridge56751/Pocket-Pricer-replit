@@ -464,24 +464,35 @@ export default function SearchResultsScreen() {
             ) : null}
 
             {ebaySoldData && showEbaySold && ebaySoldData.noResults ? (
-              <View style={[styles.ebaySoldSummary, { backgroundColor: theme.colors.card }]}>
-                <View style={styles.ebaySoldSummaryHeader}>
-                  <Feather name="info" size={18} color={theme.colors.mutedForeground} />
-                  <Text style={[styles.ebaySoldSummaryTitle, { color: theme.colors.foreground }]}>
-                    No eBay Sales Found
+              <View style={styles.advancedSearchContainer}>
+                <View style={styles.advancedSearchHeader}>
+                  <Feather name="zap" size={16} color="#FFFFFF" />
+                  <Text style={styles.advancedSearchLabel}>Advanced Search</Text>
+                </View>
+                <View style={[styles.ebaySoldSummary, { backgroundColor: "rgba(54, 101, 243, 0.08)" }]}>
+                  <View style={styles.ebaySoldSummaryHeader}>
+                    <Feather name="info" size={18} color="#3665F3" />
+                    <Text style={[styles.ebaySoldSummaryTitle, { color: theme.colors.foreground }]}>
+                      No eBay Sales Found
+                    </Text>
+                  </View>
+                  <Text style={[styles.ebaySoldSummarySubtitle, { color: theme.colors.mutedForeground }]}>
+                    No recent sold listings were found for this product on eBay. This may mean it's a niche item or hasn't been sold recently.
                   </Text>
                 </View>
-                <Text style={[styles.ebaySoldSummarySubtitle, { color: theme.colors.mutedForeground }]}>
-                  No recent sold listings were found for this product on eBay. This may mean it's a niche item or hasn't been sold recently.
-                </Text>
               </View>
             ) : null}
 
             {ebaySoldData && showEbaySold && !ebaySoldData.noResults && buyScore !== null ? (
-              <View>
+              <View style={styles.advancedSearchContainer}>
+                <View style={styles.advancedSearchHeader}>
+                  <Feather name="zap" size={16} color="#FFFFFF" />
+                  <Text style={styles.advancedSearchLabel}>Advanced Search</Text>
+                </View>
+
                 <Animated.View
                   entering={FadeInDown.duration(400)}
-                  style={[styles.buyScoreCard, { backgroundColor: theme.colors.card }]}
+                  style={[styles.buyScoreCard, { backgroundColor: "rgba(54, 101, 243, 0.08)" }]}
                 >
                   <View style={styles.buyScoreHeader}>
                     <View style={{ flex: 1 }}>
@@ -534,7 +545,7 @@ export default function SearchResultsScreen() {
                   </View>
                 </Animated.View>
 
-                <View style={[styles.ebaySoldSummary, { backgroundColor: theme.colors.card }]}>
+                <View style={[styles.ebaySoldSummary, { backgroundColor: "rgba(54, 101, 243, 0.08)" }]}>
                   <View style={styles.ebaySoldSummaryHeader}>
                     <Feather name="bar-chart-2" size={18} color="#3665F3" />
                     <Text style={[styles.ebaySoldSummaryTitle, { color: theme.colors.foreground }]}>
@@ -550,11 +561,11 @@ export default function SearchResultsScreen() {
                       <Text style={[styles.ebaySoldStatLabel, { color: theme.colors.mutedForeground }]}>
                         Avg Sold
                       </Text>
-                      <Text style={[styles.ebaySoldStatValue, { color: theme.colors.primary }]}>
+                      <Text style={[styles.ebaySoldStatValue, { color: "#3665F3" }]}>
                         ${ebaySoldData.avgSoldPrice.toFixed(0)}
                       </Text>
                     </View>
-                    <View style={[styles.ebaySoldStatDivider, { backgroundColor: theme.colors.border }]} />
+                    <View style={[styles.ebaySoldStatDivider, { backgroundColor: "rgba(54, 101, 243, 0.2)" }]} />
                     <View style={styles.ebaySoldStat}>
                       <Text style={[styles.ebaySoldStatLabel, { color: theme.colors.mutedForeground }]}>
                         Median
@@ -563,7 +574,7 @@ export default function SearchResultsScreen() {
                         ${ebaySoldData.medianSoldPrice.toFixed(0)}
                       </Text>
                     </View>
-                    <View style={[styles.ebaySoldStatDivider, { backgroundColor: theme.colors.border }]} />
+                    <View style={[styles.ebaySoldStatDivider, { backgroundColor: "rgba(54, 101, 243, 0.2)" }]} />
                     <View style={styles.ebaySoldStat}>
                       <Text style={[styles.ebaySoldStatLabel, { color: theme.colors.mutedForeground }]}>
                         Range
@@ -589,7 +600,7 @@ export default function SearchResultsScreen() {
                   </View>
                 </View>
 
-                <Text style={[styles.sectionTitle, { color: theme.colors.foreground }]}>
+                <Text style={[styles.advancedSectionTitle, { color: theme.colors.foreground }]}>
                   Recent eBay Sales ({ebaySoldData.items.length})
                 </Text>
 
@@ -597,7 +608,7 @@ export default function SearchResultsScreen() {
                   <Animated.View
                     key={item.id}
                     entering={FadeInDown.delay(index * 40).duration(250)}
-                    style={[styles.listingCard, { backgroundColor: theme.colors.card }]}
+                    style={[styles.listingCard, { backgroundColor: "rgba(54, 101, 243, 0.06)" }]}
                   >
                     <Image
                       source={{ uri: item.imageUrl }}
@@ -615,7 +626,7 @@ export default function SearchResultsScreen() {
                         {item.title}
                       </Text>
                       <View style={styles.priceRow}>
-                        <Text style={[styles.currentPrice, { color: theme.colors.primary }]}>
+                        <Text style={[styles.currentPrice, { color: "#3665F3" }]}>
                           ${item.price.toFixed(2)}
                         </Text>
                         {item.condition ? (
@@ -633,11 +644,11 @@ export default function SearchResultsScreen() {
                         onPress={() => handleViewListing(item.link)}
                         style={({ pressed }) => [
                           styles.viewButton,
-                          { backgroundColor: theme.colors.muted, opacity: pressed ? 0.7 : 1 }
+                          { backgroundColor: "rgba(54, 101, 243, 0.12)", opacity: pressed ? 0.7 : 1 }
                         ]}
                       >
-                        <Feather name="external-link" size={14} color={theme.colors.foreground} />
-                        <Text style={[styles.viewButtonText, { color: theme.colors.foreground }]}>
+                        <Feather name="external-link" size={14} color="#3665F3" />
+                        <Text style={[styles.viewButtonText, { color: "#3665F3" }]}>
                           View Listing
                         </Text>
                       </Pressable>
@@ -645,7 +656,7 @@ export default function SearchResultsScreen() {
                   </Animated.View>
                 ))}
 
-                <View style={{ height: 16 }} />
+                <View style={{ height: 8 }} />
               </View>
             ) : null}
 
@@ -1159,6 +1170,37 @@ const styles = StyleSheet.create({
   buyScoreLabelText: {
     fontSize: 16,
     fontWeight: "700",
+  },
+  advancedSearchContainer: {
+    backgroundColor: "rgba(54, 101, 243, 0.04)",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(54, 101, 243, 0.15)",
+    padding: 12,
+    marginBottom: 16,
+  },
+  advancedSearchHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#3665F3",
+    alignSelf: "flex-start",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginBottom: 12,
+  },
+  advancedSearchLabel: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "700",
+    letterSpacing: 0.5,
+  },
+  advancedSectionTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginTop: 4,
+    marginBottom: 12,
   },
   ebaySoldButton: {
     flexDirection: "row",
