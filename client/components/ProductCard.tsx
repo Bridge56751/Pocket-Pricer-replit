@@ -82,10 +82,18 @@ export function ProductCard({ product, onPress, compact = false }: ProductCardPr
           {product.title}
         </ThemedText>
         <View style={styles.priceRow}>
-          <ThemedText style={[styles.price, { color: theme.text }]}>
-            ${product.currentPrice.toFixed(2)}
-          </ThemedText>
-          <ProfitBadge profit={product.estimatedProfit} />
+          {product.currentPrice > 0 ? (
+            <>
+              <ThemedText style={[styles.price, { color: theme.text }]}>
+                ${product.currentPrice.toFixed(2)}
+              </ThemedText>
+              <ProfitBadge profit={product.estimatedProfit} />
+            </>
+          ) : (
+            <ThemedText style={[styles.price, { color: theme.primary }]}>
+              Check price
+            </ThemedText>
+          )}
         </View>
         <ThemedText style={[styles.soldText, { color: theme.textSecondary }]}>
           {product.soldCount} sold recently

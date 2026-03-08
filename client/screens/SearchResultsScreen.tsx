@@ -171,14 +171,22 @@ export default function SearchResultsScreen() {
           {item.title}
         </Text>
         <View style={styles.priceRow}>
-          <Text style={[styles.currentPrice, { color: theme.colors.foreground }]}>
-            ${item.currentPrice.toFixed(2)}
-          </Text>
-          {item.originalPrice ? (
-            <Text style={[styles.originalPrice, { color: theme.colors.mutedForeground }]}>
-              ${item.originalPrice.toFixed(2)}
+          {item.currentPrice > 0 ? (
+            <>
+              <Text style={[styles.currentPrice, { color: theme.colors.foreground }]}>
+                ${item.currentPrice.toFixed(2)}
+              </Text>
+              {item.originalPrice ? (
+                <Text style={[styles.originalPrice, { color: theme.colors.mutedForeground }]}>
+                  ${item.originalPrice.toFixed(2)}
+                </Text>
+              ) : null}
+            </>
+          ) : (
+            <Text style={[styles.currentPrice, { color: theme.colors.primary }]}>
+              Check price
             </Text>
-          ) : null}
+          )}
         </View>
         <Pressable
           onPress={() => handleViewListing(item.link)}
