@@ -103,9 +103,14 @@ export default function SearchResultsScreen() {
     const netProfit = sellPrice - purchase - fees;
 
     let profitScore = 0;
+    let profitPenalty = 0;
     if (purchase > 0) {
-      if (netProfit <= 0) {
+      if (netProfit <= -20) {
         profitScore = 0;
+        profitPenalty = 1;
+      } else if (netProfit <= 0) {
+        profitScore = 0;
+        profitPenalty = Math.abs(netProfit) / 20;
       } else if (netProfit >= 50) {
         profitScore = 60;
       } else {
@@ -137,7 +142,9 @@ export default function SearchResultsScreen() {
       consistencyScore = ratio * 15;
     }
 
-    const raw = Math.round(profitScore + demandScore + consistencyScore);
+    const baseScore = profitScore + demandScore + consistencyScore;
+    const penalizedScore = baseScore * (1 - profitPenalty);
+    const raw = Math.round(penalizedScore);
     return Math.max(0, Math.min(100, raw));
   }, [ebaySoldData, showEbaySold, purchasePrice, sellingPrice, suggestedPrice]);
 
