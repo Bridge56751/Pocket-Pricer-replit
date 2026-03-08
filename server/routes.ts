@@ -210,32 +210,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const allProducts = lensResult.products.slice(0, 60);
       
-      const withPrice = allProducts.filter(p => p.price?.value || p.price?.extracted_value);
-      const blockedWithPrice = withPrice.filter(p => !isReliableSource(p.source || ''));
-      const noPriceProducts = allProducts.filter(p => !(p.price?.value || p.price?.extracted_value));
+      const reliableProducts = allProducts.filter(p => isReliableSource(p.source || ''));
+      const pricedProducts = reliableProducts.filter(p => p.price?.value || p.price?.extracted_value);
+      const noPriceProducts = reliableProducts.filter(p => !(p.price?.value || p.price?.extracted_value));
       
-      console.log(`Breakdown: ${allProducts.length} total, ${withPrice.length} have prices, ${noPriceProducts.length} no price, ${blockedWithPrice.length} blocked sources with prices`);
-      if (blockedWithPrice.length > 0) {
-        console.log(`Blocked sources: ${blockedWithPrice.map(p => p.source).join(', ')}`);
-      }
-      if (noPriceProducts.length > 0) {
-        console.log(`No-price sources (first 10): ${noPriceProducts.slice(0, 10).map(p => p.source || 'unknown').join(', ')}`);
-      }
+      console.log(`Breakdown: ${allProducts.length} total, ${pricedProducts.length} with prices, ${noPriceProducts.length} no price (reliable only)`);
       
-      const productsWithPrices = allProducts.filter(p => 
-        (p.price?.value || p.price?.extracted_value) && isReliableSource(p.source || '')
-      );
-      
-      console.log(`After filtering: ${productsWithPrices.length} reliable products with prices`);
-      
-      const prices = productsWithPrices
+      const prices = pricedProducts
         .map(p => p.price?.extracted_value || p.price?.value || 0)
         .filter(p => p > 0);
 
       const avgListPrice = calculateMedian(prices);
       const bestBuyNow = prices.length > 0 ? Math.min(...prices) : 0;
 
-      const listings = productsWithPrices.map((item, index) => ({
+      const pricedListings = pricedProducts.map((item, index) => ({
         id: `lens-${index}`,
         title: item.title || "Unknown Product",
         imageUrl: item.thumbnail || "",
@@ -247,6 +235,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         rating: item.rating,
         reviews: item.reviews,
       }));
+
+      const remainingSlots = Math.max(0, 30 - pricedListings.length);
+      const noPriceListings = noPriceProducts.slice(0, remainingSlots).map((item, index) => ({
+        id: `lens-np-${index}`,
+        title: item.title || "Unknown Product",
+        imageUrl: item.thumbnail || "",
+        currentPrice: 0,
+        shipping: 0,
+        link: item.link || "",
+        seller: item.source || "",
+        platform: item.source || "Shop",
+        rating: item.rating,
+        reviews: item.reviews,
+      }));
+
+      const listings = [...pricedListings, ...noPriceListings];
+      console.log(`Returning ${pricedListings.length} priced + ${noPriceListings.length} check-price = ${listings.length} total listings`);
 
       const productName = lensResult.productName
         || listings[0]?.title
