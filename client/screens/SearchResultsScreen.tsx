@@ -484,7 +484,7 @@ export default function SearchResultsScreen() {
                   style={[styles.buyScoreCard, { backgroundColor: theme.colors.card }]}
                 >
                   <View style={styles.buyScoreHeader}>
-                    <View>
+                    <View style={{ flex: 1 }}>
                       <Text style={[styles.buyScoreTitle, { color: theme.colors.foreground }]}>
                         Buy Score
                       </Text>
@@ -492,12 +492,36 @@ export default function SearchResultsScreen() {
                         {parseFloat(purchasePrice) > 0 ? "Based on your cost, demand & market data" : "Enter your purchase price for a precise score"}
                       </Text>
                     </View>
-                    <View style={[styles.buyScoreCircle, { borderColor: getBuyScoreColor(buyScore) }]}>
+                    <View style={styles.buyScoreNumberContainer}>
                       <Text style={[styles.buyScoreValue, { color: getBuyScoreColor(buyScore) }]}>
                         {buyScore}
                       </Text>
+                      <Text style={[styles.buyScoreOutOf, { color: theme.colors.mutedForeground }]}>/100</Text>
                     </View>
                   </View>
+
+                  <View style={styles.meterContainer}>
+                    <View style={[styles.meterTrack, { backgroundColor: theme.colors.muted }]}>
+                      <View style={[styles.meterSegment, styles.meterRed]} />
+                      <View style={[styles.meterSegment, styles.meterYellow]} />
+                      <View style={[styles.meterSegment, styles.meterGreen, { borderTopRightRadius: 7, borderBottomRightRadius: 7 }]} />
+                    </View>
+                    <View
+                      style={[
+                        styles.meterIndicator,
+                        { left: `${Math.max(1, Math.min(98, buyScore))}%`, borderColor: getBuyScoreColor(buyScore) }
+                      ]}
+                    />
+                  </View>
+
+                  <View style={styles.meterLabels}>
+                    <Text style={[styles.meterLabelText, { color: theme.colors.mutedForeground }]}>Avoid</Text>
+                    <Text style={[styles.meterLabelText, { color: theme.colors.mutedForeground }]}>Risky</Text>
+                    <Text style={[styles.meterLabelText, { color: theme.colors.mutedForeground }]}>Fair</Text>
+                    <Text style={[styles.meterLabelText, { color: theme.colors.mutedForeground }]}>Good</Text>
+                    <Text style={[styles.meterLabelText, { color: theme.colors.mutedForeground }]}>Strong</Text>
+                  </View>
+
                   <View style={[styles.buyScoreLabelRow, { backgroundColor: getBuyScoreColor(buyScore) + '20' }]}>
                     <Feather
                       name={buyScore >= 60 ? "thumbs-up" : buyScore >= 40 ? "minus" : "thumbs-down"}
@@ -1049,7 +1073,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: 16,
   },
   buyScoreTitle: {
     fontSize: 20,
@@ -1060,17 +1084,69 @@ const styles = StyleSheet.create({
     fontSize: 12,
     maxWidth: 200,
   },
-  buyScoreCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    borderWidth: 4,
-    alignItems: "center",
-    justifyContent: "center",
+  buyScoreNumberContainer: {
+    flexDirection: "row",
+    alignItems: "baseline",
   },
   buyScoreValue: {
-    fontSize: 24,
+    fontSize: 36,
     fontWeight: "800",
+  },
+  buyScoreOutOf: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  meterContainer: {
+    position: "relative" as const,
+    height: 24,
+    justifyContent: "center" as const,
+    marginBottom: 6,
+  },
+  meterTrack: {
+    height: 14,
+    borderRadius: 7,
+    flexDirection: "row",
+    overflow: "hidden",
+  },
+  meterSegment: {
+    flex: 1,
+    height: "100%" as any,
+  },
+  meterRed: {
+    backgroundColor: "#EF4444",
+    borderTopLeftRadius: 6,
+    borderBottomLeftRadius: 6,
+  },
+  meterYellow: {
+    backgroundColor: "#F59E0B",
+  },
+  meterGreen: {
+    backgroundColor: "#22C55E",
+  },
+  meterIndicator: {
+    position: "absolute" as const,
+    top: 2,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 3,
+    marginLeft: -10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  meterLabels: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 12,
+    paddingHorizontal: 2,
+  },
+  meterLabelText: {
+    fontSize: 10,
+    fontWeight: "500",
   },
   buyScoreLabelRow: {
     flexDirection: "row",
