@@ -77,6 +77,7 @@ export default function SearchResultsScreen() {
   const [sellingPrice, setSellingPrice] = useState("");
   const [sortOption, setSortOption] = useState<string>("Best Match");
   const [ebaySoldData, setEbaySoldData] = useState<EbaySoldData | null>(null);
+  const [broadSoldData, setBroadSoldData] = useState<EbaySoldData | null>(null);
   const [ebaySoldLoading, setEbaySoldLoading] = useState(false);
   const [ebaySoldError, setEbaySoldError] = useState<string | null>(null);
   const [showEbaySold, setShowEbaySold] = useState(false);
@@ -200,8 +201,11 @@ export default function SearchResultsScreen() {
 
   const handleEbaySoldSearch = async (broad = false) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    if (ebaySoldData && !broad) {
+    if (!broad && ebaySoldData) {
       setShowEbaySold(!showEbaySold);
+      return;
+    }
+    if (broad && broadSoldData) {
       return;
     }
     setEbaySoldLoading(true);
@@ -229,8 +233,10 @@ export default function SearchResultsScreen() {
       const data: EbaySoldData = await res.json();
       if (broad) {
         data.isBroadSearch = true;
+        setBroadSoldData(data);
+      } else {
+        setEbaySoldData(data);
       }
-      setEbaySoldData(data);
       setShowEbaySold(true);
     } catch (err: any) {
       setEbaySoldError(err.message || "Failed to load sales data");
@@ -477,7 +483,7 @@ export default function SearchResultsScreen() {
               </Text>
             ) : null}
 
-            {ebaySoldData && showEbaySold && ebaySoldData.noResults ? (
+            {ebaySoldData && showEbaySold && ebaySoldData.noResults && !broadSoldData ? (
               <View style={styles.advancedSearchContainer}>
                 <View style={styles.advancedSearchHeader}>
                   <Feather name="zap" size={16} color="#FFFFFF" />
@@ -487,31 +493,47 @@ export default function SearchResultsScreen() {
                   <View style={styles.ebaySoldSummaryHeader}>
                     <Feather name="info" size={18} color="#10B981" />
                     <Text style={[styles.ebaySoldSummaryTitle, { color: theme.colors.foreground }]}>
-                      {ebaySoldData.isBroadSearch ? "No Similar Items Found" : "No eBay Sales Found"}
+                      No eBay Sales Found
                     </Text>
                   </View>
                   <Text style={[styles.ebaySoldSummarySubtitle, { color: theme.colors.mutedForeground }]}>
-                    {ebaySoldData.isBroadSearch
-                      ? "No sold listings were found for similar items either. This product may be very niche or new to the market."
-                      : "No recent sold listings were found for this exact product. Try a broader search to find similar items."}
+                    No recent sold listings were found for this exact product. Try a broader search to find similar items.
                   </Text>
-                  {!ebaySoldData.isBroadSearch ? (
-                    <Pressable
-                      testID="button-broad-ebay-search"
-                      style={styles.broadSearchButton}
-                      onPress={() => handleEbaySoldSearch(true)}
-                      disabled={ebaySoldLoading}
-                    >
-                      {ebaySoldLoading ? (
-                        <ActivityIndicator size="small" color="#FFFFFF" />
-                      ) : (
-                        <>
-                          <Feather name="search" size={16} color="#FFFFFF" />
-                          <Text style={styles.broadSearchButtonText}>Search Similar Items</Text>
-                        </>
-                      )}
-                    </Pressable>
-                  ) : null}
+                  <Pressable
+                    testID="button-broad-ebay-search"
+                    style={styles.broadSearchButton}
+                    onPress={() => handleEbaySoldSearch(true)}
+                    disabled={ebaySoldLoading}
+                  >
+                    {ebaySoldLoading ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <>
+                        <Feather name="search" size={16} color="#FFFFFF" />
+                        <Text style={styles.broadSearchButtonText}>Search Similar Items</Text>
+                      </>
+                    )}
+                  </Pressable>
+                </View>
+              </View>
+            ) : null}
+
+            {ebaySoldData && showEbaySold && ebaySoldData.noResults && broadSoldData && broadSoldData.noResults ? (
+              <View style={styles.advancedSearchContainer}>
+                <View style={styles.advancedSearchHeader}>
+                  <Feather name="zap" size={16} color="#FFFFFF" />
+                  <Text style={styles.advancedSearchLabel}>Advanced Search</Text>
+                </View>
+                <View style={[styles.ebaySoldSummary, { backgroundColor: theme.colors.card }]}>
+                  <View style={styles.ebaySoldSummaryHeader}>
+                    <Feather name="info" size={18} color="#10B981" />
+                    <Text style={[styles.ebaySoldSummaryTitle, { color: theme.colors.foreground }]}>
+                      No Similar Items Found
+                    </Text>
+                  </View>
+                  <Text style={[styles.ebaySoldSummarySubtitle, { color: theme.colors.mutedForeground }]}>
+                    No sold listings were found for similar items either. This product may be very niche or new to the market.
+                  </Text>
                 </View>
               </View>
             ) : null}
@@ -582,14 +604,9 @@ export default function SearchResultsScreen() {
                   <View style={styles.ebaySoldSummaryHeader}>
                     <Feather name="bar-chart-2" size={18} color="#10B981" />
                     <Text style={[styles.ebaySoldSummaryTitle, { color: theme.colors.foreground }]}>
-                      {ebaySoldData.isBroadSearch ? "Similar Items on eBay" : "eBay Sales Summary"}
+                      eBay Sales Summary
                     </Text>
                   </View>
-                  {ebaySoldData.isBroadSearch ? (
-                    <Text style={[styles.ebaySoldSummarySubtitle, { color: "#F59E0B" }]}>
-                      Showing similar items — prices may vary from exact product
-                    </Text>
-                  ) : null}
                   <Text style={[styles.ebaySoldSummarySubtitle, { color: theme.colors.mutedForeground }]}>
                     {(ebaySoldData.totalSold || 0).toLocaleString()} matching sold {ebaySoldData.totalSold === 1 ? "listing" : "listings"} found on eBay
                   </Text>
@@ -694,7 +711,155 @@ export default function SearchResultsScreen() {
                   </Animated.View>
                 ))}
 
+                {!broadSoldData ? (
+                  <Pressable
+                    testID="button-broad-ebay-search-more"
+                    style={styles.broadSearchButton}
+                    onPress={() => handleEbaySoldSearch(true)}
+                    disabled={ebaySoldLoading}
+                  >
+                    {ebaySoldLoading ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <>
+                        <Feather name="search" size={16} color="#FFFFFF" />
+                        <Text style={styles.broadSearchButtonText}>Search Similar Items</Text>
+                      </>
+                    )}
+                  </Pressable>
+                ) : null}
+
                 <View style={{ height: 8 }} />
+              </View>
+            ) : null}
+
+            {broadSoldData && showEbaySold && !broadSoldData.noResults ? (
+              <View style={styles.advancedSearchContainer}>
+                {ebaySoldData && ebaySoldData.noResults ? (
+                  <View style={[styles.ebaySoldSummary, { backgroundColor: theme.colors.card, marginBottom: 12 }]}>
+                    <View style={styles.ebaySoldSummaryHeader}>
+                      <Feather name="info" size={18} color={theme.colors.mutedForeground} />
+                      <Text style={[styles.ebaySoldSummaryTitle, { color: theme.colors.mutedForeground, fontSize: 15 }]}>
+                        No exact matches found
+                      </Text>
+                    </View>
+                  </View>
+                ) : null}
+                <View style={[styles.ebaySoldSummary, { backgroundColor: theme.colors.card }]}>
+                  <View style={styles.ebaySoldSummaryHeader}>
+                    <Feather name="bar-chart-2" size={18} color="#F59E0B" />
+                    <Text style={[styles.ebaySoldSummaryTitle, { color: theme.colors.foreground }]}>
+                      Similar Items on eBay
+                    </Text>
+                  </View>
+                  <Text style={[styles.ebaySoldSummarySubtitle, { color: "#F59E0B" }]}>
+                    Showing similar items — prices may vary from exact product
+                  </Text>
+                  <Text style={[styles.ebaySoldSummarySubtitle, { color: theme.colors.mutedForeground }]}>
+                    {(broadSoldData.totalSold || 0).toLocaleString()} similar sold {broadSoldData.totalSold === 1 ? "listing" : "listings"} found
+                  </Text>
+
+                  <View style={styles.ebaySoldStatsRow}>
+                    <View style={styles.ebaySoldStat}>
+                      <Text style={[styles.ebaySoldStatLabel, { color: theme.colors.mutedForeground }]}>
+                        Avg Sold
+                      </Text>
+                      <Text style={[styles.ebaySoldStatValue, { color: theme.colors.foreground }]}>
+                        ${(broadSoldData.avgSoldPrice || 0).toFixed(0)}
+                      </Text>
+                    </View>
+                    <View style={[styles.ebaySoldStatDivider, { backgroundColor: theme.colors.border }]} />
+                    <View style={styles.ebaySoldStat}>
+                      <Text style={[styles.ebaySoldStatLabel, { color: theme.colors.mutedForeground }]}>
+                        Median
+                      </Text>
+                      <Text style={[styles.ebaySoldStatValue, { color: theme.colors.foreground }]}>
+                        ${(broadSoldData.medianSoldPrice || 0).toFixed(0)}
+                      </Text>
+                    </View>
+                    <View style={[styles.ebaySoldStatDivider, { backgroundColor: theme.colors.border }]} />
+                    <View style={styles.ebaySoldStat}>
+                      <Text style={[styles.ebaySoldStatLabel, { color: theme.colors.mutedForeground }]}>
+                        Range
+                      </Text>
+                      <Text style={[styles.ebaySoldStatValue, { color: theme.colors.foreground }]}>
+                        ${(broadSoldData.lowPrice || 0).toFixed(0)} - ${(broadSoldData.highPrice || 0).toFixed(0)}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                <Text style={[styles.advancedSectionTitle, { color: theme.colors.foreground }]}>
+                  Similar Sales ({broadSoldData.items.length})
+                </Text>
+
+                {broadSoldData.items.slice(0, 15).map((item, index) => (
+                  <Animated.View
+                    key={`broad-${item.id}`}
+                    entering={FadeInDown.delay(index * 40).duration(250)}
+                    style={[styles.listingCard, { backgroundColor: theme.colors.card }]}
+                  >
+                    <Image
+                      source={{ uri: item.imageUrl }}
+                      style={styles.listingImage}
+                      contentFit="cover"
+                    />
+                    <View style={styles.listingContent}>
+                      <View style={[styles.ebayBadge, { backgroundColor: "#F59E0B" }]}>
+                        <Text style={styles.ebayBadgeText}>SIMILAR</Text>
+                      </View>
+                      <Text
+                        style={[styles.listingTitle, { color: theme.colors.foreground }]}
+                        numberOfLines={2}
+                      >
+                        {item.title}
+                      </Text>
+                      <View style={styles.priceRow}>
+                        <Text style={[styles.currentPrice, { color: theme.colors.foreground }]}>
+                          ${item.price.toFixed(2)}
+                        </Text>
+                        {item.condition ? (
+                          <Text style={[styles.ebaySoldCondition, { color: theme.colors.mutedForeground }]}>
+                            {item.condition}
+                          </Text>
+                        ) : null}
+                      </View>
+                      {item.soldDate ? (
+                        <Text style={[styles.ebaySoldDate, { color: theme.colors.mutedForeground }]}>
+                          {item.soldDate.startsWith("Sold") ? item.soldDate : `Sold ${item.soldDate}`}
+                        </Text>
+                      ) : null}
+                      <Pressable
+                        onPress={() => handleViewListing(item.link)}
+                        style={({ pressed }) => [
+                          styles.viewButton,
+                          { backgroundColor: theme.colors.muted, opacity: pressed ? 0.7 : 1 }
+                        ]}
+                      >
+                        <Feather name="external-link" size={14} color={theme.colors.foreground} />
+                        <Text style={[styles.viewButtonText, { color: theme.colors.foreground }]}>
+                          View Listing
+                        </Text>
+                      </Pressable>
+                    </View>
+                  </Animated.View>
+                ))}
+
+                <View style={{ height: 8 }} />
+              </View>
+            ) : null}
+
+            {broadSoldData && showEbaySold && broadSoldData.noResults && ebaySoldData && !ebaySoldData.noResults ? (
+              <View style={[styles.ebaySoldSummary, { backgroundColor: theme.colors.card, marginBottom: 16 }]}>
+                <View style={styles.ebaySoldSummaryHeader}>
+                  <Feather name="info" size={18} color="#F59E0B" />
+                  <Text style={[styles.ebaySoldSummaryTitle, { color: theme.colors.foreground }]}>
+                    No Similar Items Found
+                  </Text>
+                </View>
+                <Text style={[styles.ebaySoldSummarySubtitle, { color: theme.colors.mutedForeground }]}>
+                  No additional similar items were found beyond the exact matches shown above.
+                </Text>
               </View>
             ) : null}
 
