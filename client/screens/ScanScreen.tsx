@@ -376,7 +376,7 @@ export default function ScanScreen() {
               Scan & Price
             </Text>
             <Text style={[styles.heroDescription, { color: theme.colors.mutedForeground }]}>
-              Instant market pricing and sales data
+              Point your camera at any product to get instant market pricing and sales data
             </Text>
 
             <Pressable
