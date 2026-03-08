@@ -367,7 +367,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .replace(/\b(Size|Sz)\s*\d+[\w.]*/gi, "")
         .replace(/\s*-\s*[\w\s]*\/[\w\s/]*$/i, "")
         .replace(/\s*-\s*(?:Peacoat|Navy|Gold|Silver|Ivory|Coral|Teal|Maroon|Burgundy|Olive|Charcoal|Beige|Tan|Cream)[\w\s/]*$/i, "")
-        .replace(/\b(Adjustable|Premium|Official|Authentic|Genuine|Brand New|NWT|NWOT|NWB|Exclusive)\b/gi, "")
+        .replace(/\b(Adjustable|Premium|Official|Authentic|Genuine|Brand New|NWT|NWOT|NWB|NIB|NWOB|BNIB|BNWT|BNWOT|MIB|Exclusive)\b/gi, "")
+        .replace(/\b(RARE|HTF|MINT|EUC|GUC|VGC|OBO)\b/gi, "")
         .replace(/\b(Fit|Style|Collection|Pack|Bundle|Lot)\b/gi, "")
         .replace(/[\/,&]+/g, " ")
         .replace(/\s+/g, " ")
@@ -383,8 +384,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (words.length > 5) {
           words = words.slice(0, 5);
         }
-      } else if (words.length > 10) {
-        words = words.slice(0, 10);
+      } else if (words.length > 8) {
+        words = words.slice(0, 8);
       }
 
       cleanQuery = words.join(" ").slice(0, 80) || searchQuery.trim().slice(0, 80);
