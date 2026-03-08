@@ -572,6 +572,11 @@ export default function SearchResultsScreen() {
                           </Text>
                         ) : null}
                       </View>
+                      {item.soldDate ? (
+                        <Text style={[styles.ebaySoldDate, { color: theme.colors.mutedForeground }]}>
+                          Sold {item.soldDate}
+                        </Text>
+                      ) : null}
                       <Pressable
                         onPress={() => handleViewListing(item.link)}
                         style={({ pressed }) => [
@@ -1114,5 +1119,9 @@ const styles = StyleSheet.create({
   ebaySoldCondition: {
     fontSize: 12,
     fontWeight: "500",
+  },
+  ebaySoldDate: {
+    fontSize: 11,
+    marginTop: 2,
   },
 });

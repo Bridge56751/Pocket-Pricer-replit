@@ -64,6 +64,7 @@ export interface EbaySoldItem {
   shipping?: number;
   link: string;
   imageUrl: string;
+  soldDate?: string;
 }
 
 export interface EbaySoldData {

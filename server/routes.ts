@@ -326,7 +326,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const params = new URLSearchParams({
         engine: "ebay_search",
         q: searchQuery,
-        show_only: "sold_items",
+        filters: "sold_listings",
         api_key: apiKey,
       });
 
@@ -343,6 +343,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           extracted_shipping?: number;
           link?: string;
           thumbnail?: string;
+          sold_date?: string;
+          extracted_sold_date?: string;
         }[];
         search_information?: {
           total_results?: number;
@@ -368,6 +370,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           shipping: r.extracted_shipping || 0,
           link: r.link || "",
           imageUrl: r.thumbnail || "",
+          soldDate: r.sold_date || r.extracted_sold_date || undefined,
         }));
 
       const prices = items.map(i => i.price);
