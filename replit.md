@@ -176,6 +176,14 @@ CREATE TABLE guest_scans (
 
 ## Recent Changes
 
+- **Mar 2026**: Added per-device rate limiting (20 requests/minute) on both API endpoints
+  - In-memory sliding window rate limiter keyed by device ID
+  - Returns 429 "Too many requests" when exceeded
+  - Auto-cleanup of expired entries every 5 minutes
+  - Removed `reusePort` from server to ensure single-process rate limit consistency
+- **Mar 2026**: Moved image hosting API keys (freeimage.host, imgbb) to environment variables
+- **Mar 2026**: Changed "Check price" to "Price unlisted" for listings without price data
+- **Mar 2026**: Deleted orphaned AuthScreen.tsx (unused since auth removal)
 - **Mar 2026**: Consolidated dual theme system (`theme.ts` + `design-tokens.ts`) into single `design-tokens.ts`
   - All components now import from `@/constants/design-tokens`
   - `useTheme` hook updated to use design-tokens as source of truth

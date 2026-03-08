@@ -3,6 +3,35 @@ import { createServer, type Server } from "node:http";
 import { query } from "./db";
 
 const FREE_LIFETIME_SEARCHES = 5;
+const RATE_LIMIT_MAX = 20;
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+
+const rateLimitMap = new Map<string, number[]>();
+
+function isRateLimited(deviceId: string): boolean {
+  const now = Date.now();
+  const timestamps = rateLimitMap.get(deviceId) || [];
+  const recent = timestamps.filter(t => now - t < RATE_LIMIT_WINDOW_MS);
+  if (recent.length >= RATE_LIMIT_MAX) {
+    rateLimitMap.set(deviceId, recent);
+    return true;
+  }
+  recent.push(now);
+  rateLimitMap.set(deviceId, recent);
+  return false;
+}
+
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, timestamps] of rateLimitMap) {
+    const recent = timestamps.filter(t => now - t < RATE_LIMIT_WINDOW_MS);
+    if (recent.length === 0) {
+      rateLimitMap.delete(key);
+    } else {
+      rateLimitMap.set(key, recent);
+    }
+  }
+}, 5 * 60 * 1000);
 
 async function uploadImageForLens(imageBase64: string): Promise<string | null> {
   const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, "");
@@ -170,6 +199,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Device ID is required" });
       }
 
+      if (isRateLimited(deviceId)) {
+        return res.status(429).json({ error: "Too many requests. Please wait a moment and try again." });
+      }
+
       if (!isPro) {
         const guestResult = await query(
           "SELECT scan_count FROM guest_scans WHERE device_id = $1",
@@ -295,6 +328,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!deviceId) {
         return res.status(400).json({ error: "Device ID is required" });
+      }
+
+      if (isRateLimited(deviceId)) {
+        return res.status(429).json({ error: "Too many requests. Please wait a moment and try again." });
       }
 
       if (!isPro) {
