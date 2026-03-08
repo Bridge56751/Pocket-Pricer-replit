@@ -209,11 +209,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const allProducts = lensResult.products.slice(0, 60);
+      
+      const withPrice = allProducts.filter(p => p.price?.value || p.price?.extracted_value);
+      const blockedWithPrice = withPrice.filter(p => !isReliableSource(p.source || ''));
+      const noPriceProducts = allProducts.filter(p => !(p.price?.value || p.price?.extracted_value));
+      
+      console.log(`Breakdown: ${allProducts.length} total, ${withPrice.length} have prices, ${noPriceProducts.length} no price, ${blockedWithPrice.length} blocked sources with prices`);
+      if (blockedWithPrice.length > 0) {
+        console.log(`Blocked sources: ${blockedWithPrice.map(p => p.source).join(', ')}`);
+      }
+      if (noPriceProducts.length > 0) {
+        console.log(`No-price sources (first 10): ${noPriceProducts.slice(0, 10).map(p => p.source || 'unknown').join(', ')}`);
+      }
+      
       const productsWithPrices = allProducts.filter(p => 
         (p.price?.value || p.price?.extracted_value) && isReliableSource(p.source || '')
       );
       
-      console.log(`After filtering: ${productsWithPrices.length} reliable products with prices (from ${allProducts.length})`);
+      console.log(`After filtering: ${productsWithPrices.length} reliable products with prices`);
       
       const prices = productsWithPrices
         .map(p => p.price?.extracted_value || p.price?.value || 0)
