@@ -93,7 +93,68 @@ export default function SearchResultsScreen() {
   };
   
   const { ebayFees, profit, selling } = calculateProfit();
-  
+
+  const buyScore = useMemo(() => {
+    if (!ebaySoldData || !showEbaySold) return null;
+
+    const purchase = parseFloat(purchasePrice) || 0;
+    const sellPrice = parseFloat(sellingPrice) || ebaySoldData.medianSoldPrice || suggestedPrice;
+    const fees = sellPrice * EBAY_FEE_RATE;
+    const netProfit = sellPrice - purchase - fees;
+
+    let profitScore = 0;
+    if (purchase > 0) {
+      if (netProfit <= 0) {
+        profitScore = 0;
+      } else if (netProfit >= 50) {
+        profitScore = 60;
+      } else {
+        profitScore = (netProfit / 50) * 60;
+      }
+    } else {
+      const margin = sellPrice > 0 ? ((sellPrice - fees) / sellPrice) : 0;
+      profitScore = Math.min(margin * 60, 40);
+    }
+
+    let demandScore = 0;
+    const totalSold = ebaySoldData.totalSold;
+    if (totalSold >= 1000) {
+      demandScore = 25;
+    } else if (totalSold >= 500) {
+      demandScore = 20;
+    } else if (totalSold >= 100) {
+      demandScore = 15;
+    } else if (totalSold >= 25) {
+      demandScore = 10;
+    } else if (totalSold >= 5) {
+      demandScore = 5;
+    }
+
+    let consistencyScore = 0;
+    if (ebaySoldData.medianSoldPrice > 0 && ebaySoldData.avgSoldPrice > 0) {
+      const ratio = Math.min(ebaySoldData.medianSoldPrice, ebaySoldData.avgSoldPrice) /
+                    Math.max(ebaySoldData.medianSoldPrice, ebaySoldData.avgSoldPrice);
+      consistencyScore = ratio * 15;
+    }
+
+    const raw = Math.round(profitScore + demandScore + consistencyScore);
+    return Math.max(0, Math.min(100, raw));
+  }, [ebaySoldData, showEbaySold, purchasePrice, sellingPrice, suggestedPrice]);
+
+  const getBuyScoreColor = (score: number) => {
+    if (score >= 70) return "#22C55E";
+    if (score >= 40) return "#F59E0B";
+    return "#EF4444";
+  };
+
+  const getBuyScoreLabel = (score: number) => {
+    if (score >= 80) return "Strong Buy";
+    if (score >= 60) return "Good Buy";
+    if (score >= 40) return "Fair";
+    if (score >= 20) return "Risky";
+    return "Avoid";
+  };
+
   const useSuggestedPrice = () => {
     setSellingPrice(suggestedPrice.toFixed(2));
   };
@@ -402,8 +463,39 @@ export default function SearchResultsScreen() {
               </Text>
             ) : null}
 
-            {ebaySoldData && showEbaySold ? (
+            {ebaySoldData && showEbaySold && buyScore !== null ? (
               <View>
+                <Animated.View
+                  entering={FadeInDown.duration(400)}
+                  style={[styles.buyScoreCard, { backgroundColor: theme.colors.card }]}
+                >
+                  <View style={styles.buyScoreHeader}>
+                    <View>
+                      <Text style={[styles.buyScoreTitle, { color: theme.colors.foreground }]}>
+                        Buy Score
+                      </Text>
+                      <Text style={[styles.buyScoreHint, { color: theme.colors.mutedForeground }]}>
+                        {parseFloat(purchasePrice) > 0 ? "Based on your cost, demand & market data" : "Enter your purchase price for a precise score"}
+                      </Text>
+                    </View>
+                    <View style={[styles.buyScoreCircle, { borderColor: getBuyScoreColor(buyScore) }]}>
+                      <Text style={[styles.buyScoreValue, { color: getBuyScoreColor(buyScore) }]}>
+                        {buyScore}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={[styles.buyScoreLabelRow, { backgroundColor: getBuyScoreColor(buyScore) + '20' }]}>
+                    <Feather
+                      name={buyScore >= 60 ? "thumbs-up" : buyScore >= 40 ? "minus" : "thumbs-down"}
+                      size={16}
+                      color={getBuyScoreColor(buyScore)}
+                    />
+                    <Text style={[styles.buyScoreLabelText, { color: getBuyScoreColor(buyScore) }]}>
+                      {getBuyScoreLabel(buyScore)}
+                    </Text>
+                  </View>
+                </Animated.View>
+
                 <View style={[styles.ebaySoldSummary, { backgroundColor: theme.colors.card }]}>
                   <View style={styles.ebaySoldSummaryHeader}>
                     <Feather name="bar-chart-2" size={18} color="#3665F3" />
@@ -914,6 +1006,50 @@ const styles = StyleSheet.create({
   sortChipText: {
     fontSize: 13,
     fontWeight: "600",
+  },
+  buyScoreCard: {
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+  },
+  buyScoreHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  buyScoreTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    marginBottom: 4,
+  },
+  buyScoreHint: {
+    fontSize: 12,
+    maxWidth: 200,
+  },
+  buyScoreCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 4,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  buyScoreValue: {
+    fontSize: 24,
+    fontWeight: "800",
+  },
+  buyScoreLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  buyScoreLabelText: {
+    fontSize: 16,
+    fontWeight: "700",
   },
   ebaySoldButton: {
     flexDirection: "row",
