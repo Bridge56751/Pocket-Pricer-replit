@@ -321,11 +321,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: "Search API key not configured" });
       }
 
-      console.log(`eBay sold search for: "${searchQuery}"`);
+      const cleanQuery = searchQuery
+        .split(/[|·•–—]/).at(0)
+        .replace(/free shipping.*/i, "")
+        .replace(/\(.*?\)/g, "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 80) || searchQuery.trim().slice(0, 80);
+
+      console.log(`eBay sold search for: "${cleanQuery}" (original: "${searchQuery.slice(0, 50)}...")`);
 
       const params = new URLSearchParams({
         engine: "ebay_search",
-        q: searchQuery,
+        q: cleanQuery,
         filters: "sold_listings",
         api_key: apiKey,
       });
@@ -354,11 +362,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (data.error) {
         console.error("eBay sold search error:", data.error);
-        return res.status(500).json({ error: "eBay search failed" });
+        return res.json({
+          avgSoldPrice: 0,
+          medianSoldPrice: 0,
+          lowPrice: 0,
+          highPrice: 0,
+          totalSold: 0,
+          items: [],
+          noResults: true,
+        });
       }
 
       const results = data.organic_results || [];
       console.log(`eBay sold search returned ${results.length} results`);
+
+      if (results.length === 0) {
+        return res.json({
+          avgSoldPrice: 0,
+          medianSoldPrice: 0,
+          lowPrice: 0,
+          highPrice: 0,
+          totalSold: 0,
+          items: [],
+          noResults: true,
+        });
+      }
 
       const items = results
         .filter(r => r.extracted_price && r.extracted_price > 0)

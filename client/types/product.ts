@@ -74,6 +74,7 @@ export interface EbaySoldData {
   highPrice: number;
   totalSold: number;
   items: EbaySoldItem[];
+  noResults?: boolean;
 }
 
 export interface SearchResultsData {

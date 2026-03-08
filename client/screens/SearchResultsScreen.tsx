@@ -463,7 +463,21 @@ export default function SearchResultsScreen() {
               </Text>
             ) : null}
 
-            {ebaySoldData && showEbaySold && buyScore !== null ? (
+            {ebaySoldData && showEbaySold && ebaySoldData.noResults ? (
+              <View style={[styles.ebaySoldSummary, { backgroundColor: theme.colors.card }]}>
+                <View style={styles.ebaySoldSummaryHeader}>
+                  <Feather name="info" size={18} color={theme.colors.mutedForeground} />
+                  <Text style={[styles.ebaySoldSummaryTitle, { color: theme.colors.foreground }]}>
+                    No eBay Sales Found
+                  </Text>
+                </View>
+                <Text style={[styles.ebaySoldSummarySubtitle, { color: theme.colors.mutedForeground }]}>
+                  No recent sold listings were found for this product on eBay. This may mean it's a niche item or hasn't been sold recently.
+                </Text>
+              </View>
+            ) : null}
+
+            {ebaySoldData && showEbaySold && !ebaySoldData.noResults && buyScore !== null ? (
               <View>
                 <Animated.View
                   entering={FadeInDown.duration(400)}
