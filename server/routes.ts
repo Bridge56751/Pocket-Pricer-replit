@@ -368,6 +368,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lowPrice: 0,
           highPrice: 0,
           totalSold: 0,
+          avgSoldPerMonth: 0,
           items: [],
           noResults: true,
         });
@@ -383,6 +384,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lowPrice: 0,
           highPrice: 0,
           totalSold: 0,
+          avgSoldPerMonth: 0,
           items: [],
           noResults: true,
         });

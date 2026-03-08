@@ -37,6 +37,7 @@ interface SearchResultsData {
   topSalePrice: number | null;
   listings: ListingItem[];
   scannedImageId?: string;
+  scannedImageUri?: string;
   usedLens?: boolean;
   productInfo?: {
     name: string;

@@ -19,8 +19,14 @@ function sanitizeResults(results: any): any {
   if (results.productInfo && typeof results.productInfo === 'object') {
     results.productInfo = {
       name: typeof results.productInfo.name === 'string' ? results.productInfo.name : 'Product',
+      brand: results.productInfo.brand,
+      category: results.productInfo.category,
+      description: results.productInfo.description,
     };
   }
+  
+  delete results.scannedImageId;
+  delete results.scannedImageUri;
   
   if (results.query && typeof results.query !== 'string') {
     results.query = 'Product';

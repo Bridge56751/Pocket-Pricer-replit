@@ -66,8 +66,7 @@ export default function HistoryScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     // Navigate directly to results if available
     if (item.results) {
-      // Strip large base64 image data to prevent UI freeze
-      const { scannedImageUri, ...cleanResults } = item.results as any;
+      const { scannedImageUri, scannedImageId, ...cleanResults } = item.results as any;
       navigation.navigate("SearchResults", { results: cleanResults });
     } else {
       // Fallback: navigate to home with query pre-filled

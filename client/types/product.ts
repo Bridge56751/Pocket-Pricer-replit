@@ -87,6 +87,7 @@ export interface SearchResultsData {
   bestBuyNow: number;
   topSalePrice: number | null;
   listings: ListingItem[];
+  scannedImageId?: string;
   scannedImageUri?: string;
   usedLens?: boolean;
   productInfo?: {

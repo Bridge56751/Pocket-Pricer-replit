@@ -553,7 +553,7 @@ export default function SearchResultsScreen() {
                     </Text>
                   </View>
                   <Text style={[styles.ebaySoldSummarySubtitle, { color: theme.colors.mutedForeground }]}>
-                    {ebaySoldData.totalSold.toLocaleString()} matching sold {ebaySoldData.totalSold === 1 ? "listing" : "listings"} found on eBay
+                    {(ebaySoldData.totalSold || 0).toLocaleString()} matching sold {ebaySoldData.totalSold === 1 ? "listing" : "listings"} found on eBay
                   </Text>
 
                   <View style={styles.ebaySoldStatsRow}>
@@ -562,7 +562,7 @@ export default function SearchResultsScreen() {
                         Avg Sold
                       </Text>
                       <Text style={[styles.ebaySoldStatValue, { color: "#3665F3" }]}>
-                        ${ebaySoldData.avgSoldPrice.toFixed(0)}
+                        ${(ebaySoldData.avgSoldPrice || 0).toFixed(0)}
                       </Text>
                     </View>
                     <View style={[styles.ebaySoldStatDivider, { backgroundColor: "rgba(54, 101, 243, 0.2)" }]} />
@@ -571,7 +571,7 @@ export default function SearchResultsScreen() {
                         Median
                       </Text>
                       <Text style={[styles.ebaySoldStatValue, { color: theme.colors.foreground }]}>
-                        ${ebaySoldData.medianSoldPrice.toFixed(0)}
+                        ${(ebaySoldData.medianSoldPrice || 0).toFixed(0)}
                       </Text>
                     </View>
                     <View style={[styles.ebaySoldStatDivider, { backgroundColor: "rgba(54, 101, 243, 0.2)" }]} />
@@ -580,7 +580,7 @@ export default function SearchResultsScreen() {
                         Range
                       </Text>
                       <Text style={[styles.ebaySoldStatValue, { color: theme.colors.foreground }]}>
-                        ${ebaySoldData.lowPrice.toFixed(0)}-${ebaySoldData.highPrice.toFixed(0)}
+                        ${(ebaySoldData.lowPrice || 0).toFixed(0)}-${(ebaySoldData.highPrice || 0).toFixed(0)}
                       </Text>
                     </View>
                   </View>
