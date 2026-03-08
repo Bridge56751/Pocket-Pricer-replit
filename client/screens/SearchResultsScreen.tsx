@@ -1179,10 +1179,10 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   advancedSearchContainer: {
-    backgroundColor: "rgba(16, 185, 129, 0.04)",
+    backgroundColor: "transparent",
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "rgba(16, 185, 129, 0.15)",
+    borderWidth: 2.5,
+    borderColor: "#10B981",
     padding: 12,
     marginBottom: 16,
   },
