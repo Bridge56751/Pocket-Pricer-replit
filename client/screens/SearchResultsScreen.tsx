@@ -101,51 +101,53 @@ export default function SearchResultsScreen() {
     const sellPrice = parseFloat(sellingPrice) || ebaySoldData.medianSoldPrice || suggestedPrice;
     const fees = sellPrice * EBAY_FEE_RATE;
     const netProfit = sellPrice - purchase - fees;
-
-    let profitScore = 0;
-    let profitPenalty = 0;
-    if (purchase > 0) {
-      if (netProfit <= -20) {
-        profitScore = 0;
-        profitPenalty = 1;
-      } else if (netProfit <= 0) {
-        profitScore = 0;
-        profitPenalty = Math.abs(netProfit) / 20;
-      } else if (netProfit >= 50) {
-        profitScore = 60;
-      } else {
-        profitScore = (netProfit / 50) * 60;
-      }
-    } else {
-      const margin = sellPrice > 0 ? ((sellPrice - fees) / sellPrice) : 0;
-      profitScore = Math.min(margin * 60, 40);
-    }
+    const monthlySold = ebaySoldData.avgSoldPerMonth || 0;
 
     let demandScore = 0;
-    const totalSold = ebaySoldData.totalSold;
-    if (totalSold >= 1000) {
-      demandScore = 25;
-    } else if (totalSold >= 500) {
-      demandScore = 20;
-    } else if (totalSold >= 100) {
-      demandScore = 15;
-    } else if (totalSold >= 25) {
-      demandScore = 10;
-    } else if (totalSold >= 5) {
-      demandScore = 5;
+    if (monthlySold >= 100) {
+      demandScore = 40;
+    } else if (monthlySold >= 50) {
+      demandScore = 35;
+    } else if (monthlySold >= 30) {
+      demandScore = 30;
+    } else if (monthlySold >= 15) {
+      demandScore = 22;
+    } else if (monthlySold >= 5) {
+      demandScore = 14;
+    } else if (monthlySold >= 1) {
+      demandScore = 6;
     }
 
-    let consistencyScore = 0;
-    if (ebaySoldData.medianSoldPrice > 0 && ebaySoldData.avgSoldPrice > 0) {
-      const ratio = Math.min(ebaySoldData.medianSoldPrice, ebaySoldData.avgSoldPrice) /
-                    Math.max(ebaySoldData.medianSoldPrice, ebaySoldData.avgSoldPrice);
-      consistencyScore = ratio * 15;
+    let profitScore = 0;
+    if (purchase > 0) {
+      if (netProfit <= 0) {
+        profitScore = -20;
+      } else if (netProfit >= 40) {
+        profitScore = 60;
+      } else if (netProfit >= 20) {
+        profitScore = 40 + ((netProfit - 20) / 20) * 20;
+      } else if (netProfit >= 5) {
+        profitScore = 10 + ((netProfit - 5) / 15) * 30;
+      } else {
+        profitScore = (netProfit / 5) * 10;
+      }
+    } else {
+      const medianPrice = ebaySoldData.medianSoldPrice || 0;
+      if (medianPrice >= 100) {
+        profitScore = 30;
+      } else if (medianPrice >= 50) {
+        profitScore = 22;
+      } else if (medianPrice >= 20) {
+        profitScore = 15;
+      } else if (medianPrice >= 10) {
+        profitScore = 8;
+      } else {
+        profitScore = 3;
+      }
     }
 
-    const baseScore = profitScore + demandScore + consistencyScore;
-    const penalizedScore = baseScore * (1 - profitPenalty);
-    const raw = Math.round(penalizedScore);
-    return Math.max(0, Math.min(100, raw));
+    const raw = Math.round(Math.max(0, Math.min(100, profitScore + demandScore)));
+    return raw;
   }, [ebaySoldData, showEbaySold, purchasePrice, sellingPrice, suggestedPrice]);
 
   const getBuyScoreColor = (score: number) => {
