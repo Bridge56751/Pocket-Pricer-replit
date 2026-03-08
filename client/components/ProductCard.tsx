@@ -91,7 +91,7 @@ export function ProductCard({ product, onPress, compact = false }: ProductCardPr
             </>
           ) : (
             <ThemedText style={[styles.price, { color: theme.primary }]}>
-              Check price
+              Price unlisted
             </ThemedText>
           )}
         </View>

@@ -298,7 +298,7 @@ export default function SearchResultsScreen() {
             </>
           ) : (
             <Text style={[styles.currentPrice, { color: theme.colors.primary }]}>
-              Check price
+              Price unlisted
             </Text>
           )}
         </View>
