@@ -549,6 +549,20 @@ export default function SearchResultsScreen() {
                       </Text>
                     </View>
                   </View>
+
+                  <View style={[styles.avgPerMonthRow, { backgroundColor: (ebaySoldData.avgSoldPerMonth >= 30 ? "#22C55E" : ebaySoldData.avgSoldPerMonth >= 10 ? "#F59E0B" : "#EF4444") + "15" }]}>
+                    <Feather
+                      name="activity"
+                      size={16}
+                      color={ebaySoldData.avgSoldPerMonth >= 30 ? "#22C55E" : ebaySoldData.avgSoldPerMonth >= 10 ? "#F59E0B" : "#EF4444"}
+                    />
+                    <Text style={[styles.avgPerMonthLabel, { color: theme.colors.mutedForeground }]}>
+                      Avg Sold/Month
+                    </Text>
+                    <Text style={[styles.avgPerMonthValue, { color: ebaySoldData.avgSoldPerMonth >= 30 ? "#22C55E" : ebaySoldData.avgSoldPerMonth >= 10 ? "#F59E0B" : "#EF4444" }]}>
+                      {ebaySoldData.avgSoldPerMonth > 0 ? `~${ebaySoldData.avgSoldPerMonth.toLocaleString()}` : "N/A"}
+                    </Text>
+                  </View>
                 </View>
 
                 <Text style={[styles.sectionTitle, { color: theme.colors.foreground }]}>
@@ -1128,6 +1142,24 @@ const styles = StyleSheet.create({
   },
   ebaySoldStatValue: {
     fontSize: 20,
+    fontWeight: "700",
+  },
+  avgPerMonthRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+  },
+  avgPerMonthLabel: {
+    fontSize: 13,
+    fontWeight: "500",
+    flex: 1,
+  },
+  avgPerMonthValue: {
+    fontSize: 18,
     fontWeight: "700",
   },
   ebaySoldCondition: {

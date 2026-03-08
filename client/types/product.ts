@@ -73,6 +73,7 @@ export interface EbaySoldData {
   lowPrice: number;
   highPrice: number;
   totalSold: number;
+  avgSoldPerMonth: number;
   items: EbaySoldItem[];
   noResults?: boolean;
 }

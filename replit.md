@@ -193,6 +193,7 @@ CREATE TABLE guest_scans (
   - Shows avg sold price, median price, price range, total sold count
   - Individual sold listings with "SOLD" badge, sold date, condition
   - Buy Score (0-100) based on profit potential, demand, and price consistency
+  - Avg Sold/Month metric with green (>=30), yellow (>=10), red (<10) color coding
   - Does not count as a scan (no scan increment)
 - **Mar 2026**: Display "Check price" instead of "$0.00" for listings without price data
 - **Mar 2026**: Sort fix - $0 items pushed to bottom when sorting by price

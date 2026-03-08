@@ -414,12 +414,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? prices.reduce((a, b) => a + b, 0) / prices.length
         : 0;
 
+      const soldDates = results
+        .map(r => {
+          if (r.extracted_sold_date) return new Date(r.extracted_sold_date + "T00:00:00Z").getTime();
+          if (r.sold_date) {
+            const cleaned = r.sold_date.replace(/^Sold\s+/i, "");
+            const parsed = new Date(cleaned).getTime();
+            if (!isNaN(parsed)) return parsed;
+          }
+          return NaN;
+        })
+        .filter(t => !isNaN(t))
+        .sort((a, b) => a - b);
+
+      let avgSoldPerMonth = 0;
+      if (soldDates.length >= 2) {
+        const oldest = soldDates[0];
+        const newest = soldDates[soldDates.length - 1];
+        const monthsSpan = Math.max((newest - oldest) / (1000 * 60 * 60 * 24 * 30.44), 0.5);
+        avgSoldPerMonth = Math.round(soldDates.length / monthsSpan);
+      } else if (soldDates.length === 1) {
+        avgSoldPerMonth = 1;
+      }
+
       res.json({
         avgSoldPrice,
         medianSoldPrice,
         lowPrice: prices.length > 0 ? Math.min(...prices) : 0,
         highPrice: prices.length > 0 ? Math.max(...prices) : 0,
         totalSold: data.search_information?.total_results || items.length,
+        avgSoldPerMonth,
         items,
       });
     } catch (error) {
