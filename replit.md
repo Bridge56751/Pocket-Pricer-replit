@@ -176,6 +176,8 @@ CREATE TABLE guest_scans (
 
 ## Recent Changes
 
+- **Mar 2026**: Broad search fallback: when eBay sold search returns no results, users can tap "Search Similar Items" to retry with a broader query (strips colors, gender, numbers; caps at 5 words). Results labeled "Similar Items on eBay" with yellow warning. If broad search also fails, shows "No Similar Items Found" with no retry button.
+- **Mar 2026**: Improved Buy Score: demand scored by avgSoldPerMonth (max 40pts); profit scored by actual net profit when buy price entered (max 60pts), or median sale price as rough indicator when no buy price. $5 profit + good sales ~50, $20 profit + good sales ~80.
 - **Mar 2026**: eBay search query cleaning: strips trailing dash+slash color specs (e.g., "- Navy/Gold/White"), uncommon color suffixes (Peacoat, Ivory, etc.), sizes, fluff words, @mentions, URLs; preserves inline colors and product details; 10-word / 80-char cap
 - **Mar 2026**: Added per-device rate limiting (20 requests/minute) on both API endpoints
   - In-memory sliding window rate limiter keyed by device ID

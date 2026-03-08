@@ -348,7 +348,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const { searchQuery } = req.body;
+      const { searchQuery, broadSearch } = req.body;
       if (!searchQuery) {
         return res.status(400).json({ error: "Search query is required" });
       }
@@ -373,12 +373,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .replace(/\s+/g, " ")
         .trim();
 
-      const words = cleanQuery.split(" ").filter(w => w.length > 0);
-      if (words.length > 10) {
-        cleanQuery = words.slice(0, 10).join(" ");
+      let words = cleanQuery.split(" ").filter(w => w.length > 0);
+
+      if (broadSearch) {
+        words = words
+          .filter(w => !/^\d+(\.\d+)?$/.test(w))
+          .filter(w => !/^(Men's|Women's|Mens|Womens|Men|Women|Unisex|Boy's|Girl's|Kids|Youth)$/i.test(w))
+          .filter(w => !/^(Black|White|Red|Blue|Green|Navy|Gold|Silver|Gray|Grey|Pink|Purple|Orange|Brown|Beige|Tan|Cream|Ivory|Coral|Teal|Maroon|Burgundy|Olive|Charcoal|Peacoat|Yellow)$/i.test(w));
+        if (words.length > 5) {
+          words = words.slice(0, 5);
+        }
+      } else if (words.length > 10) {
+        words = words.slice(0, 10);
       }
 
-      cleanQuery = cleanQuery.slice(0, 80) || searchQuery.trim().slice(0, 80);
+      cleanQuery = words.join(" ").slice(0, 80) || searchQuery.trim().slice(0, 80);
 
       console.log(`eBay sold search for: "${cleanQuery}" (original: "${searchQuery.slice(0, 50)}...")`);
 

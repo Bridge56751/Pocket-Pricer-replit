@@ -76,6 +76,7 @@ export interface EbaySoldData {
   avgSoldPerMonth: number;
   items: EbaySoldItem[];
   noResults?: boolean;
+  isBroadSearch?: boolean;
 }
 
 export interface SearchResultsData {

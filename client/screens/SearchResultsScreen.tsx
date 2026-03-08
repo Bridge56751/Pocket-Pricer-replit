@@ -198,9 +198,9 @@ export default function SearchResultsScreen() {
     navigation.goBack();
   };
 
-  const handleEbaySoldSearch = async () => {
+  const handleEbaySoldSearch = async (broad = false) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    if (ebaySoldData) {
+    if (ebaySoldData && !broad) {
       setShowEbaySold(!showEbaySold);
       return;
     }
@@ -211,6 +211,8 @@ export default function SearchResultsScreen() {
       const deviceId = await getDeviceId();
       const baseUrl = getApiUrl();
       const url = new URL("/api/ebay-sold-search", baseUrl);
+      const body: { searchQuery: string; broadSearch?: boolean } = { searchQuery: productName };
+      if (broad) body.broadSearch = true;
       const res = await fetch(url, {
         method: "POST",
         headers: {
@@ -218,13 +220,16 @@ export default function SearchResultsScreen() {
           "X-Device-Id": deviceId,
           "X-Is-Pro": isPro ? "true" : "false",
         },
-        body: JSON.stringify({ searchQuery: productName }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) {
         const errData = await res.json();
         throw new Error(errData.error || "Search failed");
       }
       const data: EbaySoldData = await res.json();
+      if (broad) {
+        data.isBroadSearch = true;
+      }
       setEbaySoldData(data);
       setShowEbaySold(true);
     } catch (err: any) {
@@ -482,12 +487,31 @@ export default function SearchResultsScreen() {
                   <View style={styles.ebaySoldSummaryHeader}>
                     <Feather name="info" size={18} color="#10B981" />
                     <Text style={[styles.ebaySoldSummaryTitle, { color: theme.colors.foreground }]}>
-                      No eBay Sales Found
+                      {ebaySoldData.isBroadSearch ? "No Similar Items Found" : "No eBay Sales Found"}
                     </Text>
                   </View>
                   <Text style={[styles.ebaySoldSummarySubtitle, { color: theme.colors.mutedForeground }]}>
-                    No recent sold listings were found for this product on eBay. This may mean it's a niche item or hasn't been sold recently.
+                    {ebaySoldData.isBroadSearch
+                      ? "No sold listings were found for similar items either. This product may be very niche or new to the market."
+                      : "No recent sold listings were found for this exact product. Try a broader search to find similar items."}
                   </Text>
+                  {!ebaySoldData.isBroadSearch ? (
+                    <Pressable
+                      testID="button-broad-ebay-search"
+                      style={styles.broadSearchButton}
+                      onPress={() => handleEbaySoldSearch(true)}
+                      disabled={ebaySoldLoading}
+                    >
+                      {ebaySoldLoading ? (
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                      ) : (
+                        <>
+                          <Feather name="search" size={16} color="#FFFFFF" />
+                          <Text style={styles.broadSearchButtonText}>Search Similar Items</Text>
+                        </>
+                      )}
+                    </Pressable>
+                  ) : null}
                 </View>
               </View>
             ) : null}
@@ -558,9 +582,14 @@ export default function SearchResultsScreen() {
                   <View style={styles.ebaySoldSummaryHeader}>
                     <Feather name="bar-chart-2" size={18} color="#10B981" />
                     <Text style={[styles.ebaySoldSummaryTitle, { color: theme.colors.foreground }]}>
-                      eBay Sales Summary
+                      {ebaySoldData.isBroadSearch ? "Similar Items on eBay" : "eBay Sales Summary"}
                     </Text>
                   </View>
+                  {ebaySoldData.isBroadSearch ? (
+                    <Text style={[styles.ebaySoldSummarySubtitle, { color: "#F59E0B" }]}>
+                      Showing similar items — prices may vary from exact product
+                    </Text>
+                  ) : null}
                   <Text style={[styles.ebaySoldSummarySubtitle, { color: theme.colors.mutedForeground }]}>
                     {(ebaySoldData.totalSold || 0).toLocaleString()} matching sold {ebaySoldData.totalSold === 1 ? "listing" : "listings"} found on eBay
                   </Text>
@@ -1249,6 +1278,22 @@ const styles = StyleSheet.create({
   ebaySoldSummarySubtitle: {
     fontSize: 13,
     marginBottom: 16,
+  },
+  broadSearchButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#3665F3",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    marginTop: 4,
+  },
+  broadSearchButtonText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "700",
   },
   ebaySoldStatsRow: {
     flexDirection: "row",
