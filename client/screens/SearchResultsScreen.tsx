@@ -568,7 +568,7 @@ export default function SearchResultsScreen() {
                       <Text style={[styles.ebaySoldStatLabel, { color: theme.colors.mutedForeground }]}>
                         Avg Sold
                       </Text>
-                      <Text style={[styles.ebaySoldStatValue, { color: "#10B981" }]}>
+                      <Text style={[styles.ebaySoldStatValue, { color: theme.colors.foreground }]}>
                         ${(ebaySoldData.avgSoldPrice || 0).toFixed(0)}
                       </Text>
                     </View>
@@ -592,16 +592,16 @@ export default function SearchResultsScreen() {
                     </View>
                   </View>
 
-                  <View style={[styles.avgPerMonthRow, { backgroundColor: (ebaySoldData.avgSoldPerMonth >= 30 ? "#22C55E" : ebaySoldData.avgSoldPerMonth >= 10 ? "#F59E0B" : "#EF4444") + "15" }]}>
+                  <View style={[styles.avgPerMonthRow, { backgroundColor: "transparent" }]}>
                     <Feather
                       name="activity"
                       size={16}
-                      color={ebaySoldData.avgSoldPerMonth >= 30 ? "#22C55E" : ebaySoldData.avgSoldPerMonth >= 10 ? "#F59E0B" : "#EF4444"}
+                      color={theme.colors.mutedForeground}
                     />
                     <Text style={[styles.avgPerMonthLabel, { color: theme.colors.mutedForeground }]}>
                       Avg Sold/Month
                     </Text>
-                    <Text style={[styles.avgPerMonthValue, { color: ebaySoldData.avgSoldPerMonth >= 30 ? "#22C55E" : ebaySoldData.avgSoldPerMonth >= 10 ? "#F59E0B" : "#EF4444" }]}>
+                    <Text style={[styles.avgPerMonthValue, { color: theme.colors.foreground }]}>
                       {ebaySoldData.avgSoldPerMonth > 0 ? `~${ebaySoldData.avgSoldPerMonth.toLocaleString()}` : "N/A"}
                     </Text>
                   </View>
