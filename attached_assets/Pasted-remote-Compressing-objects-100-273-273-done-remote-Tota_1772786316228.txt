@@ -1,0 +1,293 @@
+remote: Compressing objects: 100% (273/273), done.
+remote: Total 1299 (delta 922), reused 868 (delta 757), pack-reused 264 (from 1)
+Receiving objects: 100% (1299/1299), 151.34 MiB | 25.46 MiB/s, done.
+Resolving deltas: 100% (1093/1093), completed with 30 local objects.
+From https://github.com/Bridge56751/Pocket-Pricer-replit
+   1707972..96674fa  main       -> github/main
+Updating fbfbb21..96674fa
+Fast-forward
+ .replit                                                                             |    4 +-
+ README.md                                                                           |    1 +
+ app.json                                                                            |   25 +-
+ attached_assets/IMG_0156_1769583720145.png                                          |  Bin 0 -> 228097 bytes
+ attached_assets/IMG_0157_1769583837419.png                                          |  Bin 0 -> 217756 bytes
+ attached_assets/IMG_0160_1769661134441.png                                          |  Bin 0 -> 225788 bytes
+ attached_assets/IMG_0161_1769661455065.jpeg                                         |  Bin 0 -> 54048 bytes
+ attached_assets/IMG_0167_1769732027827.png                                          |  Bin 0 -> 276459 bytes
+ attached_assets/IMG_0170_1769735783597.png                                          |  Bin 0 -> 386516 bytes
+ attached_assets/IMG_0171_1769736191334.png                                          |  Bin 0 -> 277500 bytes
+ attached_assets/IMG_0175_1769753241086.jpeg                                         |  Bin 0 -> 48614 bytes
+ attached_assets/IMG_0176_1769753479788.jpeg                                         |  Bin 0 -> 4408847 bytes
+ attached_assets/IMG_0178_1769756408551.jpeg                                         |  Bin 0 -> 16378 bytes
+ attached_assets/IMG_0178_1769756424571.jpeg                                         |  Bin 0 -> 16378 bytes
+ attached_assets/IMG_0178_1769756474725.jpeg                                         |  Bin 0 -> 16378 bytes
+ attached_assets/IMG_0179_1769759368638.png                                          |  Bin 0 -> 314632 bytes
+ attached_assets/IMG_0181_1769816846280.png                                          |  Bin 0 -> 235772 bytes
+ attached_assets/IMG_0182_1769816846280.png                                          |  Bin 0 -> 226529 bytes
+ attached_assets/IMG_0187_1769819700516.png                                          |  Bin 0 -> 229439 bytes
+ attached_assets/IMG_0188_1769820073966.png                                          |  Bin 0 -> 228300 bytes
+ attached_assets/IMG_0189_1769822112104.png                                          |  Bin 0 -> 229214 bytes
+ attached_assets/IMG_0190_1769822182481.png                                          |  Bin 0 -> 810961 bytes
+ attached_assets/IMG_0197_1769923761809.jpeg                                         |  Bin 0 -> 107995 bytes
+ attached_assets/IMG_0197_1769923857514.jpeg                                         |  Bin 0 -> 107995 bytes
+ attached_assets/IMG_0198_1769923863695.png                                          |  Bin 0 -> 815963 bytes
+ attached_assets/IMG_0199_1769926213441.jpeg                                         |  Bin 0 -> 2153518 bytes
+ attached_assets/IMG_0200_1769926368482.png                                          |  Bin 0 -> 914979 bytes
+ attached_assets/IMG_0201_1769926694624.jpeg                                         |  Bin 0 -> 1954070 bytes
+ attached_assets/IMG_0233_1770963890680.jpeg                                         |  Bin 0 -> 4348622 bytes
+ attached_assets/IMG_0260_1771473191274.PNG                                          |  Bin 0 -> 502433 bytes
+ attached_assets/IMG_0261_1771473195337.PNG                                          |  Bin 0 -> 411574 bytes
+ attached_assets/IMG_1954_1769927386882.png                                          |  Bin 0 -> 274516 bytes
+ attached_assets/IMG_1955_1769927386882.png                                          |  Bin 0 -> 250547 bytes
+ attached_assets/IMG_1956_1769927386882.png                                          |  Bin 0 -> 264139 bytes
+ attached_assets/IMG_7846_1769741823625.png                                          |  Bin 0 -> 179750 bytes
+ attached_assets/IMG_7846_1769741841152.png                                          |  Bin 0 -> 179750 bytes
+ attached_assets/IMG_7846_1769741887658.png                                          |  Bin 0 -> 179750 bytes
+ attached_assets/IMG_8220_1770158112558.png                                          |  Bin 0 -> 180667 bytes
+ attached_assets/IMG_9273_1772779359274.png                                          |  Bin 0 -> 3597864 bytes
+ attached_assets/IMG_9274_1772779359274.png                                          |  Bin 0 -> 3786188 bytes
+ attached_assets/IMG_9275_1771838732266.png                                          |  Bin 0 -> 400830 bytes
+ attached_assets/IMG_9275_1772779167086.jpeg                                         |  Bin 0 -> 41840 bytes
+ attached_assets/IMG_9277_1772780017442.png                                          |  Bin 0 -> 213032 bytes
+ attached_assets/IMG_9278_1772780253040.png                                          |  Bin 0 -> 558986 bytes
+ ...Pasted--Log-in-to-your-Apple-Developer-account-to-continue-App_1769758176802.txt |   49 ++
+ ...Pasted-Guideline-5-1-1-Legal-Privacy-Data-Collection-and-Stora_1770933942360.txt |   65 ++
+ ...Pasted-Privacy-Policy-for-Pocket-Pricer-Last-Updated-February-_1770941540047.txt |  109 +++
+ ...Pasted-bridgerogan-Bridges-Mac-mini-Pocket-Pricer-replit-cd-Us_1770963459102.txt |   31 +
+ ...Pasted-bridgerogan-Bridges-Mac-mini-Pocket-Pricer-replit-git-a_1769674670006.txt |   31 +
+ ...Pasted-npm-warn-deprecated-inflight-1-0-6-This-module-is-not-s_1769652754256.txt |   36 +
+ ...Pasted-ontact-Info-Name-Including-first-or-last-name-Email-Add_1769837882839.txt |  115 +++
+ ...Pasted-remote-Enumerating-objects-51-done-remote-Counting-obje_1769756853366.txt |   42 ++
+ attached_assets/Screenshot_2026-01-31_at_5.08.09_PM_1769908167808.jpeg              |  Bin 0 -> 214573 bytes
+ attached_assets/Screenshot_2026-01-31_at_5.16.53_PM_1769908925790.jpeg              |  Bin 0 -> 118713 bytes
+ attached_assets/image_1769662645479.jpg                                             |  Bin 0 -> 1892355 bytes
+ attached_assets/image_1769662805231.jpg                                             |  Bin 0 -> 1996906 bytes
+ attached_assets/image_1769662981816.jpg                                             |  Bin 0 -> 1787739 bytes
+ attached_assets/image_1769663064790.jpg                                             |  Bin 0 -> 2342628 bytes
+ attached_assets/image_1769663116544.jpg                                             |  Bin 0 -> 2266612 bytes
+ attached_assets/image_1769663205855.jpg                                             |  Bin 0 -> 2198073 bytes
+ attached_assets/image_1769663419889.jpg                                             |  Bin 0 -> 1883482 bytes
+ attached_assets/image_1769663708546.jpg                                             |  Bin 0 -> 3842346 bytes
+ attached_assets/image_1769663782441.jpg                                             |  Bin 0 -> 3820638 bytes
+ attached_assets/image_1769664739189.jpg                                             |  Bin 0 -> 2713174 bytes
+ attached_assets/image_1769664898235.jpg                                             |  Bin 0 -> 3256341 bytes
+ attached_assets/image_1769665809101.jpg                                             |  Bin 0 -> 1758563 bytes
+ attached_assets/image_1769668107949.jpg                                             |  Bin 0 -> 1962539 bytes
+ attached_assets/image_1769668184832.jpg                                             |  Bin 0 -> 1616329 bytes
+ attached_assets/image_1769668257139.jpg                                             |  Bin 0 -> 2170749 bytes
+ attached_assets/image_1769668351282.jpg                                             |  Bin 0 -> 2268582 bytes
+ attached_assets/image_1769668398241.jpg                                             |  Bin 0 -> 1724000 bytes
+ attached_assets/image_1769668527891.jpg                                             |  Bin 0 -> 2248869 bytes
+ attached_assets/image_1769668558360.jpg                                             |  Bin 0 -> 2015329 bytes
+ attached_assets/image_1769668927368.jpg                                             |  Bin 0 -> 2178177 bytes
+ attached_assets/image_1769669004623.jpg                                             |  Bin 0 -> 1832116 bytes
+ attached_assets/image_1769669312808.jpg                                             |  Bin 0 -> 1921933 bytes
+ attached_assets/image_1769669426400.jpg                                             |  Bin 0 -> 1092689 bytes
+ attached_assets/image_1769669564420.jpg                                             |  Bin 0 -> 2687169 bytes
+ attached_assets/image_1769669601202.jpg                                             |  Bin 0 -> 2555945 bytes
+ attached_assets/image_1769669634273.jpg                                             |  Bin 0 -> 2466987 bytes
+ attached_assets/image_1769669733741.jpg                                             |  Bin 0 -> 2187933 bytes
+ attached_assets/image_1769669813963.jpg                                             |  Bin 0 -> 2551687 bytes
+ attached_assets/image_1769669856056.jpg                                             |  Bin 0 -> 1198805 bytes
+ attached_assets/image_1769669937074.jpg                                             |  Bin 0 -> 1535542 bytes
+ attached_assets/image_1769670050873.jpg                                             |  Bin 0 -> 2355872 bytes
+ attached_assets/image_1769670411259.jpg                                             |  Bin 0 -> 2478557 bytes
+ attached_assets/image_1769670579469.jpg                                             |  Bin 0 -> 1978754 bytes
+ attached_assets/image_1769670730418.jpg                                             |  Bin 0 -> 2020857 bytes
+ attached_assets/image_1769670805896.jpg                                             |  Bin 0 -> 1963639 bytes
+ attached_assets/image_1769671701108.jpg                                             |  Bin 0 -> 1962635 bytes
+ attached_assets/image_1769727664404.jpg                                             |  Bin 0 -> 1803231 bytes
+ attached_assets/image_1769727767781.jpg                                             |  Bin 0 -> 2194748 bytes
+ attached_assets/image_1769732107958.jpg                                             |  Bin 0 -> 2324245 bytes
+ attached_assets/image_1769732145496.jpg                                             |  Bin 0 -> 1612073 bytes
+ attached_assets/image_1769732191834.jpg                                             |  Bin 0 -> 1880223 bytes
+ attached_assets/image_1769732250076.jpg                                             |  Bin 0 -> 1804023 bytes
+ attached_assets/image_1769732983787.jpg                                             |  Bin 0 -> 1665479 bytes
+ attached_assets/image_1769733225502.jpg                                             |  Bin 0 -> 1516917 bytes
+ attached_assets/image_1769735834518.jpg                                             |  Bin 0 -> 2303295 bytes
+ attached_assets/image_1769735874700.jpg                                             |  Bin 0 -> 2448580 bytes
+ attached_assets/image_1769735961811.jpg                                             |  Bin 0 -> 2123765 bytes
+ attached_assets/image_1769736089608.jpg                                             |  Bin 0 -> 1666620 bytes
+ attached_assets/image_1769736361530.jpg                                             |  Bin 0 -> 2791612 bytes
+ attached_assets/image_1769736468667.jpg                                             |  Bin 0 -> 1848214 bytes
+ attached_assets/image_1769753300579.jpg                                             |  Bin 0 -> 1297410 bytes
+ attached_assets/image_1769754387637.jpg                                             |  Bin 0 -> 3005000 bytes
+ attached_assets/image_1769754627718.jpg                                             |  Bin 0 -> 1838301 bytes
+ attached_assets/image_1769754806237.jpg                                             |  Bin 0 -> 1927117 bytes
+ attached_assets/image_1769754876261.jpg                                             |  Bin 0 -> 1504453 bytes
+ attached_assets/image_1769754885689.jpg                                             |  Bin 0 -> 2344060 bytes
+ attached_assets/image_1769754984612.jpg                                             |  Bin 0 -> 2214465 bytes
+ attached_assets/image_1769755024406.jpg                                             |  Bin 0 -> 2271977 bytes
+ attached_assets/image_1769755041735.jpg                                             |  Bin 0 -> 1818227 bytes
+ attached_assets/image_1769755099986.jpg                                             |  Bin 0 -> 2797543 bytes
+ attached_assets/image_1769759984799.jpg                                             |  Bin 0 -> 2112284 bytes
+ client/App.tsx                                                                      |   27 +-
+ client/components/AppContent.tsx                                                    |  147 +---
+ client/components/Button.tsx                                                        |    2 +-
+ client/components/Card.tsx                                                          |    2 +-
+ client/components/ErrorFallback.tsx                                                 |    2 +-
+ client/components/HeaderTitle.tsx                                                   |    2 +-
+ client/components/LegalAgreementModal.tsx                                           |  390 ----------
+ client/components/ProductCard.tsx                                                   |    2 +-
+ client/components/ProfitBadge.tsx                                                   |    2 +-
+ client/components/ProfitBreakdown.tsx                                               |    4 +-
+ client/components/SearchBar.tsx                                                     |    2 +-
+ client/components/ThemedText.tsx                                                    |    2 +-
+ client/components/UpgradeModal.tsx                                                  |  104 ++-
+ client/constants/design-tokens.ts                                                   |  123 ++++
+ client/constants/theme.ts                                                           |  124 ----
+ client/contexts/AuthContext.tsx                                                     |  318 +-------
+ client/contexts/RevenueCatContext.tsx                                               |   60 +-
+ client/hooks/useScreenOptions.ts                                                    |   14 +-
+ client/hooks/useTheme.ts                                                            |    2 +-
+ client/lib/image-store.ts                                                           |   19 +
+ client/lib/storage.ts                                                               |   64 +-
+ client/navigation/RootStackNavigator.tsx                                            |   51 +-
+ client/screens/AuthScreen.tsx                                                       |  396 +++++++++-
+ client/screens/CameraScanScreen.tsx                                                 |  572 ++-------------
+ client/screens/FavoritesScreen.tsx                                                  |    4 +-
+ client/screens/HistoryScreen.tsx                                                    |    8 +-
+ client/screens/OnboardingScreen.tsx                                                 |  393 +++++-----
+ client/screens/ProfileScreen.tsx                                                    |  383 +++++-----
+ client/screens/ScanScreen.tsx                                                       |  583 +++++++++++----
+ client/screens/SearchResultsScreen.tsx                                              |  348 ++++-----
+ client/types/product.ts                                                             |    8 +-
+ eas.json                                                                            |   31 +
+ package-lock.json                                                                   |   69 +-
+ package.json                                                                        |    8 +-
+ replit.md                                                                           |  171 ++---
+ server/emailClient.ts                                                               |   51 ++
+ server/index.ts                                                                     |    4 -
+ server/routes.ts                                                                    | 1514 +++++----------------------------------
+ server/seed-products.ts                                                             |   37 -
+ server/stripeClient.ts                                                              |   33 -
+ server/webhookHandlers.ts                                                           |   17 -
+ 156 files changed, 2785 insertions(+), 3816 deletions(-)
+ create mode 100644 README.md
+ create mode 100644 attached_assets/IMG_0156_1769583720145.png
+ create mode 100644 attached_assets/IMG_0157_1769583837419.png
+ create mode 100644 attached_assets/IMG_0160_1769661134441.png
+ create mode 100644 attached_assets/IMG_0161_1769661455065.jpeg
+ create mode 100644 attached_assets/IMG_0167_1769732027827.png
+ create mode 100644 attached_assets/IMG_0170_1769735783597.png
+ create mode 100644 attached_assets/IMG_0171_1769736191334.png
+ create mode 100644 attached_assets/IMG_0175_1769753241086.jpeg
+ create mode 100644 attached_assets/IMG_0176_1769753479788.jpeg
+ create mode 100644 attached_assets/IMG_0178_1769756408551.jpeg
+ create mode 100644 attached_assets/IMG_0178_1769756424571.jpeg
+ create mode 100644 attached_assets/IMG_0178_1769756474725.jpeg
+ create mode 100644 attached_assets/IMG_0179_1769759368638.png
+ create mode 100644 attached_assets/IMG_0181_1769816846280.png
+ create mode 100644 attached_assets/IMG_0182_1769816846280.png
+ create mode 100644 attached_assets/IMG_0187_1769819700516.png
+ create mode 100644 attached_assets/IMG_0188_1769820073966.png
+ create mode 100644 attached_assets/IMG_0189_1769822112104.png
+ create mode 100644 attached_assets/IMG_0190_1769822182481.png
+ create mode 100644 attached_assets/IMG_0197_1769923761809.jpeg
+ create mode 100644 attached_assets/IMG_0197_1769923857514.jpeg
+ create mode 100644 attached_assets/IMG_0198_1769923863695.png
+ create mode 100644 attached_assets/IMG_0199_1769926213441.jpeg
+ create mode 100644 attached_assets/IMG_0200_1769926368482.png
+ create mode 100644 attached_assets/IMG_0201_1769926694624.jpeg
+ create mode 100644 attached_assets/IMG_0233_1770963890680.jpeg
+ create mode 100644 attached_assets/IMG_0260_1771473191274.PNG
+ create mode 100644 attached_assets/IMG_0261_1771473195337.PNG
+ create mode 100644 attached_assets/IMG_1954_1769927386882.png
+ create mode 100644 attached_assets/IMG_1955_1769927386882.png
+ create mode 100644 attached_assets/IMG_1956_1769927386882.png
+ create mode 100644 attached_assets/IMG_7846_1769741823625.png
+ create mode 100644 attached_assets/IMG_7846_1769741841152.png
+ create mode 100644 attached_assets/IMG_7846_1769741887658.png
+ create mode 100644 attached_assets/IMG_8220_1770158112558.png
+ create mode 100644 attached_assets/IMG_9273_1772779359274.png
+ create mode 100644 attached_assets/IMG_9274_1772779359274.png
+ create mode 100644 attached_assets/IMG_9275_1771838732266.png
+ create mode 100644 attached_assets/IMG_9275_1772779167086.jpeg
+ create mode 100644 attached_assets/IMG_9277_1772780017442.png
+ create mode 100644 attached_assets/IMG_9278_1772780253040.png
+ create mode 100644 attached_assets/Pasted--Log-in-to-your-Apple-Developer-account-to-continue-App_1769758176802.txt
+ create mode 100644 attached_assets/Pasted-Guideline-5-1-1-Legal-Privacy-Data-Collection-and-Stora_1770933942360.txt
+ create mode 100644 attached_assets/Pasted-Privacy-Policy-for-Pocket-Pricer-Last-Updated-February-_1770941540047.txt
+ create mode 100644 attached_assets/Pasted-bridgerogan-Bridges-Mac-mini-Pocket-Pricer-replit-cd-Us_1770963459102.txt
+ create mode 100644 attached_assets/Pasted-bridgerogan-Bridges-Mac-mini-Pocket-Pricer-replit-git-a_1769674670006.txt
+ create mode 100644 attached_assets/Pasted-npm-warn-deprecated-inflight-1-0-6-This-module-is-not-s_1769652754256.txt
+ create mode 100644 attached_assets/Pasted-ontact-Info-Name-Including-first-or-last-name-Email-Add_1769837882839.txt
+ create mode 100644 attached_assets/Pasted-remote-Enumerating-objects-51-done-remote-Counting-obje_1769756853366.txt
+ create mode 100644 attached_assets/Screenshot_2026-01-31_at_5.08.09_PM_1769908167808.jpeg
+ create mode 100644 attached_assets/Screenshot_2026-01-31_at_5.16.53_PM_1769908925790.jpeg
+ create mode 100644 attached_assets/image_1769662645479.jpg
+ create mode 100644 attached_assets/image_1769662805231.jpg
+ create mode 100644 attached_assets/image_1769662981816.jpg
+ create mode 100644 attached_assets/image_1769663064790.jpg
+ create mode 100644 attached_assets/image_1769663116544.jpg
+ create mode 100644 attached_assets/image_1769663205855.jpg
+ create mode 100644 attached_assets/image_1769663419889.jpg
+ create mode 100644 attached_assets/image_1769663708546.jpg
+ create mode 100644 attached_assets/image_1769663782441.jpg
+ create mode 100644 attached_assets/image_1769664739189.jpg
+ create mode 100644 attached_assets/image_1769664898235.jpg
+ create mode 100644 attached_assets/image_1769665809101.jpg
+ create mode 100644 attached_assets/image_1769668107949.jpg
+ create mode 100644 attached_assets/image_1769668184832.jpg
+ create mode 100644 attached_assets/image_1769668257139.jpg
+ create mode 100644 attached_assets/image_1769668351282.jpg
+ create mode 100644 attached_assets/image_1769668398241.jpg
+ create mode 100644 attached_assets/image_1769668527891.jpg
+ create mode 100644 attached_assets/image_1769668558360.jpg
+ create mode 100644 attached_assets/image_1769668927368.jpg
+ create mode 100644 attached_assets/image_1769669004623.jpg
+ create mode 100644 attached_assets/image_1769669312808.jpg
+ create mode 100644 attached_assets/image_1769669426400.jpg
+ create mode 100644 attached_assets/image_1769669564420.jpg
+ create mode 100644 attached_assets/image_1769669601202.jpg
+ create mode 100644 attached_assets/image_1769669634273.jpg
+ create mode 100644 attached_assets/image_1769669733741.jpg
+ create mode 100644 attached_assets/image_1769669813963.jpg
+ create mode 100644 attached_assets/image_1769669856056.jpg
+ create mode 100644 attached_assets/image_1769669937074.jpg
+ create mode 100644 attached_assets/image_1769670050873.jpg
+ create mode 100644 attached_assets/image_1769670411259.jpg
+ create mode 100644 attached_assets/image_1769670579469.jpg
+ create mode 100644 attached_assets/image_1769670730418.jpg
+ create mode 100644 attached_assets/image_1769670805896.jpg
+ create mode 100644 attached_assets/image_1769671701108.jpg
+ create mode 100644 attached_assets/image_1769727664404.jpg
+ create mode 100644 attached_assets/image_1769727767781.jpg
+ create mode 100644 attached_assets/image_1769732107958.jpg
+ create mode 100644 attached_assets/image_1769732145496.jpg
+ create mode 100644 attached_assets/image_1769732191834.jpg
+ create mode 100644 attached_assets/image_1769732250076.jpg
+ create mode 100644 attached_assets/image_1769732983787.jpg
+ create mode 100644 attached_assets/image_1769733225502.jpg
+ create mode 100644 attached_assets/image_1769735834518.jpg
+ create mode 100644 attached_assets/image_1769735874700.jpg
+ create mode 100644 attached_assets/image_1769735961811.jpg
+ create mode 100644 attached_assets/image_1769736089608.jpg
+ create mode 100644 attached_assets/image_1769736361530.jpg
+ create mode 100644 attached_assets/image_1769736468667.jpg
+ create mode 100644 attached_assets/image_1769753300579.jpg
+ create mode 100644 attached_assets/image_1769754387637.jpg
+ create mode 100644 attached_assets/image_1769754627718.jpg
+ create mode 100644 attached_assets/image_1769754806237.jpg
+ create mode 100644 attached_assets/image_1769754876261.jpg
+ create mode 100644 attached_assets/image_1769754885689.jpg
+ create mode 100644 attached_assets/image_1769754984612.jpg
+ create mode 100644 attached_assets/image_1769755024406.jpg
+ create mode 100644 attached_assets/image_1769755041735.jpg
+ create mode 100644 attached_assets/image_1769755099986.jpg
+ create mode 100644 attached_assets/image_1769759984799.jpg
+ delete mode 100644 client/components/LegalAgreementModal.tsx
+ delete mode 100644 client/constants/theme.ts
+ create mode 100644 client/lib/image-store.ts
+ create mode 100644 eas.json
+ delete mode 100644 server/seed-products.ts
+ delete mode 100644 server/stripeClient.ts
+ delete mode 100644 server/webhookHandlers.ts
+error: Unable to create '/Users/bridgerogan/Downloads/pocket-pricer/.git/packed-refs.lock': File exists.
+
+Another git process seems to be running in this repository, e.g.
+an editor opened by 'git commit'. Please make sure all processes
+are terminated then try again. If it still fails, a git process
+may have crashed in this repository earlier:
+remove the file manually to continue.
+bridgerogan@Bridges-Mac-mini pocket-pricer % 
