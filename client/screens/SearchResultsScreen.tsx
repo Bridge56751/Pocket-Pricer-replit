@@ -101,12 +101,13 @@ export default function SearchResultsScreen() {
 
   const sortedListings = useMemo(() => {
     if (sortOption === "Best Match") return [...allListings];
-    const sorted = [...allListings];
+    const priced = allListings.filter(item => item.currentPrice > 0);
+    const noPrice = allListings.filter(item => item.currentPrice <= 0);
     switch (sortOption) {
       case "Price: Low to High":
-        return sorted.sort((a, b) => a.currentPrice - b.currentPrice);
+        return [...priced.sort((a, b) => a.currentPrice - b.currentPrice), ...noPrice];
       case "Price: High to Low":
-        return sorted.sort((a, b) => b.currentPrice - a.currentPrice);
+        return [...priced.sort((a, b) => b.currentPrice - a.currentPrice), ...noPrice];
       default:
         return [...allListings];
     }
