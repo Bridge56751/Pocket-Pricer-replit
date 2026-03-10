@@ -20,7 +20,7 @@ This app allows resellers to:
 
 - **Frontend**: Expo React Native with TypeScript
 - **Backend**: Express.js with TypeScript
-- **Database**: PostgreSQL (Neon-backed via Replit) - used only for guest scan tracking
+- **Database**: Supabase PostgreSQL (via REST API) - guest scan tracking + analytics
 - **Payments**: RevenueCat for iOS/Android in-app purchases ($8.99/month Pro subscription)
 - **Product Identification**: Google Lens (via SearchAPI.io) for visual product matching
 - **Product Data**: SearchAPI.io (Google Lens for multi-platform results)
@@ -32,6 +32,9 @@ This app allows resellers to:
 ## Environment Variables
 
 - `SEARCHAPI_API_KEY` - Required for Google Lens search (get from https://searchapi.io)
+- `SUPABASE_URL` — Supabase project URL
+- `SUPABASE_SERVICE_ROLE_KEY` — Supabase service role secret key
+- `SUPABASE_DB_URL` — Supabase PostgreSQL pooler connection string (for future direct DB use)
 - `REVENUECAT_API_KEY` - RevenueCat public API key for in-app purchases
 - `EXPO_PUBLIC_REVENUECAT_API_KEY` - Same key, exposed to frontend
 
@@ -163,14 +166,17 @@ Users can test on physical devices using Expo Go by scanning the QR code.
 - RevenueCat handles iOS/Android in-app purchases (tied to Apple ID / Google Play account)
 - **No account required** - subscriptions managed entirely through app store accounts
 
-## Database Schema
+## Database Schema (Supabase)
+
+All database tables live in Supabase. Replit's built-in PostgreSQL is no longer used.
 
 ```sql
+-- Guest scan tracking (free-tier limit enforcement)
 CREATE TABLE guest_scans (
   device_id VARCHAR(255) PRIMARY KEY,
   scan_count INTEGER DEFAULT 0,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  last_scan_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
@@ -189,6 +195,11 @@ Server-side analytics are logged to an external Supabase database. No client cha
 
 ## Recent Changes
 
+- **Mar 2026**: Migrated `guest_scans` table from Replit PostgreSQL to Supabase
+  - All database activity now lives in Supabase (analytics + scan tracking)
+  - `server/db.ts` rewritten to use Supabase REST API instead of raw `pg` Pool
+  - Replit's built-in PostgreSQL is no longer used
+  - 22 existing device rows migrated to Supabase
 - **Mar 2026**: Broad search fallback: when eBay sold search returns no results, users can tap "Search Similar Items" to retry with a broader query (strips colors, gender, numbers; caps at 5 words). Results labeled "Similar Items on eBay" with yellow warning. If broad search also fails, shows "No Similar Items Found" with no retry button.
 - **Mar 2026**: Improved Buy Score: demand scored by avgSoldPerMonth (max 40pts); profit scored by actual net profit when buy price entered (max 60pts), or median sale price as rough indicator when no buy price. $5 profit + good sales ~50, $20 profit + good sales ~80.
 - **Mar 2026**: eBay search query cleaning: strips trailing dash+slash color specs (e.g., "- Navy/Gold/White"), uncommon color suffixes (Peacoat, Ivory, etc.), sizes, eBay seller abbreviations (NIB, NWOB, BNIB, RARE, HTF, MINT, EUC, GUC, VGC, OBO, MIB), fluff words, @mentions, URLs; preserves inline colors and product details; 8-word / 80-char cap for exact, 5-word cap for broad

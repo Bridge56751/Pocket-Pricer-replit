@@ -1,6 +1,6 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "node:http";
-import { query } from "./db";
+import { getGuestScanCount, incrementGuestScan } from "./db";
 import { logScanEvent, logEbaySearchEvent } from "./supabase";
 
 const FREE_LIFETIME_SEARCHES = 5;
@@ -205,11 +205,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (!isPro) {
-        const guestResult = await query(
-          "SELECT scan_count FROM guest_scans WHERE device_id = $1",
-          [deviceId]
-        );
-        const guestCount = guestResult.rows[0]?.scan_count || 0;
+        const guestCount = await getGuestScanCount(deviceId);
         if (guestCount >= FREE_LIFETIME_SEARCHES) {
           return res.status(403).json({
             error: "Free scan limit reached",
@@ -292,13 +288,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         || "Scanned Product";
 
       if (!isPro) {
-        await query(
-          `INSERT INTO guest_scans (device_id, scan_count, last_scan_at) 
-           VALUES ($1, 1, CURRENT_TIMESTAMP)
-           ON CONFLICT (device_id) 
-           DO UPDATE SET scan_count = guest_scans.scan_count + 1, last_scan_at = CURRENT_TIMESTAMP`,
-          [deviceId]
-        );
+        await incrementGuestScan(deviceId);
       }
 
       logScanEvent(deviceId, isPro, productName, listings.length, pricedListings.length);
@@ -338,11 +328,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (!isPro) {
-        const guestResult = await query(
-          "SELECT scan_count FROM guest_scans WHERE device_id = $1",
-          [deviceId]
-        );
-        const guestCount = guestResult.rows[0]?.scan_count || 0;
+        const guestCount = await getGuestScanCount(deviceId);
         if (guestCount >= FREE_LIFETIME_SEARCHES) {
           return res.status(403).json({
             error: "Free scan limit reached",
