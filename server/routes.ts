@@ -1,6 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "node:http";
 import { query } from "./db";
+import { logScanEvent, logEbaySearchEvent } from "./supabase";
 
 const FREE_LIFETIME_SEARCHES = 5;
 const RATE_LIMIT_MAX = 20;
@@ -300,6 +301,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
       }
 
+      logScanEvent(deviceId, isPro, productName, listings.length, pricedListings.length);
+
       res.json({
         query: productName,
         productName,
@@ -499,6 +502,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else if (soldDates.length === 1) {
         avgSoldPerMonth = 1;
       }
+
+      logEbaySearchEvent(deviceId, isPro, cleanQuery, !!broadSearch, items.length, avgSoldPrice);
 
       res.json({
         avgSoldPrice,
