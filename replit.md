@@ -174,6 +174,19 @@ CREATE TABLE guest_scans (
 );
 ```
 
+## Analytics (Supabase)
+
+Server-side analytics are logged to an external Supabase database. No client changes needed — all logging happens in the Express server via fire-and-forget calls that don't slow down API responses.
+
+**Tables:**
+- `devices` — unique devices with pro/free status, first/last seen, total scans and eBay searches
+- `scan_events` — individual scan logs with product name, listing counts
+- `ebay_search_events` — eBay sold search logs with query, broad flag, results count, avg price
+
+**Environment Variables:**
+- `SUPABASE_URL` — Supabase project URL
+- `SUPABASE_SERVICE_ROLE_KEY` — Supabase service role secret key
+
 ## Recent Changes
 
 - **Mar 2026**: Broad search fallback: when eBay sold search returns no results, users can tap "Search Similar Items" to retry with a broader query (strips colors, gender, numbers; caps at 5 words). Results labeled "Similar Items on eBay" with yellow warning. If broad search also fails, shows "No Similar Items Found" with no retry button.
