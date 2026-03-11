@@ -277,7 +277,7 @@ export default function SearchResultsScreen() {
     return (
       <View style={[styles.listingImage, styles.imagePlaceholder, { backgroundColor: theme.colors.muted }]}>
         <Feather name="shopping-bag" size={28} color={theme.colors.mutedForeground} />
-        <Text style={[styles.imagePlaceholderText, { color: theme.colors.mutedForeground }]}>No Image</Text>
+        <Text style={[styles.imagePlaceholderText, { color: theme.colors.mutedForeground }]}>Photo unavailable</Text>
       </View>
     );
   };
