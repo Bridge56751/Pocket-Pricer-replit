@@ -385,19 +385,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         words = words
           .filter(w => !/^\d+(\.\d+)?$/.test(w))
           .filter(w => !/^(Men's|Women's|Mens|Womens|Men|Women|Unisex|Boy's|Girl's|Kids|Youth|Adult|Adults|Toddler|Baby|Infant)$/i.test(w))
-          .filter(w => !/^(Black|White|Red|Blue|Green|Navy|Gold|Silver|Gray|Grey|Pink|Purple|Orange|Brown|Beige|Tan|Cream|Ivory|Coral|Teal|Maroon|Burgundy|Olive|Charcoal|Peacoat|Yellow|Camo|Matte|Powder)$/i.test(w))
-          .filter(w => !/^(Wireless|Wired|Gaming|Optical|Mechanical|Programmable|Buttons?|Sensor|Lighting|RGB|LED)$/i.test(w))
-          .filter(w => !/^(Protein|Nutrition|Shake|Plan|Power|Elite|Core|Basic|Classic|Original|Standard|Limited|Edition|Special|Deluxe)$/i.test(w))
-          .filter(w => !/^(lenses?|frames?|strap|band|case|cover|sleeve|pouch|holder|mount|adapter|charger|cable|cord)$/i.test(w))
-          .filter(w => !/^(Pullover|Hooded|Hoodie|Knit|Fleece|Jacket|Shirt|Pants|Shorts|Sweater|Sweatshirt|Polo|Tee|Tank|Vest|Coat|Blazer|Dress|Skirt|Blouse)$/i.test(w))
-          .filter(w => !/^(Plush|Stuffed|Animal|Jumbo|Large|Small|Medium|XL|XXL|XS|XXXL|Long|Short|Tall|Full|Half|Mini|Micro|Mega|Giant|Big|Tiny)$/i.test(w))
-          .filter(w => !/^(Square|Round|Oval|Flat|Slim|Thick|Wide|Narrow|Curved|Straight|Vintage|Retro|Modern|New|Old|Used|Refurbished)$/i.test(w))
-          .filter(w => !/^(inch|inches|ft|cm|mm|oz|lb|lbs|kg|ml|fl|piece|pieces|set|pack|ct|count)$/i.test(w))
-          .filter(w => !/^(Zip|Zipper|Snap|Button|Buckle|Lace|Velcro|Tags|Tag|Nylon|Cotton|Polyester|Leather|Suede|Denim|Silk|Wool|Satin|Linen|Canvas)$/i.test(w))
-          .filter(w => !/^(Glossy|Shiny|Clear|Frosted|Tinted|Display|Radio|Navigation)$/i.test(w))
-          .filter(w => !/^(Sunglasses|Sneaker|Sneakers|Shoes|Shoe|Boots?|Sandals?|Slippers?)$/i.test(w));
-        if (words.length > 4) {
-          words = words.slice(0, 4);
+          .filter(w => !/^(Black|White|Red|Blue|Green|Navy|Gold|Silver|Gray|Grey|Pink|Purple|Orange|Brown|Beige|Tan|Cream|Ivory|Coral|Teal|Maroon|Burgundy|Olive|Charcoal|Yellow|Camo|Matte|Powder)$/i.test(w))
+          .filter(w => !/^(Large|Small|Medium|XL|XXL|XS|XXXL|Long|Short|Tall|Full|Half|Mini|Micro|Mega|Giant|Big|Tiny|Jumbo)$/i.test(w))
+          .filter(w => !/^(Wireless|Wired|Optical|Mechanical|Programmable|Buttons?|Sensor|Lighting|RGB|LED)$/i.test(w))
+          .filter(w => !/^(Protein|Nutrition|Plan|Power|Elite|Core|Basic|Classic|Original|Standard|Limited|Edition|Special|Deluxe)$/i.test(w))
+          .filter(w => !/^(Glossy|Shiny|Clear|Frosted|Tinted)$/i.test(w));
+        if (words.length > 5) {
+          words = words.slice(0, 5);
         }
       } else if (words.length > 6) {
         words = words.slice(0, 6);
