@@ -381,6 +381,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       let words = cleanQuery.split(" ").filter(w => w.length > 0);
 
+      const productCategories = new Set([
+        "sunglasses","glasses","eyeglasses","goggles",
+        "shoes","shoe","sneakers","sneaker","boots","boot","sandals","sandal","slippers","loafers","heels","clogs","mules","cleats",
+        "jacket","hoodie","sweater","sweatshirt","shirt","blouse","cardigan","blazer","vest","coat","parka","windbreaker","poncho",
+        "pants","jeans","shorts","skirt","leggings","joggers","trousers","dress","romper","jumpsuit","overalls",
+        "watch","watches","bag","handbag","purse","backpack","wallet","belt","scarf","gloves","hat","cap","beanie","visor","headband","tie","bracelet","necklace","ring","earrings",
+        "plush","figure","figurine","doll","toy","funko","lego",
+        "controller","mouse","keyboard","headphones","earbuds","speaker","monitor","console","camera","printer","router","tablet","phone",
+        "sign","lamp","light","clock","mirror","vase","frame","rug","pillow","blanket","towel","candle",
+        "racket","bat","glove","helmet","pads","jersey",
+        "stroller","carseat","carrier","toolbox","cooler","thermos","bottle","mug","cup","pan","skillet","knife",
+        "shake","protein","supplement","vitamins","powder","bars",
+      ]);
+
       if (broadSearch) {
         words = words
           .filter(w => !/^\d+(\.\d+)?$/.test(w))
@@ -388,10 +402,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .filter(w => !/^(Black|White|Red|Blue|Green|Navy|Gold|Silver|Gray|Grey|Pink|Purple|Orange|Brown|Beige|Tan|Cream|Ivory|Coral|Teal|Maroon|Burgundy|Olive|Charcoal|Yellow|Camo|Matte|Powder)$/i.test(w))
           .filter(w => !/^(Large|Small|Medium|XL|XXL|XS|XXXL|Long|Short|Tall|Full|Half|Mini|Micro|Mega|Giant|Big|Tiny|Jumbo)$/i.test(w))
           .filter(w => !/^(Wireless|Wired|Optical|Mechanical|Programmable|Buttons?|Sensor|Lighting|RGB|LED)$/i.test(w))
-          .filter(w => !/^(Protein|Nutrition|Plan|Power|Elite|Core|Basic|Classic|Original|Standard|Limited|Edition|Special|Deluxe)$/i.test(w))
+          .filter(w => !/^(Nutrition|Plan|Power|Elite|Core|Basic|Classic|Original|Standard|Limited|Edition|Special|Deluxe)$/i.test(w))
           .filter(w => !/^(Glossy|Shiny|Clear|Frosted|Tinted)$/i.test(w));
-        if (words.length > 5) {
-          words = words.slice(0, 5);
+
+        const BROAD_CAP = 5;
+        if (words.length > BROAD_CAP) {
+          const categoryIdx = words.findIndex(w => productCategories.has(w.toLowerCase()));
+          if (categoryIdx >= BROAD_CAP) {
+            const capped = words.slice(0, BROAD_CAP - 1);
+            capped.push(words[categoryIdx]);
+            words = capped;
+          } else {
+            words = words.slice(0, BROAD_CAP);
+          }
         }
       } else if (words.length > 6) {
         words = words.slice(0, 6);
