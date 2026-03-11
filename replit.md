@@ -14,7 +14,7 @@ This app allows resellers to:
 
 **No account required** - the app works immediately without registration. Subscriptions are tied to Apple ID / Google Play account via RevenueCat.
 
-**Current version**: 1.3.0 / build 50
+**Current version**: 1.3.1 / build 50
 
 ## Tech Stack
 
