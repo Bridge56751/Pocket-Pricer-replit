@@ -81,6 +81,7 @@ export default function SearchResultsScreen() {
   const [ebaySoldLoading, setEbaySoldLoading] = useState(false);
   const [ebaySoldError, setEbaySoldError] = useState<string | null>(null);
   const [showEbaySold, setShowEbaySold] = useState(false);
+  const [brokenImages, setBrokenImages] = useState<Set<string>>(new Set());
 
   const suggestedPrice = results.avgListPrice;
   const EBAY_FEE_RATE = 0.13;
@@ -251,6 +252,34 @@ export default function SearchResultsScreen() {
     const queryStr = typeof results.query === 'string' ? results.query : 'product';
     const searchQuery = encodeURIComponent(productName || queryStr);
     await Linking.openURL(`https://www.ebay.com/sl/sell?keyword=${searchQuery}`);
+  };
+
+  const handleImageError = (itemId: string) => {
+    setBrokenImages(prev => {
+      const next = new Set(prev);
+      next.add(itemId);
+      return next;
+    });
+  };
+
+  const renderSoldImage = (item: EbaySoldItem) => {
+    const hasImage = item.imageUrl?.trim().length > 0 && !brokenImages.has(item.id);
+    if (hasImage) {
+      return (
+        <Image
+          source={{ uri: item.imageUrl }}
+          style={styles.listingImage}
+          contentFit="cover"
+          onError={() => handleImageError(item.id)}
+        />
+      );
+    }
+    return (
+      <View style={[styles.listingImage, styles.imagePlaceholder, { backgroundColor: theme.colors.muted }]}>
+        <Feather name="shopping-bag" size={28} color={theme.colors.mutedForeground} />
+        <Text style={[styles.imagePlaceholderText, { color: theme.colors.mutedForeground }]}>No Image</Text>
+      </View>
+    );
   };
 
   const getPlatformColor = (platform?: string): string => {
@@ -665,11 +694,7 @@ export default function SearchResultsScreen() {
                     entering={FadeInDown.delay(index * 40).duration(250)}
                     style={[styles.listingCard, { backgroundColor: theme.colors.card }]}
                   >
-                    <Image
-                      source={{ uri: item.imageUrl }}
-                      style={styles.listingImage}
-                      contentFit="cover"
-                    />
+                    {renderSoldImage(item)}
                     <View style={styles.listingContent}>
                       <View style={[styles.ebayBadge, { backgroundColor: "#10B981" }]}>
                         <Text style={styles.ebayBadgeText}>SOLD</Text>
@@ -781,11 +806,7 @@ export default function SearchResultsScreen() {
                     entering={FadeInDown.delay(index * 40).duration(250)}
                     style={[styles.listingCard, { backgroundColor: theme.colors.card }]}
                   >
-                    <Image
-                      source={{ uri: item.imageUrl }}
-                      style={styles.listingImage}
-                      contentFit="cover"
-                    />
+                    {renderSoldImage(item)}
                     <View style={styles.listingContent}>
                       <View style={[styles.ebayBadge, { backgroundColor: "#F59E0B" }]}>
                         <Text style={styles.ebayBadgeText}>SIMILAR</Text>
@@ -1152,6 +1173,16 @@ const styles = StyleSheet.create({
   listingImage: {
     width: 100,
     height: 140,
+  },
+  imagePlaceholder: {
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    borderRadius: 8,
+    gap: 6,
+  },
+  imagePlaceholderText: {
+    fontSize: 11,
+    fontWeight: "500" as const,
   },
   listingContent: {
     flex: 1,
