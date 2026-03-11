@@ -195,6 +195,11 @@ Server-side analytics are logged to an external Supabase database. No client cha
 
 ## Recent Changes
 
+- **Mar 2026**: Added App Store review prompt via expo-store-review
+  - Triggers after 3rd successful scan (real scans only, not history revisits)
+  - Uses native App Store / Google Play review dialog
+  - One-time prompt — flag set before requesting so it never repeats
+  - Skipped on web; gracefully handles unsupported platforms
 - **Mar 2026**: Integrated AppsFlyer SDK (react-native-appsflyer) for mobile attribution tracking
   - Dev key configured, App ID: 6758423765
   - Auto-initializes on app launch alongside Facebook SDK

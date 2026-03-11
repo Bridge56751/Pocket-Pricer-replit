@@ -1,5 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
-import { View, StyleSheet, Pressable, Text, ScrollView, Image } from "react-native";
+import { View, StyleSheet, Pressable, Text, ScrollView, Image, Platform } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as StoreReview from "expo-store-review";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation, useFocusEffect, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -285,6 +287,24 @@ export default function ScanScreen() {
       incrementScans().catch(() => {});
       addSearchHistory(historyItem).catch(() => {});
       loadRecentScans();
+
+      (async () => {
+        try {
+          if (Platform.OS === "web") return;
+          const alreadyPrompted = await AsyncStorage.getItem("@pocket_pricer_rating_prompted");
+          if (alreadyPrompted === "true") return;
+          const countStr = await AsyncStorage.getItem("@pocket_pricer_successful_scans");
+          const count = (parseInt(countStr || "0", 10) || 0) + 1;
+          await AsyncStorage.setItem("@pocket_pricer_successful_scans", String(count));
+          if (count >= 3) {
+            await AsyncStorage.setItem("@pocket_pricer_rating_prompted", "true");
+            const isAvailable = await StoreReview.isAvailableAsync();
+            if (isAvailable) {
+              setTimeout(() => { StoreReview.requestReview().catch(() => {}); }, 2000);
+            }
+          }
+        } catch {}
+      })();
       
     } catch (error) {
       console.error("Processing failed:", error);
