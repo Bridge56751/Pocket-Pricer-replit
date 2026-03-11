@@ -393,6 +393,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "racket","bat","glove","helmet","pads","jersey",
         "stroller","carseat","carrier","toolbox","cooler","thermos","bottle","mug","cup","pan","skillet","knife",
         "shake","protein","supplement","vitamins","powder","bars",
+        "vacuum","iron","blender","mixer","toaster","microwave","grill",
       ]);
 
       if (broadSearch) {
