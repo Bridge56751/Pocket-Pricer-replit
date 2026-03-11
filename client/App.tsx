@@ -39,27 +39,47 @@ export default function App() {
   }, [fontsLoaded, fontError]);
 
   useEffect(() => {
-    const initFacebookSDK = async () => {
+    const initSDKs = async () => {
       if (Platform.OS === "web") return;
       try {
         const Constants = await import("expo-constants");
         const isExpoGo = Constants.default?.appOwnership === "expo";
         if (isExpoGo) {
-          console.log("Facebook SDK: Skipping in Expo Go (requires native build)");
+          console.log("SDKs: Skipping in Expo Go (requires native build)");
           return;
         }
-        const { Settings } = await import("react-native-fbsdk-next");
-        await Settings.initializeSDK();
+
+        let trackingGranted = false;
         if (Platform.OS === "ios") {
           const { requestTrackingPermissionsAsync } = await import("expo-tracking-transparency");
           const { status } = await requestTrackingPermissionsAsync();
-          await Settings.setAdvertiserTrackingEnabled(status === "granted");
+          trackingGranted = status === "granted";
+        }
+
+        const { Settings } = await import("react-native-fbsdk-next");
+        await Settings.initializeSDK();
+        if (Platform.OS === "ios") {
+          await Settings.setAdvertiserTrackingEnabled(trackingGranted);
+        }
+
+        try {
+          const appsFlyer = await import("react-native-appsflyer");
+          await appsFlyer.default.initSdk({
+            devKey: "mfkZfMQWNe9nEc6NB23KJD",
+            isDebug: false,
+            appId: "6758423765",
+            onInstallConversionDataListener: true,
+            timeToWaitForATTUserAuthorization: 10,
+          });
+          console.log("AppsFlyer SDK initialized");
+        } catch (afError) {
+          console.log("AppsFlyer SDK init failed:", afError);
         }
       } catch (error) {
-        console.log("Facebook SDK init:", error);
+        console.log("SDK init:", error);
       }
     };
-    initFacebookSDK();
+    initSDKs();
   }, []);
 
   if (!fontsLoaded && !fontError) {

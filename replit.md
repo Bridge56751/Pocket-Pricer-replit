@@ -14,7 +14,7 @@ This app allows resellers to:
 
 **No account required** - the app works immediately without registration. Subscriptions are tied to Apple ID / Google Play account via RevenueCat.
 
-**Current version**: 1.3.0 / build 49
+**Current version**: 1.3.0 / build 50
 
 ## Tech Stack
 
@@ -195,6 +195,11 @@ Server-side analytics are logged to an external Supabase database. No client cha
 
 ## Recent Changes
 
+- **Mar 2026**: Integrated AppsFlyer SDK (react-native-appsflyer) for mobile attribution tracking
+  - Dev key configured, App ID: 6758423765
+  - Auto-initializes on app launch alongside Facebook SDK
+  - Uses shared ATT prompt (single permission request for both SDKs)
+  - Requires native build (EAS Build) — does not work in Expo Go
 - **Mar 2026**: Migrated `guest_scans` table from Replit PostgreSQL to Supabase
   - All database activity now lives in Supabase (analytics + scan tracking)
   - `server/db.ts` rewritten to use Supabase REST API instead of raw `pg` Pool
