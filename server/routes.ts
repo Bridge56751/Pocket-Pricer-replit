@@ -365,7 +365,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .replace(/\b(Adjustable|Premium|Official|Authentic|Genuine|Brand New|NWT|NWOT|NWB|NIB|NWOB|BNIB|BNWT|BNWOT|MIB|Exclusive)\b/gi, "")
         .replace(/\b(RARE|HTF|MINT|EUC|GUC|VGC|OBO)\b/gi, "")
         .replace(/\b(Fit|Style|Collection|Pack|Bundle|Lot)\b/gi, "")
+        .replace(/\b(Ultra-Lightweight|Lightweight|Ultra-Light|Super Light|Ergonomic|High-Performance|High Performance|Advanced|Professional|Next-Gen|Next Gen)\b/gi, "")
+        .replace(/\b(with|and|for|the|in|of|by|to|on|at|from|into)\b/gi, "")
+        .replace(/\b\d+(?:\.\d+)?\s*(?:CPI|DPI|Hz|MHz|GHz|mm|cm|oz|fl|Fl|ML|ml|mg|g|GB|TB|MB|mAh|W|HP|RPM|PSI|FPS|MP|inch|inches|ft|lb|lbs|kg|ct|pk|pc)\b/gi, "")
+        .replace(/\b\d+(?:\.\d+)?(?:g|oz)\b/gi, "")
+        .replace(/\b\d+\s*(?:inch|inches|ft|cm|mm|oz|fl|ml|lb|lbs|kg)\b/gi, "")
+        .replace(/\b(Sipbox|Boxed)\b/gi, "")
+        .replace(/\b(Walmart|Amazon|Target|Nordstrom|Mercari|Poshmark|eBay|Costco|Sam's|Kohls|Macy's|JCPenney|Marshalls|TJ\s*Maxx|HomeGoods|Ross)\b/gi, "")
+        .replace(/\b(New|Tags|Size|Sz|Step)\b/gi, "")
+        .replace(/\b(Sunglasses|Sneaker|Sneakers|Shoes|Shoe|Boots?|Sandals?|Slippers?)\b/gi, "")
+        .replace(/\b(Stuffed|Animal|Plush|Jumbo|Display|Radio|Navigation)\b/gi, "")
+        .replace(/\b(Gray|Grey|Matte|Glossy|Shiny|Clear|Frosted|Tinted)\b/gi, "")
+        .replace(/\b(lenses?|frames?)\b/gi, "")
         .replace(/[\/,&]+/g, " ")
+        .replace(/-+\s*$/g, "")
         .replace(/\s+/g, " ")
         .trim();
 
@@ -374,13 +387,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (broadSearch) {
         words = words
           .filter(w => !/^\d+(\.\d+)?$/.test(w))
-          .filter(w => !/^(Men's|Women's|Mens|Womens|Men|Women|Unisex|Boy's|Girl's|Kids|Youth)$/i.test(w))
-          .filter(w => !/^(Black|White|Red|Blue|Green|Navy|Gold|Silver|Gray|Grey|Pink|Purple|Orange|Brown|Beige|Tan|Cream|Ivory|Coral|Teal|Maroon|Burgundy|Olive|Charcoal|Peacoat|Yellow)$/i.test(w));
-        if (words.length > 5) {
-          words = words.slice(0, 5);
+          .filter(w => !/^(Men's|Women's|Mens|Womens|Men|Women|Unisex|Boy's|Girl's|Kids|Youth|Adult|Adults|Toddler|Baby|Infant)$/i.test(w))
+          .filter(w => !/^(Black|White|Red|Blue|Green|Navy|Gold|Silver|Gray|Grey|Pink|Purple|Orange|Brown|Beige|Tan|Cream|Ivory|Coral|Teal|Maroon|Burgundy|Olive|Charcoal|Peacoat|Yellow|Camo|Matte|Powder)$/i.test(w))
+          .filter(w => !/^(Wireless|Wired|Gaming|Optical|Mechanical|Programmable|Buttons?|Sensor|Lighting|RGB|LED)$/i.test(w))
+          .filter(w => !/^(Protein|Nutrition|Shake|Plan|Power|Elite|Core|Basic|Classic|Original|Standard|Limited|Edition|Special|Deluxe)$/i.test(w))
+          .filter(w => !/^(lenses?|frame|strap|band|case|cover|sleeve|pouch|holder|mount|adapter|charger|cable|cord)$/i.test(w))
+          .filter(w => !/^(Pullover|Hooded|Hoodie|Knit|Fleece|Jacket|Shirt|Pants|Shorts|Sweater|Sweatshirt|Polo|Tee|Tank|Vest|Coat|Blazer|Dress|Skirt|Blouse)$/i.test(w))
+          .filter(w => !/^(Plush|Stuffed|Animal|Jumbo|Large|Small|Medium|XL|XXL|XS|XXXL|Long|Short|Tall|Full|Half|Mini|Micro|Mega|Giant|Big|Tiny)$/i.test(w))
+          .filter(w => !/^(Square|Round|Oval|Flat|Slim|Thick|Wide|Narrow|Curved|Straight|Vintage|Retro|Modern|New|Old|Used|Refurbished)$/i.test(w))
+          .filter(w => !/^(inch|inches|ft|cm|mm|oz|lb|lbs|kg|ml|fl|piece|pieces|set|pack|ct|count)$/i.test(w))
+          .filter(w => !/^(Zip|Zipper|Snap|Button|Buckle|Lace|Velcro|Tags|Tag|Nylon|Cotton|Polyester|Leather|Suede|Denim|Silk|Wool|Satin|Linen|Canvas)$/i.test(w));
+        if (words.length > 4) {
+          words = words.slice(0, 4);
         }
-      } else if (words.length > 8) {
-        words = words.slice(0, 8);
+      } else if (words.length > 6) {
+        words = words.slice(0, 6);
       }
 
       cleanQuery = words.join(" ").slice(0, 80) || searchQuery.trim().slice(0, 80);
