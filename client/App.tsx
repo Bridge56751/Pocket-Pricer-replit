@@ -56,17 +56,22 @@ export default function App() {
           trackingGranted = status === "granted";
         }
 
-        const { Settings } = await import("react-native-fbsdk-next");
-        await Settings.initializeSDK();
-        if (Platform.OS === "ios") {
-          await Settings.setAdvertiserTrackingEnabled(trackingGranted);
+        try {
+          const { Settings } = await import("react-native-fbsdk-next");
+          await Settings.initializeSDK();
+          if (Platform.OS === "ios") {
+            await Settings.setAdvertiserTrackingEnabled(trackingGranted);
+          }
+          console.log("Facebook SDK initialized");
+        } catch (fbError) {
+          console.log("Facebook SDK init failed:", fbError);
         }
 
         try {
           const appsFlyer = await import("react-native-appsflyer");
           await appsFlyer.default.initSdk({
             devKey: "mfkZfMQWNe9nEc6NB23KJD",
-            isDebug: false,
+            isDebug: true,
             appId: "6758423765",
             onInstallConversionDataListener: true,
             timeToWaitForATTUserAuthorization: 10,
