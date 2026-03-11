@@ -417,7 +417,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
       } else if (words.length > 6) {
-        words = words.slice(0, 6);
+        const categoryIdx = words.findIndex(w => productCategories.has(w.toLowerCase()));
+        if (categoryIdx >= 6) {
+          const capped = words.slice(0, 5);
+          capped.push(words[categoryIdx]);
+          words = capped;
+        } else {
+          words = words.slice(0, 6);
+        }
       }
 
       cleanQuery = words.join(" ").slice(0, 80) || searchQuery.trim().slice(0, 80);
