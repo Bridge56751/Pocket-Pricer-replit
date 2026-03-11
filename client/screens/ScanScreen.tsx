@@ -288,23 +288,20 @@ export default function ScanScreen() {
       addSearchHistory(historyItem).catch(() => {});
       loadRecentScans();
 
-      (async () => {
-        try {
-          if (Platform.OS === "web") return;
-          const alreadyPrompted = await AsyncStorage.getItem("@pocket_pricer_rating_prompted");
-          if (alreadyPrompted === "true") return;
-          const countStr = await AsyncStorage.getItem("@pocket_pricer_successful_scans");
-          const count = (parseInt(countStr || "0", 10) || 0) + 1;
-          await AsyncStorage.setItem("@pocket_pricer_successful_scans", String(count));
-          if (count >= 3) {
+      const dbScanCount = results.totalScans || 0;
+      if (dbScanCount >= 3 && Platform.OS !== "web") {
+        (async () => {
+          try {
+            const alreadyPrompted = await AsyncStorage.getItem("@pocket_pricer_rating_prompted");
+            if (alreadyPrompted === "true") return;
             await AsyncStorage.setItem("@pocket_pricer_rating_prompted", "true");
             const isAvailable = await StoreReview.isAvailableAsync();
             if (isAvailable) {
               setTimeout(() => { StoreReview.requestReview().catch(() => {}); }, 2000);
             }
-          }
-        } catch {}
-      })();
+          } catch {}
+        })();
+      }
       
     } catch (error) {
       console.error("Processing failed:", error);

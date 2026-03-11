@@ -291,6 +291,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await incrementGuestScan(deviceId);
       }
 
+      let totalScans = 0;
+      try {
+        totalScans = await getGuestScanCount(deviceId);
+      } catch {}
+
       logScanEvent(deviceId, isPro, productName, listings.length, pricedListings.length);
 
       res.json({
@@ -307,6 +312,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         topSalePrice: null,
         listings,
         usedLens: true,
+        totalScans,
       });
     } catch (error) {
       console.error("Lens scan error:", error);
