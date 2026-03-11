@@ -416,14 +416,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             words = words.slice(0, BROAD_CAP);
           }
         }
-      } else if (words.length > 6) {
+      } else if (words.length > 8) {
         const categoryIdx = words.findIndex(w => productCategories.has(w.toLowerCase()));
-        if (categoryIdx >= 6) {
-          const capped = words.slice(0, 5);
+        if (categoryIdx >= 8) {
+          const capped = words.slice(0, 7);
           capped.push(words[categoryIdx]);
           words = capped;
         } else {
-          words = words.slice(0, 6);
+          words = words.slice(0, 8);
         }
       }
 
