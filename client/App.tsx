@@ -50,10 +50,14 @@ export default function App() {
         }
 
         let trackingGranted = false;
-        if (Platform.OS === "ios") {
-          const { requestTrackingPermissionsAsync } = await import("expo-tracking-transparency");
-          const { status } = await requestTrackingPermissionsAsync();
-          trackingGranted = status === "granted";
+        try {
+          if (Platform.OS === "ios") {
+            const { requestTrackingPermissionsAsync } = await import("expo-tracking-transparency");
+            const { status } = await requestTrackingPermissionsAsync();
+            trackingGranted = status === "granted";
+          }
+        } catch (attError) {
+          console.log("ATT request failed:", attError);
         }
 
         try {
@@ -69,14 +73,18 @@ export default function App() {
 
         try {
           const appsFlyer = await import("react-native-appsflyer");
+          appsFlyer.default.onInstallConversionData((data: any) => {
+            console.log("AppsFlyer conversion data:", JSON.stringify(data));
+          });
           await appsFlyer.default.initSdk({
             devKey: "mfkZfMQWNe9nEc6NB23KJD",
             isDebug: true,
             appId: "6758423765",
             onInstallConversionDataListener: true,
-            timeToWaitForATTUserAuthorization: 10,
+            timeToWaitForATTUserAuthorization: 0,
           });
-          console.log("AppsFlyer SDK initialized");
+          appsFlyer.default.startSdk();
+          console.log("AppsFlyer SDK initialized and started");
         } catch (afError) {
           console.log("AppsFlyer SDK init failed:", afError);
         }
