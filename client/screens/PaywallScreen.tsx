@@ -33,7 +33,6 @@ const FEATURES = [
   { icon: "bar-chart-2" as const, text: "Multi-platform price comparison" },
   { icon: "trending-up" as const, text: "eBay sold data & Buy Score" },
   { icon: "dollar-sign" as const, text: "Instant profit calculator" },
-  { icon: "heart" as const, text: "Save favorites & track history" },
 ];
 
 export default function PaywallScreen() {
