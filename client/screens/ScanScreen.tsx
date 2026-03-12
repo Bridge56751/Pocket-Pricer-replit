@@ -426,7 +426,19 @@ export default function ScanScreen() {
               </LinearGradient>
             </Pressable>
 
-            {!isPro ? (
+            {isPro ? (
+              <View style={styles.proBadgeContainer}>
+                <LinearGradient
+                  colors={["#34D399", "#10B981"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.proBadge}
+                >
+                  <Feather name="zap" size={13} color="#fff" />
+                  <Text style={styles.proBadgeText}>PRO</Text>
+                </LinearGradient>
+              </View>
+            ) : (
               <View style={styles.scansRemainingContainer}>
                 <View style={styles.dotsRow}>
                   {Array.from({ length: FREE_SCAN_LIMIT }).map((_, i) => (
@@ -447,7 +459,7 @@ export default function ScanScreen() {
                     : `${FREE_SCAN_LIMIT - scansUsed} free scan${FREE_SCAN_LIMIT - scansUsed === 1 ? "" : "s"} remaining`}
                 </Text>
               </View>
-            ) : null}
+            )}
           </View>
 
         <View style={styles.sectionHeader}>
@@ -685,6 +697,24 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 17,
     fontWeight: "600",
+  },
+  proBadgeContainer: {
+    alignItems: "center",
+    marginTop: 14,
+  },
+  proBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+  },
+  proBadgeText: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "700" as const,
+    letterSpacing: 1,
   },
   scansRemainingContainer: {
     alignItems: "center",
