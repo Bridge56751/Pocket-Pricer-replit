@@ -9,7 +9,7 @@ function withFirebaseStaticFramework(config) {
       const podfilePath = path.join(config.modRequest.platformProjectRoot, 'Podfile');
       let contents = fs.readFileSync(podfilePath, 'utf-8');
       if (!contents.includes('$RNFirebaseAsStaticFramework')) {
-        contents = '$RNFirebaseAsStaticFramework = true\n' + contents;
+        contents = 'use_modular_headers!\n$RNFirebaseAsStaticFramework = true\n' + contents;
         fs.writeFileSync(podfilePath, contents);
       }
       return config;
