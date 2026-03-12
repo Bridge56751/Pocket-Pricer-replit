@@ -249,9 +249,10 @@ export default function PaywallScreen() {
 
           {/* Legal disclosure */}
           <Text style={[styles.legalText, { color: theme.colors.mutedForeground }]}>
-            Payment charged to your Apple ID at the end of the free trial. Subscription automatically
-            renews unless canceled at least 24 hours before the end of the current period. Manage or
-            cancel in Settings → Apple ID → Subscriptions.
+            After your 3-day free trial, your subscription automatically renews at {getPrice()}/month.
+            Payment will be charged to your Apple ID account at confirmation of purchase. Subscription
+            automatically renews unless canceled at least 24 hours before the end of the current period.
+            Manage or cancel in Settings → Apple ID → Subscriptions.
           </Text>
         </Animated.View>
       </ScrollView>
