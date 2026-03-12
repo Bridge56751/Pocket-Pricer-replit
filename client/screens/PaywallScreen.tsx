@@ -29,7 +29,7 @@ const FEATURES = [
   { icon: "camera" as const,      text: "Unlimited product scans" },
   { icon: "trending-up" as const, text: "eBay sold prices — see what items actually sell for" },
   { icon: "bar-chart-2" as const, text: "Buy Score — instant demand & profit rating" },
-  { icon: "dollar-sign" as const, text: "Unlimited price comparisons — Amazon, Walmart, Target & eBay" },
+  { icon: "dollar-sign" as const, text: "Unlimited price comparisons" },
 ];
 
 export default function PaywallScreen() {
