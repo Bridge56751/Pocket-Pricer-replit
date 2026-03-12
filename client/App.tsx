@@ -72,34 +72,7 @@ export default function App() {
       }
     };
 
-    const initAppsFlyerSDK = async () => {
-      if (Platform.OS === "web") return;
-      try {
-        const Constants = await import("expo-constants");
-        const isExpoGo = Constants.default?.appOwnership === "expo";
-        if (isExpoGo) return;
-
-        const appsFlyer = await import("react-native-appsflyer");
-        appsFlyer.default.onInstallConversionData((data: any) => {
-          console.log("AppsFlyer conversion data:", JSON.stringify(data));
-        });
-        await appsFlyer.default.initSdk({
-          devKey: "mfkZfMQWNe9nEc6NB23KJD",
-          isDebug: true,
-          appId: "6758423765",
-          onInstallConversionDataListener: true,
-          timeToWaitForATTUserAuthorization: 10,
-        });
-        appsFlyer.default.startSdk();
-        console.log("AppsFlyer SDK initialized and started");
-        appsFlyer.default.logEvent("af_app_open", {});
-      } catch (afError) {
-        console.log("AppsFlyer SDK init failed:", afError);
-      }
-    };
-
     initFacebookSDK();
-    initAppsFlyerSDK();
   }, []);
 
   if (!fontsLoaded && !fontError) {
