@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -43,8 +43,19 @@ export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
     (pkg) => pkg.packageType === "MONTHLY" || pkg.identifier === "$rc_monthly"
   );
   const hasMultiplePlans = !!(weeklyPkg && monthlyPkg);
-  const defaultPlan = weeklyPkg ? "weekly" : "monthly";
-  const [selectedPlan, setSelectedPlan] = useState<"weekly" | "monthly">(defaultPlan);
+  const [selectedPlan, setSelectedPlan] = useState<"weekly" | "monthly">("weekly");
+  const userHasChosen = useRef(false);
+
+  useEffect(() => {
+    if (userHasChosen.current) return;
+    if (weeklyPkg) setSelectedPlan("weekly");
+    else if (monthlyPkg) setSelectedPlan("monthly");
+  }, [weeklyPkg, monthlyPkg]);
+
+  const handleSelectPlan = (plan: "weekly" | "monthly") => {
+    userHasChosen.current = true;
+    setSelectedPlan(plan);
+  };
 
   const activePkg =
     selectedPlan === "weekly" && weeklyPkg
@@ -153,63 +164,71 @@ export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
 
           {/* Plan cards */}
           <View style={styles.planCards}>
-            {hasMultiplePlans && weeklyPkg ? (
-              <Pressable
-                onPress={() => setSelectedPlan("weekly")}
-                style={[
-                  styles.planCard,
-                  {
-                    backgroundColor: selectedPlan === "weekly" ? planCardBg : isDarkMode ? "#2C2C2E" : "#F9FAFB",
-                    borderColor: selectedPlan === "weekly" ? "#10B981" : isDarkMode ? "#3A3A3C" : "#E5E7EB",
-                  },
-                ]}
-              >
-                <View style={styles.planLeft}>
-                  <Text style={[styles.planName, { color: theme.colors.foreground }]}>Weekly</Text>
-                  <Text style={[styles.planPrice, { color: theme.colors.mutedForeground }]}>
-                    3-day free trial, then {weeklyPkg.product.priceString}/week
-                  </Text>
-                </View>
-                {selectedPlan === "weekly" ? (
-                  <Feather name="check-circle" size={22} color="#10B981" />
-                ) : (
-                  <View style={[styles.radioOuter, { borderColor: isDarkMode ? "#3A3A3C" : "#D1D5DB" }]} />
-                )}
-              </Pressable>
-            ) : null}
-            <Pressable
-              onPress={() => setSelectedPlan("monthly")}
-              style={[
-                styles.planCard,
-                {
-                  backgroundColor: (!hasMultiplePlans || selectedPlan === "monthly") ? planCardBg : isDarkMode ? "#2C2C2E" : "#F9FAFB",
-                  borderColor: (!hasMultiplePlans || selectedPlan === "monthly") ? "#10B981" : isDarkMode ? "#3A3A3C" : "#E5E7EB",
-                },
-              ]}
-            >
-              <View style={styles.planLeft}>
-                <View style={styles.planNameRow}>
-                  <Text style={[styles.planName, { color: theme.colors.foreground }]}>
-                    {hasMultiplePlans ? "Monthly" : "3-Day Free Trial"}
-                  </Text>
-                  {hasMultiplePlans && (
-                    <View style={styles.bestValueBadge}>
-                      <Text style={styles.bestValueText}>Best Value</Text>
-                    </View>
+            {hasMultiplePlans ? (
+              <>
+                <Pressable
+                  onPress={() => handleSelectPlan("weekly")}
+                  style={[
+                    styles.planCard,
+                    {
+                      backgroundColor: selectedPlan === "weekly" ? planCardBg : isDarkMode ? "#2C2C2E" : "#F9FAFB",
+                      borderColor: selectedPlan === "weekly" ? "#10B981" : isDarkMode ? "#3A3A3C" : "#E5E7EB",
+                    },
+                  ]}
+                >
+                  <View style={styles.planLeft}>
+                    <Text style={[styles.planName, { color: theme.colors.foreground }]}>Weekly</Text>
+                    <Text style={[styles.planPrice, { color: theme.colors.mutedForeground }]}>
+                      3-day free trial, then {weeklyPkg!.product.priceString}/week
+                    </Text>
+                  </View>
+                  {selectedPlan === "weekly" ? (
+                    <Feather name="check-circle" size={22} color="#10B981" />
+                  ) : (
+                    <View style={[styles.radioOuter, { borderColor: isDarkMode ? "#3A3A3C" : "#D1D5DB" }]} />
                   )}
+                </Pressable>
+                <Pressable
+                  onPress={() => handleSelectPlan("monthly")}
+                  style={[
+                    styles.planCard,
+                    {
+                      backgroundColor: selectedPlan === "monthly" ? planCardBg : isDarkMode ? "#2C2C2E" : "#F9FAFB",
+                      borderColor: selectedPlan === "monthly" ? "#10B981" : isDarkMode ? "#3A3A3C" : "#E5E7EB",
+                    },
+                  ]}
+                >
+                  <View style={styles.planLeft}>
+                    <View style={styles.planNameRow}>
+                      <Text style={[styles.planName, { color: theme.colors.foreground }]}>Monthly</Text>
+                      <View style={styles.bestValueBadge}>
+                        <Text style={styles.bestValueText}>Best Value</Text>
+                      </View>
+                    </View>
+                    <Text style={[styles.planPrice, { color: theme.colors.mutedForeground }]}>
+                      3-day free trial, then {monthlyPkg!.product.priceString}/month
+                    </Text>
+                  </View>
+                  {selectedPlan === "monthly" ? (
+                    <Feather name="check-circle" size={22} color="#10B981" />
+                  ) : (
+                    <View style={[styles.radioOuter, { borderColor: isDarkMode ? "#3A3A3C" : "#D1D5DB" }]} />
+                  )}
+                </Pressable>
+              </>
+            ) : (
+              <View style={[styles.planCard, { backgroundColor: planCardBg, borderColor: "#10B981" }]}>
+                <View style={styles.planLeft}>
+                  <Text style={[styles.planName, { color: theme.colors.foreground }]}>
+                    3-Day Free Trial
+                  </Text>
+                  <Text style={[styles.planPrice, { color: theme.colors.mutedForeground }]}>
+                    then {getSelectedPrice()}/{getSelectedPeriod()}
+                  </Text>
                 </View>
-                <Text style={[styles.planPrice, { color: theme.colors.mutedForeground }]}>
-                  {hasMultiplePlans
-                    ? `3-day free trial, then ${monthlyPkg?.product.priceString ?? "$8.99"}/month`
-                    : `then ${getSelectedPrice()}/${getSelectedPeriod()}`}
-                </Text>
-              </View>
-              {(!hasMultiplePlans || selectedPlan === "monthly") ? (
                 <Feather name="check-circle" size={22} color="#10B981" />
-              ) : (
-                <View style={[styles.radioOuter, { borderColor: isDarkMode ? "#3A3A3C" : "#D1D5DB" }]} />
-              )}
-            </Pressable>
+              </View>
+            )}
           </View>
 
           {/* CTA */}
