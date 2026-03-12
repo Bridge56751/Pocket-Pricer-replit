@@ -129,8 +129,10 @@ export default function UpgradeModal({ visible, onClose, scansUsed = 0 }: Upgrad
       <View style={styles.overlay}>
         <View style={[styles.card, { backgroundColor: cardColor }]}>
           {/* Close button */}
-          <Pressable style={styles.closeButton} onPress={onClose} hitSlop={12}>
-            <Feather name="x" size={22} color={theme.colors.mutedForeground} />
+          <Pressable style={styles.closeButton} onPress={onClose} hitSlop={16}>
+            <View style={[styles.closeCircle, { backgroundColor: isDarkMode ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.06)" }]}>
+              <Feather name="x" size={18} color={theme.colors.mutedForeground} />
+            </View>
           </Pressable>
 
           {/* Icon */}
@@ -346,7 +348,13 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 14,
     right: 14,
-    padding: 4,
+  },
+  closeCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: "center",
+    justifyContent: "center",
   },
   iconCircle: {
     width: 72,
