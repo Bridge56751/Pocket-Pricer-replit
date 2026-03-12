@@ -507,12 +507,6 @@ export default function ScanScreen() {
                         || scan.product?.title 
                         || (typeof scan.query === 'string' ? scan.query : 'Product')}
                     </Text>
-                    <Text 
-                      style={[styles.scanCondition, { color: theme.colors.mutedForeground }]}
-                      numberOfLines={1}
-                    >
-                      {scan.results?.listings?.[0]?.condition || "New"}
-                    </Text>
                     <View style={styles.scanMeta}>
                       <Text style={[styles.scanPrice, { color: theme.colors.primary }]}>
                         ${(scan.avgPrice || scan.results?.avgListPrice)?.toFixed(0) || "0"}
@@ -871,10 +865,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     marginBottom: 2,
-  },
-  scanCondition: {
-    fontSize: 13,
-    marginBottom: 4,
   },
   scanMeta: {
     flexDirection: "row",
