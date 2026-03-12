@@ -9,7 +9,9 @@ import {
   Platform,
   Alert,
   Linking,
+  ScrollView,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useDesignTokens } from "@/hooks/useDesignTokens";
@@ -34,6 +36,7 @@ interface UpgradeModalProps {
 }
 
 export default function UpgradeModal({ visible, onClose, scansUsed = 0 }: UpgradeModalProps) {
+  const insets = useSafeAreaInsets();
   const { theme, isDarkMode } = useDesignTokens();
   const { packages, purchasePackage, restorePurchases, isPro } = useRevenueCat();
 
@@ -126,14 +129,19 @@ export default function UpgradeModal({ visible, onClose, scansUsed = 0 }: Upgrad
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={styles.overlay}>
+      <View style={[styles.overlay, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 }]}>
         <View style={[styles.card, { backgroundColor: cardColor }]}>
-          {/* Close button */}
+          {/* Close button — outside scroll so always tappable */}
           <Pressable style={styles.closeButton} onPress={onClose} hitSlop={16}>
             <View style={[styles.closeCircle, { backgroundColor: isDarkMode ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.06)" }]}>
               <Feather name="x" size={18} color={theme.colors.mutedForeground} />
             </View>
           </Pressable>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+            contentContainerStyle={styles.cardScroll}
+          >
 
           {/* Icon */}
           <LinearGradient
@@ -316,6 +324,7 @@ export default function UpgradeModal({ visible, onClose, scansUsed = 0 }: Upgrad
             automatically renews unless canceled at least 24 hours before the end of the current period.
             Manage or cancel in Settings → Apple ID → Subscriptions.
           </Text>
+          </ScrollView>
         </View>
       </View>
     </Modal>
@@ -332,17 +341,20 @@ const styles = StyleSheet.create({
   },
   card: {
     width: "100%",
-    maxWidth: 360,
+    maxWidth: 420,
     borderRadius: 28,
-    paddingHorizontal: 22,
-    paddingTop: 32,
-    paddingBottom: 22,
-    alignItems: "center",
+    overflow: "hidden",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.15,
     shadowRadius: 24,
     elevation: 12,
+  },
+  cardScroll: {
+    paddingHorizontal: 22,
+    paddingTop: 52,
+    paddingBottom: 22,
+    alignItems: "center",
   },
   closeButton: {
     position: "absolute",
