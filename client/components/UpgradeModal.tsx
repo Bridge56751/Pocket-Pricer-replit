@@ -142,7 +142,7 @@ export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
 
           {/* Title */}
           <Text style={[styles.title, { color: theme.colors.foreground }]}>
-            Unlock Pocket Pricer Pro
+            Stop guessing what items sell for
           </Text>
           <Text style={[styles.subtitle, { color: theme.colors.mutedForeground }]}>
             Unlimited scans, real sold data & instant profit math.

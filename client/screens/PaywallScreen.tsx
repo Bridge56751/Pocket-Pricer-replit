@@ -177,7 +177,7 @@ export default function PaywallScreen() {
 
           {/* Title & subtitle */}
           <Text style={[styles.title, { color: theme.colors.foreground }]}>
-            Unlock Pocket Pricer Pro
+            Stop guessing what items sell for
           </Text>
           <Text style={[styles.subtitle, { color: theme.colors.mutedForeground }]}>
             See exactly what your items sell for — unlimited scans, real sold data, instant profit math.
