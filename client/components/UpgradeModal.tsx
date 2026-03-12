@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -13,7 +13,6 @@ import {
 import { Feather } from "@expo/vector-icons";
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { useRevenueCat } from "@/contexts/RevenueCatContext";
-import { useAuth } from "@/contexts/AuthContext";
 
 const PRIVACY_URL = "https://pocket-pricer.com/pocket-pricer-privacy-policy-v5.html";
 const TERMS_URL = "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/";
@@ -26,20 +25,9 @@ interface UpgradeModalProps {
 export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
   const { theme } = useDesignTokens();
   const { packages, purchasePackage, restorePurchases, isPro } = useRevenueCat();
-  const { getScansUsed } = useAuth();
-  
-  const [scansUsed, setScansUsed] = useState(0);
+
   const [isLoading, setIsLoading] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
-
-  useEffect(() => {
-    if (visible) {
-      getScansUsed().then((count) => setScansUsed(count));
-    }
-  }, [visible]);
-
-  const scansRemaining = Math.max(0, 1 - scansUsed);
-  const hasUsedAllScans = scansRemaining === 0;
 
   const handleUpgrade = async () => {
     if (Platform.OS === "web") {
@@ -136,19 +124,12 @@ export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
             Pocket Pricer Pro
           </Text>
 
-          <Text style={[styles.subtitle, { color: theme.colors.mutedForeground }]}>
-            Monthly subscription — {getPrice()}/month
-          </Text>
-
-          {hasUsedAllScans ? (
-            <Text style={[styles.freeScansNote, { color: theme.colors.mutedForeground }]}>
-              Start your 3-day free trial to keep scanning
+          <View style={[styles.trialBadge, { backgroundColor: theme.colors.primary + "18" }]}>
+            <Feather name="gift" size={14} color={theme.colors.primary} />
+            <Text style={[styles.trialBadgeText, { color: theme.colors.primary }]}>
+              3 days free — then {getPrice()}/month
             </Text>
-          ) : (
-            <Text style={[styles.freeScansNote, { color: theme.colors.mutedForeground }]}>
-              {scansRemaining} free scan{scansRemaining === 1 ? '' : 's'} remaining
-            </Text>
-          )}
+          </View>
 
           <View style={styles.features}>
             <View style={styles.featureRow}>
@@ -173,7 +154,7 @@ export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
             {isLoading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.upgradeButtonText}>Subscribe Now</Text>
+              <Text style={styles.upgradeButtonText}>Start 3-Day Free Trial</Text>
             )}
           </Pressable>
 
@@ -198,7 +179,7 @@ export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
           </Pressable>
 
           <Text style={[styles.subscriptionDisclosure, { color: theme.colors.mutedForeground }]}>
-            Payment will be charged to your Apple ID account. Subscription automatically renews unless canceled at least 24 hours before the end of the current period. Manage or cancel in Settings → Apple ID → Subscriptions.
+            Payment will be charged to your Apple ID account at the end of the 3-day free trial. Subscription automatically renews unless canceled at least 24 hours before the end of the current period. Manage or cancel in Settings → Apple ID → Subscriptions.
           </Text>
 
           <View style={styles.legalLinks}>
@@ -254,17 +235,20 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: "700",
-    marginBottom: 8,
+    marginBottom: 12,
   },
-  subtitle: {
-    fontSize: 16,
-    textAlign: "center",
-    marginBottom: 8,
-  },
-  freeScansNote: {
-    fontSize: 14,
-    textAlign: "center",
+  trialBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
     marginBottom: 20,
+  },
+  trialBadgeText: {
+    fontSize: 14,
+    fontWeight: "600",
   },
   features: {
     width: "100%",
