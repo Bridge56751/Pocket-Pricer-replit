@@ -92,6 +92,7 @@ export default function SearchResultsScreen() {
   }, [favoriteId]);
 
   const handleToggleFavorite = async () => {
+    if (!isPro) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (favorited) {
       await removeFavorite(favoriteId);
@@ -115,18 +116,19 @@ export default function SearchResultsScreen() {
   };
 
   useLayoutEffect(() => {
+    if (!isPro) return;
     navigation.setOptions({
       headerRight: () => (
         <Pressable onPress={handleToggleFavorite} style={{ paddingRight: 4 }} hitSlop={12}>
           <Feather
-            name={favorited ? "bookmark" : "bookmark"}
+            name="bookmark"
             size={22}
             color={favorited ? theme.colors.primary : theme.colors.mutedForeground}
           />
         </Pressable>
       ),
     });
-  }, [favorited, theme]);
+  }, [favorited, isPro, theme]);
 
   const suggestedPrice = results.avgListPrice;
   const EBAY_FEE_RATE = 0.13;
