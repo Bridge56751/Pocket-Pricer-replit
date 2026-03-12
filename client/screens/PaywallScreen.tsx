@@ -216,7 +216,7 @@ export default function PaywallScreen() {
           <Pressable
             onPress={handleStartTrial}
             disabled={isLoading || isRestoring}
-            style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}
+            style={({ pressed }) => [styles.ctaPressable, { opacity: pressed ? 0.9 : 1 }]}
           >
             <LinearGradient
               colors={["#34D399", "#10B981", "#059669"]}
@@ -354,6 +354,9 @@ const styles = StyleSheet.create({
     width: "100%",
     alignItems: "center",
     marginBottom: 24,
+  },
+  ctaPressable: {
+    width: "100%",
   },
   ctaButton: {
     flexDirection: "row",

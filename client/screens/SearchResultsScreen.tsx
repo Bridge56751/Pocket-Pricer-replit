@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useLayoutEffect } from "react";
 import { View, StyleSheet, FlatList, Pressable, Text, Linking, TextInput, ActivityIndicator, ScrollView, Keyboard } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -14,8 +14,9 @@ import { getImage } from "@/lib/image-store";
 import { getApiUrl } from "@/lib/query-client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRevenueCat } from "@/contexts/RevenueCatContext";
+import { addFavorite, isFavorite, removeFavorite } from "@/lib/storage";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
-import type { EbaySoldData, EbaySoldItem } from "@/types/product";
+import type { EbaySoldData, EbaySoldItem, FavoriteItem } from "@/types/product";
 
 type SearchResultsRouteProp = RouteProp<RootStackParamList, "SearchResults">;
 
@@ -82,6 +83,50 @@ export default function SearchResultsScreen() {
   const [ebaySoldError, setEbaySoldError] = useState<string | null>(null);
   const [showEbaySold, setShowEbaySold] = useState(false);
   const [brokenImages, setBrokenImages] = useState<Set<string>>(new Set());
+  const [favorited, setFavorited] = useState(false);
+
+  const favoriteId = results.query.toLowerCase().trim();
+
+  useEffect(() => {
+    isFavorite(favoriteId).then(setFavorited);
+  }, [favoriteId]);
+
+  const handleToggleFavorite = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (favorited) {
+      await removeFavorite(favoriteId);
+      setFavorited(false);
+    } else {
+      const item: FavoriteItem = {
+        id: favoriteId,
+        product: {
+          id: favoriteId,
+          title: results.query,
+          imageUrl: results.listings[0]?.imageUrl ?? "",
+          currentPrice: results.avgListPrice,
+          link: results.listings[0]?.link,
+          searchedAt: new Date().toISOString(),
+        },
+        savedAt: new Date().toISOString(),
+      };
+      await addFavorite(item);
+      setFavorited(true);
+    }
+  };
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <Pressable onPress={handleToggleFavorite} style={{ paddingRight: 4 }} hitSlop={12}>
+          <Feather
+            name={favorited ? "bookmark" : "bookmark"}
+            size={22}
+            color={favorited ? theme.colors.primary : theme.colors.mutedForeground}
+          />
+        </Pressable>
+      ),
+    });
+  }, [favorited, theme]);
 
   const suggestedPrice = results.avgListPrice;
   const EBAY_FEE_RATE = 0.13;
