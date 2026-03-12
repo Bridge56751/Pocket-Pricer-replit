@@ -27,7 +27,7 @@ const TERMS_URL = "https://www.apple.com/legal/internet-services/itunes/dev/stde
 
 const FEATURES = [
   { icon: "camera" as const,      text: "Unlimited product scans" },
-  { icon: "trending-up" as const, text: "eBay sold prices — see what items actually sell for" },
+  { icon: "trending-up" as const, text: "Sold prices — see what items actually sell for" },
   { icon: "bar-chart-2" as const, text: "Buy Score — instant demand & profit rating" },
   { icon: "dollar-sign" as const, text: "Unlimited price comparisons" },
 ];
