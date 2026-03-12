@@ -164,7 +164,6 @@ export default function ScanScreen() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [scannedPhotoUri, setScannedPhotoUri] = useState<string | null>(null);
   const processingRef = useRef(false);
-  const hasAutoOpenedCamera = useRef(false);
 
   const loadRecentScans = useCallback(async () => {
     setIsLoading(true);
@@ -337,9 +336,6 @@ export default function ScanScreen() {
     setScansUsed(count);
     if (!isPro && count >= FREE_SCAN_LIMIT) {
       navigation.navigate("Paywall");
-    } else if (!isPro && count === 0 && !hasAutoOpenedCamera.current && !processingRef.current) {
-      hasAutoOpenedCamera.current = true;
-      navigation.navigate("CameraScan");
     }
   }, [rcReady, isPro, getScansUsed, navigation]);
 

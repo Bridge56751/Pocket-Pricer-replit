@@ -178,8 +178,8 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
             { backgroundColor: theme.colors.primary, opacity: pressed ? 0.85 : 1 },
           ]}
         >
-          <Text style={styles.ctaText}>Start Scanning</Text>
-          <Feather name="arrow-right" size={20} color="#fff" />
+          <Feather name="camera" size={20} color="#fff" />
+          <Text style={styles.ctaText}>Scan</Text>
         </Pressable>
       </Animated.View>
     </View>
