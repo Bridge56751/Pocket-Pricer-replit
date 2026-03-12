@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -9,7 +9,6 @@ import {
   Alert,
   Linking,
   ScrollView,
-  BackHandler,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
@@ -125,22 +124,6 @@ export default function PaywallScreen() {
     if (isPro) navigateHome();
   }, [isPro]);
 
-  const handleBackPress = useCallback(() => true, []);
-
-  useEffect(() => {
-    if (Platform.OS === "android") {
-      const sub = BackHandler.addEventListener("hardwareBackPress", handleBackPress);
-      return () => sub.remove();
-    }
-  }, [handleBackPress]);
-
-  useEffect(() => {
-    const unsubscribe = navigation.addListener("beforeRemove", (e: any) => {
-      if (rcReady && !isPro) e.preventDefault();
-    });
-    return unsubscribe;
-  }, [navigation, isPro, rcReady]);
-
   if (isPro) return null;
 
   const bgColor = isDarkMode ? "#1A1A1A" : "#F2F2F7";
@@ -150,6 +133,13 @@ export default function PaywallScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: bgColor }]}>
+      <Pressable
+        onPress={() => navigation.goBack()}
+        style={[styles.closeButton, { top: insets.top + 12 }]}
+        hitSlop={12}
+      >
+        <Feather name="x" size={22} color={isDarkMode ? "#9CA3AF" : "#6B7280"} />
+      </Pressable>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
@@ -344,6 +334,15 @@ export default function PaywallScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  closeButton: {
+    position: "absolute",
+    right: 16,
+    zIndex: 10,
+    width: 32,
+    height: 32,
+    alignItems: "center",
+    justifyContent: "center",
   },
   scrollView: {
     flex: 1,

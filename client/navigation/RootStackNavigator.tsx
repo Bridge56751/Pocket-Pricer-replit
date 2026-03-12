@@ -137,7 +137,7 @@ export default function RootStackNavigator() {
       <Stack.Screen
         name="Paywall"
         component={PaywallScreen}
-        options={{ headerShown: false, gestureEnabled: false }}
+        options={{ headerShown: false, gestureEnabled: true }}
       />
     </Stack.Navigator>
   );
