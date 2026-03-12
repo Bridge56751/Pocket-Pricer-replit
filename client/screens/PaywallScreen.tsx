@@ -27,9 +27,9 @@ const TERMS_URL = "https://www.apple.com/legal/internet-services/itunes/dev/stde
 
 const FEATURES = [
   { icon: "camera" as const,      text: "Unlimited product scans" },
-  { icon: "bar-chart-2" as const, text: "Multi-platform price comparison" },
-  { icon: "trending-up" as const, text: "See real sold prices instantly" },
-  { icon: "dollar-sign" as const, text: "Instant profit calculator" },
+  { icon: "trending-up" as const, text: "eBay sold prices — see what items actually sell for" },
+  { icon: "bar-chart-2" as const, text: "Buy Score — instant demand & profit rating" },
+  { icon: "dollar-sign" as const, text: "Profit calculator — estimate your margins instantly" },
 ];
 
 export default function PaywallScreen() {
