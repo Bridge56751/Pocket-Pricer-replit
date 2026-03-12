@@ -14,6 +14,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import Animated, { FadeInUp, FadeInDown } from "react-native-reanimated";
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { useRevenueCat } from "@/contexts/RevenueCatContext";
 
@@ -26,8 +27,6 @@ const FEATURES = [
   { icon: "bar-chart-2" as const, text: "Buy Score — instant demand & profit rating",     color: "#10B981" },
   { icon: "dollar-sign" as const, text: "Unlimited price comparisons",                    color: "#10B981" },
 ];
-
-const FREE_SCAN_LIMIT = 3;
 
 interface UpgradeModalProps {
   visible: boolean;
@@ -75,7 +74,7 @@ export default function UpgradeModal({ visible, onClose, scansUsed = 0 }: Upgrad
     return "month";
   };
 
-  const handleUpgrade = async () => {
+  const handleStartTrial = async () => {
     if (Platform.OS === "web") {
       Alert.alert("Mobile Only", "Subscriptions are only available in the mobile app.");
       return;
@@ -89,7 +88,6 @@ export default function UpgradeModal({ visible, onClose, scansUsed = 0 }: Upgrad
       const result = await purchasePackage(activePkg);
       if (result.success) {
         onClose();
-        Alert.alert("Success", "Welcome to Pocket Pricer Pro! You now have unlimited scans.");
       } else if (result.error && result.error !== "Purchase cancelled") {
         Alert.alert("Purchase Failed", result.error);
       }
@@ -110,7 +108,6 @@ export default function UpgradeModal({ visible, onClose, scansUsed = 0 }: Upgrad
       const result = await restorePurchases();
       if (result.success) {
         onClose();
-        Alert.alert("Restored", "Your Pro subscription has been restored!");
       } else {
         Alert.alert("No Subscription Found", result.error || "No active subscription found.");
       }
@@ -123,243 +120,248 @@ export default function UpgradeModal({ visible, onClose, scansUsed = 0 }: Upgrad
 
   if (isPro) return null;
 
-  const cardColor = isDarkMode ? "#2C2C2E" : "#FFFFFF";
+  const cardColor = isDarkMode ? "#1E1E1E" : "#FFFFFF";
   const planCardBg = isDarkMode ? "#1C3A2E" : "#F0FDF8";
-  const featureIconBg = isDarkMode ? "#1C3A2E" : "#F0FDF8";
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={[styles.overlay, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 }]}>
-        <View style={[styles.card, { backgroundColor: cardColor }]}>
-          {/* Close button — outside scroll so always tappable */}
-          <Pressable style={styles.closeButton} onPress={onClose} hitSlop={16}>
-            <View style={[styles.closeCircle, { backgroundColor: isDarkMode ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.06)" }]}>
-              <Feather name="x" size={18} color={theme.colors.mutedForeground} />
-            </View>
-          </Pressable>
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            bounces={false}
-            contentContainerStyle={styles.cardScroll}
-          >
-
-          {/* Icon */}
-          <LinearGradient
-            colors={["#34D399", "#10B981", "#059669"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.iconCircle}
-          >
-            <Feather name="tag" size={32} color="#fff" />
-          </LinearGradient>
-
-          {/* Title */}
-          <Text style={[styles.title, { color: theme.colors.foreground }]}>
-            Stop guessing what items sell for
-          </Text>
-          <Text style={[styles.subtitle, { color: theme.colors.mutedForeground }]}>
-            Unlimited scans, real sold data & instant profit math.
-          </Text>
-
-          {/* Scan status banner */}
-          <View style={[styles.scanBanner, { backgroundColor: scansUsed >= FREE_SCAN_LIMIT ? (isDarkMode ? "#3B1A1A" : "#FEF2F2") : (isDarkMode ? "#1C3A2E" : "#F0FDF8") }]}>
-            <Feather
-              name={scansUsed >= FREE_SCAN_LIMIT ? "alert-circle" : "info"}
-              size={14}
-              color={scansUsed >= FREE_SCAN_LIMIT ? "#EF4444" : "#10B981"}
-            />
-            <Text style={[styles.scanBannerText, { color: scansUsed >= FREE_SCAN_LIMIT ? "#EF4444" : "#10B981" }]}>
-              {scansUsed >= FREE_SCAN_LIMIT
-                ? "You've used all your free scans"
-                : `${FREE_SCAN_LIMIT - scansUsed} free scan${FREE_SCAN_LIMIT - scansUsed === 1 ? "" : "s"} remaining`}
-            </Text>
+      <LinearGradient
+        colors={isDarkMode ? ["#111111", "#0D2018", "#111111"] : ["#F0FDF8", "#FFFFFF", "#F0FDF8"]}
+        style={styles.container}
+      >
+        <Pressable
+          onPress={onClose}
+          style={[styles.closeButton, { top: insets.top + 12 }]}
+          hitSlop={12}
+        >
+          <View style={[styles.closeCircle, { backgroundColor: isDarkMode ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.06)" }]}>
+            <Feather name="x" size={18} color={isDarkMode ? "#9CA3AF" : "#6B7280"} />
           </View>
+        </Pressable>
 
-          {/* Features */}
-          <View style={styles.featuresList}>
-            {FEATURES.map((f) => (
-              <View
-                key={f.text}
-                style={[
-                  styles.featureRow,
-                  {
-                    backgroundColor: isDarkMode ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.02)",
-                    borderColor: isDarkMode ? "rgba(16,185,129,0.25)" : "rgba(16,185,129,0.3)",
-                  },
-                ]}
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 32 },
+          ]}
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+        >
+          <Animated.View
+            entering={FadeInUp.delay(60).duration(480)}
+            style={[styles.card, { backgroundColor: cardColor }]}
+          >
+            {/* Icon */}
+            <View style={styles.iconWrap}>
+              <View style={styles.iconGlow} />
+              <LinearGradient
+                colors={["#34D399", "#10B981", "#059669"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.iconCircle}
               >
-                <View style={[styles.featureIconCircle, { backgroundColor: f.color + "22" }]}>
-                  <Feather name={f.icon} size={15} color={f.color} />
-                </View>
-                <Text style={[styles.featureText, { color: theme.colors.foreground }]}>
-                  {f.text}
-                </Text>
-              </View>
-            ))}
-          </View>
+                <Feather name="tag" size={36} color="#fff" />
+              </LinearGradient>
+            </View>
 
-          {/* Plan cards */}
-          <View style={styles.planCards}>
-            {hasMultiplePlans ? (
-              <>
-                <Pressable
-                  onPress={() => handleSelectPlan("weekly")}
+            {/* Title & subtitle */}
+            <Text style={[styles.title, { color: theme.colors.foreground }]}>
+              Know exactly what to buy & sell
+            </Text>
+            <Text style={[styles.subtitle, { color: theme.colors.mutedForeground }]}>
+              Real sold prices, unlimited scans, and instant profit data — everything you need to win as a reseller.
+            </Text>
+
+            {/* Features */}
+            <View style={styles.featuresList}>
+              {FEATURES.map((f) => (
+                <View
+                  key={f.text}
                   style={[
-                    styles.planCard,
+                    styles.featureRow,
                     {
-                      backgroundColor: selectedPlan === "weekly" ? planCardBg : isDarkMode ? "#2C2C2E" : "#F9FAFB",
-                      borderColor: selectedPlan === "weekly" ? "#10B981" : isDarkMode ? "#3A3A3C" : "#E5E7EB",
+                      backgroundColor: isDarkMode ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.02)",
+                      borderColor: isDarkMode ? "rgba(16,185,129,0.2)" : "rgba(16,185,129,0.25)",
                     },
                   ]}
                 >
-                  <View style={styles.planLeft}>
-                    <Text style={[styles.planName, { color: theme.colors.foreground }]}>Weekly</Text>
-                    <Text style={[styles.planPrice, { color: theme.colors.mutedForeground }]}>
-                      3-day free trial, then {weeklyPkg!.product.priceString}/week
-                    </Text>
+                  <View style={[styles.featureIconCircle, { backgroundColor: "#10B98122" }]}>
+                    <Feather name={f.icon} size={16} color={f.color} />
                   </View>
-                  {selectedPlan === "weekly" ? (
-                    <Feather name="check-circle" size={22} color="#10B981" />
-                  ) : (
-                    <View style={[styles.radioOuter, { borderColor: isDarkMode ? "#3A3A3C" : "#D1D5DB" }]} />
-                  )}
-                </Pressable>
-                <Pressable
-                  onPress={() => handleSelectPlan("monthly")}
-                  style={[
-                    styles.planCard,
-                    {
-                      backgroundColor: selectedPlan === "monthly" ? planCardBg : isDarkMode ? "#2C2C2E" : "#F9FAFB",
-                      borderColor: selectedPlan === "monthly" ? "#10B981" : isDarkMode ? "#3A3A3C" : "#E5E7EB",
-                    },
-                  ]}
-                >
-                  <View style={styles.planLeft}>
-                    <View style={styles.planNameRow}>
-                      <Text style={[styles.planName, { color: theme.colors.foreground }]}>Monthly</Text>
-                      <View style={styles.bestValueBadge}>
-                        <Text style={styles.bestValueText}>Best Value</Text>
-                      </View>
-                    </View>
-                    <Text style={[styles.planPrice, { color: theme.colors.mutedForeground }]}>
-                      3-day free trial, then {monthlyPkg!.product.priceString}/month
-                    </Text>
-                  </View>
-                  {selectedPlan === "monthly" ? (
-                    <Feather name="check-circle" size={22} color="#10B981" />
-                  ) : (
-                    <View style={[styles.radioOuter, { borderColor: isDarkMode ? "#3A3A3C" : "#D1D5DB" }]} />
-                  )}
-                </Pressable>
-              </>
-            ) : (
-              <View style={[styles.planCard, { backgroundColor: planCardBg, borderColor: "#10B981" }]}>
-                <View style={styles.planLeft}>
-                  <Text style={[styles.planName, { color: theme.colors.foreground }]}>
-                    3-Day Free Trial
+                  <Text style={[styles.featureText, { color: theme.colors.foreground }]}>
+                    {f.text}
                   </Text>
-                  <Text style={[styles.planPrice, { color: theme.colors.mutedForeground }]}>
-                    then {getSelectedPrice()}/{getSelectedPeriod()}
-                  </Text>
+                  <Feather name="check" size={16} color="#10B981" />
                 </View>
-                <Feather name="check-circle" size={22} color="#10B981" />
-              </View>
-            )}
-          </View>
+              ))}
+            </View>
 
-          {/* CTA */}
-          <Pressable
-            onPress={handleUpgrade}
-            disabled={isLoading || isRestoring}
-            style={({ pressed }) => [{ opacity: pressed ? 0.88 : 1, width: "100%" }]}
-          >
-            <LinearGradient
-              colors={["#34D399", "#10B981", "#059669"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.ctaButton}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
+            {/* Plan cards */}
+            <View style={styles.planCards}>
+              {hasMultiplePlans ? (
                 <>
-                  <Text style={styles.ctaButtonText}>
-                    Start Free Trial — {getSelectedPrice()}/{getSelectedPeriod()}
-                  </Text>
-                  <Feather name="arrow-right" size={18} color="#fff" />
+                  <Pressable
+                    onPress={() => handleSelectPlan("weekly")}
+                    style={[
+                      styles.planCard,
+                      {
+                        backgroundColor: selectedPlan === "weekly" ? planCardBg : isDarkMode ? "#2A2A2A" : "#F9FAFB",
+                        borderColor: selectedPlan === "weekly" ? "#10B981" : isDarkMode ? "#3A3A3C" : "#E5E7EB",
+                      },
+                    ]}
+                  >
+                    <View style={styles.planLeft}>
+                      <Text style={[styles.planName, { color: theme.colors.foreground }]}>Weekly</Text>
+                      <Text style={[styles.planTrialText, { color: "#10B981" }]}>
+                        3-day free trial
+                      </Text>
+                      <Text style={[styles.planPrice, { color: theme.colors.mutedForeground }]}>
+                        then {weeklyPkg!.product.priceString}/week
+                      </Text>
+                    </View>
+                    <View style={styles.planCheck}>
+                      {selectedPlan === "weekly" ? (
+                        <View style={styles.checkFilled}>
+                          <Feather name="check" size={14} color="#fff" />
+                        </View>
+                      ) : (
+                        <View style={[styles.radioOuter, { borderColor: isDarkMode ? "#3A3A3C" : "#D1D5DB" }]} />
+                      )}
+                    </View>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={() => handleSelectPlan("monthly")}
+                    style={[
+                      styles.planCard,
+                      {
+                        backgroundColor: selectedPlan === "monthly" ? planCardBg : isDarkMode ? "#2A2A2A" : "#F9FAFB",
+                        borderColor: selectedPlan === "monthly" ? "#10B981" : isDarkMode ? "#3A3A3C" : "#E5E7EB",
+                      },
+                    ]}
+                  >
+                    <View style={styles.planLeft}>
+                      <View style={styles.planNameRow}>
+                        <Text style={[styles.planName, { color: theme.colors.foreground }]}>Monthly</Text>
+                        <View style={styles.bestValueBadge}>
+                          <Text style={styles.bestValueText}>Best Value</Text>
+                        </View>
+                      </View>
+                      <Text style={[styles.planTrialText, { color: "#10B981" }]}>
+                        3-day free trial
+                      </Text>
+                      <Text style={[styles.planPrice, { color: theme.colors.mutedForeground }]}>
+                        then {monthlyPkg!.product.priceString}/month
+                      </Text>
+                    </View>
+                    <View style={styles.planCheck}>
+                      {selectedPlan === "monthly" ? (
+                        <View style={styles.checkFilled}>
+                          <Feather name="check" size={14} color="#fff" />
+                        </View>
+                      ) : (
+                        <View style={[styles.radioOuter, { borderColor: isDarkMode ? "#3A3A3C" : "#D1D5DB" }]} />
+                      )}
+                    </View>
+                  </Pressable>
                 </>
-              )}
-            </LinearGradient>
-          </Pressable>
-
-          {/* Footer links */}
-          <View style={styles.footer}>
-            <Pressable onPress={handleRestore} disabled={isLoading || isRestoring}>
-              {isRestoring ? (
-                <ActivityIndicator size="small" color="#10B981" />
               ) : (
-                <Text style={[styles.footerLink, { color: theme.colors.mutedForeground }]}>
-                  Restore
-                </Text>
+                <View style={[styles.planCard, { backgroundColor: planCardBg, borderColor: "#10B981" }]}>
+                  <View style={styles.planLeft}>
+                    <Text style={[styles.planTrialText, { color: "#10B981", fontSize: 16 }]}>
+                      3-Day Free Trial
+                    </Text>
+                    <Text style={[styles.planPrice, { color: theme.colors.mutedForeground }]}>
+                      then {getSelectedPrice()}/{getSelectedPeriod()}
+                    </Text>
+                  </View>
+                  <View style={styles.checkFilled}>
+                    <Feather name="check" size={14} color="#fff" />
+                  </View>
+                </View>
               )}
-            </Pressable>
-            <Text style={[styles.footerDot, { color: theme.colors.mutedForeground }]}>·</Text>
-            <Pressable onPress={() => Linking.openURL(TERMS_URL)}>
-              <Text style={[styles.footerLink, { color: theme.colors.mutedForeground }]}>
-                Terms of Use
-              </Text>
-            </Pressable>
-            <Text style={[styles.footerDot, { color: theme.colors.mutedForeground }]}>·</Text>
-            <Pressable onPress={() => Linking.openURL(PRIVACY_URL)}>
-              <Text style={[styles.footerLink, { color: theme.colors.mutedForeground }]}>
-                Privacy Policy
-              </Text>
-            </Pressable>
-          </View>
+            </View>
 
-          {/* Legal */}
-          <Text style={[styles.legalText, { color: theme.colors.mutedForeground }]}>
-            After your 3-day free trial, your subscription automatically renews at {getSelectedPrice()}/{getSelectedPeriod()}.
-            Payment will be charged to your Apple ID account at confirmation of purchase. Subscription
-            automatically renews unless canceled at least 24 hours before the end of the current period.
-            Manage or cancel in Settings → Apple ID → Subscriptions.
-          </Text>
-          </ScrollView>
-        </View>
-      </View>
+            {/* CTA */}
+            <Animated.View entering={FadeInDown.delay(300).duration(480)} style={styles.ctaWrap}>
+              <Pressable
+                onPress={handleStartTrial}
+                disabled={isLoading || isRestoring}
+                style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1, width: "100%" }]}
+              >
+                <LinearGradient
+                  colors={["#34D399", "#10B981", "#059669"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.ctaButton}
+                >
+                  {isLoading ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                    <>
+                      <Text style={styles.ctaButtonText}>Start 3-Day Free Trial</Text>
+                      <Feather name="arrow-right" size={20} color="#fff" />
+                    </>
+                  )}
+                </LinearGradient>
+              </Pressable>
+
+              <View style={styles.ctaNoteRow}>
+                <Feather name="lock" size={12} color={theme.colors.mutedForeground} />
+                <Text style={[styles.ctaNote, { color: theme.colors.mutedForeground }]}>
+                  No charge for 3 days. Cancel anytime.
+                </Text>
+              </View>
+            </Animated.View>
+
+            {/* Footer */}
+            <View style={styles.footer}>
+              <Pressable onPress={handleRestore} disabled={isLoading || isRestoring}>
+                {isRestoring ? (
+                  <ActivityIndicator size="small" color="#10B981" />
+                ) : (
+                  <Text style={[styles.footerLink, { color: theme.colors.mutedForeground }]}>
+                    Restore Purchase
+                  </Text>
+                )}
+              </Pressable>
+              <Text style={[styles.footerDot, { color: theme.colors.mutedForeground }]}>·</Text>
+              <Pressable onPress={() => Linking.openURL(TERMS_URL)}>
+                <Text style={[styles.footerLink, { color: theme.colors.mutedForeground }]}>
+                  Terms
+                </Text>
+              </Pressable>
+              <Text style={[styles.footerDot, { color: theme.colors.mutedForeground }]}>·</Text>
+              <Pressable onPress={() => Linking.openURL(PRIVACY_URL)}>
+                <Text style={[styles.footerLink, { color: theme.colors.mutedForeground }]}>
+                  Privacy
+                </Text>
+              </Pressable>
+            </View>
+
+            {/* Legal disclosure */}
+            <Text style={[styles.legalText, { color: theme.colors.mutedForeground }]}>
+              After your 3-day free trial, your subscription automatically renews at {getSelectedPrice()}/{getSelectedPeriod()}.
+              Payment will be charged to your Apple ID account at confirmation of purchase. Subscription
+              automatically renews unless canceled at least 24 hours before the end of the current period.
+              Manage or cancel in Settings → Apple ID → Subscriptions.
+            </Text>
+          </Animated.View>
+        </ScrollView>
+      </LinearGradient>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: {
+  container: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.55)",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 20,
-  },
-  card: {
-    width: "100%",
-    maxWidth: 420,
-    borderRadius: 28,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 24,
-    elevation: 12,
-  },
-  cardScroll: {
-    paddingHorizontal: 22,
-    paddingTop: 52,
-    paddingBottom: 22,
-    alignItems: "center",
   },
   closeButton: {
     position: "absolute",
-    top: 14,
-    right: 14,
+    right: 16,
+    zIndex: 10,
   },
   closeCircle: {
     width: 34,
@@ -368,64 +370,83 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  iconCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    alignItems: "center",
+  },
+  card: {
+    width: "100%",
+    borderRadius: 28,
+    paddingHorizontal: 24,
+    paddingTop: 36,
+    paddingBottom: 28,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    elevation: 10,
+  },
+  iconWrap: {
+    marginBottom: 24,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 18,
+  },
+  iconGlow: {
+    position: "absolute",
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: "rgba(16, 185, 129, 0.15)",
+  },
+  iconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: "center",
+    justifyContent: "center",
     shadowColor: "#10B981",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.45,
+    shadowRadius: 14,
+    elevation: 8,
   },
   title: {
-    fontSize: 22,
+    fontSize: 28,
     fontWeight: "800",
     textAlign: "center",
-    marginBottom: 8,
-    letterSpacing: -0.3,
+    marginBottom: 10,
+    letterSpacing: -0.5,
+    lineHeight: 34,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 15,
     textAlign: "center",
-    lineHeight: 20,
-    marginBottom: 14,
-  },
-  scanBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-    marginBottom: 18,
-    alignSelf: "stretch",
-  },
-  scanBannerText: {
-    fontSize: 13,
-    fontWeight: "600" as const,
+    lineHeight: 22,
+    marginBottom: 28,
+    paddingHorizontal: 4,
   },
   featuresList: {
     width: "100%",
-    gap: 12,
-    marginBottom: 20,
+    gap: 10,
+    marginBottom: 24,
   },
   featureRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     borderRadius: 12,
     borderWidth: 1,
   },
   featureIconCircle: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -436,16 +457,16 @@ const styles = StyleSheet.create({
   },
   planCards: {
     width: "100%",
-    gap: 8,
-    marginBottom: 20,
+    gap: 10,
+    marginBottom: 24,
   },
   planCard: {
     width: "100%",
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 2,
-    paddingHorizontal: 16,
+    paddingHorizontal: 18,
     paddingVertical: 14,
   },
   planLeft: {
@@ -454,71 +475,102 @@ const styles = StyleSheet.create({
   planNameRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 8,
     marginBottom: 2,
   },
   planName: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: "700",
+  },
+  planTrialText: {
+    fontSize: 14,
+    fontWeight: "700",
+    marginBottom: 2,
   },
   bestValueBadge: {
     backgroundColor: "#10B981",
-    paddingHorizontal: 7,
+    paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 5,
+    borderRadius: 6,
   },
   bestValueText: {
     color: "#fff",
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: "700",
   },
   planPrice: {
     fontSize: 13,
   },
+  planCheck: {
+    marginLeft: 12,
+  },
+  checkFilled: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: "#10B981",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   radioOuter: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     borderWidth: 2,
+  },
+  ctaWrap: {
+    width: "100%",
+    alignItems: "center",
+    marginBottom: 20,
   },
   ctaButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 16,
-    borderRadius: 14,
-    gap: 8,
+    paddingVertical: 19,
+    borderRadius: 16,
+    gap: 10,
     width: "100%",
-    marginBottom: 16,
     shadowColor: "#10B981",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.28,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.45,
+    shadowRadius: 16,
+    elevation: 8,
   },
   ctaButtonText: {
     color: "#fff",
-    fontSize: 17,
-    fontWeight: "700",
+    fontSize: 18,
+    fontWeight: "800",
+    letterSpacing: 0.2,
+  },
+  ctaNoteRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    marginTop: 10,
+  },
+  ctaNote: {
+    fontSize: 13,
   },
   footer: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    marginBottom: 14,
+    marginBottom: 16,
     flexWrap: "wrap",
     justifyContent: "center",
   },
   footerLink: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "500",
   },
   footerDot: {
-    fontSize: 12,
+    fontSize: 13,
   },
   legalText: {
-    fontSize: 10,
+    fontSize: 11,
     textAlign: "center",
-    lineHeight: 15,
+    lineHeight: 16,
+    paddingHorizontal: 4,
   },
 });
