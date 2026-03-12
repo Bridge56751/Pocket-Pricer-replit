@@ -28,14 +28,8 @@
       "favicon": "./assets/images/icon.png"
     },
     "plugins": [
-      [
-        "expo-build-properties",
-        {
-          "ios": {
-            "useFrameworks": "static"
-          }
-        }
-      ],
+      "./plugins/withFirebaseStaticFramework",
+      "expo-build-properties",
       [
         "expo-splash-screen",
         {
