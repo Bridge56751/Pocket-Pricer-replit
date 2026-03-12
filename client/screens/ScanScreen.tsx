@@ -288,7 +288,7 @@ export default function ScanScreen() {
       addSearchHistory(historyItem).catch(() => {});
       loadRecentScans();
 
-      if (newScanCount >= 3 && Platform.OS !== "web") {
+      if (newScanCount >= 5 && Platform.OS !== "web") {
         (async () => {
           try {
             const alreadyPrompted = await AsyncStorage.getItem("@pocket_pricer_rating_prompted");

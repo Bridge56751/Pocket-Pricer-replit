@@ -47,7 +47,7 @@ The application is built with a client-server architecture. The frontend is an E
 - **Subscription Model:** Supports a Free Tier (3 scans) and Pro Tier with two plan options: Weekly ($2.99/week) and Monthly ($8.99/month), both with a 3-day free trial. Weekly is pre-selected by default. Monthly shows a "Best Value" badge. Both PaywallScreen and UpgradeModal display a plan selector when multiple packages are available from RevenueCat; falls back to single plan display when only one package exists. Subscriptions are managed via RevenueCat, linking directly to Apple ID / Google Play accounts.
 - **Analytics:** Server-side analytics are logged to an external Supabase database, tracking device activity, scan events, and eBay search events.
 - **Monetization:** Uses RevenueCat for in-app purchases.
-- **App Store Review Prompt:** Triggers after the 3rd successful scan using `expo-store-review`.
+- **App Store Review Prompt:** Triggers after the 5th successful scan using `expo-store-review`.
 
 ## External Dependencies
 
