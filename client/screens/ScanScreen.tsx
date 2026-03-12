@@ -147,7 +147,7 @@ const FREE_SCAN_LIMIT = 3;
 
 export default function ScanScreen() {
   const insets = useSafeAreaInsets();
-  const { theme, colors } = useDesignTokens();
+  const { theme, colors, isDarkMode } = useDesignTokens();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<ScanScreenRouteProp>();
 
@@ -427,11 +427,25 @@ export default function ScanScreen() {
               </LinearGradient>
             </Pressable>
 
-            {!isPro && scansUsed < FREE_SCAN_LIMIT ? (
+            {!isPro ? (
               <View style={styles.scansRemainingContainer}>
-                <Feather name="info" size={14} color={theme.colors.mutedForeground} />
+                <View style={styles.dotsRow}>
+                  {Array.from({ length: FREE_SCAN_LIMIT }).map((_, i) => (
+                    <View
+                      key={i}
+                      style={[
+                        styles.scanDot,
+                        i < FREE_SCAN_LIMIT - scansUsed
+                          ? styles.scanDotActive
+                          : { backgroundColor: isDarkMode ? "#3A3A3C" : "#D1D5DB" },
+                      ]}
+                    />
+                  ))}
+                </View>
                 <Text style={[styles.scansRemainingText, { color: theme.colors.mutedForeground }]}>
-                  {FREE_SCAN_LIMIT - scansUsed} free scan{FREE_SCAN_LIMIT - scansUsed === 1 ? "" : "s"} remaining — then start your 3-day free trial
+                  {scansUsed >= FREE_SCAN_LIMIT
+                    ? "No free scans remaining — start your 3-day free trial"
+                    : `${FREE_SCAN_LIMIT - scansUsed} free scan${FREE_SCAN_LIMIT - scansUsed === 1 ? "" : "s"} remaining`}
                 </Text>
               </View>
             ) : null}
@@ -680,14 +694,26 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   scansRemainingContainer: {
-    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 16,
-    gap: 6,
+    marginTop: 14,
+    gap: 8,
+  },
+  dotsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  scanDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  scanDotActive: {
+    backgroundColor: "#10B981",
   },
   scansRemainingText: {
-    fontSize: 13,
+    fontSize: 12,
   },
   scanOverlay: {
     ...StyleSheet.absoluteFillObject,
