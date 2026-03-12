@@ -16,10 +16,7 @@ import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation, CommonActions } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import Animated, {
-  FadeInUp,
-  FadeInDown,
-} from "react-native-reanimated";
+import Animated, { FadeInUp, FadeInDown } from "react-native-reanimated";
 
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { useRevenueCat } from "@/contexts/RevenueCatContext";
@@ -29,7 +26,7 @@ const PRIVACY_URL = "https://pocket-pricer.com/pocket-pricer-privacy-policy-v5.h
 const TERMS_URL = "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/";
 
 const FEATURES = [
-  { icon: "camera" as const, text: "Unlimited product scans" },
+  { icon: "camera" as const,      text: "Unlimited product scans" },
   { icon: "bar-chart-2" as const, text: "Multi-platform price comparison" },
   { icon: "trending-up" as const, text: "eBay sold data & Buy Score" },
   { icon: "dollar-sign" as const, text: "Instant profit calculator" },
@@ -37,7 +34,7 @@ const FEATURES = [
 
 export default function PaywallScreen() {
   const insets = useSafeAreaInsets();
-  const { theme } = useDesignTokens();
+  const { theme, isDarkMode } = useDesignTokens();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { packages, purchasePackage, restorePurchases, isPro, isReady: rcReady } = useRevenueCat();
 
@@ -46,46 +43,33 @@ export default function PaywallScreen() {
 
   const getPrice = () => {
     if (packages.length > 0) {
-      const monthlyPackage = packages.find(
-        (pkg) => pkg.packageType === "MONTHLY" || pkg.identifier === "$rc_monthly"
-      ) || packages[0];
+      const monthlyPackage =
+        packages.find((pkg) => pkg.packageType === "MONTHLY" || pkg.identifier === "$rc_monthly") ||
+        packages[0];
       return monthlyPackage.product.priceString;
     }
     return "$8.99";
   };
 
   const navigateHome = () => {
-    navigation.dispatch(
-      CommonActions.reset({
-        index: 0,
-        routes: [{ name: "Home" }],
-      })
-    );
+    navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "Home" }] }));
   };
 
   const handleStartTrial = async () => {
     if (Platform.OS === "web") {
-      Alert.alert(
-        "Mobile Only",
-        "Subscriptions are only available in the mobile app. Please use Expo Go on your iOS or Android device to subscribe."
-      );
+      Alert.alert("Mobile Only", "Subscriptions are only available in the mobile app.");
       return;
     }
-
     if (packages.length === 0) {
       Alert.alert("Error", "No subscription packages available. Please try again later.");
       return;
     }
-
     setIsLoading(true);
-
     try {
-      const monthlyPackage = packages.find(
-        (pkg) => pkg.packageType === "MONTHLY" || pkg.identifier === "$rc_monthly"
-      ) || packages[0];
-
+      const monthlyPackage =
+        packages.find((pkg) => pkg.packageType === "MONTHLY" || pkg.identifier === "$rc_monthly") ||
+        packages[0];
       const result = await purchasePackage(monthlyPackage);
-
       if (result.success) {
         navigateHome();
       } else if (result.error && result.error !== "Purchase cancelled") {
@@ -103,16 +87,13 @@ export default function PaywallScreen() {
       Alert.alert("Mobile Only", "Please use the mobile app to restore purchases.");
       return;
     }
-
     setIsRestoring(true);
-
     try {
       const result = await restorePurchases();
-
       if (result.success) {
         navigateHome();
       } else {
-        Alert.alert("No Subscription Found", result.error || "No active subscription found for this account.");
+        Alert.alert("No Subscription Found", result.error || "No active subscription found.");
       }
     } catch (error: any) {
       Alert.alert("Error", error?.message || "Failed to restore purchases.");
@@ -122,158 +103,157 @@ export default function PaywallScreen() {
   };
 
   useEffect(() => {
-    if (isPro) {
-      navigateHome();
-    }
+    if (isPro) navigateHome();
   }, [isPro]);
 
-  const handleBackPress = useCallback(() => {
-    return true;
-  }, []);
+  const handleBackPress = useCallback(() => true, []);
 
   useEffect(() => {
     if (Platform.OS === "android") {
-      const subscription = BackHandler.addEventListener("hardwareBackPress", handleBackPress);
-      return () => subscription.remove();
+      const sub = BackHandler.addEventListener("hardwareBackPress", handleBackPress);
+      return () => sub.remove();
     }
   }, [handleBackPress]);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("beforeRemove", (e: any) => {
-      if (rcReady && !isPro) {
-        e.preventDefault();
-      }
+      if (rcReady && !isPro) e.preventDefault();
     });
     return unsubscribe;
   }, [navigation, isPro, rcReady]);
 
-  if (isPro) {
-    return null;
-  }
+  if (isPro) return null;
+
+  const bgColor = isDarkMode ? "#1A1A1A" : "#F2F2F7";
+  const cardColor = isDarkMode ? "#2C2C2E" : "#FFFFFF";
+  const planCardBg = isDarkMode ? "#1C3A2E" : "#F0FDF8";
+  const featureIconBg = isDarkMode ? "#1C3A2E" : "#F0FDF8";
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <View style={[styles.container, { backgroundColor: bgColor }]}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
-          styles.content,
-          { paddingTop: insets.top + 48, paddingBottom: insets.bottom + 24 },
+          styles.scrollContent,
+          { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 32 },
         ]}
         showsVerticalScrollIndicator={false}
         bounces={false}
       >
-        <Animated.View entering={FadeInUp.delay(100).duration(500)} style={styles.iconRow}>
-          <LinearGradient
-            colors={["#34D399", "#10B981", "#059669"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.iconCircle}
-          >
-            <Feather name="unlock" size={36} color="#fff" />
-          </LinearGradient>
-        </Animated.View>
-
-        <Animated.Text
-          entering={FadeInUp.delay(200).duration(500)}
-          style={[styles.title, { color: theme.colors.foreground }]}
-        >
-          Unlock Pocket Pricer
-        </Animated.Text>
-
-        <Animated.Text
-          entering={FadeInUp.delay(300).duration(500)}
-          style={[styles.subtitle, { color: theme.colors.mutedForeground }]}
-        >
-          Start your free trial to keep scanning
-        </Animated.Text>
-
         <Animated.View
-          entering={FadeInUp.delay(400).duration(500)}
-          style={[styles.trialBadge, { backgroundColor: "#10B98120" }]}
+          entering={FadeInUp.delay(60).duration(480)}
+          style={[styles.card, { backgroundColor: cardColor }]}
         >
-          <Feather name="gift" size={16} color="#10B981" />
-          <Text style={styles.trialBadgeText}>3 days free, then {getPrice()}/month</Text>
-        </Animated.View>
-
-        <Animated.View
-          entering={FadeInUp.delay(500).duration(500)}
-          style={[styles.featuresCard, { backgroundColor: theme.colors.card }]}
-        >
-          {FEATURES.map((feature, index) => (
-            <View key={feature.text} style={styles.featureRow}>
-              <View style={[styles.featureIconCircle, { backgroundColor: "#10B98118" }]}>
-                <Feather name={feature.icon} size={18} color="#10B981" />
-              </View>
-              <Text style={[styles.featureText, { color: theme.colors.foreground }]}>
-                {feature.text}
-              </Text>
-            </View>
-          ))}
-        </Animated.View>
-
-        <Animated.View entering={FadeInDown.delay(600).duration(500)} style={styles.ctaSection}>
-          <Pressable
-            onPress={handleStartTrial}
-            disabled={isLoading || isRestoring}
-            style={({ pressed }) => [styles.ctaPressable, { opacity: pressed ? 0.9 : 1 }]}
-          >
+          {/* Icon */}
+          <View style={styles.iconWrap}>
             <LinearGradient
               colors={["#34D399", "#10B981", "#059669"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={styles.ctaButton}
+              style={styles.iconCircle}
             >
-              {isLoading ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <>
-                  <Text style={styles.ctaButtonText}>Start 3-Day Free Trial</Text>
-                  <Feather name="arrow-right" size={20} color="#fff" />
-                </>
-              )}
+              <Feather name="tag" size={38} color="#fff" />
             </LinearGradient>
-          </Pressable>
+          </View>
 
-          <Text style={[styles.ctaSubtext, { color: theme.colors.mutedForeground }]}>
-            Cancel anytime. No charge until trial ends.
+          {/* Title & subtitle */}
+          <Text style={[styles.title, { color: theme.colors.foreground }]}>
+            Unlock Pocket Pricer Pro
+          </Text>
+          <Text style={[styles.subtitle, { color: theme.colors.mutedForeground }]}>
+            See exactly what your items sell for — unlimited scans, real sold data, instant profit math.
           </Text>
 
-          <Pressable
-            onPress={handleRestore}
-            disabled={isLoading || isRestoring}
-            style={styles.restoreButton}
-          >
-            {isRestoring ? (
-              <ActivityIndicator size="small" color={theme.colors.primary} />
-            ) : (
-              <Text style={[styles.restoreText, { color: theme.colors.primary }]}>
-                Restore Purchase
-              </Text>
-            )}
-          </Pressable>
-        </Animated.View>
+          {/* Features */}
+          <View style={styles.featuresList}>
+            {FEATURES.map((f) => (
+              <View key={f.text} style={styles.featureRow}>
+                <View style={[styles.featureIconCircle, { backgroundColor: featureIconBg }]}>
+                  <Feather name={f.icon} size={17} color="#10B981" />
+                </View>
+                <Text style={[styles.featureText, { color: theme.colors.foreground }]}>
+                  {f.text}
+                </Text>
+              </View>
+            ))}
+          </View>
 
-        <View style={styles.legalSection}>
-          <Text style={[styles.disclosureText, { color: theme.colors.mutedForeground }]}>
-            Payment will be charged to your Apple ID account at the end of the free trial period. Subscription automatically renews unless canceled at least 24 hours before the end of the current period. Manage or cancel in Settings {"\u2192"} Apple ID {"\u2192"} Subscriptions.
-          </Text>
-
-          <View style={styles.legalLinks}>
-            <Pressable onPress={() => Linking.openURL(PRIVACY_URL)}>
-              <Text style={[styles.legalLinkText, { color: theme.colors.mutedForeground }]}>
-                Privacy Policy
+          {/* Plan card */}
+          <View style={[styles.planCard, { backgroundColor: planCardBg, borderColor: "#10B981" }]}>
+            <View style={styles.planLeft}>
+              <Text style={[styles.planName, { color: theme.colors.foreground }]}>
+                3-Day Free Trial
               </Text>
+              <Text style={[styles.planPrice, { color: theme.colors.mutedForeground }]}>
+                then {getPrice()}/month
+              </Text>
+            </View>
+            <View style={styles.planCheck}>
+              <Feather name="check-circle" size={24} color="#10B981" />
+            </View>
+          </View>
+
+          {/* CTA */}
+          <Animated.View entering={FadeInDown.delay(300).duration(480)} style={styles.ctaWrap}>
+            <Pressable
+              onPress={handleStartTrial}
+              disabled={isLoading || isRestoring}
+              style={({ pressed }) => [{ opacity: pressed ? 0.88 : 1, width: "100%" }]}
+            >
+              <LinearGradient
+                colors={["#34D399", "#10B981", "#059669"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.ctaButton}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <>
+                    <Text style={styles.ctaButtonText}>Start Free Trial</Text>
+                    <Feather name="arrow-right" size={20} color="#fff" />
+                  </>
+                )}
+              </LinearGradient>
             </Pressable>
-            <Text style={[styles.legalSeparator, { color: theme.colors.mutedForeground }]}>
-              {" | "}
+
+            <Text style={[styles.ctaNote, { color: theme.colors.mutedForeground }]}>
+              No charge until trial ends. Cancel anytime.
             </Text>
+          </Animated.View>
+
+          {/* Footer */}
+          <View style={styles.footer}>
+            <Pressable onPress={handleRestore} disabled={isLoading || isRestoring}>
+              {isRestoring ? (
+                <ActivityIndicator size="small" color="#10B981" />
+              ) : (
+                <Text style={[styles.footerLink, { color: theme.colors.mutedForeground }]}>
+                  Restore Purchase
+                </Text>
+              )}
+            </Pressable>
+            <Text style={[styles.footerDot, { color: theme.colors.mutedForeground }]}>·</Text>
             <Pressable onPress={() => Linking.openURL(TERMS_URL)}>
-              <Text style={[styles.legalLinkText, { color: theme.colors.mutedForeground }]}>
+              <Text style={[styles.footerLink, { color: theme.colors.mutedForeground }]}>
                 Terms of Use
               </Text>
             </Pressable>
+            <Text style={[styles.footerDot, { color: theme.colors.mutedForeground }]}>·</Text>
+            <Pressable onPress={() => Linking.openURL(PRIVACY_URL)}>
+              <Text style={[styles.footerLink, { color: theme.colors.mutedForeground }]}>
+                Privacy Policy
+              </Text>
+            </Pressable>
           </View>
-        </View>
+
+          {/* Legal disclosure */}
+          <Text style={[styles.legalText, { color: theme.colors.mutedForeground }]}>
+            Payment charged to your Apple ID at the end of the free trial. Subscription automatically
+            renews unless canceled at least 24 hours before the end of the current period. Manage or
+            cancel in Settings → Apple ID → Subscriptions.
+          </Text>
+        </Animated.View>
       </ScrollView>
     </View>
   );
@@ -286,51 +266,55 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
-  content: {
+  scrollContent: {
+    paddingHorizontal: 20,
     alignItems: "center",
-    paddingHorizontal: 24,
   },
-  iconRow: {
+  card: {
+    width: "100%",
+    borderRadius: 28,
+    paddingHorizontal: 24,
+    paddingTop: 36,
+    paddingBottom: 28,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10,
+    shadowRadius: 20,
+    elevation: 8,
+  },
+  iconWrap: {
     marginBottom: 24,
   },
   iconCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 84,
+    height: 84,
+    borderRadius: 42,
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: "#10B981",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 6,
   },
   title: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: "800",
     textAlign: "center",
-    marginBottom: 8,
+    marginBottom: 10,
+    letterSpacing: -0.3,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 15,
     textAlign: "center",
-    marginBottom: 20,
-  },
-  trialBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
+    lineHeight: 22,
     marginBottom: 28,
   },
-  trialBadgeText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#10B981",
-  },
-  featuresCard: {
+  featuresList: {
     width: "100%",
-    borderRadius: 16,
-    padding: 20,
-    gap: 16,
-    marginBottom: 32,
+    gap: 14,
+    marginBottom: 24,
   },
   featureRow: {
     flexDirection: "row",
@@ -338,9 +322,9 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   featureIconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -349,13 +333,34 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     flex: 1,
   },
-  ctaSection: {
+  planCard: {
     width: "100%",
+    flexDirection: "row",
     alignItems: "center",
+    borderRadius: 16,
+    borderWidth: 2,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
     marginBottom: 24,
   },
-  ctaPressable: {
+  planLeft: {
+    flex: 1,
+  },
+  planName: {
+    fontSize: 17,
+    fontWeight: "700",
+    marginBottom: 3,
+  },
+  planPrice: {
+    fontSize: 14,
+  },
+  planCheck: {
+    marginLeft: 12,
+  },
+  ctaWrap: {
     width: "100%",
+    alignItems: "center",
+    marginBottom: 20,
   },
   ctaButton: {
     flexDirection: "row",
@@ -365,42 +370,40 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     gap: 8,
     width: "100%",
+    shadowColor: "#10B981",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 5,
   },
   ctaButtonText: {
     color: "#fff",
     fontSize: 18,
     fontWeight: "700",
   },
-  ctaSubtext: {
+  ctaNote: {
     fontSize: 13,
     marginTop: 10,
+  },
+  footer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
     marginBottom: 16,
+    flexWrap: "wrap",
+    justifyContent: "center",
   },
-  restoreButton: {
-    paddingVertical: 8,
-  },
-  restoreText: {
-    fontSize: 15,
+  footerLink: {
+    fontSize: 13,
     fontWeight: "500",
   },
-  legalSection: {
-    alignItems: "center",
-    paddingHorizontal: 8,
+  footerDot: {
+    fontSize: 13,
   },
-  disclosureText: {
+  legalText: {
     fontSize: 11,
     textAlign: "center",
     lineHeight: 16,
-    marginBottom: 12,
-  },
-  legalLinks: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  legalLinkText: {
-    fontSize: 12,
-  },
-  legalSeparator: {
-    fontSize: 12,
+    paddingHorizontal: 4,
   },
 });
