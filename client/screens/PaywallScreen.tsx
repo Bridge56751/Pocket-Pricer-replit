@@ -26,10 +26,10 @@ const PRIVACY_URL = "https://pocket-pricer.com/pocket-pricer-privacy-policy-v5.h
 const TERMS_URL = "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/";
 
 const FEATURES = [
-  { icon: "camera" as const,      text: "Unlimited product scans",                      color: "#10B981" },
-  { icon: "trending-up" as const, text: "Sold prices — see what items actually sell for", color: "#3B82F6" },
-  { icon: "bar-chart-2" as const, text: "Buy Score — instant demand & profit rating",     color: "#8B5CF6" },
-  { icon: "dollar-sign" as const, text: "Unlimited price comparisons",                    color: "#F59E0B" },
+  { icon: "camera" as const,      text: "Unlimited product scans",                       color: "#10B981" },
+  { icon: "trending-up" as const, text: "Sold prices — see what items actually sell for", color: "#10B981" },
+  { icon: "bar-chart-2" as const, text: "Buy Score — instant demand & profit rating",     color: "#10B981" },
+  { icon: "dollar-sign" as const, text: "Unlimited price comparisons",                    color: "#10B981" },
 ];
 
 export default function PaywallScreen() {
