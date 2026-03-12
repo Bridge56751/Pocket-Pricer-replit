@@ -19,10 +19,10 @@ const PRIVACY_URL = "https://pocket-pricer.com/pocket-pricer-privacy-policy-v5.h
 const TERMS_URL = "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/";
 
 const FEATURES = [
-  { icon: "camera" as const,      text: "Unlimited product scans" },
-  { icon: "trending-up" as const, text: "Sold prices — see what items actually sell for" },
-  { icon: "bar-chart-2" as const, text: "Buy Score — instant demand & profit rating" },
-  { icon: "dollar-sign" as const, text: "Unlimited price comparisons" },
+  { icon: "camera" as const,      text: "Unlimited product scans",                       color: "#10B981" },
+  { icon: "trending-up" as const, text: "Sold prices — see what items actually sell for", color: "#3B82F6" },
+  { icon: "bar-chart-2" as const, text: "Buy Score — instant demand & profit rating",     color: "#8B5CF6" },
+  { icon: "dollar-sign" as const, text: "Unlimited price comparisons",                    color: "#F59E0B" },
 ];
 
 const FREE_SCAN_LIMIT = 3;
@@ -168,9 +168,18 @@ export default function UpgradeModal({ visible, onClose, scansUsed = 0 }: Upgrad
           {/* Features */}
           <View style={styles.featuresList}>
             {FEATURES.map((f) => (
-              <View key={f.text} style={styles.featureRow}>
-                <View style={[styles.featureIconCircle, { backgroundColor: featureIconBg }]}>
-                  <Feather name={f.icon} size={15} color="#10B981" />
+              <View
+                key={f.text}
+                style={[
+                  styles.featureRow,
+                  {
+                    backgroundColor: isDarkMode ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.02)",
+                    borderColor: isDarkMode ? "rgba(16,185,129,0.25)" : "rgba(16,185,129,0.3)",
+                  },
+                ]}
+              >
+                <View style={[styles.featureIconCircle, { backgroundColor: f.color + "22" }]}>
+                  <Feather name={f.icon} size={15} color={f.color} />
                 </View>
                 <Text style={[styles.featureText, { color: theme.colors.foreground }]}>
                   {f.text}
@@ -388,6 +397,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
   },
   featureIconCircle: {
     width: 34,
