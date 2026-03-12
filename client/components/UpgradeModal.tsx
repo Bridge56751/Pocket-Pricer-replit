@@ -36,8 +36,6 @@ export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
 
   const [isLoading, setIsLoading] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<"weekly" | "monthly">("weekly");
-
   const weeklyPkg = packages.find(
     (pkg) => pkg.packageType === "WEEKLY" || pkg.identifier === "$rc_weekly"
   );
@@ -45,10 +43,20 @@ export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
     (pkg) => pkg.packageType === "MONTHLY" || pkg.identifier === "$rc_monthly"
   );
   const hasMultiplePlans = !!(weeklyPkg && monthlyPkg);
-  const activePkg = selectedPlan === "weekly" && weeklyPkg ? weeklyPkg : monthlyPkg || packages[0];
+  const defaultPlan = weeklyPkg ? "weekly" : "monthly";
+  const [selectedPlan, setSelectedPlan] = useState<"weekly" | "monthly">(defaultPlan);
+
+  const activePkg =
+    selectedPlan === "weekly" && weeklyPkg
+      ? weeklyPkg
+      : monthlyPkg || weeklyPkg || packages[0];
 
   const getSelectedPrice = () => activePkg?.product.priceString ?? "$8.99";
-  const getSelectedPeriod = () => (selectedPlan === "weekly" && weeklyPkg ? "week" : "month");
+  const getSelectedPeriod = () => {
+    if (!activePkg) return "month";
+    if (activePkg === weeklyPkg) return "week";
+    return "month";
+  };
 
   const handleUpgrade = async () => {
     if (Platform.OS === "web") {
@@ -193,7 +201,7 @@ export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
                 <Text style={[styles.planPrice, { color: theme.colors.mutedForeground }]}>
                   {hasMultiplePlans
                     ? `3-day free trial, then ${monthlyPkg?.product.priceString ?? "$8.99"}/month`
-                    : `then ${getSelectedPrice()}/month`}
+                    : `then ${getSelectedPrice()}/${getSelectedPeriod()}`}
                 </Text>
               </View>
               {(!hasMultiplePlans || selectedPlan === "monthly") ? (
@@ -220,7 +228,9 @@ export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
                 <>
-                  <Text style={styles.ctaButtonText}>Start Free Trial</Text>
+                  <Text style={styles.ctaButtonText}>
+                    Start Free Trial — {getSelectedPrice()}/{getSelectedPeriod()}
+                  </Text>
                   <Feather name="arrow-right" size={18} color="#fff" />
                 </>
               )}
