@@ -284,12 +284,11 @@ export default function ScanScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       navigation.navigate("SearchResults", { results: enrichedResults });
 
-      incrementScans().catch(() => {});
+      const newScanCount = await incrementScans().catch(() => 0);
       addSearchHistory(historyItem).catch(() => {});
       loadRecentScans();
 
-      const dbScanCount = results.totalScans || 0;
-      if (dbScanCount >= 3 && Platform.OS !== "web") {
+      if (newScanCount >= 3 && Platform.OS !== "web") {
         (async () => {
           try {
             const alreadyPrompted = await AsyncStorage.getItem("@pocket_pricer_rating_prompted");
