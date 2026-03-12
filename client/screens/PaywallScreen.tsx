@@ -40,7 +40,7 @@ export default function PaywallScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useDesignTokens();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { packages, purchasePackage, restorePurchases, isPro } = useRevenueCat();
+  const { packages, purchasePackage, restorePurchases, isPro, isReady: rcReady } = useRevenueCat();
 
   const [isLoading, setIsLoading] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
@@ -141,12 +141,12 @@ export default function PaywallScreen() {
 
   useEffect(() => {
     const unsubscribe = navigation.addListener("beforeRemove", (e: any) => {
-      if (!isPro) {
+      if (rcReady && !isPro) {
         e.preventDefault();
       }
     });
     return unsubscribe;
-  }, [navigation, isPro]);
+  }, [navigation, isPro, rcReady]);
 
   if (isPro) {
     return null;

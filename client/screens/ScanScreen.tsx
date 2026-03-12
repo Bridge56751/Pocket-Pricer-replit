@@ -152,7 +152,7 @@ export default function ScanScreen() {
   const route = useRoute<ScanScreenRouteProp>();
 
   const { getDeviceId, getScansUsed, incrementScans } = useAuth();
-  const { isPro } = useRevenueCat();
+  const { isPro, isReady: rcReady } = useRevenueCat();
   
   const [recentScans, setRecentScans] = useState<SearchHistoryItem[]>([]);
   const [scansUsed, setScansUsed] = useState(0);
@@ -331,20 +331,32 @@ export default function ScanScreen() {
     }
   }, [route.params?.photosToProcess, processPhotos, navigation]);
 
+  const checkAndNavigate = useCallback(async () => {
+    if (!rcReady) return;
+    const count = await getScansUsed();
+    setScansUsed(count);
+    if (!isPro && count >= FREE_SCAN_LIMIT) {
+      navigation.navigate("Paywall");
+    } else if (!isPro && count === 0 && !hasAutoOpenedCamera.current && !processingRef.current) {
+      hasAutoOpenedCamera.current = true;
+      navigation.navigate("CameraScan");
+    }
+  }, [rcReady, isPro, getScansUsed, navigation]);
+
   useFocusEffect(
     useCallback(() => {
       loadRecentScans();
-      getScansUsed().then((count) => {
-        setScansUsed(count);
-        if (!isPro && count >= FREE_SCAN_LIMIT) {
-          navigation.navigate("Paywall");
-        } else if (!isPro && count === 0 && !hasAutoOpenedCamera.current && !processingRef.current) {
-          hasAutoOpenedCamera.current = true;
-          navigation.navigate("CameraScan");
-        }
-      });
-    }, [loadRecentScans, getScansUsed, isPro, navigation])
+      checkAndNavigate();
+    }, [loadRecentScans, checkAndNavigate])
   );
+
+  const rcReadyRef = useRef(false);
+  useEffect(() => {
+    if (rcReady && !rcReadyRef.current) {
+      rcReadyRef.current = true;
+      checkAndNavigate();
+    }
+  }, [rcReady, checkAndNavigate]);
 
   const handleScanProduct = async () => {
     if (!isPro) {
