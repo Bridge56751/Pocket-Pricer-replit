@@ -7,6 +7,7 @@ import * as Linking from "expo-linking";
 import RootStackNavigator from "@/navigation/RootStackNavigator";
 import OnboardingScreen, { checkOnboardingComplete } from "@/screens/OnboardingScreen";
 import { useDesignTokens } from "@/hooks/useDesignTokens";
+import { useRevenueCat } from "@/contexts/RevenueCatContext";
 
 let _triggerReplay: (() => void) | null = null;
 export function triggerOnboardingReplay() {
@@ -15,6 +16,7 @@ export function triggerOnboardingReplay() {
 
 export function AppContent() {
   const { isDarkMode, theme } = useDesignTokens();
+  const { isPro, isReady: rcReady } = useRevenueCat();
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
   const [isOnboardingReplay, setIsOnboardingReplay] = useState(false);
   const hasCompletedOnboardingOnce = React.useRef(false);
@@ -31,6 +33,12 @@ export function AppContent() {
     };
     return () => { _triggerReplay = null; };
   }, []);
+
+  useEffect(() => {
+    if (rcReady && isPro && !isOnboardingReplay) {
+      setShowOnboarding(false);
+    }
+  }, [rcReady, isPro, isOnboardingReplay]);
 
   const handleOnboardingComplete = () => {
     setShowOnboarding(false);
