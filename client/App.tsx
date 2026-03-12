@@ -72,7 +72,19 @@ export default function App() {
       }
     };
 
+    const initFirebaseAnalytics = async () => {
+      if (Platform.OS === "web") return;
+      try {
+        const analytics = await import("@react-native-firebase/analytics");
+        await analytics.default().logAppOpen();
+        console.log("Firebase Analytics initialized");
+      } catch (firebaseError) {
+        console.log("Firebase Analytics init failed:", firebaseError);
+      }
+    };
+
     initFacebookSDK();
+    initFirebaseAnalytics();
   }, []);
 
   if (!fontsLoaded && !fontError) {

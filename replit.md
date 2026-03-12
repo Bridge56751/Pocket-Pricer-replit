@@ -200,7 +200,11 @@ Server-side analytics are logged to an external Supabase database. No client cha
   - Uses native App Store / Google Play review dialog
   - One-time prompt — flag set before requesting so it never repeats
   - Skipped on web; gracefully handles unsupported platforms
-- **Mar 2026**: Removed AppsFlyer SDK (react-native-appsflyer) — SDK never successfully initialized. Will integrate Firebase Analytics instead.
+- **Mar 2026**: Integrated Firebase Analytics (@react-native-firebase/app + @react-native-firebase/analytics v23.x)
+  - GoogleService-Info.plist placed at project root, referenced in app.json plugin config
+  - Logs `app_open` event on launch
+  - Runs independently of Facebook SDK in its own try/catch block
+  - Removed AppsFlyer SDK (react-native-appsflyer) — SDK never successfully initialized
 - **Mar 2026**: Migrated `guest_scans` table from Replit PostgreSQL to Supabase
   - All database activity now lives in Supabase (analytics + scan tracking)
   - `server/db.ts` rewritten to use Supabase REST API instead of raw `pg` Pool

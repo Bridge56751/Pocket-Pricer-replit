@@ -53,6 +53,14 @@
         }
       ],
       [
+        "@react-native-firebase/app",
+        {
+          "ios": {
+            "googleServicesFile": "./GoogleService-Info.plist"
+          }
+        }
+      ],
+      [
         "react-native-fbsdk-next",
         {
           "appID": "901142736144530",
