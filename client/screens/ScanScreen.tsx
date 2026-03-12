@@ -26,7 +26,6 @@ import { apiRequest, getApiUrl } from "@/lib/query-client";
 import { storeImage } from "@/lib/image-store";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRevenueCat } from "@/contexts/RevenueCatContext";
-import UpgradeModal from "@/components/UpgradeModal";
 import type { SearchHistoryItem } from "@/types/product";
 import type { RootStackParamList, CapturedPhoto } from "@/navigation/RootStackNavigator";
 
@@ -144,6 +143,8 @@ function formatTimeAgo(dateString: string): string {
   return `${diffDays} days ago`;
 }
 
+const FREE_SCAN_LIMIT = 1;
+
 export default function ScanScreen() {
   const insets = useSafeAreaInsets();
   const { theme, colors } = useDesignTokens();
@@ -160,10 +161,10 @@ export default function ScanScreen() {
   const [analyzingProgress, setAnalyzingProgress] = useState("");
   const [analyzingCount, setAnalyzingCount] = useState({ current: 0, total: 0 });
   const [currentStep, setCurrentStep] = useState(0);
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [scannedPhotoUri, setScannedPhotoUri] = useState<string | null>(null);
   const processingRef = useRef(false);
+  const hasAutoOpenedCamera = useRef(false);
 
   const loadRecentScans = useCallback(async () => {
     setIsLoading(true);
@@ -189,11 +190,11 @@ export default function ScanScreen() {
     try {
       if (!isPro) {
         const scansUsed = await getScansUsed();
-        if (scansUsed >= 5) {
+        if (scansUsed >= FREE_SCAN_LIMIT) {
           setIsAnalyzing(false);
           setAnalyzingProgress("");
           processingRef.current = false;
-          setShowUpgradeModal(true);
+          navigation.navigate("Paywall");
           return;
         }
       }
@@ -228,7 +229,7 @@ export default function ScanScreen() {
             setIsAnalyzing(false);
             setAnalyzingProgress("");
             processingRef.current = false;
-            setShowUpgradeModal(true);
+            navigation.navigate("Paywall");
             return;
           }
         }
@@ -333,15 +334,23 @@ export default function ScanScreen() {
   useFocusEffect(
     useCallback(() => {
       loadRecentScans();
-      getScansUsed().then(setScansUsed);
-    }, [loadRecentScans, getScansUsed])
+      getScansUsed().then((count) => {
+        setScansUsed(count);
+        if (!isPro && count >= FREE_SCAN_LIMIT) {
+          navigation.navigate("Paywall");
+        } else if (!isPro && count === 0 && !hasAutoOpenedCamera.current && !processingRef.current) {
+          hasAutoOpenedCamera.current = true;
+          navigation.navigate("CameraScan");
+        }
+      });
+    }, [loadRecentScans, getScansUsed, isPro, navigation])
   );
 
   const handleScanProduct = async () => {
     if (!isPro) {
       const scansUsed = await getScansUsed();
-      if (scansUsed >= 5) {
-        setShowUpgradeModal(true);
+      if (scansUsed >= FREE_SCAN_LIMIT) {
+        navigation.navigate("Paywall");
         return;
       }
     }
@@ -411,25 +420,11 @@ export default function ScanScreen() {
               </LinearGradient>
             </Pressable>
 
-            {!isPro ? (
+            {!isPro && scansUsed === 0 ? (
               <View style={styles.scansRemainingContainer}>
-                <View style={styles.scanDots}>
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <View
-                      key={i}
-                      style={[
-                        styles.scanDot,
-                        {
-                          backgroundColor: i < (5 - scansUsed)
-                            ? theme.colors.primary
-                            : theme.colors.muted,
-                        },
-                      ]}
-                    />
-                  ))}
-                </View>
+                <Feather name="info" size={14} color={theme.colors.mutedForeground} />
                 <Text style={[styles.scansRemainingText, { color: theme.colors.mutedForeground }]}>
-                  {Math.max(0, 5 - scansUsed)} free scans remaining
+                  1 free scan — then start your 3-day free trial
                 </Text>
               </View>
             ) : null}
@@ -518,11 +513,6 @@ export default function ScanScreen() {
         )}
       </ScrollView>
       
-      <UpgradeModal 
-        visible={showUpgradeModal} 
-        onClose={() => setShowUpgradeModal(false)} 
-      />
-
       {isAnalyzing ? (
         <View style={[styles.scanOverlay, { backgroundColor: theme.colors.background }]}>
           <View style={{ paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20, flex: 1, paddingHorizontal: 24 }}>
@@ -683,18 +673,11 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   scansRemainingContainer: {
-    alignItems: "center",
-    marginTop: 16,
-    gap: 8,
-  },
-  scanDots: {
     flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 16,
     gap: 6,
-  },
-  scanDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
   },
   scansRemainingText: {
     fontSize: 13,

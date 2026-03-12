@@ -10,6 +10,7 @@ import HistoryScreen from "@/screens/HistoryScreen";
 import FavoritesScreen from "@/screens/FavoritesScreen";
 import ProfileScreen from "@/screens/ProfileScreen";
 import SearchResultsScreen from "@/screens/SearchResultsScreen";
+import PaywallScreen from "@/screens/PaywallScreen";
 import { useScreenOptions } from "@/hooks/useScreenOptions";
 import { HeaderTitle } from "@/components/HeaderTitle";
 import { useTheme } from "@/hooks/useTheme";
@@ -55,6 +56,7 @@ export interface CapturedPhoto {
 export type RootStackParamList = {
   Home: { photosToProcess?: CapturedPhoto[]; prefillQuery?: string } | undefined;
   CameraScan: undefined;
+  Paywall: undefined;
   History: undefined;
   Favorites: undefined;
   Settings: undefined;
@@ -131,6 +133,11 @@ export default function RootStackNavigator() {
           headerTitle: "Scan Result",
           headerLeft: () => renderBackButton(navigation),
         })}
+      />
+      <Stack.Screen
+        name="Paywall"
+        component={PaywallScreen}
+        options={{ headerShown: false, gestureEnabled: false }}
       />
     </Stack.Navigator>
   );

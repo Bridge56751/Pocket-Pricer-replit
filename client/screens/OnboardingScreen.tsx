@@ -162,7 +162,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
         >
           <Feather name="gift" size={14} color={theme.colors.primary} />
           <Text style={[styles.freeTagText, { color: theme.colors.primary }]}>
-            5 free scans to start
+            Try free for 3 days
           </Text>
         </Animated.View>
       </View>

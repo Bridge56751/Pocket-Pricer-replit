@@ -1,261 +1,80 @@
 # Pocket Pricer
 
-An Expo React Native mobile app that helps resellers discover product values by scanning items with Google Lens visual matching and searching across multiple platforms.
-
 ## Overview
 
-This app allows resellers to:
-- Scan products with camera using Google Lens visual matching (exact product identification)
-- Search across Amazon, Walmart, Target, eBay, and more platforms
-- View current prices from live multi-platform data
-- Calculate estimated profit based on their costs (includes ~13% estimated fees)
-- Save favorite products for later
-- Track search and scan history
+Pocket Pricer is an Expo React Native mobile application designed for resellers. It facilitates product value discovery by allowing users to scan items using Google Lens for visual matching and then search for prices across multiple e-commerce platforms like Amazon, Walmart, Target, and eBay. The app aims to streamline the reselling process by providing real-time pricing data, profit calculation tools, and historical tracking without requiring user accounts.
 
-**No account required** - the app works immediately without registration. Subscriptions are tied to Apple ID / Google Play account via RevenueCat.
+**Key Capabilities:**
+- **Product Identification:** Utilizes Google Lens for exact product identification via camera scans.
+- **Multi-Platform Price Comparison:** Gathers current prices from major online retailers.
+- **Profit Calculation:** Estimates profit margins based on user-input costs and automatically calculated selling fees (~13%).
+- **Historical Tracking:** Saves favorite products and maintains a search/scan history locally.
+- **No Account Required:** Operates without user registration, with subscriptions managed via Apple ID / Google Play accounts.
 
-**Current version**: 1.3.1 / build 54
+The business vision is to empower resellers with immediate, comprehensive market data, enhancing their efficiency and profitability.
 
-## Tech Stack
+## User Preferences
 
-- **Frontend**: Expo React Native with TypeScript
-- **Backend**: Express.js with TypeScript
-- **Database**: Supabase PostgreSQL (via REST API) - guest scan tracking + analytics
-- **Payments**: RevenueCat for iOS/Android in-app purchases ($8.99/month Pro subscription)
-- **Product Identification**: Google Lens (via SearchAPI.io) for visual product matching
-- **Product Data**: SearchAPI.io (Google Lens for multi-platform results)
-- **State Management**: TanStack React Query
-- **Local Storage**: AsyncStorage for history, favorites, scan counts, and device ID
-- **Navigation**: React Navigation (bottom tabs + native stack)
-- **Styling**: Custom design tokens system with dark theme
+- I prefer clear and concise communication.
+- I appreciate detailed explanations when new features or complex logic are introduced.
+- I expect iterative development with frequent, small updates rather than large, infrequent ones.
+- Please ask for confirmation before making any significant architectural changes or adding new external dependencies.
+- Ensure the application's core functionality remains stable throughout development.
+- I prefer to be informed about any potential performance impacts of new features.
 
-## Environment Variables
+## System Architecture
 
-- `SEARCHAPI_API_KEY` - Required for Google Lens search (get from https://searchapi.io)
-- `SUPABASE_URL` — Supabase project URL
-- `SUPABASE_SERVICE_ROLE_KEY` — Supabase service role secret key
-- `SUPABASE_DB_URL` — Supabase PostgreSQL pooler connection string (for future direct DB use)
-- `REVENUECAT_API_KEY` - RevenueCat public API key for in-app purchases
-- `EXPO_PUBLIC_REVENUECAT_API_KEY` - Same key, exposed to frontend
+The application is built with a client-server architecture. The frontend is an Expo React Native application using TypeScript, while the backend is an Express.js server also written in TypeScript. Supabase PostgreSQL serves as the primary database for guest scan tracking and analytics.
 
-## Project Structure
+**UI/UX Decisions:**
+- **Design System:** A custom design tokens system (`client/constants/design-tokens.ts`) is implemented for consistent styling, including colors (primary emerald green), typography, spacing, border radii, and component styles. This system supports a dark theme.
+- **User Flow:** Features an onboarding screen for first-time users. The main navigation uses bottom tabs and native stacks.
+- **Subscription UI:** A non-dismissible paywall screen appears after the first free scan, offering a 3-day free trial for the Pro subscription.
+- **Loading States:** Polished scan loading overlay with multi-step progress indicators ("Uploading image...", "Matching product...", "Finding best prices...") and animations.
 
-```
-client/
-├── App.tsx                    # App entry point with providers
-├── components/                # Reusable UI components
-│   ├── Button.tsx
-│   ├── Card.tsx
-│   ├── EmptyState.tsx
-│   ├── HeaderTitle.tsx
-│   ├── ProfitBadge.tsx
-│   ├── ProfitBreakdown.tsx
-│   ├── ProductCard.tsx
-│   ├── SearchBar.tsx
-│   ├── SkeletonLoader.tsx
-│   └── UpgradeModal.tsx       # Pro subscription upgrade modal
-├── constants/
-│   └── design-tokens.ts       # Unified design system (colors, spacing, typography, components)
-├── hooks/
-│   ├── useDesignTokens.ts     # Hook for accessing design tokens
-│   ├── useTheme.ts            # Theme hook
-│   └── useScreenOptions.ts    # Navigation screen options
-├── lib/
-│   ├── query-client.ts        # React Query + API utilities
-│   └── storage.ts             # AsyncStorage helpers (local-only)
-├── navigation/
-│   ├── RootStackNavigator.tsx # Main navigation
-│   ├── MainTabNavigator.tsx   # Bottom tab bar
-│   └── *StackNavigator.tsx    # Individual tab stacks
-├── screens/
-│   ├── OnboardingScreen.tsx   # First-launch tutorial (4 slides)
-│   ├── ScanScreen.tsx         # Product search (home)
-│   ├── CameraScanScreen.tsx   # AI camera scanning
-│   ├── HistoryScreen.tsx      # Search history (local)
-│   ├── FavoritesScreen.tsx    # Saved products (local)
-│   ├── ProfileScreen.tsx      # Settings & subscription
-│   └── ProductDetailScreen.tsx # Product profit breakdown
-├── contexts/
-│   ├── AuthContext.tsx        # Device ID and scan count management (no accounts)
-│   └── RevenueCatContext.tsx  # In-app purchase management
-└── types/
-    └── product.ts             # TypeScript types
+**Technical Implementations & Feature Specifications:**
+- **State Management:** TanStack React Query handles data fetching and caching.
+- **Local Storage:** AsyncStorage is used for storing history, favorites, scan counts, and device IDs client-side.
+- **Navigation:** React Navigation is used for managing app navigation.
+- **Product Scanning:**
+    - The `POST /api/scan-with-lens` endpoint processes base64 encoded images to identify products using Google Lens via SearchAPI.io.
+    - Free users are limited to 5 lifetime scans, tracked by device ID in the `guest_scans` table.
+- **eBay Sold Search:**
+    - The `POST /api/ebay-sold-search` endpoint fetches eBay sold item data using SearchAPI.io, providing average, median, high, and low sold prices, total sold count, and individual listing details.
+    - Includes a "Buy Score" (0-100) based on profit potential and demand (avgSoldPerMonth).
+    - Features advanced query cleaning and broad search fallbacks if initial specific searches yield no results.
+- **Rate Limiting:** Per-device rate limiting (20 requests/minute) is implemented on API endpoints using an in-memory sliding window.
+- **Subscription Model:** Supports a Free Tier (1 scan) and a Pro Tier ($8.99/month for unlimited scans with a 3-day free trial). Subscriptions are managed via RevenueCat, linking directly to Apple ID / Google Play accounts.
+- **Analytics:** Server-side analytics are logged to an external Supabase database, tracking device activity, scan events, and eBay search events.
+- **Monetization:** Uses RevenueCat for in-app purchases.
+- **App Store Review Prompt:** Triggers after the 3rd successful scan using `expo-store-review`.
 
-server/
-├── index.ts                   # Express server setup
-├── routes.ts                  # API endpoints (scan-with-lens)
-├── db.ts                      # PostgreSQL connection
-└── templates/                 # Landing page
-```
+## External Dependencies
 
-## Design System
-
-The app uses a custom design tokens system (`client/constants/design-tokens.ts`) that provides:
-
-- **Colors**: Primary (emerald green), danger, success, background variants
-- **Typography**: Display, h1-h4, body, small, caption
-- **Spacing**: xs to 5xl scale
-- **Border Radius**: xs to full
-- **Component Styles**: Pre-built styles for cards, buttons, badges, inputs
-
-### Usage
-
-```typescript
-import { useDesignTokens } from "@/hooks/useDesignTokens";
-import { colors } from "@/constants/design-tokens";
-
-function MyComponent() {
-  const { theme, isDarkMode } = useDesignTokens();
-  
-  return (
-    <View style={{ backgroundColor: theme.colors.background }}>
-      <View style={theme.components.card}>
-        <TouchableOpacity style={theme.components.button.primary}>
-          <Text style={{ color: colors.light.primaryForeground }}>Scan</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-}
-```
-
-## API Endpoints
-
-### Product Scan
-- `POST /api/scan-with-lens` - Scan a product image using Google Lens
-  - Body: `{ imageBase64: string }` (base64 encoded image)
-  - Headers:
-    - `X-Device-Id: <device-uuid>` - Unique device identifier
-    - `X-Is-Pro: "true"|"false"` - Whether user has Pro subscription
-  - Returns: Product identification with multi-platform pricing data
-  - Free users limited to 5 lifetime scans (tracked by device ID in guest_scans table)
-
-### eBay Sold Search (Advanced Search)
-- `POST /api/ebay-sold-search` - Fetch eBay sold/completed item data
-  - Body: `{ searchQuery: string }` (product name from scan results)
-  - Headers: Same as scan (X-Device-Id, X-Is-Pro)
-  - Returns: `EbaySoldData` with avgSoldPrice, medianSoldPrice, lowPrice, highPrice, totalSold, items[]
-  - Uses SearchAPI.io `ebay_search` engine with `show_only=sold_items` filter
-  - Does NOT count as a scan (no scan increment)
-
-## Running the App
-
-The app runs on two workflows:
-- **Start Backend**: Express server on port 5000
-- **Start Frontend**: Expo dev server on port 8081
-
-Users can test on physical devices using Expo Go by scanning the QR code.
-
-## Features
-
-1. **AI Camera Scanning**: Take photos of products for AI-powered identification via Google Lens
-2. **Multi-Platform Pricing**: See prices from Amazon, Walmart, Target, eBay, and more
-3. **eBay Sales Data (Advanced Search)**: See actual eBay sold prices with avg/median/range stats
-4. **Profit Calculator**: Enter your cost to see net profit breakdown
-4. **Fee Estimation**: Automatically calculates ~13% estimated selling fees
-5. **Search History**: Track all previous searches (stored locally)
-6. **Favorites**: Save profitable products for later (stored locally)
-7. **Custom Settings**: Set default costs and target profit margins
-8. **Subscription Tiers**: Free (5 lifetime scans) or Pro ($8.99/mo unlimited)
-
-## Subscription Model
-
-- **Free Tier**: 5 lifetime product scans (tracked per device)
-- **Pro Tier**: $8.99/month for unlimited scans
-- Users see an upgrade modal when they hit the free limit
-- RevenueCat handles iOS/Android in-app purchases (tied to Apple ID / Google Play account)
-- **No account required** - subscriptions managed entirely through app store accounts
-
-## Database Schema (Supabase)
-
-All database tables live in Supabase. Replit's built-in PostgreSQL is no longer used.
-
-```sql
--- Guest scan tracking (free-tier limit enforcement)
-CREATE TABLE guest_scans (
-  device_id VARCHAR(255) PRIMARY KEY,
-  scan_count INTEGER DEFAULT 0,
-  last_scan_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-## Analytics (Supabase)
-
-Server-side analytics are logged to an external Supabase database. No client changes needed — all logging happens in the Express server via fire-and-forget calls that don't slow down API responses.
-
-**Tables:**
-- `devices` — unique devices with pro/free status, first/last seen, total scans and eBay searches
-- `scan_events` — individual scan logs with product name, listing counts
-- `ebay_search_events` — eBay sold search logs with query, broad flag, results count, avg price
-
-**Environment Variables:**
-- `SUPABASE_URL` — Supabase project URL
-- `SUPABASE_SERVICE_ROLE_KEY` — Supabase service role secret key
+- **Product Identification & Data:**
+    - **SearchAPI.io:** Used for Google Lens visual matching and multi-platform product data retrieval (Amazon, Walmart, Target, eBay), including eBay sold item data.
+- **Database:**
+    - **Supabase (PostgreSQL):** Utilized for guest scan tracking (`guest_scans` table) and server-side analytics (tables like `devices`, `scan_events`, `ebay_search_events`).
+- **Payments & Subscriptions:**
+    - **RevenueCat:** Manages iOS/Android in-app purchases and subscription logic.
+- **Analytics & Tracking:**
+    - **Firebase Analytics:** Integrated for app usage tracking (e.g., `app_open` events).
+    - **Facebook SDK (react-native-fbsdk-next):** For Meta Ads tracking, including App Tracking Transparency prompt.
+- **Image Hosting:**
+    - **freeimage.host / imgbb:** Used for temporary image storage during the scanning process (API keys configured via environment variables).
+- **Other:**
+    - **Expo:** The underlying framework for the React Native application.
+    - **TanStack React Query:** For data fetching and state management.
+    - **React Navigation:** For routing and navigation within the app.
 
 ## Recent Changes
 
-- **Mar 2026**: Added App Store review prompt via expo-store-review
-  - Triggers after 3rd successful scan (real scans only, not history revisits)
-  - Uses native App Store / Google Play review dialog
-  - One-time prompt — flag set before requesting so it never repeats
-  - Skipped on web; gracefully handles unsupported platforms
-- **Mar 2026**: Integrated Firebase Analytics (@react-native-firebase/app + @react-native-firebase/analytics v23.x)
-  - GoogleService-Info.plist placed at project root, referenced in app.json plugin config
-  - Logs `app_open` event on launch
-  - Runs independently of Facebook SDK in its own try/catch block
-  - Removed AppsFlyer SDK (react-native-appsflyer) — SDK never successfully initialized
-- **Mar 2026**: Migrated `guest_scans` table from Replit PostgreSQL to Supabase
-  - All database activity now lives in Supabase (analytics + scan tracking)
-  - `server/db.ts` rewritten to use Supabase REST API instead of raw `pg` Pool
-  - Replit's built-in PostgreSQL is no longer used
-  - 22 existing device rows migrated to Supabase
-- **Mar 2026**: Broad search fallback: when eBay sold search returns no results, users can tap "Search Similar Items" to retry with a broader query (strips colors, gender, numbers; caps at 5 words). Results labeled "Similar Items on eBay" with yellow warning. If broad search also fails, shows "No Similar Items Found" with no retry button.
-- **Mar 2026**: Improved Buy Score: demand scored by avgSoldPerMonth (max 40pts); profit scored by actual net profit when buy price entered (max 60pts), or median sale price as rough indicator when no buy price. $5 profit + good sales ~50, $20 profit + good sales ~80.
-- **Mar 2026**: eBay search query cleaning v3: exact mode strips specs, marketing fluff, filler words, retailer names, eBay abbreviations (6-word / 80-char cap). Broad mode only strips numbers, gender, colors, sizes, tech specs, marketing fluff, and finishes (5-word cap). Broad keeps product categories (Sunglasses, Shoes, Plush), materials (Leather, Canvas), clothing types, and shape/style descriptors to preserve product identity. Product category preservation: if a category word (Sunglasses, Shoes, Jacket, Mouse, etc.) would be cut off by the word cap, it replaces the last capped word to ensure the query always identifies WHAT the product is
-- **Mar 2026**: Added per-device rate limiting (20 requests/minute) on both API endpoints
-  - In-memory sliding window rate limiter keyed by device ID
-  - Returns 429 "Too many requests" when exceeded
-  - Auto-cleanup of expired entries every 5 minutes
-  - Removed `reusePort` from server to ensure single-process rate limit consistency
-- **Mar 2026**: Moved image hosting API keys (freeimage.host, imgbb) to environment variables
-- **Mar 2026**: Changed "Check price" to "Price unlisted" for listings without price data
-- **Mar 2026**: Deleted orphaned AuthScreen.tsx (unused since auth removal)
-- **Mar 2026**: Consolidated dual theme system (`theme.ts` + `design-tokens.ts`) into single `design-tokens.ts`
-  - All components now import from `@/constants/design-tokens`
-  - `useTheme` hook updated to use design-tokens as source of truth
-  - Deleted legacy `client/constants/theme.ts`
-- **Mar 2026**: Polished scan loading overlay with multi-step progress
-  - 3-step progress indicator: "Uploading image...", "Matching product...", "Finding best prices..."
-  - Animated progress bar with spring physics
-  - Pulsing photo animation using react-native-reanimated
-  - Step indicators with checkmarks for completed steps
-- **Mar 2026**: Integrated Facebook SDK (react-native-fbsdk-next) for Meta Ads tracking
-  - App ID: 901142736144530
-  - Auto-initializes on app launch with App Tracking Transparency prompt
-  - Configured in app.json as Expo plugin
-  - Requires native build (EAS Build) - does not work in Expo Go
-- **Mar 2026**: Added eBay Sold Search (Advanced Search) feature
-  - New endpoint `POST /api/ebay-sold-search` using SearchAPI.io `ebay_search` engine with `filters=sold_listings`
-  - Shows avg sold price, median price, price range, total sold count
-  - Individual sold listings with "SOLD" badge, sold date, condition
-  - Buy Score (0-100) based on profit potential, demand, and price consistency
-  - Avg Sold/Month metric with green (>=30), yellow (>=10), red (<10) color coding
-  - Does not count as a scan (no scan increment)
-- **Mar 2026**: Display "Check price" instead of "$0.00" for listings without price data
-- **Mar 2026**: Sort fix - $0 items pushed to bottom when sorting by price
-- **Mar 2026**: Added sort options on search results screen (Best Match, Price Low to High, Price High to Low)
-- **Feb 2026**: Removed entire authentication system for Apple App Store compliance
-  - Removed user accounts, signup/login, email verification, JWT tokens
-  - Removed Resend email integration
-  - App now works without any account creation (Apple guideline 5.1.1 compliance)
-  - Subscriptions tied directly to Apple ID / Google Play account via RevenueCat
-  - Scan limits tracked per device ID (AsyncStorage + guest_scans database table)
-  - Replaced users table with guest_scans table
-  - Simplified server to single scan endpoint
-- **Feb 2026**: Removed Stripe integration (fully on RevenueCat now)
-- **Feb 2026**: Added Google Lens visual matching for exact product identification
-- **Feb 2026**: Multi-platform search (Amazon, Walmart, Target, eBay, Mercari, Poshmark)
-- **Jan 2026**: Switched from Stripe to RevenueCat for iOS in-app purchases
-- Switched from SerpAPI to SearchAPI.io for lower cost Google Lens searches
-- Added design tokens system for consistent theming
+- **Mar 2026**: Paywall & onboarding flow redesign
+  - Free scan limit reduced from 5 to 1
+  - New full-screen non-dismissible PaywallScreen (`client/screens/PaywallScreen.tsx`) with "Start 3-Day Free Trial" CTA
+  - Camera auto-opens for first-time users (0 scans) after onboarding
+  - After first scan, PaywallScreen blocks further use until subscription
+  - Onboarding badge changed from "5 free scans to start" to "Try free for 3 days"
+  - UpgradeModal removed from ScanScreen (kept for ProfileScreen)
+  - PaywallScreen added to RootStackNavigator with `gestureEnabled: false`
+  - Server-side scan limit NOT changed (still 5) — frontend enforces 1-scan limit

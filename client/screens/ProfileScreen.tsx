@@ -122,7 +122,7 @@ export default function ProfileScreen() {
     { value: "system", label: "System", icon: "smartphone" },
   ];
 
-  const freeScansRemaining = Math.max(0, 5 - scansUsed);
+  const freeScansRemaining = Math.max(0, 1 - scansUsed);
 
   return (
     <ScrollView

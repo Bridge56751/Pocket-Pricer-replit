@@ -38,7 +38,7 @@ export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
     }
   }, [visible]);
 
-  const scansRemaining = Math.max(0, 5 - scansUsed);
+  const scansRemaining = Math.max(0, 1 - scansUsed);
   const hasUsedAllScans = scansRemaining === 0;
 
   const handleUpgrade = async () => {
@@ -142,7 +142,7 @@ export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
 
           {hasUsedAllScans ? (
             <Text style={[styles.freeScansNote, { color: theme.colors.mutedForeground }]}>
-              You've used all 5 of your free scans
+              Start your 3-day free trial to keep scanning
             </Text>
           ) : (
             <Text style={[styles.freeScansNote, { color: theme.colors.mutedForeground }]}>
