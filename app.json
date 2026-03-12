@@ -80,8 +80,7 @@
           "isAutoInitEnabled": true,
           "iosUserTrackingPermission": "Pocket Pricer uses this identifier to deliver personalized ads and measure ad performance. You can opt out at any time."
         }
-      ],
-      "expo-build-properties"
+      ]
     ],
     "experiments": {
       "reactCompiler": true
