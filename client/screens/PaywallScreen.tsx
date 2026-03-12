@@ -293,23 +293,25 @@ export default function PaywallScreen() {
               disabled={isLoading || isRestoring}
               style={({ pressed }) => [{ opacity: pressed ? 0.88 : 1, width: "100%" }]}
             >
-              <LinearGradient
-                colors={["#34D399", "#10B981", "#059669"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.ctaButton}
-              >
-                {isLoading ? (
-                  <ActivityIndicator color="#fff" size="small" />
-                ) : (
-                  <>
-                    <Text style={styles.ctaButtonText}>
-                      Start Free Trial — {getSelectedPrice()}/{getSelectedPeriod()}
-                    </Text>
-                    <Feather name="arrow-right" size={20} color="#fff" />
-                  </>
-                )}
-              </LinearGradient>
+              <View style={styles.ctaButtonOuter}>
+                <LinearGradient
+                  colors={["#34D399", "#10B981", "#059669"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.ctaButtonTop}
+                >
+                  {isLoading ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                    <Text style={styles.ctaTrialText}>3-Day Free Trial</Text>
+                  )}
+                </LinearGradient>
+                <View style={styles.ctaButtonBottom}>
+                  <Text style={styles.ctaPriceText}>
+                    Then {getSelectedPrice()}/{getSelectedPeriod()}
+                  </Text>
+                </View>
+              </View>
             </Pressable>
 
             <Text style={[styles.ctaNote, { color: theme.colors.mutedForeground }]}>
@@ -512,24 +514,37 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 20,
   },
-  ctaButton: {
-    flexDirection: "row",
+  ctaButtonOuter: {
+    width: "100%",
+    borderRadius: 16,
+    overflow: "hidden",
+    shadowColor: "#10B981",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 14,
+    elevation: 6,
+  },
+  ctaButtonTop: {
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 18,
-    borderRadius: 16,
-    gap: 8,
-    width: "100%",
-    shadowColor: "#10B981",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 5,
   },
-  ctaButtonText: {
+  ctaTrialText: {
     color: "#fff",
-    fontSize: 18,
-    fontWeight: "700",
+    fontSize: 22,
+    fontWeight: "800",
+    letterSpacing: 0.3,
+  },
+  ctaButtonBottom: {
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+  },
+  ctaPriceText: {
+    color: "#1A2E23",
+    fontSize: 15,
+    fontWeight: "600",
   },
   ctaNote: {
     fontSize: 13,
