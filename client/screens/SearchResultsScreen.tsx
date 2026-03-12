@@ -212,7 +212,7 @@ export default function SearchResultsScreen() {
     }
 
     if (rcReady && !isPro) {
-      navigation.navigate("Paywall");
+      navigation.navigate("Paywall", { context: "ebay" });
       return;
     }
 
@@ -237,7 +237,7 @@ export default function SearchResultsScreen() {
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
         if (res.status === 403 && errData.limitReached) {
-          navigation.navigate("Paywall");
+          navigation.navigate("Paywall", { context: "ebay" });
           return;
         }
         throw new Error(errData.error || "Search failed");

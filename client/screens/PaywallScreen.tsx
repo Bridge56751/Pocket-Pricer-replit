@@ -13,8 +13,9 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useNavigation, CommonActions } from "@react-navigation/native";
+import { useNavigation, useRoute, CommonActions } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RouteProp } from "@react-navigation/native";
 import Animated, { FadeInUp, FadeInDown } from "react-native-reanimated";
 
 import { useDesignTokens } from "@/hooks/useDesignTokens";
@@ -35,6 +36,8 @@ export default function PaywallScreen() {
   const insets = useSafeAreaInsets();
   const { theme, isDarkMode } = useDesignTokens();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const route = useRoute<RouteProp<RootStackParamList, "Paywall">>();
+  const context = route.params?.context;
   const { packages, purchasePackage, restorePurchases, isPro, isReady: rcReady } = useRevenueCat();
 
   const [isLoading, setIsLoading] = useState(false);
@@ -165,9 +168,21 @@ export default function PaywallScreen() {
             </LinearGradient>
           </View>
 
+          {/* Contextual banner */}
+          {context === "ebay" && (
+            <View style={styles.contextBanner}>
+              <Feather name="trending-up" size={14} color="#10B981" />
+              <Text style={styles.contextBannerText}>
+                eBay sold data is a Pro feature
+              </Text>
+            </View>
+          )}
+
           {/* Title & subtitle */}
           <Text style={[styles.title, { color: theme.colors.foreground }]}>
-            Stop guessing what items sell for
+            {context === "ebay"
+              ? "See what items actually sell for"
+              : "Stop guessing what items sell for"}
           </Text>
           <Text style={[styles.subtitle, { color: theme.colors.mutedForeground }]}>
             See exactly what your items sell for — unlimited scans, real sold data, instant profit math.
@@ -378,6 +393,21 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.35,
     shadowRadius: 12,
     elevation: 6,
+  },
+  contextBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "rgba(16, 185, 129, 0.12)",
+    borderRadius: 20,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    marginBottom: 16,
+  },
+  contextBannerText: {
+    color: "#10B981",
+    fontSize: 13,
+    fontWeight: "600" as const,
   },
   title: {
     fontSize: 26,
