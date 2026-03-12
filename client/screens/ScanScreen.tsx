@@ -341,8 +341,7 @@ export default function ScanScreen() {
   useFocusEffect(
     useCallback(() => {
       loadRecentScans();
-      checkAndNavigate();
-    }, [loadRecentScans, checkAndNavigate])
+    }, [loadRecentScans])
   );
 
   const rcReadyRef = useRef(false);
