@@ -25,7 +25,7 @@ import { AppContent } from "@/components/AppContent";
 SplashScreen.preventAutoHideAsync();
 
 export default function App() {
-  const systemColorScheme = useColorScheme() ?? "dark";
+  const systemColorScheme = useColorScheme() ?? "light";
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
     Inter_600SemiBold,

@@ -19,7 +19,7 @@ interface ThemeProviderProps {
 }
 
 export function ThemeProvider({ children, systemColorScheme }: ThemeProviderProps) {
-  const [themeMode, setThemeModeState] = useState<ThemeMode>("system");
+  const [themeMode, setThemeModeState] = useState<ThemeMode>("light");
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
