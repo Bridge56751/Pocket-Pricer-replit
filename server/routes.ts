@@ -3,7 +3,7 @@ import { createServer, type Server } from "node:http";
 import { getGuestScanCount, incrementGuestScan } from "./db";
 import { logScanEvent, logEbaySearchEvent } from "./supabase";
 
-const FREE_LIFETIME_SEARCHES = 5;
+const FREE_LIFETIME_SEARCHES = 1;
 const RATE_LIMIT_MAX = 20;
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 

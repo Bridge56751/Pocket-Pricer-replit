@@ -175,7 +175,7 @@ export default function ProfileScreen() {
         ) : (
           <>
             <Text style={[styles.upgradeHint, { color: theme.colors.mutedForeground }]}>
-              {freeScansRemaining} free {freeScansRemaining === 1 ? "scan" : "scans"} remaining
+              {freeScansRemaining > 0 ? "1 free scan available — try before you buy" : "Start your 3-day free trial to keep scanning"}
             </Text>
             <Pressable
               onPress={handleUpgrade}
