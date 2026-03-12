@@ -151,7 +151,7 @@ export default function PaywallScreen() {
         style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: insets.top + 56, paddingBottom: insets.bottom + 32 },
+          { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 32 },
         ]}
         showsVerticalScrollIndicator={false}
         bounces={false}
