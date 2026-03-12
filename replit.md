@@ -200,11 +200,7 @@ Server-side analytics are logged to an external Supabase database. No client cha
   - Uses native App Store / Google Play review dialog
   - One-time prompt — flag set before requesting so it never repeats
   - Skipped on web; gracefully handles unsupported platforms
-- **Mar 2026**: Integrated AppsFlyer SDK (react-native-appsflyer) for mobile attribution tracking
-  - Dev key configured, App ID: 6758423765
-  - Auto-initializes on app launch alongside Facebook SDK
-  - Uses shared ATT prompt (single permission request for both SDKs)
-  - Requires native build (EAS Build) — does not work in Expo Go
+- **Mar 2026**: Removed AppsFlyer SDK (react-native-appsflyer) — SDK never successfully initialized. Will integrate Firebase Analytics instead.
 - **Mar 2026**: Migrated `guest_scans` table from Replit PostgreSQL to Supabase
   - All database activity now lives in Supabase (analytics + scan tracking)
   - `server/db.ts` rewritten to use Supabase REST API instead of raw `pg` Pool
