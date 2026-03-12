@@ -187,7 +187,7 @@ export default function ScanScreen() {
     setAnalyzingProgress(SCAN_STEPS[0].label);
     
     try {
-      if (!isPro) {
+      if (rcReady && !isPro) {
         const scansUsed = await getScansUsed();
         if (scansUsed >= FREE_SCAN_LIMIT) {
           setIsAnalyzing(false);
@@ -320,7 +320,7 @@ export default function ScanScreen() {
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
-  }, [loadRecentScans, navigation, isPro, getScansUsed, incrementScans, getDeviceId]);
+  }, [loadRecentScans, navigation, rcReady, isPro, getScansUsed, incrementScans, getDeviceId]);
 
   useEffect(() => {
     const photosToProcess = route.params?.photosToProcess;
@@ -355,7 +355,7 @@ export default function ScanScreen() {
   }, [rcReady, checkAndNavigate]);
 
   const handleScanProduct = async () => {
-    if (!isPro) {
+    if (rcReady && !isPro) {
       const scansUsed = await getScansUsed();
       if (scansUsed >= FREE_SCAN_LIMIT) {
         navigation.navigate("Paywall");
