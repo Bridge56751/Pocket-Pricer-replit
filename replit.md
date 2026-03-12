@@ -29,7 +29,7 @@ The application is built with a client-server architecture. The frontend is an E
 **UI/UX Decisions:**
 - **Design System:** A custom design tokens system (`client/constants/design-tokens.ts`) is implemented for consistent styling, including colors (primary emerald green), typography, spacing, border radii, and component styles. This system supports a dark theme.
 - **User Flow:** Features an onboarding screen for first-time users. The main navigation uses bottom tabs and native stacks.
-- **Subscription UI:** A non-dismissible paywall screen appears after the first free scan, offering a 3-day free trial for the Pro subscription.
+- **Subscription UI:** A dismissible paywall screen appears after the 3rd free scan, offering a 3-day free trial for the Pro subscription.
 - **Loading States:** Polished scan loading overlay with multi-step progress indicators ("Uploading image...", "Matching product...", "Finding best prices...") and animations.
 
 **Technical Implementations & Feature Specifications:**
@@ -38,13 +38,13 @@ The application is built with a client-server architecture. The frontend is an E
 - **Navigation:** React Navigation is used for managing app navigation.
 - **Product Scanning:**
     - The `POST /api/scan-with-lens` endpoint processes base64 encoded images to identify products using Google Lens via SearchAPI.io.
-    - Free users are limited to 5 lifetime scans, tracked by device ID in the `guest_scans` table.
+    - Free users are limited to 3 lifetime scans, tracked by device ID in the `guest_scans` table.
 - **eBay Sold Search:**
     - The `POST /api/ebay-sold-search` endpoint fetches eBay sold item data using SearchAPI.io, providing average, median, high, and low sold prices, total sold count, and individual listing details.
     - Includes a "Buy Score" (0-100) based on profit potential and demand (avgSoldPerMonth).
     - Features advanced query cleaning and broad search fallbacks if initial specific searches yield no results.
 - **Rate Limiting:** Per-device rate limiting (20 requests/minute) is implemented on API endpoints using an in-memory sliding window.
-- **Subscription Model:** Supports a Free Tier (1 scan) and Pro Tier with two plan options: Weekly ($2.99/week) and Monthly ($8.99/month), both with a 3-day free trial. Weekly is pre-selected by default. Monthly shows a "Best Value" badge. Both PaywallScreen and UpgradeModal display a plan selector when multiple packages are available from RevenueCat; falls back to single plan display when only one package exists. Subscriptions are managed via RevenueCat, linking directly to Apple ID / Google Play accounts.
+- **Subscription Model:** Supports a Free Tier (3 scans) and Pro Tier with two plan options: Weekly ($2.99/week) and Monthly ($8.99/month), both with a 3-day free trial. Weekly is pre-selected by default. Monthly shows a "Best Value" badge. Both PaywallScreen and UpgradeModal display a plan selector when multiple packages are available from RevenueCat; falls back to single plan display when only one package exists. Subscriptions are managed via RevenueCat, linking directly to Apple ID / Google Play accounts.
 - **Analytics:** Server-side analytics are logged to an external Supabase database, tracking device activity, scan events, and eBay search events.
 - **Monetization:** Uses RevenueCat for in-app purchases.
 - **App Store Review Prompt:** Triggers after the 3rd successful scan using `expo-store-review`.

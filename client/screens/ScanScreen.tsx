@@ -143,7 +143,7 @@ function formatTimeAgo(dateString: string): string {
   return `${diffDays} days ago`;
 }
 
-const FREE_SCAN_LIMIT = 1;
+const FREE_SCAN_LIMIT = 3;
 
 export default function ScanScreen() {
   const insets = useSafeAreaInsets();
