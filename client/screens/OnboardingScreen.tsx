@@ -124,6 +124,16 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <Pressable
+        onPress={handleComplete}
+        style={[styles.closeButton, { top: insets.top + 12 }]}
+        hitSlop={12}
+      >
+        <View style={[styles.closeCircle, { backgroundColor: theme.colors.muted }]}>
+          <Feather name="x" size={18} color={theme.colors.mutedForeground} />
+        </View>
+      </Pressable>
+
       <View style={[styles.content, { paddingTop: insets.top + 40 }]}>
         <View style={styles.heroSection}>
           <PulsingRing color="#10B981" delay={0} />
@@ -184,8 +194,8 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
             { backgroundColor: theme.colors.primary, opacity: pressed ? 0.85 : 1 },
           ]}
         >
-          <Feather name="camera" size={20} color="#fff" />
-          <Text style={styles.ctaText}>Scan</Text>
+          <Text style={styles.ctaText}>Continue</Text>
+          <Feather name="arrow-right" size={20} color="#fff" />
         </Pressable>
       </Animated.View>
     </View>
@@ -208,6 +218,18 @@ export async function resetOnboarding(): Promise<void> {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  closeButton: {
+    position: "absolute",
+    right: 16,
+    zIndex: 10,
+  },
+  closeCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: "center",
+    justifyContent: "center",
   },
   content: {
     flex: 1,
