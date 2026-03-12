@@ -3,6 +3,7 @@ import { View, StyleSheet, FlatList, Pressable, Text, Linking, TextInput, Activi
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useRoute, RouteProp, useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -59,7 +60,7 @@ export default function SearchResultsScreen() {
   const headerHeight = useHeaderHeight();
   const { theme, colors } = useDesignTokens();
   const route = useRoute<SearchResultsRouteProp>();
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const { results } = route.params;
   
@@ -72,7 +73,7 @@ export default function SearchResultsScreen() {
   }, [results.scannedImageId, results]);
 
   const { getDeviceId } = useAuth();
-  const { isPro } = useRevenueCat();
+  const { isPro, isReady: rcReady } = useRevenueCat();
   const [purchasePrice, setPurchasePrice] = useState("");
   const [sellingPrice, setSellingPrice] = useState("");
   const [sortOption, setSortOption] = useState<string>("Best Match");
@@ -209,6 +210,12 @@ export default function SearchResultsScreen() {
     if (broad && broadSoldData) {
       return;
     }
+
+    if (rcReady && !isPro) {
+      navigation.navigate("Paywall");
+      return;
+    }
+
     setEbaySoldLoading(true);
     setEbaySoldError(null);
     try {
@@ -228,7 +235,11 @@ export default function SearchResultsScreen() {
         body: JSON.stringify(body),
       });
       if (!res.ok) {
-        const errData = await res.json();
+        const errData = await res.json().catch(() => ({}));
+        if (res.status === 403 && errData.limitReached) {
+          navigation.navigate("Paywall");
+          return;
+        }
         throw new Error(errData.error || "Search failed");
       }
       const data: EbaySoldData = await res.json();
