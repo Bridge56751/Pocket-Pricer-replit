@@ -40,16 +40,19 @@ export default function PaywallScreen() {
 
   const [isLoading, setIsLoading] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<"weekly" | "monthly">("weekly");
 
-  const getPrice = () => {
-    if (packages.length > 0) {
-      const monthlyPackage =
-        packages.find((pkg) => pkg.packageType === "MONTHLY" || pkg.identifier === "$rc_monthly") ||
-        packages[0];
-      return monthlyPackage.product.priceString;
-    }
-    return "$8.99";
-  };
+  const weeklyPkg = packages.find(
+    (pkg) => pkg.packageType === "WEEKLY" || pkg.identifier === "$rc_weekly"
+  );
+  const monthlyPkg = packages.find(
+    (pkg) => pkg.packageType === "MONTHLY" || pkg.identifier === "$rc_monthly"
+  );
+  const hasMultiplePlans = !!(weeklyPkg && monthlyPkg);
+  const activePkg = selectedPlan === "weekly" && weeklyPkg ? weeklyPkg : monthlyPkg || packages[0];
+
+  const getSelectedPrice = () => activePkg?.product.priceString ?? "$8.99";
+  const getSelectedPeriod = () => (selectedPlan === "weekly" && weeklyPkg ? "week" : "month");
 
   const navigateHome = () => {
     navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "Home" }] }));
@@ -60,16 +63,13 @@ export default function PaywallScreen() {
       Alert.alert("Mobile Only", "Subscriptions are only available in the mobile app.");
       return;
     }
-    if (packages.length === 0) {
+    if (!activePkg) {
       Alert.alert("Error", "No subscription packages available. Please try again later.");
       return;
     }
     setIsLoading(true);
     try {
-      const monthlyPackage =
-        packages.find((pkg) => pkg.packageType === "MONTHLY" || pkg.identifier === "$rc_monthly") ||
-        packages[0];
-      const result = await purchasePackage(monthlyPackage);
+      const result = await purchasePackage(activePkg);
       if (result.success) {
         navigateHome();
       } else if (result.error && result.error !== "Purchase cancelled") {
@@ -178,19 +178,69 @@ export default function PaywallScreen() {
             ))}
           </View>
 
-          {/* Plan card */}
-          <View style={[styles.planCard, { backgroundColor: planCardBg, borderColor: "#10B981" }]}>
-            <View style={styles.planLeft}>
-              <Text style={[styles.planName, { color: theme.colors.foreground }]}>
-                3-Day Free Trial
-              </Text>
-              <Text style={[styles.planPrice, { color: theme.colors.mutedForeground }]}>
-                then {getPrice()}/month
-              </Text>
-            </View>
-            <View style={styles.planCheck}>
-              <Feather name="check-circle" size={24} color="#10B981" />
-            </View>
+          {/* Plan cards */}
+          <View style={styles.planCards}>
+            {hasMultiplePlans && weeklyPkg ? (
+              <Pressable
+                onPress={() => setSelectedPlan("weekly")}
+                style={[
+                  styles.planCard,
+                  {
+                    backgroundColor: selectedPlan === "weekly" ? planCardBg : isDarkMode ? "#2C2C2E" : "#F9FAFB",
+                    borderColor: selectedPlan === "weekly" ? "#10B981" : isDarkMode ? "#3A3A3C" : "#E5E7EB",
+                  },
+                ]}
+              >
+                <View style={styles.planLeft}>
+                  <Text style={[styles.planName, { color: theme.colors.foreground }]}>Weekly</Text>
+                  <Text style={[styles.planPrice, { color: theme.colors.mutedForeground }]}>
+                    3-day free trial, then {weeklyPkg.product.priceString}/week
+                  </Text>
+                </View>
+                <View style={styles.planCheck}>
+                  {selectedPlan === "weekly" ? (
+                    <Feather name="check-circle" size={24} color="#10B981" />
+                  ) : (
+                    <View style={[styles.radioOuter, { borderColor: isDarkMode ? "#3A3A3C" : "#D1D5DB" }]} />
+                  )}
+                </View>
+              </Pressable>
+            ) : null}
+            <Pressable
+              onPress={() => setSelectedPlan("monthly")}
+              style={[
+                styles.planCard,
+                {
+                  backgroundColor: (!hasMultiplePlans || selectedPlan === "monthly") ? planCardBg : isDarkMode ? "#2C2C2E" : "#F9FAFB",
+                  borderColor: (!hasMultiplePlans || selectedPlan === "monthly") ? "#10B981" : isDarkMode ? "#3A3A3C" : "#E5E7EB",
+                },
+              ]}
+            >
+              <View style={styles.planLeft}>
+                <View style={styles.planNameRow}>
+                  <Text style={[styles.planName, { color: theme.colors.foreground }]}>
+                    {hasMultiplePlans ? "Monthly" : "3-Day Free Trial"}
+                  </Text>
+                  {hasMultiplePlans && (
+                    <View style={styles.bestValueBadge}>
+                      <Text style={styles.bestValueText}>Best Value</Text>
+                    </View>
+                  )}
+                </View>
+                <Text style={[styles.planPrice, { color: theme.colors.mutedForeground }]}>
+                  {hasMultiplePlans
+                    ? `3-day free trial, then ${monthlyPkg?.product.priceString ?? "$8.99"}/month`
+                    : `then ${getSelectedPrice()}/month`}
+                </Text>
+              </View>
+              <View style={styles.planCheck}>
+                {(!hasMultiplePlans || selectedPlan === "monthly") ? (
+                  <Feather name="check-circle" size={24} color="#10B981" />
+                ) : (
+                  <View style={[styles.radioOuter, { borderColor: isDarkMode ? "#3A3A3C" : "#D1D5DB" }]} />
+                )}
+              </View>
+            </Pressable>
           </View>
 
           {/* CTA */}
@@ -249,7 +299,7 @@ export default function PaywallScreen() {
 
           {/* Legal disclosure */}
           <Text style={[styles.legalText, { color: theme.colors.mutedForeground }]}>
-            After your 3-day free trial, your subscription automatically renews at {getPrice()}/month.
+            After your 3-day free trial, your subscription automatically renews at {getSelectedPrice()}/{getSelectedPeriod()}.
             Payment will be charged to your Apple ID account at confirmation of purchase. Subscription
             automatically renews unless canceled at least 24 hours before the end of the current period.
             Manage or cancel in Settings → Apple ID → Subscriptions.
@@ -334,6 +384,11 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     flex: 1,
   },
+  planCards: {
+    width: "100%",
+    gap: 10,
+    marginBottom: 24,
+  },
   planCard: {
     width: "100%",
     flexDirection: "row",
@@ -342,21 +397,42 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     paddingHorizontal: 18,
     paddingVertical: 16,
-    marginBottom: 24,
   },
   planLeft: {
     flex: 1,
   },
+  planNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 3,
+  },
   planName: {
     fontSize: 17,
     fontWeight: "700",
-    marginBottom: 3,
+  },
+  bestValueBadge: {
+    backgroundColor: "#10B981",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  bestValueText: {
+    color: "#fff",
+    fontSize: 11,
+    fontWeight: "700",
   },
   planPrice: {
     fontSize: 14,
   },
   planCheck: {
     marginLeft: 12,
+  },
+  radioOuter: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
   },
   ctaWrap: {
     width: "100%",

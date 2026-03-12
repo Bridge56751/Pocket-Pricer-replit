@@ -44,7 +44,7 @@ The application is built with a client-server architecture. The frontend is an E
     - Includes a "Buy Score" (0-100) based on profit potential and demand (avgSoldPerMonth).
     - Features advanced query cleaning and broad search fallbacks if initial specific searches yield no results.
 - **Rate Limiting:** Per-device rate limiting (20 requests/minute) is implemented on API endpoints using an in-memory sliding window.
-- **Subscription Model:** Supports a Free Tier (1 scan) and a Pro Tier ($8.99/month for unlimited scans with a 3-day free trial). Subscriptions are managed via RevenueCat, linking directly to Apple ID / Google Play accounts.
+- **Subscription Model:** Supports a Free Tier (1 scan) and Pro Tier with two plan options: Weekly ($2.99/week) and Monthly ($8.99/month), both with a 3-day free trial. Weekly is pre-selected by default. Monthly shows a "Best Value" badge. Both PaywallScreen and UpgradeModal display a plan selector when multiple packages are available from RevenueCat; falls back to single plan display when only one package exists. Subscriptions are managed via RevenueCat, linking directly to Apple ID / Google Play accounts.
 - **Analytics:** Server-side analytics are logged to an external Supabase database, tracking device activity, scan events, and eBay search events.
 - **Monetization:** Uses RevenueCat for in-app purchases.
 - **App Store Review Prompt:** Triggers after the 3rd successful scan using `expo-store-review`.
@@ -78,3 +78,9 @@ The application is built with a client-server architecture. The frontend is an E
   - UpgradeModal removed from ScanScreen (kept for ProfileScreen)
   - PaywallScreen added to RootStackNavigator with `gestureEnabled: false`
   - Server-side scan limit NOT changed (still 5) — frontend enforces 1-scan limit
+- **Mar 2026**: Weekly plan option added
+  - PaywallScreen and UpgradeModal now support two plan options: Weekly ($2.99/week) and Monthly ($8.99/month)
+  - Weekly plan pre-selected by default; Monthly shows "Best Value" badge
+  - Plan selector with radio-style selection UI; legal disclosure and CTA dynamically reflect selected plan
+  - Graceful fallback: shows single plan card when only one RevenueCat package exists
+  - Requires weekly product to be created in App Store Connect, Google Play Console, and RevenueCat dashboard
