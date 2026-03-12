@@ -151,14 +151,16 @@ export default function CameraScanScreen() {
         </Text>
 
         <Text style={[styles.permissionBody, { color: theme.colors.mutedForeground }]}>
-          Pocket Pricer needs your camera to scan products and find their prices across stores like
-          Amazon, Walmart, and eBay.
+          Pocket Pricer uses your camera to take photos of products so it can identify them and
+          show you current prices across stores like Amazon, Walmart, and Target. For example, you
+          can photograph a pair of shoes to instantly see what they sell for online.
         </Text>
 
         {state === "blocked" ? (
           <>
             <Text style={[styles.blockedNote, { color: theme.colors.mutedForeground }]}>
-              Camera access was denied. Open your device settings to enable it for Pocket Pricer.
+              Camera access was denied. To enable it, go to Settings → Pocket Pricer → Camera and
+              turn it on.
             </Text>
             <Pressable
               style={[styles.primaryButton, { backgroundColor: theme.colors.primary }]}
