@@ -22,6 +22,7 @@ const ONBOARDING_COMPLETE_KEY = "@pocket_pricer_onboarding_complete";
 const FEATURES = [
   { icon: "camera" as const, label: "Scan any product", color: "#3B82F6" },
   { icon: "bar-chart-2" as const, label: "Compare prices across stores", color: "#8B5CF6" },
+  { icon: "trending-up" as const, label: "See what items actually sold for", color: "#10B981" },
   { icon: "dollar-sign" as const, label: "See your profit instantly", color: "#F59E0B" },
 ];
 
