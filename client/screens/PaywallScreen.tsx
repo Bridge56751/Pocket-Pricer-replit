@@ -42,6 +42,7 @@ export default function PaywallScreen() {
 
   const [isLoading, setIsLoading] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
+  const packagesLoading = !rcReady || (rcReady && packages.length === 0);
   const weeklyPkg = packages.find(
     (pkg) => pkg.packageType === "WEEKLY" || pkg.identifier === "$rc_weekly"
   );
@@ -219,7 +220,12 @@ export default function PaywallScreen() {
 
           {/* Plan cards */}
           <View style={styles.planCards}>
-            {hasMultiplePlans ? (
+            {packagesLoading ? (
+              <>
+                <View style={[styles.planCard, styles.skeletonCard, { borderColor: isDarkMode ? "#3A3A3C" : "#E5E7EB", backgroundColor: isDarkMode ? "#2A2A2A" : "#F3F4F6" }]} />
+                <View style={[styles.planCard, styles.skeletonCard, { borderColor: isDarkMode ? "#3A3A3C" : "#E5E7EB", backgroundColor: isDarkMode ? "#2A2A2A" : "#F3F4F6" }]} />
+              </>
+            ) : hasMultiplePlans ? (
               <>
                 <Pressable
                   onPress={() => handleSelectPlan("weekly")}
@@ -307,17 +313,22 @@ export default function PaywallScreen() {
           <Animated.View entering={FadeInDown.delay(300).duration(480)} style={styles.ctaWrap}>
             <Pressable
               onPress={handleStartTrial}
-              disabled={isLoading || isRestoring}
+              disabled={isLoading || isRestoring || packagesLoading}
               style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1, width: "100%" }]}
             >
               <LinearGradient
                 colors={["#34D399", "#10B981", "#059669"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
-                style={styles.ctaButton}
+                style={[styles.ctaButton, packagesLoading && { opacity: 0.75 }]}
               >
-                {isLoading ? (
-                  <ActivityIndicator color="#fff" size="small" />
+                {isLoading || packagesLoading ? (
+                  <>
+                    <ActivityIndicator color="#fff" size="small" />
+                    {packagesLoading && !isLoading ? (
+                      <Text style={styles.ctaButtonText}>Loading plans...</Text>
+                    ) : null}
+                  </>
                 ) : (
                   <>
                     <Text style={styles.ctaButtonText}>Start 3-Day Free Trial</Text>
@@ -504,6 +515,10 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     paddingHorizontal: 18,
     paddingVertical: 14,
+  },
+  skeletonCard: {
+    height: 72,
+    borderWidth: 1,
   },
   planLeft: {
     flex: 1,
