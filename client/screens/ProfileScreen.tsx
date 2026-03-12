@@ -122,7 +122,7 @@ export default function ProfileScreen() {
     { value: "system", label: "System", icon: "smartphone" },
   ];
 
-  const freeScansRemaining = Math.max(0, 1 - scansUsed);
+  const freeScansRemaining = Math.max(0, 3 - scansUsed);
 
   return (
     <ScrollView
@@ -175,7 +175,9 @@ export default function ProfileScreen() {
         ) : (
           <>
             <Text style={[styles.upgradeHint, { color: theme.colors.mutedForeground }]}>
-              {freeScansRemaining > 0 ? "1 free scan available — try before you buy" : "Start your 3-day free trial to keep scanning"}
+              {freeScansRemaining > 0
+                ? `${freeScansRemaining} free scan${freeScansRemaining === 1 ? "" : "s"} remaining — try before you buy`
+                : "You've used all your free scans — start your 3-day free trial"}
             </Text>
             <Pressable
               onPress={handleUpgrade}
@@ -409,9 +411,10 @@ export default function ProfileScreen() {
         </View>
       </View>
       
-      <UpgradeModal 
-        visible={showUpgradeModal} 
-        onClose={() => setShowUpgradeModal(false)} 
+      <UpgradeModal
+        visible={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        scansUsed={scansUsed}
       />
     </ScrollView>
   );

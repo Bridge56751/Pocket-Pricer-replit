@@ -25,12 +25,15 @@ const FEATURES = [
   { icon: "dollar-sign" as const, text: "Instant profit calculator" },
 ];
 
+const FREE_SCAN_LIMIT = 3;
+
 interface UpgradeModalProps {
   visible: boolean;
   onClose: () => void;
+  scansUsed?: number;
 }
 
-export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
+export default function UpgradeModal({ visible, onClose, scansUsed = 0 }: UpgradeModalProps) {
   const { theme, isDarkMode } = useDesignTokens();
   const { packages, purchasePackage, restorePurchases, isPro } = useRevenueCat();
 
@@ -147,6 +150,20 @@ export default function UpgradeModal({ visible, onClose }: UpgradeModalProps) {
           <Text style={[styles.subtitle, { color: theme.colors.mutedForeground }]}>
             Unlimited scans, real sold data & instant profit math.
           </Text>
+
+          {/* Scan status banner */}
+          <View style={[styles.scanBanner, { backgroundColor: scansUsed >= FREE_SCAN_LIMIT ? (isDarkMode ? "#3B1A1A" : "#FEF2F2") : (isDarkMode ? "#1C3A2E" : "#F0FDF8") }]}>
+            <Feather
+              name={scansUsed >= FREE_SCAN_LIMIT ? "alert-circle" : "info"}
+              size={14}
+              color={scansUsed >= FREE_SCAN_LIMIT ? "#EF4444" : "#10B981"}
+            />
+            <Text style={[styles.scanBannerText, { color: scansUsed >= FREE_SCAN_LIMIT ? "#EF4444" : "#10B981" }]}>
+              {scansUsed >= FREE_SCAN_LIMIT
+                ? "You've used all your free scans"
+                : `${FREE_SCAN_LIMIT - scansUsed} free scan${FREE_SCAN_LIMIT - scansUsed === 1 ? "" : "s"} remaining`}
+            </Text>
+          </View>
 
           {/* Features */}
           <View style={styles.featuresList}>
@@ -346,7 +363,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: "center",
     lineHeight: 20,
-    marginBottom: 22,
+    marginBottom: 14,
+  },
+  scanBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    marginBottom: 18,
+    alignSelf: "stretch",
+  },
+  scanBannerText: {
+    fontSize: 13,
+    fontWeight: "600" as const,
   },
   featuresList: {
     width: "100%",

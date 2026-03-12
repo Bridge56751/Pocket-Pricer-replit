@@ -427,11 +427,11 @@ export default function ScanScreen() {
               </LinearGradient>
             </Pressable>
 
-            {!isPro && scansUsed === 0 ? (
+            {!isPro && scansUsed < FREE_SCAN_LIMIT ? (
               <View style={styles.scansRemainingContainer}>
                 <Feather name="info" size={14} color={theme.colors.mutedForeground} />
                 <Text style={[styles.scansRemainingText, { color: theme.colors.mutedForeground }]}>
-                  1 free scan — then start your 3-day free trial
+                  {FREE_SCAN_LIMIT - scansUsed} free scan{FREE_SCAN_LIMIT - scansUsed === 1 ? "" : "s"} remaining — then start your 3-day free trial
                 </Text>
               </View>
             ) : null}
