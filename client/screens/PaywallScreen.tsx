@@ -129,25 +129,29 @@ export default function PaywallScreen() {
 
   if (isPro) return null;
 
-  const bgColor = isDarkMode ? "#1A1A1A" : "#F2F2F7";
-  const cardColor = isDarkMode ? "#2C2C2E" : "#FFFFFF";
+  const cardColor = isDarkMode ? "#1E1E1E" : "#FFFFFF";
   const planCardBg = isDarkMode ? "#1C3A2E" : "#F0FDF8";
-  const featureIconBg = isDarkMode ? "#1C3A2E" : "#F0FDF8";
 
   return (
-    <View style={[styles.container, { backgroundColor: bgColor }]}>
+    <LinearGradient
+      colors={isDarkMode ? ["#111111", "#0D2018", "#111111"] : ["#F0FDF8", "#FFFFFF", "#F0FDF8"]}
+      style={styles.container}
+    >
       <Pressable
         onPress={() => navigation.goBack()}
         style={[styles.closeButton, { top: insets.top + 12 }]}
         hitSlop={12}
       >
-        <Feather name="x" size={22} color={isDarkMode ? "#9CA3AF" : "#6B7280"} />
+        <View style={[styles.closeCircle, { backgroundColor: isDarkMode ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.06)" }]}>
+          <Feather name="x" size={18} color={isDarkMode ? "#9CA3AF" : "#6B7280"} />
+        </View>
       </Pressable>
+
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: insets.top + 24, paddingBottom: insets.bottom + 32 },
+          { paddingTop: insets.top + 56, paddingBottom: insets.bottom + 32 },
         ]}
         showsVerticalScrollIndicator={false}
         bounces={false}
@@ -158,13 +162,14 @@ export default function PaywallScreen() {
         >
           {/* Icon */}
           <View style={styles.iconWrap}>
+            <View style={styles.iconGlow} />
             <LinearGradient
               colors={["#34D399", "#10B981", "#059669"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.iconCircle}
             >
-              <Feather name="tag" size={38} color="#fff" />
+              <Feather name="tag" size={36} color="#fff" />
             </LinearGradient>
           </View>
 
@@ -173,7 +178,7 @@ export default function PaywallScreen() {
             <View style={styles.contextBanner}>
               <Feather name="trending-up" size={14} color="#10B981" />
               <Text style={styles.contextBannerText}>
-                eBay sold data is a Pro feature
+                Sold price data is a Pro feature
               </Text>
             </View>
           )}
@@ -182,10 +187,10 @@ export default function PaywallScreen() {
           <Text style={[styles.title, { color: theme.colors.foreground }]}>
             {context === "ebay"
               ? "See what items actually sell for"
-              : "Stop guessing what items sell for"}
+              : "Know exactly what to buy & sell"}
           </Text>
           <Text style={[styles.subtitle, { color: theme.colors.mutedForeground }]}>
-            See exactly what your items sell for — unlimited scans, real sold data, instant profit math.
+            Real sold prices, unlimited scans, and instant profit data — everything you need to win as a reseller.
           </Text>
 
           {/* Features */}
@@ -197,16 +202,17 @@ export default function PaywallScreen() {
                   styles.featureRow,
                   {
                     backgroundColor: isDarkMode ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.02)",
-                    borderColor: isDarkMode ? "rgba(16,185,129,0.25)" : "rgba(16,185,129,0.3)",
+                    borderColor: isDarkMode ? "rgba(16,185,129,0.2)" : "rgba(16,185,129,0.25)",
                   },
                 ]}
               >
-                <View style={[styles.featureIconCircle, { backgroundColor: f.color + "22" }]}>
-                  <Feather name={f.icon} size={17} color={f.color} />
+                <View style={[styles.featureIconCircle, { backgroundColor: "#10B98122" }]}>
+                  <Feather name={f.icon} size={16} color={f.color} />
                 </View>
                 <Text style={[styles.featureText, { color: theme.colors.foreground }]}>
                   {f.text}
                 </Text>
+                <Feather name="check" size={16} color="#10B981" />
               </View>
             ))}
           </View>
@@ -220,31 +226,37 @@ export default function PaywallScreen() {
                   style={[
                     styles.planCard,
                     {
-                      backgroundColor: selectedPlan === "weekly" ? planCardBg : isDarkMode ? "#2C2C2E" : "#F9FAFB",
+                      backgroundColor: selectedPlan === "weekly" ? planCardBg : isDarkMode ? "#2A2A2A" : "#F9FAFB",
                       borderColor: selectedPlan === "weekly" ? "#10B981" : isDarkMode ? "#3A3A3C" : "#E5E7EB",
                     },
                   ]}
                 >
                   <View style={styles.planLeft}>
                     <Text style={[styles.planName, { color: theme.colors.foreground }]}>Weekly</Text>
+                    <Text style={[styles.planTrialText, { color: "#10B981" }]}>
+                      3-day free trial
+                    </Text>
                     <Text style={[styles.planPrice, { color: theme.colors.mutedForeground }]}>
-                      3-day free trial, then {weeklyPkg!.product.priceString}/week
+                      then {weeklyPkg!.product.priceString}/week
                     </Text>
                   </View>
                   <View style={styles.planCheck}>
                     {selectedPlan === "weekly" ? (
-                      <Feather name="check-circle" size={24} color="#10B981" />
+                      <View style={styles.checkFilled}>
+                        <Feather name="check" size={14} color="#fff" />
+                      </View>
                     ) : (
                       <View style={[styles.radioOuter, { borderColor: isDarkMode ? "#3A3A3C" : "#D1D5DB" }]} />
                     )}
                   </View>
                 </Pressable>
+
                 <Pressable
                   onPress={() => handleSelectPlan("monthly")}
                   style={[
                     styles.planCard,
                     {
-                      backgroundColor: selectedPlan === "monthly" ? planCardBg : isDarkMode ? "#2C2C2E" : "#F9FAFB",
+                      backgroundColor: selectedPlan === "monthly" ? planCardBg : isDarkMode ? "#2A2A2A" : "#F9FAFB",
                       borderColor: selectedPlan === "monthly" ? "#10B981" : isDarkMode ? "#3A3A3C" : "#E5E7EB",
                     },
                   ]}
@@ -256,13 +268,18 @@ export default function PaywallScreen() {
                         <Text style={styles.bestValueText}>Best Value</Text>
                       </View>
                     </View>
+                    <Text style={[styles.planTrialText, { color: "#10B981" }]}>
+                      3-day free trial
+                    </Text>
                     <Text style={[styles.planPrice, { color: theme.colors.mutedForeground }]}>
-                      3-day free trial, then {monthlyPkg!.product.priceString}/month
+                      then {monthlyPkg!.product.priceString}/month
                     </Text>
                   </View>
                   <View style={styles.planCheck}>
                     {selectedPlan === "monthly" ? (
-                      <Feather name="check-circle" size={24} color="#10B981" />
+                      <View style={styles.checkFilled}>
+                        <Feather name="check" size={14} color="#fff" />
+                      </View>
                     ) : (
                       <View style={[styles.radioOuter, { borderColor: isDarkMode ? "#3A3A3C" : "#D1D5DB" }]} />
                     )}
@@ -272,15 +289,15 @@ export default function PaywallScreen() {
             ) : (
               <View style={[styles.planCard, { backgroundColor: planCardBg, borderColor: "#10B981" }]}>
                 <View style={styles.planLeft}>
-                  <Text style={[styles.planName, { color: theme.colors.foreground }]}>
+                  <Text style={[styles.planTrialText, { color: "#10B981", fontSize: 16 }]}>
                     3-Day Free Trial
                   </Text>
                   <Text style={[styles.planPrice, { color: theme.colors.mutedForeground }]}>
                     then {getSelectedPrice()}/{getSelectedPeriod()}
                   </Text>
                 </View>
-                <View style={styles.planCheck}>
-                  <Feather name="check-circle" size={24} color="#10B981" />
+                <View style={styles.checkFilled}>
+                  <Feather name="check" size={14} color="#fff" />
                 </View>
               </View>
             )}
@@ -291,30 +308,31 @@ export default function PaywallScreen() {
             <Pressable
               onPress={handleStartTrial}
               disabled={isLoading || isRestoring}
-              style={({ pressed }) => [{ opacity: pressed ? 0.88 : 1, width: "100%" }]}
+              style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1, width: "100%" }]}
             >
               <LinearGradient
                 colors={["#34D399", "#10B981", "#059669"]}
                 start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
+                end={{ x: 1, y: 0 }}
                 style={styles.ctaButton}
               >
                 {isLoading ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
                   <>
-                    <Text style={styles.ctaButtonText}>
-                      Start Free Trial — {getSelectedPrice()}/{getSelectedPeriod()}
-                    </Text>
+                    <Text style={styles.ctaButtonText}>Start 3-Day Free Trial</Text>
                     <Feather name="arrow-right" size={20} color="#fff" />
                   </>
                 )}
               </LinearGradient>
             </Pressable>
 
-            <Text style={[styles.ctaNote, { color: theme.colors.mutedForeground }]}>
-              No charge until trial ends. Cancel anytime.
-            </Text>
+            <View style={styles.ctaNoteRow}>
+              <Feather name="lock" size={12} color={theme.colors.mutedForeground} />
+              <Text style={[styles.ctaNote, { color: theme.colors.mutedForeground }]}>
+                No charge for 3 days. Cancel anytime.
+              </Text>
+            </View>
           </Animated.View>
 
           {/* Footer */}
@@ -331,13 +349,13 @@ export default function PaywallScreen() {
             <Text style={[styles.footerDot, { color: theme.colors.mutedForeground }]}>·</Text>
             <Pressable onPress={() => Linking.openURL(TERMS_URL)}>
               <Text style={[styles.footerLink, { color: theme.colors.mutedForeground }]}>
-                Terms of Use
+                Terms
               </Text>
             </Pressable>
             <Text style={[styles.footerDot, { color: theme.colors.mutedForeground }]}>·</Text>
             <Pressable onPress={() => Linking.openURL(PRIVACY_URL)}>
               <Text style={[styles.footerLink, { color: theme.colors.mutedForeground }]}>
-                Privacy Policy
+                Privacy
               </Text>
             </Pressable>
           </View>
@@ -351,7 +369,7 @@ export default function PaywallScreen() {
           </Text>
         </Animated.View>
       </ScrollView>
-    </View>
+    </LinearGradient>
   );
 }
 
@@ -363,8 +381,11 @@ const styles = StyleSheet.create({
     position: "absolute",
     right: 16,
     zIndex: 10,
-    width: 32,
-    height: 32,
+  },
+  closeCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -383,25 +404,34 @@ const styles = StyleSheet.create({
     paddingBottom: 28,
     alignItems: "center",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.10,
-    shadowRadius: 20,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    elevation: 10,
   },
   iconWrap: {
     marginBottom: 24,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iconGlow: {
+    position: "absolute",
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: "rgba(16, 185, 129, 0.15)",
   },
   iconCircle: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#10B981",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.45,
+    shadowRadius: 14,
+    elevation: 8,
   },
   contextBanner: {
     flexDirection: "row",
@@ -410,8 +440,10 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(16, 185, 129, 0.12)",
     borderRadius: 20,
     paddingVertical: 6,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "rgba(16, 185, 129, 0.25)",
   },
   contextBannerText: {
     color: "#10B981",
@@ -419,41 +451,43 @@ const styles = StyleSheet.create({
     fontWeight: "600" as const,
   },
   title: {
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: "800",
     textAlign: "center",
     marginBottom: 10,
-    letterSpacing: -0.3,
+    letterSpacing: -0.5,
+    lineHeight: 34,
   },
   subtitle: {
     fontSize: 15,
     textAlign: "center",
     lineHeight: 22,
     marginBottom: 28,
+    paddingHorizontal: 4,
   },
   featuresList: {
     width: "100%",
-    gap: 14,
+    gap: 10,
     marginBottom: 24,
   },
   featureRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 14,
+    gap: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderRadius: 12,
     borderWidth: 1,
   },
   featureIconCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
   },
   featureText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "500",
     flex: 1,
   },
@@ -469,7 +503,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 2,
     paddingHorizontal: 18,
-    paddingVertical: 16,
+    paddingVertical: 14,
   },
   planLeft: {
     flex: 1,
@@ -478,11 +512,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    marginBottom: 3,
+    marginBottom: 2,
   },
   planName: {
     fontSize: 17,
     fontWeight: "700",
+  },
+  planTrialText: {
+    fontSize: 14,
+    fontWeight: "700",
+    marginBottom: 2,
   },
   bestValueBadge: {
     backgroundColor: "#10B981",
@@ -496,15 +535,23 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   planPrice: {
-    fontSize: 14,
+    fontSize: 13,
   },
   planCheck: {
     marginLeft: 12,
   },
+  checkFilled: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: "#10B981",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   radioOuter: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     borderWidth: 2,
   },
   ctaWrap: {
@@ -516,24 +563,30 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 18,
+    paddingVertical: 19,
     borderRadius: 16,
-    gap: 8,
+    gap: 10,
     width: "100%",
     shadowColor: "#10B981",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.45,
+    shadowRadius: 16,
+    elevation: 8,
   },
   ctaButtonText: {
     color: "#fff",
     fontSize: 18,
-    fontWeight: "700",
+    fontWeight: "800",
+    letterSpacing: 0.2,
+  },
+  ctaNoteRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    marginTop: 10,
   },
   ctaNote: {
     fontSize: 13,
-    marginTop: 10,
   },
   footer: {
     flexDirection: "row",
