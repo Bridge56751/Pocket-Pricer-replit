@@ -10,16 +10,16 @@ if (supabaseUrl && supabaseKey) {
     supabase = createClient(supabaseUrl, supabaseKey);
     console.log("Supabase analytics connected");
   } catch (err: any) {
-    console.warn("Supabase init failed:", err.message, "— analytics disabled");
+    console.error("Supabase init failed:", err.message, "— analytics disabled");
     supabase = null;
   }
 } else {
-  console.warn("Supabase credentials missing — analytics disabled");
+  console.error("Supabase credentials missing — analytics disabled");
 }
 
 function safeLog(promise: PromiseLike<any>, label: string) {
   Promise.resolve(promise).catch((err) => {
-    console.warn(`Supabase ${label} error:`, err?.message || err);
+    console.error(`Supabase ${label} error:`, err?.message || err);
   });
 }
 
@@ -44,14 +44,14 @@ export function logScanEvent(
           priced_count: pricedCount,
         })
         .then(({ error }) => {
-          if (error) console.warn("Supabase scan_events error:", error.message);
+          if (error) console.error("Supabase scan_events error:", error.message);
         }),
       "scan_events insert"
     );
 
     upsertDevice(deviceId, isPro, "scan");
   } catch (err: any) {
-    console.warn("Supabase logScanEvent error:", err?.message);
+    console.error("Supabase logScanEvent error:", err?.message);
   }
 }
 
@@ -78,14 +78,14 @@ export function logEbaySearchEvent(
           avg_sold_price: avgSoldPrice,
         })
         .then(({ error }) => {
-          if (error) console.warn("Supabase ebay_search_events error:", error.message);
+          if (error) console.error("Supabase ebay_search_events error:", error.message);
         }),
       "ebay_search_events insert"
     );
 
     upsertDevice(deviceId, isPro, "ebay");
   } catch (err: any) {
-    console.warn("Supabase logEbaySearchEvent error:", err?.message);
+    console.error("Supabase logEbaySearchEvent error:", err?.message);
   }
 }
 
@@ -100,7 +100,7 @@ function upsertDevice(deviceId: string, isPro: boolean, eventType: "scan" | "eba
       .maybeSingle()
       .then(({ data, error }) => {
         if (error) {
-          console.warn("Supabase device lookup error:", error.message);
+          console.error("Supabase device lookup error:", error.message);
           return;
         }
 
@@ -123,7 +123,7 @@ function upsertDevice(deviceId: string, isPro: boolean, eventType: "scan" | "eba
               .update(updates)
               .eq("device_id", deviceId)
               .then(({ error: updateError }) => {
-                if (updateError) console.warn("Supabase device update error:", updateError.message);
+                if (updateError) console.error("Supabase device update error:", updateError.message);
               }),
             "device update"
           );
@@ -140,7 +140,7 @@ function upsertDevice(deviceId: string, isPro: boolean, eventType: "scan" | "eba
                 total_ebay_searches: eventType === "ebay" ? 1 : 0,
               })
               .then(({ error: insertError }) => {
-                if (insertError) console.warn("Supabase device insert error:", insertError.message);
+                if (insertError) console.error("Supabase device insert error:", insertError.message);
               }),
             "device insert"
           );
