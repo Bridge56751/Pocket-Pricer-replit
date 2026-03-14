@@ -12,7 +12,12 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.ebayprofit.app",
       "buildNumber": "55",
-      "googleServicesFile": "./GoogleService-Info.plist"
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "infoPlist": {
+        "SKAdNetworkItems": [
+          { "SKAdNetworkIdentifier": "gta9lk7ez23.skadnetwork" }
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {

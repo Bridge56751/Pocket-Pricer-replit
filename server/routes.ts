@@ -2,6 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "node:http";
 import { getGuestScanCount, incrementGuestScan } from "./db";
 import { logScanEvent, logEbaySearchEvent } from "./supabase";
+import { logTikTokScanEvent, logTikTokEbaySearchEvent } from "./tiktok";
 
 const FREE_LIFETIME_SEARCHES = 3;
 const RATE_LIMIT_MAX = 20;
@@ -297,6 +298,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch {}
 
       logScanEvent(deviceId, isPro, productName, listings.length, pricedListings.length);
+      logTikTokScanEvent(deviceId, isPro, productName);
 
       res.json({
         query: productName,
@@ -541,6 +543,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       logEbaySearchEvent(deviceId, isPro, cleanQuery, !!broadSearch, items.length, avgSoldPrice);
+      logTikTokEbaySearchEvent(deviceId, isPro, cleanQuery);
 
       res.json({
         avgSoldPrice,
