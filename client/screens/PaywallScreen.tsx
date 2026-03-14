@@ -38,11 +38,31 @@ export default function PaywallScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, "Paywall">>();
   const context = route.params?.context;
-  const { packages, purchasePackage, restorePurchases, isPro, isReady: rcReady } = useRevenueCat();
+  const { packages, purchasePackage, restorePurchases, reloadOfferings, isPro, isReady: rcReady } = useRevenueCat();
 
   const [isLoading, setIsLoading] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
+  const [offeringsTimedOut, setOfferingsTimedOut] = useState(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const packagesLoading = !rcReady || (rcReady && packages.length === 0);
+  const showError = offeringsTimedOut && packagesLoading;
+
+  useEffect(() => {
+    if (packages.length > 0) {
+      setOfferingsTimedOut(false);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      return;
+    }
+    timeoutRef.current = setTimeout(() => setOfferingsTimedOut(true), 12000);
+    return () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); };
+  }, [packages.length]);
+
+  const handleRetry = async () => {
+    setOfferingsTimedOut(false);
+    timeoutRef.current = setTimeout(() => setOfferingsTimedOut(true), 12000);
+    await reloadOfferings();
+  };
   const weeklyPkg = packages.find(
     (pkg) => pkg.packageType === "WEEKLY" || pkg.identifier === "$rc_weekly"
   );
@@ -220,7 +240,20 @@ export default function PaywallScreen() {
 
           {/* Plan cards */}
           <View style={styles.planCards}>
-            {packagesLoading ? (
+            {showError ? (
+              <View style={[styles.errorCard, { backgroundColor: isDarkMode ? "#2A2A2A" : "#FEF2F2", borderColor: isDarkMode ? "#5C2626" : "#FECACA" }]}>
+                <Feather name="wifi-off" size={22} color="#EF4444" />
+                <Text style={[styles.errorTitle, { color: theme.colors.foreground }]}>Unable to load plans</Text>
+                <Text style={[styles.errorSub, { color: theme.colors.mutedForeground }]}>Check your connection and try again.</Text>
+                <Pressable
+                  onPress={handleRetry}
+                  style={[styles.retryButton, { backgroundColor: isDarkMode ? "#3A3A3A" : "#FFF" }]}
+                >
+                  <Feather name="refresh-cw" size={14} color="#10B981" />
+                  <Text style={styles.retryText}>Try Again</Text>
+                </Pressable>
+              </View>
+            ) : packagesLoading ? (
               <>
                 <View style={[styles.planCard, styles.skeletonCard, { borderColor: isDarkMode ? "#3A3A3C" : "#E5E7EB", backgroundColor: isDarkMode ? "#2A2A2A" : "#F3F4F6" }]} />
                 <View style={[styles.planCard, styles.skeletonCard, { borderColor: isDarkMode ? "#3A3A3C" : "#E5E7EB", backgroundColor: isDarkMode ? "#2A2A2A" : "#F3F4F6" }]} />
@@ -322,12 +355,12 @@ export default function PaywallScreen() {
                 end={{ x: 1, y: 0 }}
                 style={[styles.ctaButton, packagesLoading && { opacity: 0.75 }]}
               >
-                {isLoading || packagesLoading ? (
+                {isLoading ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : packagesLoading && !showError ? (
                   <>
                     <ActivityIndicator color="#fff" size="small" />
-                    {packagesLoading && !isLoading ? (
-                      <Text style={styles.ctaButtonText}>Loading plans...</Text>
-                    ) : null}
+                    <Text style={styles.ctaButtonText}>Loading plans...</Text>
                   </>
                 ) : (
                   <>
@@ -519,6 +552,40 @@ const styles = StyleSheet.create({
   skeletonCard: {
     height: 72,
     borderWidth: 1,
+  },
+  errorCard: {
+    width: "100%",
+    borderRadius: 16,
+    borderWidth: 1,
+    paddingVertical: 22,
+    paddingHorizontal: 20,
+    alignItems: "center",
+    gap: 8,
+  },
+  errorTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    marginTop: 2,
+  },
+  errorSub: {
+    fontSize: 13,
+    textAlign: "center",
+  },
+  retryButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 6,
+    paddingVertical: 9,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#10B981",
+  },
+  retryText: {
+    color: "#10B981",
+    fontSize: 14,
+    fontWeight: "700",
   },
   planLeft: {
     flex: 1,
