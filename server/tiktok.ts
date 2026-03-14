@@ -70,6 +70,28 @@ export function logTikTokScanEvent(
   );
 }
 
+export function logTikTokSubscriptionEvent(
+  userId: string,
+  eventType: "Subscribe" | "StartTrial",
+  value: number,
+  currency: string
+): void {
+  sendEvent(
+    eventType,
+    `sub_${userId}_${Date.now()}`,
+    {
+      user: {
+        external_id: hashId(userId),
+      },
+    },
+    {
+      currency,
+      value: value.toString(),
+      content_type: "subscription",
+    }
+  );
+}
+
 export function logTikTokEbaySearchEvent(
   deviceId: string,
   isPro: boolean,

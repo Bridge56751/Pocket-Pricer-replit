@@ -2,7 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "node:http";
 import { getGuestScanCount, incrementGuestScan } from "./db";
 import { logScanEvent, logEbaySearchEvent } from "./supabase";
-import { logTikTokScanEvent, logTikTokEbaySearchEvent } from "./tiktok";
+import { logTikTokScanEvent, logTikTokEbaySearchEvent, logTikTokSubscriptionEvent } from "./tiktok";
 
 const FREE_LIFETIME_SEARCHES = 3;
 const RATE_LIMIT_MAX = 20;
@@ -557,6 +557,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("eBay sold search error:", error);
       res.status(500).json({ error: "Failed to search eBay sold data" });
+    }
+  });
+
+  app.post("/api/revenuecat-webhook", (req: Request, res: Response) => {
+    try {
+      const secret = process.env.REVENUECAT_WEBHOOK_SECRET;
+      if (secret) {
+        const authHeader = req.headers["authorization"];
+        if (authHeader !== secret) {
+          return res.status(401).json({ error: "Unauthorized" });
+        }
+      }
+
+      const event = req.body?.event;
+      if (!event) return res.status(400).json({ error: "No event" });
+
+      const userId = event.original_app_user_id || event.app_user_id || "unknown";
+      const price = event.price || 0;
+      const currency = event.currency || "USD";
+
+      if (event.type === "INITIAL_PURCHASE") {
+        logTikTokSubscriptionEvent(userId, "Subscribe", price, currency);
+        console.log(`RevenueCat webhook: Subscribe for ${userId} at $${price}`);
+      } else if (event.type === "TRIAL_STARTED") {
+        logTikTokSubscriptionEvent(userId, "StartTrial", 0, currency);
+        console.log(`RevenueCat webhook: StartTrial for ${userId}`);
+      }
+
+      res.json({ received: true });
+    } catch (error) {
+      console.error("RevenueCat webhook error:", error);
+      res.status(500).json({ error: "Webhook processing failed" });
     }
   });
 
