@@ -4,7 +4,7 @@ import { getGuestScanCount, incrementGuestScan } from "./db";
 import { logScanEvent, logEbaySearchEvent } from "./supabase";
 import { logTikTokScanEvent, logTikTokEbaySearchEvent, logTikTokSubscriptionEvent } from "./tiktok";
 
-const FREE_LIFETIME_SEARCHES = 99;
+const FREE_LIFETIME_SEARCHES = 3;
 const RATE_LIMIT_MAX = 20;
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 
