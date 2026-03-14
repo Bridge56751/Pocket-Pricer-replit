@@ -1,0 +1,103 @@
+// example: in developer's app, identify function called when user logs into the app
+func identify(_ sender: UIButton) {
+    /* additional developer identify logic */
+
+    // TikTokBusiness identify function to be called here
+    TikTokBusiness.identify(withExternalID: "<externalId>", externalUserName: "<externalUserName>", phoneNumber: "<phoneNumber>", email: "<email>")
+}
+
+
+// Checkoutlet event : TikTokContentsEvent = TikTokCheckoutEvent()
+event.setContentId("ID of the product item in your system")
+event.setCurrency(TTCurrency.USD)
+event.setDescription("Description of the product")
+event.setContentType("Type of the product")
+event.setValue("Total value of the order or items sold")
+
+let eventContent = TikTokContentParams()
+eventContent.price = 4.99
+eventContent.quantity = 1
+eventContent.brand = "Brand of the product"
+eventContent.contentName = "Name of the product"
+event.setContents([eventContent]) // You can set several content parameters in an array
+TikTokBusiness.trackTTEvent(event)
+
+
+// View Contentlet event : TikTokContentsEvent = TikTokViewContentEvent()
+event.setContentId("ID of the product item in your system")
+event.setCurrency(TTCurrency.USD)
+event.setDescription("Description of the product")
+event.setContentType("Type of the product")
+event.setValue("Total value of the order or items sold")
+
+let eventContent = TikTokContentParams()
+eventContent.price = 4.99
+eventContent.quantity = 1
+eventContent.brand = "Brand of the product"
+eventContent.contentName = "Name of the product"
+event.setContents([eventContent]) // You can set several content parameters in an array
+TikTokBusiness.trackTTEvent(event)
+
+
+
+
+// Purchaselet event : TikTokContentsEvent = TikTokPurchaseEvent()
+event.setContentId("ID of the product item in your system")
+event.setCurrency(TTCurrency.USD)
+event.setDescription("Description of the product")
+event.setContentType("Type of the product")
+event.setValue("Total value of the order or items sold")
+
+let eventContent = TikTokContentParams()
+eventContent.price = 4.99
+eventContent.quantity = 1
+eventContent.brand = "Brand of the product"
+eventContent.contentName = "Name of the product"
+event.setContents([eventContent]) // You can set several content parameters in an array
+TikTokBusiness.trackTTEvent(event)
+
+
+// Add to Cartlet event : TikTokContentsEvent = TikTokAddToCartEvent()
+event.setContentId("ID of the product item in your system")
+event.setCurrency(TTCurrency.USD)
+event.setDescription("Description of the product")
+event.setContentType("Type of the product")
+event.setValue("Total value of the order or items sold")
+
+let eventContent = TikTokContentParams()
+eventContent.price = 4.99
+eventContent.quantity = 1
+eventContent.brand = "Brand of the product"
+eventContent.contentName = "Name of the product"
+event.setContents([eventContent]) // You can set several content parameters in an array
+TikTokBusiness.trackTTEvent(event)
+
+
+// Add Payment Infolet event = TikTokBaseEvent(eventName:TTEventNameAddPaymentInfo)
+TikTokBusiness.trackTTEvent(event)
+
+
+// Add to Wishlistlet event : TikTokContentsEvent = TikTokAddToWishlistEvent()
+event.setContentId("ID of the product item in your system")
+event.setCurrency(TTCurrency.USD)
+event.setDescription("Description of the product")
+event.setContentType("Type of the product")
+event.setValue("Total value of the order or items sold")
+
+let eventContent = TikTokContentParams()
+eventContent.price = 4.99
+eventContent.quantity = 1
+eventContent.brand = "Brand of the product"
+eventContent.contentName = "Name of the product"
+event.setContents([eventContent]) // You can set several content parameters in an array
+TikTokBusiness.trackTTEvent(event)
+
+
+// Launch Applet event = TikTokBaseEvent(eventName:TTEventNameLaunchAPP)
+TikTokBusiness.trackTTEvent(event)
+
+
+// Ratelet event = TikTokBaseEvent(eventName:TTEventNameGenerateLead)
+TikTokBusiness.trackTTEvent(event)
+
+ 
