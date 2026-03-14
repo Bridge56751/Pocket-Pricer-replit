@@ -8,6 +8,7 @@ interface AuthContextType {
   isLoading: boolean;
   getDeviceId: () => Promise<string>;
   getScansUsed: () => Promise<number>;
+  setScansUsed: (count: number) => Promise<void>;
   incrementScans: () => Promise<number>;
 }
 
@@ -71,17 +72,21 @@ const getScansUsed = async (): Promise<number> => {
   }
 };
 
-const incrementScans = async (): Promise<number> => {
-  const current = await getScansUsed();
-  const next = current + 1;
+const setScansUsed = async (count: number): Promise<void> => {
   if (Platform.OS !== "web") {
     try {
-      await SecureStore.setItemAsync(SCANS_SECURE_KEY, next.toString());
+      await SecureStore.setItemAsync(SCANS_SECURE_KEY, count.toString());
     } catch {}
   }
   try {
-    await AsyncStorage.setItem(SCANS_ASYNC_KEY, next.toString());
+    await AsyncStorage.setItem(SCANS_ASYNC_KEY, count.toString());
   } catch {}
+};
+
+const incrementScans = async (): Promise<number> => {
+  const current = await getScansUsed();
+  const next = current + 1;
+  await setScansUsed(next);
   return next;
 };
 
@@ -94,7 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ isLoading, getDeviceId: getOrCreateDeviceId, getScansUsed, incrementScans }}
+      value={{ isLoading, getDeviceId: getOrCreateDeviceId, getScansUsed, setScansUsed, incrementScans }}
     >
       {children}
     </AuthContext.Provider>

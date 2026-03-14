@@ -151,7 +151,7 @@ export default function ScanScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<ScanScreenRouteProp>();
 
-  const { getDeviceId, getScansUsed, incrementScans } = useAuth();
+  const { getDeviceId, getScansUsed, setScansUsed: persistScansUsed, incrementScans } = useAuth();
   const { isPro, isReady: rcReady } = useRevenueCat();
   
   const [recentScans, setRecentScans] = useState<SearchHistoryItem[]>([]);
@@ -280,11 +280,22 @@ export default function ScanScreen() {
       setAnalyzingProgress("");
       setScannedPhotoUri(null);
       processingRef.current = false;
-      
+
+      let newScanCount = 0;
+      if (!isPro) {
+        const serverCount = results.totalScans;
+        if (typeof serverCount === "number" && serverCount > 0) {
+          await persistScansUsed(serverCount);
+          newScanCount = serverCount;
+        } else {
+          newScanCount = await incrementScans().catch(() => 0);
+        }
+        setScansUsed(newScanCount);
+      }
+
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       navigation.navigate("SearchResults", { results: enrichedResults });
 
-      const newScanCount = await incrementScans().catch(() => 0);
       addSearchHistory(historyItem).catch(() => {});
       loadRecentScans();
 
@@ -319,7 +330,7 @@ export default function ScanScreen() {
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
-  }, [loadRecentScans, navigation, rcReady, isPro, getScansUsed, incrementScans, getDeviceId]);
+  }, [loadRecentScans, navigation, rcReady, isPro, getScansUsed, persistScansUsed, incrementScans, getDeviceId]);
 
   useEffect(() => {
     const photosToProcess = route.params?.photosToProcess;
