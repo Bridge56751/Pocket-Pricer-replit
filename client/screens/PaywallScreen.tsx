@@ -254,10 +254,7 @@ export default function PaywallScreen() {
                 </Pressable>
               </View>
             ) : packagesLoading ? (
-              <>
-                <View style={[styles.planCard, styles.skeletonCard, { borderColor: isDarkMode ? "#3A3A3C" : "#E5E7EB", backgroundColor: isDarkMode ? "#2A2A2A" : "#F3F4F6" }]} />
-                <View style={[styles.planCard, styles.skeletonCard, { borderColor: isDarkMode ? "#3A3A3C" : "#E5E7EB", backgroundColor: isDarkMode ? "#2A2A2A" : "#F3F4F6" }]} />
-              </>
+              <View style={[styles.planCard, styles.skeletonCard, { borderColor: isDarkMode ? "#3A3A3C" : "#E5E7EB", backgroundColor: isDarkMode ? "#2A2A2A" : "#F3F4F6" }]} />
             ) : hasMultiplePlans ? (
               <>
                 <Pressable
