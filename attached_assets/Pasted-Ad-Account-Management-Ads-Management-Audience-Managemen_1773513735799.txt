@@ -1,0 +1,107 @@
+Ad Account Management
+Ads Management
+Audience Management
+Reporting
+Measurement
+Creative Management
+App Management
+Pixel Management
+DPA Catalog Management
+Reach & Frequency
+Lead Management
+TikTok Creator Marketplace (TCM)
+TikTok Creator
+Ad Comments
+TikTok Business Plugin
+Automated Rules
+Onsite Commerce Store
+Offline Events Management
+Ad Diagnosis
+Mentions
+CRM Event Management
+Business Recommendation
+CTX Events Management
+Brand Safety
+Partner Insights
+Payment Portfolio
+Custom Conversion Management
+Minis Management
+Ad Account Management
+Ad Account Management
+v1.3
+API
+/advertiser/info/
+/oauth2/advertiser/get/
+/term/get/
+/term/check/
+/term/confirm/
+/pangle_block_list/get/
+/pangle_block_list/update/
+/pangle_block_list/campaign/update/
+/pangle_block_list/campaign/get/
+/pangle_block_list/report/get/
+/pangle_audience_package/get/
+/bc/inspiration_tool/audience_insight/
+/bc/inspiration_tool/ad_performance/
+/bc/get/
+/bc/balance/get/
+/bc/transaction/get/
+/bc/image/upload/
+/bc/advertiser/create/
+/advertiser/update/
+/bc/advertiser/disable/
+/bc/advertiser/qualification/get/
+/bc/advertiser/attribute/
+/bc/advertiser/unionpay_info/check/
+/bc/advertiser/unionpay_info/submit/
+/bc/transfer/
+/advertiser/balance/get/
+/advertiser/transaction/get/
+/bc/account/transaction/get/
+/bc/account/cost/get/
+/bc/account/budget/changelog/get/
+/bc/asset/get/
+/bc/asset/admin/get/
+/bc/asset/assign/
+/bc/asset/unassign/
+/bc/asset/partner/get/
+/bc/asset/member/get/
+/bc/asset/admin/delete/
+/bc/pixel/link/update/
+/bc/pixel/link/get/
+/bc/pixel/transfer/
+/asset/bind/quota/
+/bc/pixel/get/
+/bc/asset/account/authorization/
+/bc/asset/advertiser/assign/
+/bc/asset/advertiser/unassign/
+/bc/asset/advertiser/assigned/
+/bc/oa/create/
+/bc/partner/asset/get/
+/bc/partner/delete/
+/bc/partner/add/
+/bc/partner/get/
+/bc/partner/asset/delete/
+/bc/member/delete/
+/bc/member/update/
+/bc/member/get/
+/bc/member/invite/
+/bc/member/assign/
+/bc/billing_group/update/
+/bc/billing_group/get/
+/bc/billing_group/create/
+/bc/billing_group/advertiser/list/
+/bc/invoice/task/create/
+/bc/invoice/get/
+/bc/invoice/download/
+/bc/invoice/task/get/
+/bc/invoice/unpaid/get/
+/bc/invoice/task/list/
+/bc/invoice/billing_report/get/
+/bc/asset_group/create/
+/bc/asset_group/get/
+/bc/asset_group/update/
+/bc/asset_group/list/
+/bc/asset_group/delete/
+/bc/child/invite/
+/bc/child/unbind/

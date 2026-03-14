@@ -48,7 +48,7 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      Purchases.setLogLevel(LOG_LEVEL.DEBUG);
+      Purchases.setLogLevel(LOG_LEVEL.ERROR);
       
       await Purchases.configure({ apiKey: REVENUECAT_API_KEY });
       
