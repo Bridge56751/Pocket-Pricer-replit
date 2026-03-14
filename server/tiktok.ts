@@ -27,6 +27,7 @@ function sendEvent(
     event: eventName,
     event_id: eventId,
     timestamp: Math.floor(Date.now() / 1000).toString(),
+    test_event_code: "TEST08001",
     context,
     properties,
   };
@@ -39,9 +40,11 @@ function sendEvent(
     body: JSON.stringify(body),
   })
     .then(async (res) => {
+      const text = await res.text();
       if (!res.ok) {
-        const text = await res.text();
         console.error("TikTok App Events API error:", res.status, text);
+      } else {
+        console.log(`TikTok event sent [${eventName}] status:${res.status}`, text);
       }
     })
     .catch((err: any) => {
