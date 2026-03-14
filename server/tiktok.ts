@@ -26,7 +26,7 @@ function sendEvent(
     secret: TIKTOK_APP_SECRET,
     event: eventName,
     event_id: eventId,
-    timestamp: new Date().toISOString(),
+    timestamp: Math.floor(Date.now() / 1000).toString(),
     context,
     properties,
   };
