@@ -1,23 +1,29 @@
 import { createHash } from "crypto";
 
-const TIKTOK_PIXEL_ID = process.env.TIKTOK_PIXEL_ID;
-const TIKTOK_ACCESS_TOKEN = process.env.TIKTOK_ACCESS_TOKEN;
+const TIKTOK_APP_ID = process.env.TIKTOK_APP_ID;
+const TIKTOK_APP_SECRET = process.env.TIKTOK_APP_SECRET;
 
-const TIKTOK_API_URL = "https://business-api.tiktok.com/open_api/v1.3/pixel/track/";
+const TIKTOK_API_URL = "https://business-api.tiktok.com/open_api/v1.3/app/track/";
 
 function isConfigured(): boolean {
-  return !!(TIKTOK_PIXEL_ID && TIKTOK_ACCESS_TOKEN);
+  return !!(TIKTOK_APP_ID && TIKTOK_APP_SECRET);
 }
 
 function hashId(value: string): string {
   return createHash("sha256").update(value.toLowerCase().trim()).digest("hex");
 }
 
-function sendEvent(eventName: string, eventId: string, context: object, properties: object): void {
+function sendEvent(
+  eventName: string,
+  eventId: string,
+  context: object,
+  properties: object
+): void {
   if (!isConfigured()) return;
 
   const body = {
-    pixel_code: TIKTOK_PIXEL_ID,
+    app_id: TIKTOK_APP_ID,
+    secret: TIKTOK_APP_SECRET,
     event: eventName,
     event_id: eventId,
     timestamp: new Date().toISOString(),
@@ -29,14 +35,13 @@ function sendEvent(eventName: string, eventId: string, context: object, properti
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Access-Token": TIKTOK_ACCESS_TOKEN!,
     },
     body: JSON.stringify(body),
   })
     .then(async (res) => {
       if (!res.ok) {
         const text = await res.text();
-        console.error("TikTok Events API error:", res.status, text);
+        console.error("TikTok App Events API error:", res.status, text);
       }
     })
     .catch((err: any) => {
