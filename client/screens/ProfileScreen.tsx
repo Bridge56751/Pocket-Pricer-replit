@@ -12,7 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRevenueCat } from "@/contexts/RevenueCatContext";
 import UpgradeModal from "@/components/UpgradeModal";
 import { resetOnboarding } from "@/screens/OnboardingScreen";
-import { triggerOnboardingReplay } from "@/components/AppContent";
+import { triggerOnboardingReplay } from "@/lib/onboarding-events";
 import { clearSearchHistory, clearFavorites } from "@/lib/storage";
 
 type ThemeOption = "light" | "dark" | "system";
