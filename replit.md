@@ -84,3 +84,10 @@ The application is built with a client-server architecture. The frontend is an E
   - Plan selector with radio-style selection UI; legal disclosure and CTA dynamically reflect selected plan
   - Graceful fallback: shows single plan card when only one RevenueCat package exists
   - Requires weekly product to be created in App Store Connect, Google Play Console, and RevenueCat dashboard
+- **Mar 2026**: TikTok App Events SDK integrated
+  - Server-side TikTok tracking removed (not supported for mobile apps)
+  - `react-native-tiktok-business-sdk` installed and wired up client-side
+  - SDK initialized in App.tsx alongside Facebook SDK (skipped in Expo Go, native builds only)
+  - App ID: `6758423765`, TikTok App ID: `7616919078825590792`
+  - Events tracked: `Search` (after scan), `StartTrial` + `Subscribe` (after purchase)
+  - All event calls are fire-and-forget with silent error handling

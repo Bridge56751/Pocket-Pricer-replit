@@ -21,6 +21,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { RevenueCatProvider } from "@/contexts/RevenueCatContext";
 import { AppContent } from "@/components/AppContent";
+import { initTikTokSDK } from "@/lib/tiktok";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -85,6 +86,7 @@ export default function App() {
 
     initFacebookSDK();
     initFirebaseAnalytics();
+    initTikTokSDK();
   }, []);
 
   if (!fontsLoaded && !fontError) {

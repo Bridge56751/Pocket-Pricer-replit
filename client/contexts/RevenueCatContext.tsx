@@ -5,6 +5,7 @@ import Purchases, {
   CustomerInfo,
   LOG_LEVEL 
 } from "react-native-purchases";
+import { logTikTokStartTrialEvent, logTikTokSubscribeEvent } from "@/lib/tiktok";
 
 const REVENUECAT_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY || "";
 
@@ -160,6 +161,8 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
       const isNowPro = "pro" in customerInfo.entitlements.active || "Pro" in customerInfo.entitlements.active || "Pocket Pricer Pro" in customerInfo.entitlements.active;
       
       if (isNowPro) {
+        logTikTokStartTrialEvent().catch(() => {});
+        logTikTokSubscribeEvent(pkg.product.price ?? 0, pkg.product.currencyCode ?? "USD").catch(() => {});
         return { success: true };
       } else {
         return { success: false, error: "Purchase completed but subscription not activated" };
