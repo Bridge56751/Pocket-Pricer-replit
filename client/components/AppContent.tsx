@@ -8,7 +8,11 @@ import RootStackNavigator from "@/navigation/RootStackNavigator";
 import OnboardingScreen, { checkOnboardingComplete } from "@/screens/OnboardingScreen";
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { useRevenueCat } from "@/contexts/RevenueCatContext";
-import { registerOnboardingReplayTrigger } from "@/lib/onboarding-events";
+
+let _triggerReplay: (() => void) | null = null;
+export function triggerOnboardingReplay() {
+  _triggerReplay?.();
+}
 
 export function AppContent() {
   const { isDarkMode, theme } = useDesignTokens();
@@ -23,11 +27,11 @@ export function AppContent() {
       setShowOnboarding(!complete);
     });
 
-    const unregister = registerOnboardingReplayTrigger(() => {
+    _triggerReplay = () => {
       setIsOnboardingReplay(true);
       setShowOnboarding(true);
-    });
-    return unregister;
+    };
+    return () => { _triggerReplay = null; };
   }, []);
 
   useEffect(() => {
