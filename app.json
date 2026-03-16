@@ -15,6 +15,7 @@
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "SKAdNetworkItems": [
+          { "SKAdNetworkIdentifier": "mj797d8u6f.skadnetwork" },
           { "SKAdNetworkIdentifier": "gta9lk7ez23.skadnetwork" }
         ]
       }
@@ -34,7 +35,14 @@
     },
     "plugins": [
       "./plugins/withFirebaseStaticFramework",
-      "expo-build-properties",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "extraProguardRules": "-keep class com.tiktok.** { *; }\n-keep class androidx.lifecycle.** { *; }"
+          }
+        }
+      ],
       [
         "expo-splash-screen",
         {

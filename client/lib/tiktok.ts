@@ -2,6 +2,7 @@ import { Platform } from "react-native";
 
 const TIKTOK_APP_ID = "6758423765";
 const TIKTOK_TIKTOK_APP_ID = "7616919078825590792";
+const TIKTOK_ACCESS_TOKEN = process.env.EXPO_PUBLIC_TIKTOK_ACCESS_TOKEN ?? "";
 
 let initialized = false;
 
@@ -25,7 +26,7 @@ export async function initTikTokSDK(): Promise<void> {
     await TikTokBusiness.initializeSdk(
       TIKTOK_APP_ID,
       TIKTOK_TIKTOK_APP_ID,
-      "",
+      TIKTOK_ACCESS_TOKEN,
       false
     );
     initialized = true;
