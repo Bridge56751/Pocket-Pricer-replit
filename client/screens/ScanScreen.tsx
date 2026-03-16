@@ -295,7 +295,7 @@ export default function ScanScreen() {
       }
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      logTikTokScanEvent(await getDeviceId()).catch(() => {});
+      getDeviceId().then((id) => logTikTokScanEvent(id).catch(() => {})).catch(() => {});
       navigation.navigate("SearchResults", { results: enrichedResults });
 
       addSearchHistory(historyItem).catch(() => {});
