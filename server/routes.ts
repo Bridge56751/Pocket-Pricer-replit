@@ -48,6 +48,7 @@ async function uploadImageForLens(imageBase64: string): Promise<string | null> {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: formData.toString(),
+        signal: AbortSignal.timeout(20000),
       });
       const data = await response.json();
       if (data.status_code === 200 && data.image?.url) return data.image.url;
@@ -61,6 +62,7 @@ async function uploadImageForLens(imageBase64: string): Promise<string | null> {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: formData.toString(),
+        signal: AbortSignal.timeout(20000),
       });
       const data = await response.json();
       if (data.success && data.data?.url) return data.data.url;
@@ -139,7 +141,9 @@ async function searchWithGoogleLens(imageUrl: string): Promise<{
       api_key: apiKey,
     });
 
-    const response = await fetch(`https://www.searchapi.io/api/v1/search?${params.toString()}`);
+    const response = await fetch(`https://www.searchapi.io/api/v1/search?${params.toString()}`, {
+      signal: AbortSignal.timeout(35000),
+    });
     const data = await response.json() as SearchApiLensResponse;
 
     if (data.error) {
@@ -441,7 +445,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         api_key: apiKey,
       });
 
-      const response = await fetch(`https://www.searchapi.io/api/v1/search?${params.toString()}`);
+      const response = await fetch(`https://www.searchapi.io/api/v1/search?${params.toString()}`, {
+        signal: AbortSignal.timeout(30000),
+      });
       const data = await response.json() as {
         organic_results?: {
           position?: number;
