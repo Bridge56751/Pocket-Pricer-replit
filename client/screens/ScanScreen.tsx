@@ -28,7 +28,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRevenueCat } from "@/contexts/RevenueCatContext";
 import type { SearchHistoryItem } from "@/types/product";
 import type { RootStackParamList, CapturedPhoto } from "@/navigation/RootStackNavigator";
-import { logTikTokScanEvent } from "@/lib/tiktok";
 
 type ScanScreenRouteProp = RouteProp<RootStackParamList, "Home">;
 
@@ -295,7 +294,6 @@ export default function ScanScreen() {
       }
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      getDeviceId().then((id) => logTikTokScanEvent(id).catch(() => {})).catch(() => {});
       navigation.navigate("SearchResults", { results: enrichedResults });
 
       addSearchHistory(historyItem).catch(() => {});

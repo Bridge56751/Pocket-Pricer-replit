@@ -35,14 +35,7 @@
     },
     "plugins": [
       "./plugins/withFirebaseStaticFramework",
-      [
-        "expo-build-properties",
-        {
-          "android": {
-            "extraProguardRules": "-keep class com.tiktok.** { *; }\n-keep class androidx.lifecycle.** { *; }"
-          }
-        }
-      ],
+      "expo-build-properties",
       [
         "expo-splash-screen",
         {
