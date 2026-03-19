@@ -11,7 +11,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.ebayprofit.app",
-      "buildNumber": "57",
+      "buildNumber": "58",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "SKAdNetworkItems": [
