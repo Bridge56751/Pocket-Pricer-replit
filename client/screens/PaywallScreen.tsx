@@ -113,6 +113,10 @@ export default function PaywallScreen() {
     try {
       const result = await purchasePackage(activePkg);
       if (result.success) {
+        try {
+          const appsFlyer = await import("react-native-appsflyer");
+          appsFlyer.default.logEvent("af_start_trial", {});
+        } catch (e) {}
         navigateHome();
       } else if (result.error && result.error !== "Purchase cancelled") {
         Alert.alert("Purchase Failed", result.error);
