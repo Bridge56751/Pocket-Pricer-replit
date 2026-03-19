@@ -258,6 +258,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Image data is required" });
       }
 
+      let supabaseFileName: string | null = null;
+
       console.log("Uploading image for Google Lens search...");
       const uploadResult = await uploadImageForLens(imageBase64);
       
@@ -265,7 +267,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: "Failed to prepare image for search" });
       }
 
-      const { url: imageUrl, supabaseFileName } = uploadResult;
+      const { url: imageUrl } = uploadResult;
+      supabaseFileName = uploadResult.supabaseFileName;
 
       console.log("Searching with Google Lens...");
       const lensResult = await searchWithGoogleLens(imageUrl);
@@ -357,6 +360,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (supabaseFileName) deleteSupabaseImage(supabaseFileName);
     } catch (error) {
+      if (supabaseFileName) deleteSupabaseImage(supabaseFileName);
       console.error("Lens scan error:", error);
       res.status(500).json({ error: "Failed to scan product" });
     }
