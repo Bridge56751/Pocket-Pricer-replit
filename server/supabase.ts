@@ -17,6 +17,25 @@ if (supabaseUrl && supabaseKey) {
   console.error("Supabase credentials missing — analytics disabled");
 }
 
+export { supabase };
+
+export async function initScanImagesBucket(): Promise<void> {
+  if (!supabase) return;
+  try {
+    const { error } = await supabase.storage.createBucket("scan-images", {
+      public: true,
+      fileSizeLimit: 10 * 1024 * 1024,
+    });
+    if (error && error.message !== "The resource already exists") {
+      console.error("Supabase bucket init error:", error.message);
+    } else {
+      console.log("Supabase scan-images bucket ready");
+    }
+  } catch (err: any) {
+    console.error("Supabase bucket init failed:", err?.message);
+  }
+}
+
 function safeLog(promise: PromiseLike<any>, label: string) {
   Promise.resolve(promise).catch((err) => {
     console.error(`Supabase ${label} error:`, err?.message || err);

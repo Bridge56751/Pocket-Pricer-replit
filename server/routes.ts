@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "node:http";
 import { getGuestScanCount, incrementGuestScan } from "./db";
-import { logScanEvent, logEbaySearchEvent } from "./supabase";
+import { logScanEvent, logEbaySearchEvent, supabase, initScanImagesBucket } from "./supabase";
 import { logTikTokScanEvent, logTikTokEbaySearchEvent, logTikTokSubscriptionEvent } from "./tiktok";
 
 const FREE_LIFETIME_SEARCHES = 3;
@@ -39,6 +39,23 @@ async function uploadImageForLens(imageBase64: string): Promise<string | null> {
   const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, "");
 
   const uploadServices = [
+    async () => {
+      if (!supabase) return null;
+      const imageBuffer = Buffer.from(cleanBase64, "base64");
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 11)}.jpg`;
+      const { error } = await supabase.storage
+        .from("scan-images")
+        .upload(fileName, imageBuffer, {
+          contentType: "image/jpeg",
+          upsert: false,
+        });
+      if (error) {
+        console.error("Supabase storage upload error:", error.message);
+        return null;
+      }
+      const { data } = supabase.storage.from("scan-images").getPublicUrl(fileName);
+      return data?.publicUrl || null;
+    },
     async () => {
       const formData = new URLSearchParams();
       formData.append("key", process.env.FREEIMAGE_API_KEY || "6d207e02198a847aa98d0a2a901485a5");
@@ -196,6 +213,10 @@ const isReliableSource = (source: string) => {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  initScanImagesBucket().catch((err) => {
+    console.error("Failed to init scan-images bucket:", err?.message);
+  });
+
   app.post("/api/scan-with-lens", async (req: Request, res: Response) => {
     try {
       const deviceId = req.headers["x-device-id"] as string | undefined;
