@@ -299,6 +299,24 @@ export default function ScanScreen() {
       addSearchHistory(historyItem).catch(() => {});
       loadRecentScans();
 
+      if (Platform.OS !== "web") {
+        (async () => {
+          try {
+            const Constants = await import("expo-constants");
+            const isExpoGo = Constants.default?.appOwnership === "expo";
+            if (!isExpoGo) {
+              const appsFlyer = await import("react-native-appsflyer");
+              appsFlyer.default.logEvent(
+                "af_search",
+                { af_search_string: queryString },
+                () => {},
+                () => {}
+              );
+            }
+          } catch {}
+        })();
+      }
+
       if (newScanCount >= 5 && Platform.OS !== "web") {
         (async () => {
           try {
