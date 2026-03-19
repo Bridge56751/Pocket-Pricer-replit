@@ -14,13 +14,13 @@
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_DOMAIN": "pocket-pricer.replit.app",
+        "EXPO_PUBLIC_DOMAIN": "pocketpricerapp.com",
         "EXPO_PUBLIC_REVENUECAT_API_KEY": "appl_HofCsoaVBOUStbnRzQxJWHOmdii"
       }
     },
     "production": {
       "env": {
-        "EXPO_PUBLIC_DOMAIN": "pocket-pricer.replit.app",
+        "EXPO_PUBLIC_DOMAIN": "pocketpricerapp.com",
         "EXPO_PUBLIC_REVENUECAT_API_KEY": "appl_HofCsoaVBOUStbnRzQxJWHOmdii"
       }
     }
