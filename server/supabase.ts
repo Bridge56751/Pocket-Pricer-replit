@@ -26,7 +26,12 @@ export async function initScanImagesBucket(): Promise<void> {
       public: true,
       fileSizeLimit: 10 * 1024 * 1024,
     });
-    if (error && error.message !== "The resource already exists") {
+    const alreadyExists =
+      !error ||
+      error.message === "The resource already exists" ||
+      (error as any).status === 409 ||
+      (error as any).statusCode === 409;
+    if (error && !alreadyExists) {
       console.error("Supabase bucket init error:", error.message);
     } else {
       console.log("Supabase scan-images bucket ready");

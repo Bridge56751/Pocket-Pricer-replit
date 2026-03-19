@@ -41,12 +41,15 @@ async function uploadImageForLens(imageBase64: string): Promise<string | null> {
   const uploadServices: Array<() => Promise<string | null>> = [
     async () => {
       if (!supabase) return null;
+      const mimeMatch = imageBase64.match(/^data:([^;]+);base64,/);
+      const mimeType = mimeMatch ? mimeMatch[1] : "image/jpeg";
+      const ext = mimeType.split("/")[1]?.replace("jpeg", "jpg") || "jpg";
       const imageBuffer = Buffer.from(cleanBase64, "base64");
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 11)}.jpg`;
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 11)}.${ext}`;
       const { error } = await supabase.storage
         .from("scan-images")
         .upload(fileName, imageBuffer, {
-          contentType: "image/jpeg",
+          contentType: mimeType,
           upsert: false,
         });
       if (error) {
