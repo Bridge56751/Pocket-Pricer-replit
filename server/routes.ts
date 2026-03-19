@@ -61,7 +61,7 @@ async function uploadImageForLens(imageBase64: string): Promise<string | null> {
     },
     async () => {
       const formData = new URLSearchParams();
-      formData.append("key", process.env.FREEIMAGE_API_KEY || "6d207e02198a847aa98d0a2a901485a5");
+      formData.append("key", process.env.FREEIMAGE_API_KEY || "");
       formData.append("source", cleanBase64);
       formData.append("format", "json");
       const response = await fetch("https://freeimage.host/api/1/upload", {
@@ -76,7 +76,7 @@ async function uploadImageForLens(imageBase64: string): Promise<string | null> {
     },
     async () => {
       const formData = new URLSearchParams();
-      formData.append("key", process.env.IMGBB_API_KEY || "b4e0e3a7e5e0c4b2d6a8f9c1e3b5d7a9");
+      formData.append("key", process.env.IMGBB_API_KEY || "");
       formData.append("image", cleanBase64);
       const response = await fetch("https://api.imgbb.com/1/upload", {
         method: "POST",
