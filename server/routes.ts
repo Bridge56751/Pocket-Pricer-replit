@@ -482,6 +482,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         engine: "ebay_search",
         q: cleanQuery,
         filters: "sold_listings",
+        no_cache: "true",
         api_key: apiKey,
       });
 
