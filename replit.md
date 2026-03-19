@@ -89,5 +89,12 @@ The application is built with a client-server architecture. The frontend is an E
   - `server/tiktok.ts` remains as empty no-op stubs (safe, no-op)
   - TikTok ProGuard rules removed from `app.json`; `expo-build-properties` reverted to bare string
   - TikTok SKAdNetwork ID `mj797d8u6f.skadnetwork` kept in `app.json` (needed for future AppsFlyer/MMP attribution)
-  - AppsFlyer MMP integration planned as next step (pending dev key + App Store numeric ID from user)
   - Conservative request timeouts added to all outbound server `fetch()` calls: 20s image uploads, 35s Google Lens, 30s eBay search
+- **Mar 2026**: AppsFlyer MMP re-integrated; build bumped to 57
+  - `react-native-appsflyer@6.17.8` installed; `app.json` plugin added as correct array format `["react-native-appsflyer", {"shouldUseStrictMode": false}]` (previous failure was bare string)
+  - AppsFlyer SKAdNetwork ID `v9wttpbfk9.skadnetwork` added to `app.json`
+  - SDK initializes in `App.tsx` on app start (skipped in Expo Go + web); dev key `mfkZfMQWNe9nEc6NB23KJD`, iOS App ID `6758423765`
+  - `af_search` event fires after every successful scan in `ScanScreen.tsx`
+  - RevenueCat → AppsFlyer dashboard integration configured (subscription events flow server-to-server)
+  - TikTok → AppsFlyer dashboard integration configured (SRN mode)
+  - Build number bumped from 56 → 57
