@@ -34,10 +34,19 @@ setInterval(() => {
   }
 }, 5 * 60 * 1000);
 
-async function uploadImageForLens(imageBase64: string): Promise<string | null> {
+async function deleteSupabaseImage(fileName: string): Promise<void> {
+  if (!supabase || !fileName) return;
+  try {
+    await supabase.storage.from("scan-images").remove([fileName]);
+  } catch (err: any) {
+    console.error("Failed to delete scan image:", err?.message);
+  }
+}
+
+async function uploadImageForLens(imageBase64: string): Promise<{ url: string; supabaseFileName: string | null } | null> {
   const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, "");
 
-  const uploadServices: Array<() => Promise<string | null>> = [
+  const uploadServices: Array<() => Promise<{ url: string; supabaseFileName: string | null } | null>> = [
     async () => {
       if (!supabase) return null;
       const mimeMatch = imageBase64.match(/^data:([^;]+);base64,/);
@@ -56,7 +65,8 @@ async function uploadImageForLens(imageBase64: string): Promise<string | null> {
         return null;
       }
       const { data } = supabase.storage.from("scan-images").getPublicUrl(fileName);
-      return data?.publicUrl || null;
+      if (!data?.publicUrl) return null;
+      return { url: data.publicUrl, supabaseFileName: fileName };
     },
     async () => {
       const formData = new URLSearchParams();
@@ -70,7 +80,7 @@ async function uploadImageForLens(imageBase64: string): Promise<string | null> {
         signal: AbortSignal.timeout(20000),
       });
       const data = await response.json();
-      if (data.status_code === 200 && data.image?.url) return data.image.url;
+      if (data.status_code === 200 && data.image?.url) return { url: data.image.url, supabaseFileName: null };
       return null;
     },
     async () => {
@@ -84,15 +94,15 @@ async function uploadImageForLens(imageBase64: string): Promise<string | null> {
         signal: AbortSignal.timeout(20000),
       });
       const data = await response.json();
-      if (data.success && data.data?.url) return data.data.url;
+      if (data.success && data.data?.url) return { url: data.data.url, supabaseFileName: null };
       return null;
     },
   ];
 
   for (const service of uploadServices) {
     try {
-      const url = await service();
-      if (url) return url;
+      const result = await service();
+      if (result) return result;
     } catch (error) {
       console.error("Image upload service failed, trying next:", error);
     }
@@ -249,16 +259,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       console.log("Uploading image for Google Lens search...");
-      const imageUrl = await uploadImageForLens(imageBase64);
+      const uploadResult = await uploadImageForLens(imageBase64);
       
-      if (!imageUrl) {
+      if (!uploadResult) {
         return res.status(500).json({ error: "Failed to prepare image for search" });
       }
+
+      const { url: imageUrl, supabaseFileName } = uploadResult;
 
       console.log("Searching with Google Lens...");
       const lensResult = await searchWithGoogleLens(imageUrl);
 
       if (lensResult.error || lensResult.products.length === 0) {
+        if (supabaseFileName) deleteSupabaseImage(supabaseFileName);
         return res.status(404).json({ 
           error: "No products found",
           fallbackToText: true 
@@ -341,6 +354,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         usedLens: true,
         totalScans,
       });
+
+      if (supabaseFileName) deleteSupabaseImage(supabaseFileName);
     } catch (error) {
       console.error("Lens scan error:", error);
       res.status(500).json({ error: "Failed to scan product" });
