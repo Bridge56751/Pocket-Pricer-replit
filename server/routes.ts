@@ -586,36 +586,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/revenuecat-webhook", (req: Request, res: Response) => {
-    try {
-      const secret = process.env.REVENUECAT_WEBHOOK_SECRET;
-      if (secret) {
-        const authHeader = req.headers["authorization"];
-        if (authHeader !== secret) {
-          return res.status(401).json({ error: "Unauthorized" });
-        }
-      }
-
-      const event = req.body?.event;
-      if (!event) return res.status(400).json({ error: "No event" });
-
-      const userId = event.original_app_user_id || event.app_user_id || "unknown";
-      const price = event.price || 0;
-      const currency = event.currency || "USD";
-
-      if (event.type === "INITIAL_PURCHASE") {
-        console.log(`RevenueCat webhook: Subscribe for ${userId} at $${price}`);
-      } else if (event.type === "TRIAL_STARTED") {
-        console.log(`RevenueCat webhook: StartTrial for ${userId}`);
-      }
-
-      res.json({ received: true });
-    } catch (error) {
-      console.error("RevenueCat webhook error:", error);
-      res.status(500).json({ error: "Webhook processing failed" });
-    }
-  });
-
   const httpServer = createServer(app);
 
   return httpServer;
