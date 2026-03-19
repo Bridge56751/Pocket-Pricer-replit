@@ -86,7 +86,7 @@ The application is built with a client-server architecture. The frontend is an E
   - Requires weekly product to be created in App Store Connect, Google Play Console, and RevenueCat dashboard
 - **Mar 2026**: TikTok SDK fully removed; backend hardening
   - `react-native-tiktok-business-sdk` uninstalled; all TikTok imports/calls removed from `App.tsx`, `ScanScreen.tsx`, `RevenueCatContext.tsx`, and `client/lib/tiktok.ts` deleted
-  - `server/tiktok.ts` remains as empty no-op stubs (safe, no-op)
+  - `server/tiktok.ts` and all server-side TikTok call sites fully deleted (was previously left as no-op stubs)
   - TikTok ProGuard rules removed from `app.json`; `expo-build-properties` reverted to bare string
   - TikTok SKAdNetwork ID `mj797d8u6f.skadnetwork` kept in `app.json` (needed for future AppsFlyer/MMP attribution)
   - Conservative request timeouts added to all outbound server `fetch()` calls: 20s image uploads, 35s Google Lens, 30s eBay search

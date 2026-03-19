@@ -2,7 +2,6 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "node:http";
 import { getGuestScanCount, incrementGuestScan } from "./db";
 import { logScanEvent, logEbaySearchEvent, supabase, initScanImagesBucket } from "./supabase";
-import { logTikTokScanEvent, logTikTokEbaySearchEvent, logTikTokSubscriptionEvent } from "./tiktok";
 
 const FREE_LIFETIME_SEARCHES = 3;
 const RATE_LIMIT_MAX = 20;
@@ -325,7 +324,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch {}
 
       logScanEvent(deviceId, isPro, productName, listings.length, pricedListings.length);
-      logTikTokScanEvent(deviceId, isPro, productName);
 
       res.json({
         query: productName,
@@ -572,7 +570,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       logEbaySearchEvent(deviceId, isPro, cleanQuery, !!broadSearch, items.length, avgSoldPrice);
-      logTikTokEbaySearchEvent(deviceId, isPro, cleanQuery);
 
       res.json({
         avgSoldPrice,
@@ -607,10 +604,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const currency = event.currency || "USD";
 
       if (event.type === "INITIAL_PURCHASE") {
-        logTikTokSubscriptionEvent(userId, "Subscribe", price, currency);
         console.log(`RevenueCat webhook: Subscribe for ${userId} at $${price}`);
       } else if (event.type === "TRIAL_STARTED") {
-        logTikTokSubscriptionEvent(userId, "StartTrial", 0, currency);
         console.log(`RevenueCat webhook: StartTrial for ${userId}`);
       }
 
