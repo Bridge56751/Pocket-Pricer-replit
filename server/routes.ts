@@ -38,7 +38,7 @@ setInterval(() => {
 async function uploadImageForLens(imageBase64: string): Promise<string | null> {
   const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, "");
 
-  const uploadServices = [
+  const uploadServices: Array<() => Promise<string | null>> = [
     async () => {
       if (!supabase) return null;
       const imageBuffer = Buffer.from(cleanBase64, "base64");
@@ -87,13 +87,13 @@ async function uploadImageForLens(imageBase64: string): Promise<string | null> {
     },
   ];
 
-  try {
-    const results = await Promise.allSettled(uploadServices.map(fn => fn()));
-    for (const result of results) {
-      if (result.status === "fulfilled" && result.value) return result.value;
+  for (const service of uploadServices) {
+    try {
+      const url = await service();
+      if (url) return url;
+    } catch (error) {
+      console.error("Image upload service failed, trying next:", error);
     }
-  } catch (error) {
-    console.error("Image upload failed:", error);
   }
 
   console.error("All image upload services failed");
