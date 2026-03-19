@@ -114,8 +114,14 @@ export default function PaywallScreen() {
       const result = await purchasePackage(activePkg);
       if (result.success) {
         try {
+          const revenueValue = activePkg?.product.price ?? 8.99;
+          const currencyCode = activePkg?.product.currencyCode ?? "USD";
           const appsFlyer = await import("react-native-appsflyer");
-          appsFlyer.default.logEvent("af_start_trial", {});
+          appsFlyer.default.logEvent("af_start_trial", {
+            af_revenue: revenueValue,
+            af_currency: currencyCode,
+            af_order_id: `trial_${Date.now()}`,
+          });
         } catch (e) {}
         navigateHome();
       } else if (result.error && result.error !== "Purchase cancelled") {
