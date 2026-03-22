@@ -518,44 +518,17 @@ export default function SearchResultsScreen() {
               ) : rcReady && !isPro && !ebaySoldData ? (
                 <View style={styles.salesIntelCard}>
                   <View style={styles.salesIntelCardLeft}>
-                    <View style={styles.salesIntelCardTitleRow}>
-                      <Text style={styles.salesIntelCardTitle}>Sales Intelligence</Text>
-                      <LinearGradient
-                        colors={["#F5D87A", "#D4A926", "#E8C84A"]}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={styles.salesIntelCardProBadge}
-                      >
-                        <Feather name="star" size={9} color="#3D2E00" />
-                        <Text style={styles.salesIntelCardProText}>PRO</Text>
-                      </LinearGradient>
-                    </View>
-                    <View style={styles.salesIntelCardBullets}>
-                      <View style={styles.salesIntelCardBulletRow}>
-                        <View style={styles.salesIntelCardDot} />
-                        <Text style={styles.salesIntelCardBulletText}>Real sold prices</Text>
-                      </View>
-                      <View style={styles.salesIntelCardBulletRow}>
-                        <View style={styles.salesIntelCardDot} />
-                        <Text style={styles.salesIntelCardBulletText}>Buy Score · 0-100 rating</Text>
-                      </View>
-                      <View style={styles.salesIntelCardBulletRow}>
-                        <View style={styles.salesIntelCardDot} />
-                        <Text style={styles.salesIntelCardBulletText}>Sell velocity & demand</Text>
-                      </View>
-                    </View>
+                    <Text style={styles.salesIntelCardTitle}>View Sales Intelligence</Text>
+                    <Text style={styles.salesIntelCardSubtitle}>Real sold prices · Buy Score · Velocity</Text>
                   </View>
                   <LinearGradient
                     colors={["#F5D87A", "#D4A926", "#C49B1F"]}
                     start={{ x: 0, y: 0 }}
-                    end={{ x: 0, y: 1 }}
+                    end={{ x: 1, y: 0 }}
                     style={styles.salesIntelCardCta}
                   >
-                    <Feather name="star" size={16} color="#3D2E00" />
-                    <Text style={styles.salesIntelCardCtaTitle}>Try Pro</Text>
-                    <Text style={styles.salesIntelCardCtaTitleBold}>Free</Text>
-                    <Text style={styles.salesIntelCardCtaSub}>3 days</Text>
-                    <Text style={styles.salesIntelCardCtaSub}>no charge</Text>
+                    <Feather name="star" size={12} color="#3D2E00" />
+                    <Text style={styles.salesIntelCardCtaTitle}>Try Pro Free</Text>
                   </LinearGradient>
                 </View>
               ) : (
@@ -1800,76 +1773,35 @@ const styles = StyleSheet.create({
   },
   salesIntelCard: {
     flexDirection: "row",
-    alignItems: "stretch",
+    alignItems: "center",
   },
   salesIntelCardLeft: {
     flex: 1,
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
-  salesIntelCardTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 8,
-  },
   salesIntelCardTitle: {
-    fontSize: 18,
-    fontWeight: "800",
+    fontSize: 15,
+    fontWeight: "700",
     color: "#111827",
   },
-  salesIntelCardProBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  salesIntelCardProText: {
-    color: "#3D2E00",
-    fontSize: 11,
-    fontWeight: "800",
-    letterSpacing: 0.5,
-  },
-  salesIntelCardBullets: {
-    gap: 4,
-  },
-  salesIntelCardBulletRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  salesIntelCardDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: "#047857",
-  },
-  salesIntelCardBulletText: {
+  salesIntelCardSubtitle: {
     fontSize: 13,
-    color: "#6B7280",
+    color: "#9CA3AF",
+    marginTop: 2,
   },
   salesIntelCardCta: {
-    width: 80,
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 12,
-    gap: 1,
+    gap: 5,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 20,
+    marginRight: 12,
   },
   salesIntelCardCtaTitle: {
     fontSize: 12,
-    fontWeight: "700",
-    color: "#3D2E00",
-    marginTop: 3,
-  },
-  salesIntelCardCtaTitleBold: {
-    fontSize: 14,
     fontWeight: "800",
     color: "#3D2E00",
-  },
-  salesIntelCardCtaSub: {
-    fontSize: 10,
-    color: "#5C4A0A",
   },
 });
