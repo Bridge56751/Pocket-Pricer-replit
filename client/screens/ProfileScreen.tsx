@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { View, StyleSheet, Pressable, Text, Alert, Platform, ActivityIndicator, Linking } from "react-native";
 import Animated, {
   useSharedValue,
@@ -9,7 +9,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as WebBrowser from "expo-web-browser";
@@ -32,21 +32,27 @@ export default function ProfileScreen() {
   const { isPro, restorePurchases } = useRevenueCat();
   const [isRestoring, setIsRestoring] = useState(false);
 
-  const shimmerX = useSharedValue(-1);
-  useEffect(() => {
-    shimmerX.value = withRepeat(
-      withTiming(1, { duration: 2500, easing: Easing.inOut(Easing.ease) }),
-      -1,
-      false
-    );
+  const shimmerX = useSharedValue(-1.5);
+  const triggerShimmer = useCallback(() => {
+    shimmerX.value = -1.5;
+    shimmerX.value = withTiming(1.5, { duration: 800, easing: Easing.inOut(Easing.ease) });
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!isPro) {
+        const timer = setTimeout(() => triggerShimmer(), 400);
+        return () => clearTimeout(timer);
+      }
+    }, [isPro, triggerShimmer])
+  );
   const shimmerStyle = useAnimatedStyle(() => ({
     position: "absolute" as const,
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    opacity: 0.35,
+    opacity: 0.4,
     backgroundColor: "#FFFFFF",
     transform: [
       { translateX: shimmerX.value * 300 },
