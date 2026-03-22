@@ -409,35 +409,34 @@ export default function ScanScreen() {
         style={styles.scrollView}
         contentContainerStyle={[
           styles.content,
-          { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 100 },
+          { paddingBottom: insets.bottom + 100 },
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Image
-              source={require("../../assets/images/icon.png")}
-              style={styles.headerAppIcon}
-              resizeMode="contain"
-            />
-            <Text style={[styles.appName, { color: theme.colors.foreground }]}>
-              Pocket Pricer
-            </Text>
-          </View>
-          <Pressable 
-            style={styles.headerIcon}
-            onPress={() => navigation.navigate("Settings")}
-          >
-            <Feather name="settings" size={22} color={theme.colors.mutedForeground} />
-          </Pressable>
-        </View>
-
         <LinearGradient
             colors={["#0A3622", "#14532D", "#1A6B3C"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={styles.heroCard}
+            style={[styles.heroCard, { paddingTop: insets.top + 16 }]}
           >
+          <View style={styles.header}>
+            <View style={styles.headerLeft}>
+              <Image
+                source={require("../../assets/images/icon.png")}
+                style={styles.headerAppIcon}
+                resizeMode="contain"
+              />
+              <Text style={[styles.appName, { color: "#FFFFFF" }]}>
+                Pocket Pricer
+              </Text>
+            </View>
+            <Pressable 
+              style={styles.headerIcon}
+              onPress={() => navigation.navigate("Settings")}
+            >
+              <Feather name="settings" size={22} color="rgba(255,255,255,0.6)" />
+            </Pressable>
+          </View>
             <Text style={styles.heroLabel}>MARKET INTELLIGENCE</Text>
             <Text style={styles.heroTitle}>
               Scan & Price
@@ -503,6 +502,7 @@ export default function ScanScreen() {
             )}
           </LinearGradient>
 
+        <View style={styles.belowHeroContent}>
         <View style={styles.sectionHeader}>
           <Feather name="clock" size={18} color={theme.colors.primary} />
           <Text style={[styles.sectionTitle, { color: theme.colors.foreground }]}>
@@ -578,6 +578,7 @@ export default function ScanScreen() {
             ))}
           </View>
         )}
+        </View>
       </ScrollView>
       
       {isAnalyzing ? (
@@ -678,7 +679,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingHorizontal: 20,
   },
   header: {
     flexDirection: "row",
@@ -712,10 +712,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   heroCard: {
-    borderRadius: 20,
-    padding: 24,
-    marginBottom: 24,
-    overflow: "hidden" as const,
+    paddingHorizontal: 20,
+    paddingBottom: 24,
+    marginBottom: 0,
+  },
+  belowHeroContent: {
+    paddingHorizontal: 20,
   },
   heroLabel: {
     fontSize: 12,
@@ -932,6 +934,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+    marginTop: 24,
     marginBottom: 16,
   },
   sectionTitle: {
