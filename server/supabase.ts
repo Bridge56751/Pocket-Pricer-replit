@@ -114,21 +114,26 @@ export function logEbaySearchEvent(
 }
 
 export async function getDeviceStats(deviceId: string): Promise<{
-  totalScans: number;
+  memberDays: number;
   scansToday: number;
   streak: number;
 }> {
-  const fallback = { totalScans: 0, scansToday: 0, streak: 0 };
+  const fallback = { memberDays: 0, scansToday: 0, streak: 0 };
   if (!supabase) return fallback;
 
   try {
     const { data: device } = await supabase
       .from("devices")
-      .select("total_scans")
+      .select("total_scans, first_seen")
       .eq("device_id", deviceId)
       .maybeSingle();
 
-    const totalScans = device?.total_scans || 0;
+    let memberDays = 0;
+    if (device?.first_seen) {
+      const firstSeen = new Date(device.first_seen);
+      const now = new Date();
+      memberDays = Math.max(1, Math.ceil((now.getTime() - firstSeen.getTime()) / (1000 * 60 * 60 * 24)));
+    }
 
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
@@ -173,7 +178,7 @@ export async function getDeviceStats(deviceId: string): Promise<{
       }
     }
 
-    return { totalScans, scansToday: scansToday || 0, streak };
+    return { memberDays, scansToday: scansToday || 0, streak };
   } catch (err: any) {
     console.error("getDeviceStats error:", err?.message);
     return fallback;

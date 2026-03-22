@@ -193,7 +193,7 @@ export default function ScanScreen() {
         new URL(`/api/device-stats/${cachedDeviceId}`, getApiUrl()).toString()
       );
       if (!res.ok) return null;
-      return res.json() as Promise<{ totalScans: number; scansToday: number; streak: number }>;
+      return res.json() as Promise<{ memberDays: number; scansToday: number; streak: number }>;
     },
     enabled: !!cachedDeviceId,
     staleTime: 30000,
@@ -481,11 +481,12 @@ export default function ScanScreen() {
                 </View>
               </View>
               <View style={styles.metricCard}>
-                <Text style={styles.metricLabel}>TOTAL SCANS</Text>
-                <Text style={styles.metricValue}>{deviceStats?.totalScans ?? 0}</Text>
-                {(deviceStats?.scansToday ?? 0) > 0 ? (
-                  <Text style={styles.metricSub}>+{deviceStats?.scansToday} today</Text>
-                ) : null}
+                <Text style={styles.metricLabel}>MEMBER</Text>
+                <View style={styles.metricValueRow}>
+                  <Text style={styles.metricValue}>{deviceStats?.memberDays ?? 0}</Text>
+                  <Text style={styles.metricUnit}>d</Text>
+                </View>
+                <Text style={styles.metricSub}>since joined</Text>
               </View>
               <View style={styles.metricCard}>
                 <Text style={styles.metricLabel}>TODAY</Text>
