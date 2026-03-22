@@ -517,15 +517,24 @@ export default function SearchResultsScreen() {
               {ebaySoldLoading ? (
                 <ActivityIndicator size="small" color="#F0D264" />
               ) : rcReady && !isPro && !ebaySoldData ? (
-                <View style={styles.ebaySoldButtonContent}>
-                  <Text style={styles.ebaySoldButtonTitle}>See eBay Sales Data</Text>
-                  <Text style={styles.ebaySoldButtonSubtitle}>See what items actually sell for</Text>
-                  <View style={styles.ebaySoldButtonCta}>
-                    <Feather name="lock" size={14} color="#F0D264" />
-                    <Text style={styles.ebaySoldButtonCtaText}>Try Pro free for 3 days</Text>
-                    <Feather name="arrow-right" size={14} color="#F0D264" />
+                <>
+                  <View style={styles.ebaySoldIconCircle}>
+                    <Feather name="star" size={16} color="#D4A926" />
                   </View>
-                </View>
+                  <View style={styles.ebaySoldTextGroup}>
+                    <Text style={styles.ebaySoldButtonTitle}>View Sales Intelligence</Text>
+                    <Text style={styles.ebaySoldButtonSubtitle}>Real sold prices · Buy Score · Velocity</Text>
+                  </View>
+                  <LinearGradient
+                    colors={["#F5D87A", "#D4A926", "#E8C84A"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.ebaySoldProBadge}
+                  >
+                    <Feather name="star" size={10} color="#3D2E00" />
+                    <Text style={styles.ebaySoldProBadgeText}>PRO</Text>
+                  </LinearGradient>
+                </>
               ) : (
                 <>
                   <Feather name="trending-up" size={16} color="#F0D264" />
@@ -1458,14 +1467,14 @@ const styles = StyleSheet.create({
   ebaySoldButtonPro: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
     backgroundColor: "#14532D",
-    paddingVertical: 18,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
     borderRadius: 14,
     marginBottom: 16,
-    gap: 8,
-    borderWidth: 1.5,
-    borderColor: "rgba(212, 169, 38, 0.55)",
+    gap: 12,
+    borderWidth: 1,
+    borderColor: "rgba(212, 169, 38, 0.3)",
   },
   ebaySoldButtonText: {
     color: "#FFFFFF",
@@ -1477,29 +1486,41 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
   },
-  ebaySoldButtonContent: {
+  ebaySoldIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: "rgba(212, 169, 38, 0.15)",
     alignItems: "center",
-    gap: 6,
+    justifyContent: "center",
+  },
+  ebaySoldTextGroup: {
+    flex: 1,
+    gap: 2,
   },
   ebaySoldButtonTitle: {
     color: "#FFFFFF",
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: "700",
   },
   ebaySoldButtonSubtitle: {
-    color: "rgba(255,255,255,0.6)",
-    fontSize: 13,
+    color: "rgba(255,255,255,0.5)",
+    fontSize: 12,
     fontWeight: "500",
   },
-  ebaySoldButtonCta: {
+  ebaySoldProBadge: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
   },
-  ebaySoldButtonCtaText: {
-    color: "#F0D264",
-    fontSize: 14,
-    fontWeight: "600",
+  ebaySoldProBadgeText: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#3D2E00",
+    letterSpacing: 0.5,
   },
   ebaySoldErrorText: {
     fontSize: 14,
