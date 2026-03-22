@@ -447,40 +447,27 @@ export default function ScanScreen() {
               style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}
             >
               <View style={styles.scanButton}>
-                <Feather name="camera" size={20} color="#14532D" />
-                <Text style={styles.scanButtonText}>Scan Product</Text>
+                <View style={styles.scanButtonLeft}>
+                  <Feather name="camera" size={20} color="#14532D" />
+                  <Text style={styles.scanButtonText}>Scan Product</Text>
+                </View>
+                {isPro ? (
+                  <View style={styles.scanButtonBadge}>
+                    <Feather name="zap" size={11} color="#fff" />
+                    <Text style={styles.scanButtonBadgeText}>PRO</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.scanButtonCount}>
+                    {scansUsed >= FREE_SCAN_LIMIT
+                      ? "0 left"
+                      : `${FREE_SCAN_LIMIT - scansUsed} left`}
+                  </Text>
+                )}
               </View>
             </Pressable>
 
-            {isPro ? (
-              <View style={styles.proBadgeContainer}>
-                <View style={styles.proBadge}>
-                  <Feather name="zap" size={13} color="#fff" />
-                  <Text style={styles.proBadgeText}>PRO</Text>
-                </View>
-              </View>
-            ) : (
+            {isPro ? null : (
               <>
-                <View style={styles.scansRemainingContainer}>
-                  <View style={styles.dotsRow}>
-                    {Array.from({ length: FREE_SCAN_LIMIT }).map((_, i) => (
-                      <View
-                        key={i}
-                        style={[
-                          styles.scanDot,
-                          i < FREE_SCAN_LIMIT - scansUsed
-                            ? styles.scanDotActive
-                            : styles.scanDotInactive,
-                        ]}
-                      />
-                    ))}
-                  </View>
-                  <Text style={styles.scansRemainingText}>
-                    {scansUsed >= FREE_SCAN_LIMIT
-                      ? "No free scans remaining"
-                      : `${FREE_SCAN_LIMIT - scansUsed} free scan${FREE_SCAN_LIMIT - scansUsed === 1 ? "" : "s"} remaining`}
-                  </Text>
-                </View>
                 <Pressable
                   onPress={() => navigation.navigate("Paywall", { context: "scan" })}
                   style={({ pressed }) => [styles.proUpsellCard, { opacity: pressed ? 0.9 : 1 }]}
@@ -752,63 +739,44 @@ const styles = StyleSheet.create({
   scanButton: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
-    justifyContent: "center" as const,
+    justifyContent: "space-between" as const,
     paddingVertical: 16,
+    paddingHorizontal: 20,
     borderRadius: 14,
-    gap: 10,
     backgroundColor: "#FFFFFF",
     borderWidth: 1.5,
     borderColor: "rgba(20, 83, 45, 0.3)",
+  },
+  scanButtonLeft: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 10,
   },
   scanButtonText: {
     color: "#14532D",
     fontSize: 17,
     fontWeight: "700" as const,
   },
-  proBadgeContainer: {
-    alignItems: "center" as const,
-    marginTop: 14,
-  },
-  proBadge: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    gap: 5,
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-    borderRadius: 20,
-    backgroundColor: "rgba(255,255,255,0.15)",
-  },
-  proBadgeText: {
-    color: "#fff",
+  scanButtonCount: {
+    color: "#14532D",
     fontSize: 13,
-    fontWeight: "700" as const,
-    letterSpacing: 1,
+    fontWeight: "600" as const,
+    opacity: 0.6,
   },
-  scansRemainingContainer: {
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-    marginTop: 14,
-    gap: 8,
-  },
-  dotsRow: {
+  scanButtonBadge: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
-    gap: 8,
+    gap: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    backgroundColor: "#14532D",
   },
-  scanDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  scanDotActive: {
-    backgroundColor: "#86EFAC",
-  },
-  scanDotInactive: {
-    backgroundColor: "rgba(255,255,255,0.25)",
-  },
-  scansRemainingText: {
-    fontSize: 12,
-    color: "rgba(255,255,255,0.7)",
+  scanButtonBadgeText: {
+    color: "#fff",
+    fontSize: 11,
+    fontWeight: "700" as const,
+    letterSpacing: 0.5,
   },
   proUpsellCard: {
     flexDirection: "row" as const,
