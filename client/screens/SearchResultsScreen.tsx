@@ -938,6 +938,7 @@ export default function SearchResultsScreen() {
             ) : null}
 
             </View>
+            <View style={styles.heroFadeBottom} />
             </LinearGradient>
 
             <View style={styles.belowHeroContent}>
@@ -1026,7 +1027,10 @@ const styles = StyleSheet.create({
   heroSection: {
     paddingHorizontal: 16,
     paddingTop: 16,
-    paddingBottom: 20,
+    paddingBottom: 0,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    overflow: "hidden" as const,
   },
   heroBackButton: {
     width: 38,
@@ -1043,6 +1047,9 @@ const styles = StyleSheet.create({
   belowHeroContentDark: {
     paddingHorizontal: 16,
     paddingTop: 4,
+  },
+  heroFadeBottom: {
+    height: 32,
   },
   productCard: {
     flexDirection: "row",
