@@ -1,7 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { createContext, useContext, ReactNode } from "react";
 
-type ThemeMode = "light" | "dark" | "system";
+type ThemeMode = "light";
 
 interface ThemeContextType {
   themeMode: ThemeMode;
@@ -11,53 +10,14 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-const THEME_STORAGE_KEY = "@pocket_pricer_theme";
-
 interface ThemeProviderProps {
   children: ReactNode;
-  systemColorScheme: "light" | "dark";
+  systemColorScheme?: "light" | "dark";
 }
 
-export function ThemeProvider({ children, systemColorScheme }: ThemeProviderProps) {
-  const [themeMode, setThemeModeState] = useState<ThemeMode>("light");
-  const [isLoaded, setIsLoaded] = useState(false);
-
-  useEffect(() => {
-    loadTheme();
-  }, []);
-
-  const loadTheme = async () => {
-    try {
-      const savedTheme = await AsyncStorage.getItem(THEME_STORAGE_KEY);
-      if (savedTheme && (savedTheme === "light" || savedTheme === "dark" || savedTheme === "system")) {
-        setThemeModeState(savedTheme);
-      }
-    } catch (error) {
-      console.error("Failed to load theme:", error);
-    } finally {
-      setIsLoaded(true);
-    }
-  };
-
-  const setThemeMode = async (mode: ThemeMode) => {
-    try {
-      await AsyncStorage.setItem(THEME_STORAGE_KEY, mode);
-      setThemeModeState(mode);
-    } catch (error) {
-      console.error("Failed to save theme:", error);
-    }
-  };
-
-  const isDarkMode = themeMode === "system" 
-    ? systemColorScheme === "dark" 
-    : themeMode === "dark";
-
-  if (!isLoaded) {
-    return null;
-  }
-
+export function ThemeProvider({ children }: ThemeProviderProps) {
   return (
-    <ThemeContext.Provider value={{ themeMode, setThemeMode, isDarkMode }}>
+    <ThemeContext.Provider value={{ themeMode: "light", setThemeMode: () => {}, isDarkMode: false }}>
       {children}
     </ThemeContext.Provider>
   );

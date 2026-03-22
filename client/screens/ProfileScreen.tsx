@@ -15,12 +15,10 @@ import { resetOnboarding } from "@/screens/OnboardingScreen";
 import { triggerOnboardingReplay } from "@/components/AppContent";
 import { clearSearchHistory, clearFavorites } from "@/lib/storage";
 
-type ThemeOption = "light" | "dark" | "system";
-
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
-  const { theme, themeMode, setThemeMode } = useDesignTokens();
+  const { theme } = useDesignTokens();
   const { getScansUsed } = useAuth();
   const { isPro, restorePurchases } = useRevenueCat();
 
@@ -77,11 +75,6 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleThemeChange = (mode: ThemeOption) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setThemeMode(mode);
-  };
-
   const handleOpenPrivacyPolicy = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
@@ -115,12 +108,6 @@ export default function ProfileScreen() {
       setIsDeleting(false);
     }
   };
-
-  const themeOptions: { value: ThemeOption; label: string; icon: string }[] = [
-    { value: "light", label: "Light", icon: "sun" },
-    { value: "dark", label: "Dark", icon: "moon" },
-    { value: "system", label: "System", icon: "smartphone" },
-  ];
 
   const freeScansRemaining = Math.max(0, 3 - scansUsed);
 
@@ -212,45 +199,6 @@ export default function ProfileScreen() {
             </Text>
           </>
         )}
-      </View>
-
-      <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
-        <View style={styles.sectionHeader}>
-          <Feather name="moon" size={20} color={theme.colors.primary} />
-          <Text style={[styles.sectionTitle, { color: theme.colors.foreground }]}>
-            Appearance
-          </Text>
-        </View>
-
-        <View style={styles.themeOptions}>
-          {themeOptions.map((option) => (
-            <Pressable
-              key={option.value}
-              onPress={() => handleThemeChange(option.value)}
-              style={({ pressed }) => [
-                styles.themeOption,
-                { 
-                  backgroundColor: themeMode === option.value 
-                    ? theme.colors.primary 
-                    : theme.colors.muted,
-                  opacity: pressed ? 0.7 : 1 
-                }
-              ]}
-            >
-              <Feather 
-                name={option.icon as any} 
-                size={18} 
-                color={themeMode === option.value ? "#fff" : theme.colors.foreground} 
-              />
-              <Text style={[
-                styles.themeOptionText, 
-                { color: themeMode === option.value ? "#fff" : theme.colors.foreground }
-              ]}>
-                {option.label}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
       </View>
 
       <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
@@ -440,23 +388,6 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 17,
-    fontWeight: "600",
-  },
-  themeOptions: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  themeOption: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 12,
-    borderRadius: 10,
-    gap: 6,
-  },
-  themeOptionText: {
-    fontSize: 14,
     fontWeight: "600",
   },
   menuItem: {

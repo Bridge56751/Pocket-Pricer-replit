@@ -27,7 +27,7 @@ The business vision is to empower resellers with immediate, comprehensive market
 The application is built with a client-server architecture. The frontend is an Expo React Native application using TypeScript, while the backend is an Express.js server also written in TypeScript. Supabase PostgreSQL serves as the primary database for guest scan tracking and analytics.
 
 **UI/UX Decisions:**
-- **Design System:** A custom design tokens system (`client/constants/design-tokens.ts`) is implemented for consistent styling, including colors (primary emerald green), typography, spacing, border radii, and component styles. This system supports a dark theme.
+- **Design System:** A custom design tokens system (`client/constants/design-tokens.ts`) is implemented for consistent styling, including colors (primary emerald green), typography, spacing, border radii, and component styles. The app is locked to a light theme only (dark mode removed).
 - **User Flow:** Features an onboarding screen for first-time users. The main navigation uses bottom tabs and native stacks.
 - **Subscription UI:** A dismissible paywall screen appears after the 3rd free scan, offering a 3-day free trial for the Pro subscription.
 - **Loading States:** Polished scan loading overlay with multi-step progress indicators ("Uploading image...", "Matching product...", "Finding best prices...") and animations.
@@ -98,3 +98,11 @@ The application is built with a client-server architecture. The frontend is an E
   - RevenueCat → AppsFlyer dashboard integration configured (subscription events flow server-to-server)
   - TikTok → AppsFlyer dashboard integration configured (SRN mode)
   - Build number bumped from 56 → 57
+- **Mar 2026**: Dark mode removed, light theme locked
+  - App locked to single light theme: light gray background (#F9FAFB), white cards (#FFFFFF), dark text (#111827)
+  - ThemeContext simplified — no longer reads/writes theme preference to AsyncStorage
+  - Appearance section (Light/Dark/System toggle) removed from ProfileScreen
+  - All `isDarkMode` ternaries replaced with light-mode values in PaywallScreen, UpgradeModal, ScanScreen, AppContent
+  - StatusBar locked to `dark` content style globally
+  - `useColorScheme` hook no longer used in App.tsx
+  - Design tokens `Colors.dark` and `colors.dark` now mirror their light counterparts

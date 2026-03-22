@@ -12,18 +12,13 @@ export type ThemedTextProps = TextProps & {
 export function ThemedText({
   style,
   lightColor,
-  darkColor,
   type = "body",
   ...rest
 }: ThemedTextProps) {
-  const { theme, isDark } = useTheme();
+  const { theme } = useTheme();
 
   const getColor = () => {
-    if (isDark && darkColor) {
-      return darkColor;
-    }
-
-    if (!isDark && lightColor) {
+    if (lightColor) {
       return lightColor;
     }
 

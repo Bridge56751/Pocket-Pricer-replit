@@ -34,7 +34,7 @@ const FEATURES = [
 
 export default function PaywallScreen() {
   const insets = useSafeAreaInsets();
-  const { theme, isDarkMode } = useDesignTokens();
+  const { theme } = useDesignTokens();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, "Paywall">>();
   const context = route.params?.context;
@@ -160,12 +160,12 @@ export default function PaywallScreen() {
 
   if (isPro) return null;
 
-  const cardColor = isDarkMode ? "#1E1E1E" : "#FFFFFF";
-  const planCardBg = isDarkMode ? "#1C3A2E" : "#F0FDF8";
+  const cardColor = "#FFFFFF";
+  const planCardBg = "#F0FDF8";
 
   return (
     <LinearGradient
-      colors={isDarkMode ? ["#111111", "#0D2018", "#111111"] : ["#F0FDF8", "#FFFFFF", "#F0FDF8"]}
+      colors={["#F0FDF8", "#FFFFFF", "#F0FDF8"]}
       style={styles.container}
     >
       <Pressable
@@ -173,8 +173,8 @@ export default function PaywallScreen() {
         style={[styles.closeButton, { top: insets.top + 12 }]}
         hitSlop={12}
       >
-        <View style={[styles.closeCircle, { backgroundColor: isDarkMode ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.06)" }]}>
-          <Feather name="x" size={18} color={isDarkMode ? "#9CA3AF" : "#6B7280"} />
+        <View style={[styles.closeCircle, { backgroundColor: "rgba(0,0,0,0.06)" }]}>
+          <Feather name="x" size={18} color="#6B7280" />
         </View>
       </Pressable>
 
@@ -232,8 +232,8 @@ export default function PaywallScreen() {
                 style={[
                   styles.featureRow,
                   {
-                    backgroundColor: isDarkMode ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.02)",
-                    borderColor: isDarkMode ? "rgba(16,185,129,0.2)" : "rgba(16,185,129,0.25)",
+                    backgroundColor: "rgba(0,0,0,0.02)",
+                    borderColor: "rgba(16,185,129,0.25)",
                   },
                 ]}
               >
@@ -251,20 +251,20 @@ export default function PaywallScreen() {
           {/* Plan cards */}
           <View style={styles.planCards}>
             {showError ? (
-              <View style={[styles.errorCard, { backgroundColor: isDarkMode ? "#2A2A2A" : "#FEF2F2", borderColor: isDarkMode ? "#5C2626" : "#FECACA" }]}>
+              <View style={[styles.errorCard, { backgroundColor: "#FEF2F2", borderColor: "#FECACA" }]}>
                 <Feather name="wifi-off" size={22} color="#EF4444" />
                 <Text style={[styles.errorTitle, { color: theme.colors.foreground }]}>Unable to load plans</Text>
                 <Text style={[styles.errorSub, { color: theme.colors.mutedForeground }]}>Check your connection and try again.</Text>
                 <Pressable
                   onPress={handleRetry}
-                  style={[styles.retryButton, { backgroundColor: isDarkMode ? "#3A3A3A" : "#FFF" }]}
+                  style={[styles.retryButton, { backgroundColor: "#FFF" }]}
                 >
                   <Feather name="refresh-cw" size={14} color="#10B981" />
                   <Text style={styles.retryText}>Try Again</Text>
                 </Pressable>
               </View>
             ) : packagesLoading ? (
-              <View style={[styles.planCard, styles.skeletonCard, { borderColor: isDarkMode ? "#3A3A3C" : "#E5E7EB", backgroundColor: isDarkMode ? "#2A2A2A" : "#F3F4F6" }]} />
+              <View style={[styles.planCard, styles.skeletonCard, { borderColor: "#E5E7EB", backgroundColor: "#F3F4F6" }]} />
             ) : hasMultiplePlans ? (
               <>
                 <Pressable
@@ -272,8 +272,8 @@ export default function PaywallScreen() {
                   style={[
                     styles.planCard,
                     {
-                      backgroundColor: selectedPlan === "weekly" ? planCardBg : isDarkMode ? "#2A2A2A" : "#F9FAFB",
-                      borderColor: selectedPlan === "weekly" ? "#10B981" : isDarkMode ? "#3A3A3C" : "#E5E7EB",
+                      backgroundColor: selectedPlan === "weekly" ? planCardBg : "#F9FAFB",
+                      borderColor: selectedPlan === "weekly" ? "#10B981" : "#E5E7EB",
                     },
                   ]}
                 >
@@ -292,7 +292,7 @@ export default function PaywallScreen() {
                         <Feather name="check" size={14} color="#fff" />
                       </View>
                     ) : (
-                      <View style={[styles.radioOuter, { borderColor: isDarkMode ? "#3A3A3C" : "#D1D5DB" }]} />
+                      <View style={[styles.radioOuter, { borderColor: "#D1D5DB" }]} />
                     )}
                   </View>
                 </Pressable>
@@ -302,8 +302,8 @@ export default function PaywallScreen() {
                   style={[
                     styles.planCard,
                     {
-                      backgroundColor: selectedPlan === "monthly" ? planCardBg : isDarkMode ? "#2A2A2A" : "#F9FAFB",
-                      borderColor: selectedPlan === "monthly" ? "#10B981" : isDarkMode ? "#3A3A3C" : "#E5E7EB",
+                      backgroundColor: selectedPlan === "monthly" ? planCardBg : "#F9FAFB",
+                      borderColor: selectedPlan === "monthly" ? "#10B981" : "#E5E7EB",
                     },
                   ]}
                 >
@@ -327,7 +327,7 @@ export default function PaywallScreen() {
                         <Feather name="check" size={14} color="#fff" />
                       </View>
                     ) : (
-                      <View style={[styles.radioOuter, { borderColor: isDarkMode ? "#3A3A3C" : "#D1D5DB" }]} />
+                      <View style={[styles.radioOuter, { borderColor: "#D1D5DB" }]} />
                     )}
                   </View>
                 </Pressable>

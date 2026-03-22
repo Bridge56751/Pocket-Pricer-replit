@@ -36,7 +36,7 @@ interface UpgradeModalProps {
 
 export default function UpgradeModal({ visible, onClose, scansUsed = 0 }: UpgradeModalProps) {
   const insets = useSafeAreaInsets();
-  const { theme, isDarkMode } = useDesignTokens();
+  const { theme } = useDesignTokens();
   const { packages, purchasePackage, restorePurchases, isPro } = useRevenueCat();
 
   const [isLoading, setIsLoading] = useState(false);
@@ -120,13 +120,13 @@ export default function UpgradeModal({ visible, onClose, scansUsed = 0 }: Upgrad
 
   if (isPro) return null;
 
-  const cardColor = isDarkMode ? "#1E1E1E" : "#FFFFFF";
-  const planCardBg = isDarkMode ? "#1C3A2E" : "#F0FDF8";
+  const cardColor = "#FFFFFF";
+  const planCardBg = "#F0FDF8";
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <LinearGradient
-        colors={isDarkMode ? ["#111111", "#0D2018", "#111111"] : ["#F0FDF8", "#FFFFFF", "#F0FDF8"]}
+        colors={["#F0FDF8", "#FFFFFF", "#F0FDF8"]}
         style={styles.container}
       >
         <Pressable
@@ -134,8 +134,8 @@ export default function UpgradeModal({ visible, onClose, scansUsed = 0 }: Upgrad
           style={[styles.closeButton, { top: insets.top + 12 }]}
           hitSlop={12}
         >
-          <View style={[styles.closeCircle, { backgroundColor: isDarkMode ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.06)" }]}>
-            <Feather name="x" size={18} color={isDarkMode ? "#9CA3AF" : "#6B7280"} />
+          <View style={[styles.closeCircle, { backgroundColor: "rgba(0,0,0,0.06)" }]}>
+            <Feather name="x" size={18} color="#6B7280" />
           </View>
         </Pressable>
 
@@ -181,8 +181,8 @@ export default function UpgradeModal({ visible, onClose, scansUsed = 0 }: Upgrad
                   style={[
                     styles.featureRow,
                     {
-                      backgroundColor: isDarkMode ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.02)",
-                      borderColor: isDarkMode ? "rgba(16,185,129,0.2)" : "rgba(16,185,129,0.25)",
+                      backgroundColor: "rgba(0,0,0,0.02)",
+                      borderColor: "rgba(16,185,129,0.25)",
                     },
                   ]}
                 >
@@ -206,8 +206,8 @@ export default function UpgradeModal({ visible, onClose, scansUsed = 0 }: Upgrad
                     style={[
                       styles.planCard,
                       {
-                        backgroundColor: selectedPlan === "weekly" ? planCardBg : isDarkMode ? "#2A2A2A" : "#F9FAFB",
-                        borderColor: selectedPlan === "weekly" ? "#10B981" : isDarkMode ? "#3A3A3C" : "#E5E7EB",
+                        backgroundColor: selectedPlan === "weekly" ? planCardBg : "#F9FAFB",
+                        borderColor: selectedPlan === "weekly" ? "#10B981" : "#E5E7EB",
                       },
                     ]}
                   >
@@ -226,7 +226,7 @@ export default function UpgradeModal({ visible, onClose, scansUsed = 0 }: Upgrad
                           <Feather name="check" size={14} color="#fff" />
                         </View>
                       ) : (
-                        <View style={[styles.radioOuter, { borderColor: isDarkMode ? "#3A3A3C" : "#D1D5DB" }]} />
+                        <View style={[styles.radioOuter, { borderColor: "#D1D5DB" }]} />
                       )}
                     </View>
                   </Pressable>
@@ -236,8 +236,8 @@ export default function UpgradeModal({ visible, onClose, scansUsed = 0 }: Upgrad
                     style={[
                       styles.planCard,
                       {
-                        backgroundColor: selectedPlan === "monthly" ? planCardBg : isDarkMode ? "#2A2A2A" : "#F9FAFB",
-                        borderColor: selectedPlan === "monthly" ? "#10B981" : isDarkMode ? "#3A3A3C" : "#E5E7EB",
+                        backgroundColor: selectedPlan === "monthly" ? planCardBg : "#F9FAFB",
+                        borderColor: selectedPlan === "monthly" ? "#10B981" : "#E5E7EB",
                       },
                     ]}
                   >
@@ -261,7 +261,7 @@ export default function UpgradeModal({ visible, onClose, scansUsed = 0 }: Upgrad
                           <Feather name="check" size={14} color="#fff" />
                         </View>
                       ) : (
-                        <View style={[styles.radioOuter, { borderColor: isDarkMode ? "#3A3A3C" : "#D1D5DB" }]} />
+                        <View style={[styles.radioOuter, { borderColor: "#D1D5DB" }]} />
                       )}
                     </View>
                   </Pressable>

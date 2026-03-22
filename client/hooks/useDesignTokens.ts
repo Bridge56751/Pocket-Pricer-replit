@@ -1,16 +1,11 @@
-import { lightTheme, darkTheme, colors } from "@/constants/design-tokens";
-import { useThemeContext } from "@/contexts/ThemeContext";
+import { lightTheme, colors } from "@/constants/design-tokens";
 
 export function useDesignTokens() {
-  const { isDarkMode, themeMode, setThemeMode } = useThemeContext();
-  
-  const theme = isDarkMode ? darkTheme : lightTheme;
-  
   return {
-    theme,
+    theme: lightTheme,
     colors,
-    isDarkMode,
-    themeMode,
-    setThemeMode,
+    isDarkMode: false,
+    themeMode: "light" as const,
+    setThemeMode: () => {},
   };
 }

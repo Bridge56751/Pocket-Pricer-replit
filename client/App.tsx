@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { StyleSheet, useColorScheme, Platform } from "react-native";
+import { StyleSheet, Platform } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
@@ -25,7 +25,6 @@ import { AppContent } from "@/components/AppContent";
 SplashScreen.preventAutoHideAsync();
 
 export default function App() {
-  const systemColorScheme = useColorScheme() ?? "light";
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
     Inter_600SemiBold,
@@ -126,7 +125,7 @@ export default function App() {
         <SafeAreaProvider>
           <GestureHandlerRootView style={styles.root}>
             <KeyboardProvider>
-              <ThemeProvider systemColorScheme={systemColorScheme}>
+              <ThemeProvider>
                 <RevenueCatProvider>
                   <AuthProvider>
                     <AppContent />

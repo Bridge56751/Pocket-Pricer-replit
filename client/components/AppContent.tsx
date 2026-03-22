@@ -15,7 +15,7 @@ export function triggerOnboardingReplay() {
 }
 
 export function AppContent() {
-  const { isDarkMode, theme } = useDesignTokens();
+  const { theme } = useDesignTokens();
   const { isPro, isReady: rcReady } = useRevenueCat();
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
   const [isOnboardingReplay, setIsOnboardingReplay] = useState(false);
@@ -72,7 +72,7 @@ export function AppContent() {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
-        <StatusBar style={isDarkMode ? "light" : "dark"} />
+        <StatusBar style="dark" />
       </View>
     );
   }
@@ -81,7 +81,7 @@ export function AppContent() {
     return (
       <>
         <OnboardingScreen onComplete={handleOnboardingComplete} isReplay={isOnboardingReplay} />
-        <StatusBar style={isDarkMode ? "light" : "dark"} />
+        <StatusBar style="dark" />
       </>
     );
   }
@@ -91,7 +91,7 @@ export function AppContent() {
       <NavigationContainer>
         <RootStackNavigator />
       </NavigationContainer>
-      <StatusBar style={isDarkMode ? "light" : "dark"} />
+      <StatusBar style="dark" />
     </>
   );
 }

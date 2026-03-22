@@ -147,7 +147,7 @@ const FREE_SCAN_LIMIT = 3;
 
 export default function ScanScreen() {
   const insets = useSafeAreaInsets();
-  const { theme, colors, isDarkMode } = useDesignTokens();
+  const { theme, colors } = useDesignTokens();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<ScanScreenRouteProp>();
 
@@ -477,7 +477,7 @@ export default function ScanScreen() {
                         styles.scanDot,
                         i < FREE_SCAN_LIMIT - scansUsed
                           ? styles.scanDotActive
-                          : { backgroundColor: isDarkMode ? "#3A3A3C" : "#D1D5DB" },
+                          : { backgroundColor: "#D1D5DB" },
                       ]}
                     />
                   ))}
