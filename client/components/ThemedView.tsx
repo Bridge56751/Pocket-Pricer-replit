@@ -4,7 +4,6 @@ import { useTheme } from "@/hooks/useTheme";
 
 export type ThemedViewProps = ViewProps & {
   lightColor?: string;
-  darkColor?: string;
 };
 
 export function ThemedView({

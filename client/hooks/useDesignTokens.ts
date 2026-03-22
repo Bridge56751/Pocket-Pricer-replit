@@ -5,7 +5,5 @@ export function useDesignTokens() {
     theme: lightTheme,
     colors,
     isDarkMode: false,
-    themeMode: "light" as const,
-    setThemeMode: () => {},
   };
 }

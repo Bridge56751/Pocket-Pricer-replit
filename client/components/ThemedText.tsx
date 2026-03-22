@@ -5,7 +5,6 @@ import { Typography } from "@/constants/design-tokens";
 
 export type ThemedTextProps = TextProps & {
   lightColor?: string;
-  darkColor?: string;
   type?: "h1" | "h2" | "h3" | "h4" | "body" | "small" | "link";
 };
 

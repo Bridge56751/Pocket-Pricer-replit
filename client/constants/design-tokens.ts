@@ -413,7 +413,6 @@ const createTheme = (colorScheme: typeof colors.light) => ({
 });
 
 export const lightTheme = createTheme(colors.light);
-export const darkTheme = createTheme(colors.dark);
 
 export type Theme = typeof lightTheme;
 export type ThemeColors = typeof colors.light;

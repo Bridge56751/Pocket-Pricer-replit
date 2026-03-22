@@ -1,10 +1,6 @@
 import React, { createContext, useContext, ReactNode } from "react";
 
-type ThemeMode = "light";
-
 interface ThemeContextType {
-  themeMode: ThemeMode;
-  setThemeMode: (mode: ThemeMode) => void;
   isDarkMode: boolean;
 }
 
@@ -17,7 +13,7 @@ interface ThemeProviderProps {
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
   return (
-    <ThemeContext.Provider value={{ themeMode: "light", setThemeMode: () => {}, isDarkMode: false }}>
+    <ThemeContext.Provider value={{ isDarkMode: false }}>
       {children}
     </ThemeContext.Provider>
   );
