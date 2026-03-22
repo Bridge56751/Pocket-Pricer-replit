@@ -424,9 +424,9 @@ export default function SearchResultsScreen() {
             </LinearGradient>
 
             <LinearGradient
-              colors={["#0A3622", "#14532D", "#1A6B3C"]}
+              colors={["#1A6B3C", "#14532D", "#0A3622"]}
               start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
+              end={{ x: 0, y: 1 }}
               style={styles.calculatorCardFull}
             >
               <View style={styles.calculatorHeader}>
@@ -1028,7 +1028,7 @@ const styles = StyleSheet.create({
   heroSection: {
     paddingHorizontal: 16,
     paddingTop: 16,
-    paddingBottom: 24,
+    paddingBottom: 0,
   },
   heroBackButton: {
     width: 38,
@@ -1167,7 +1167,8 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   calculatorCardFull: {
-    padding: 20,
+    paddingTop: 24,
+    paddingBottom: 20,
     paddingHorizontal: 20,
     marginBottom: 16,
   },
