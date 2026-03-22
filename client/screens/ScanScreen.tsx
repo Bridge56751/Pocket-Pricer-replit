@@ -464,20 +464,42 @@ export default function ScanScreen() {
                 </View>
               </View>
             ) : (
-              <Pressable
-                onPress={() => navigation.navigate("Paywall", { context: "scan" })}
-                style={({ pressed }) => [styles.proUpsellCard, { opacity: pressed ? 0.9 : 1 }]}
-              >
-                <View style={styles.proUpsellLeft}>
-                  <View style={styles.proUpsellBadge}>
-                    <Feather name="star" size={11} color="#065F46" />
-                    <Text style={styles.proUpsellBadgeText}>PRO</Text>
+              <>
+                <View style={styles.scansRemainingContainer}>
+                  <View style={styles.dotsRow}>
+                    {Array.from({ length: FREE_SCAN_LIMIT }).map((_, i) => (
+                      <View
+                        key={i}
+                        style={[
+                          styles.scanDot,
+                          i < FREE_SCAN_LIMIT - scansUsed
+                            ? styles.scanDotActive
+                            : styles.scanDotInactive,
+                        ]}
+                      />
+                    ))}
                   </View>
-                  <Text style={styles.proUpsellTitle}>Unlock sold prices & Buy Score</Text>
-                  <Text style={styles.proUpsellSub}>3-day free trial · $8.99/mo after</Text>
+                  <Text style={styles.scansRemainingText}>
+                    {scansUsed >= FREE_SCAN_LIMIT
+                      ? "No free scans remaining"
+                      : `${FREE_SCAN_LIMIT - scansUsed} free scan${FREE_SCAN_LIMIT - scansUsed === 1 ? "" : "s"} remaining`}
+                  </Text>
                 </View>
-                <Feather name="chevron-right" size={18} color="rgba(255,255,255,0.6)" />
-              </Pressable>
+                <Pressable
+                  onPress={() => navigation.navigate("Paywall", { context: "scan" })}
+                  style={({ pressed }) => [styles.proUpsellCard, { opacity: pressed ? 0.9 : 1 }]}
+                >
+                  <View style={styles.proUpsellLeft}>
+                    <View style={styles.proUpsellBadge}>
+                      <Feather name="star" size={11} color="#065F46" />
+                      <Text style={styles.proUpsellBadgeText}>PRO</Text>
+                    </View>
+                    <Text style={styles.proUpsellTitle}>Unlock sold prices & Buy Score</Text>
+                    <Text style={styles.proUpsellSub}>3-day free trial · $8.99/mo after</Text>
+                  </View>
+                  <Feather name="chevron-right" size={18} color="rgba(255,255,255,0.6)" />
+                </Pressable>
+              </>
             )}
           </LinearGradient>
 
@@ -746,6 +768,32 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700" as const,
     letterSpacing: 1,
+  },
+  scansRemainingContainer: {
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    marginTop: 14,
+    gap: 8,
+  },
+  dotsRow: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 8,
+  },
+  scanDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  scanDotActive: {
+    backgroundColor: "#6EE7B7",
+  },
+  scanDotInactive: {
+    backgroundColor: "rgba(255,255,255,0.25)",
+  },
+  scansRemainingText: {
+    fontSize: 12,
+    color: "rgba(255,255,255,0.7)",
   },
   proUpsellCard: {
     flexDirection: "row" as const,
