@@ -8,7 +8,6 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 interface ThemeProviderProps {
   children: ReactNode;
-  systemColorScheme?: "light" | "dark";
 }
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
