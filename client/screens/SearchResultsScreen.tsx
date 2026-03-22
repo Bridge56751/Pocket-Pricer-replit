@@ -553,9 +553,20 @@ export default function SearchResultsScreen() {
 
             {ebaySoldData && showEbaySold && ebaySoldData.noResults && !broadSoldData ? (
               <View style={styles.advancedSearchContainer}>
-                <View style={styles.advancedSearchHeader}>
-                  <Feather name="zap" size={16} color="#FFFFFF" />
-                  <Text style={styles.advancedSearchLabel}>Advanced Search</Text>
+                <View style={styles.salesIntelHeader}>
+                  <View style={styles.salesIntelLeft}>
+                    <Text style={styles.salesIntelLabel}>PRO FEATURE</Text>
+                    <Text style={styles.salesIntelTitle}>Sales Intelligence</Text>
+                  </View>
+                  <LinearGradient
+                    colors={["#F5D87A", "#D4A926", "#E8C84A"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.salesIntelBadge}
+                  >
+                    <Feather name="star" size={10} color="#3D2E00" />
+                    <Text style={styles.salesIntelBadgeText}>PRO</Text>
+                  </LinearGradient>
                 </View>
                 <View style={[styles.ebaySoldSummary, { backgroundColor: theme.colors.card }]}>
                   <View style={styles.ebaySoldSummaryHeader}>
@@ -588,9 +599,20 @@ export default function SearchResultsScreen() {
 
             {ebaySoldData && showEbaySold && ebaySoldData.noResults && broadSoldData && broadSoldData.noResults ? (
               <View style={styles.advancedSearchContainer}>
-                <View style={styles.advancedSearchHeader}>
-                  <Feather name="zap" size={16} color="#FFFFFF" />
-                  <Text style={styles.advancedSearchLabel}>Advanced Search</Text>
+                <View style={styles.salesIntelHeader}>
+                  <View style={styles.salesIntelLeft}>
+                    <Text style={styles.salesIntelLabel}>PRO FEATURE</Text>
+                    <Text style={styles.salesIntelTitle}>Sales Intelligence</Text>
+                  </View>
+                  <LinearGradient
+                    colors={["#F5D87A", "#D4A926", "#E8C84A"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.salesIntelBadge}
+                  >
+                    <Feather name="star" size={10} color="#3D2E00" />
+                    <Text style={styles.salesIntelBadgeText}>PRO</Text>
+                  </LinearGradient>
                 </View>
                 <View style={[styles.ebaySoldSummary, { backgroundColor: theme.colors.card }]}>
                   <View style={styles.ebaySoldSummaryHeader}>
@@ -608,9 +630,20 @@ export default function SearchResultsScreen() {
 
             {ebaySoldData && showEbaySold && !ebaySoldData.noResults && buyScore !== null ? (
               <View style={styles.advancedSearchContainer}>
-                <View style={styles.advancedSearchHeader}>
-                  <Feather name="zap" size={16} color="#FFFFFF" />
-                  <Text style={styles.advancedSearchLabel}>Advanced Search</Text>
+                <View style={styles.salesIntelHeader}>
+                  <View style={styles.salesIntelLeft}>
+                    <Text style={styles.salesIntelLabel}>PRO FEATURE</Text>
+                    <Text style={styles.salesIntelTitle}>Sales Intelligence</Text>
+                  </View>
+                  <LinearGradient
+                    colors={["#F5D87A", "#D4A926", "#E8C84A"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.salesIntelBadge}
+                  >
+                    <Feather name="star" size={10} color="#3D2E00" />
+                    <Text style={styles.salesIntelBadgeText}>PRO</Text>
+                  </LinearGradient>
                 </View>
 
                 <Animated.View
@@ -619,8 +652,8 @@ export default function SearchResultsScreen() {
                 >
                   <View style={styles.buyScoreHeader}>
                     <View style={{ flex: 1 }}>
-                      <Text style={[styles.buyScoreTitle, { color: theme.colors.foreground }]}>
-                        Buy Score
+                      <Text style={styles.buyScoreSectionLabel}>
+                        BUY SCORE
                       </Text>
                       <Text style={[styles.buyScoreHint, { color: theme.colors.mutedForeground }]}>
                         {parseFloat(purchasePrice) > 0 ? "Based on your cost, demand & market data" : "Enter your purchase price for a precise score"}
@@ -670,55 +703,69 @@ export default function SearchResultsScreen() {
 
                 <View style={[styles.ebaySoldSummary, { backgroundColor: theme.colors.card }]}>
                   <View style={styles.ebaySoldSummaryHeader}>
-                    <Feather name="bar-chart-2" size={18} color="#047857" />
-                    <Text style={[styles.ebaySoldSummaryTitle, { color: theme.colors.foreground }]}>
-                      eBay Sales Summary
+                    <View style={styles.ebaySoldSummaryHeaderLeft}>
+                      <Feather name="trending-up" size={18} color="#047857" />
+                      <Text style={[styles.ebaySoldSummaryTitle, { color: theme.colors.foreground }]}>
+                        eBay Sales Summary
+                      </Text>
+                    </View>
+                    <Text style={[styles.ebaySoldMatchCount, { color: theme.colors.mutedForeground }]}>
+                      {(ebaySoldData.totalSold || 0).toLocaleString()} sold {ebaySoldData.totalSold === 1 ? "match" : "matches"}
                     </Text>
                   </View>
-                  <Text style={[styles.ebaySoldSummarySubtitle, { color: theme.colors.mutedForeground }]}>
-                    {(ebaySoldData.totalSold || 0).toLocaleString()} matching sold {ebaySoldData.totalSold === 1 ? "listing" : "listings"} found on eBay
-                  </Text>
 
                   <View style={styles.ebaySoldStatsRow}>
                     <View style={styles.ebaySoldStat}>
                       <Text style={[styles.ebaySoldStatLabel, { color: theme.colors.mutedForeground }]}>
-                        Avg Sold
+                        AVG SOLD
                       </Text>
                       <Text style={[styles.ebaySoldStatValue, { color: theme.colors.foreground }]}>
                         ${(ebaySoldData.avgSoldPrice || 0).toFixed(0)}
                       </Text>
+                      <Text style={[styles.ebaySoldStatSub, { color: theme.colors.mutedForeground }]}>
+                        mean price
+                      </Text>
                     </View>
                     <View style={[styles.ebaySoldStatDivider, { backgroundColor: theme.colors.border }]} />
                     <View style={styles.ebaySoldStat}>
                       <Text style={[styles.ebaySoldStatLabel, { color: theme.colors.mutedForeground }]}>
-                        Median
+                        MEDIAN
                       </Text>
                       <Text style={[styles.ebaySoldStatValue, { color: theme.colors.foreground }]}>
                         ${(ebaySoldData.medianSoldPrice || 0).toFixed(0)}
                       </Text>
+                      <Text style={[styles.ebaySoldStatSub, { color: theme.colors.mutedForeground }]}>
+                        midpoint
+                      </Text>
                     </View>
                     <View style={[styles.ebaySoldStatDivider, { backgroundColor: theme.colors.border }]} />
                     <View style={styles.ebaySoldStat}>
                       <Text style={[styles.ebaySoldStatLabel, { color: theme.colors.mutedForeground }]}>
-                        Range
+                        RANGE
                       </Text>
                       <Text style={[styles.ebaySoldStatValue, { color: theme.colors.foreground }]}>
                         ${(ebaySoldData.lowPrice || 0).toFixed(0)}-${(ebaySoldData.highPrice || 0).toFixed(0)}
                       </Text>
+                      <Text style={[styles.ebaySoldStatSub, { color: theme.colors.mutedForeground }]}>
+                        low to high
+                      </Text>
                     </View>
                   </View>
 
-                  <View style={[styles.avgPerMonthRow, { backgroundColor: "transparent" }]}>
+                  <View style={[styles.avgPerMonthRow, { borderTopWidth: 1, borderTopColor: theme.colors.border }]}>
                     <Feather
                       name="activity"
                       size={16}
                       color={theme.colors.mutedForeground}
                     />
                     <Text style={[styles.avgPerMonthLabel, { color: theme.colors.mutedForeground }]}>
-                      Avg Sold/Month
+                      Avg sold per month
                     </Text>
-                    <Text style={[styles.avgPerMonthValue, { color: ebaySoldData.avgSoldPerMonth >= 30 ? "#22C55E" : ebaySoldData.avgSoldPerMonth >= 10 ? "#F59E0B" : theme.colors.foreground }]}>
-                      {ebaySoldData.avgSoldPerMonth > 0 ? `~${ebaySoldData.avgSoldPerMonth.toLocaleString()}` : "N/A"}
+                    <Text style={[styles.avgPerMonthValue, { color: ebaySoldData.avgSoldPerMonth >= 30 ? "#22C55E" : ebaySoldData.avgSoldPerMonth >= 10 ? "#F59E0B" : "#047857" }]}>
+                      ~{ebaySoldData.avgSoldPerMonth > 0 ? ebaySoldData.avgSoldPerMonth.toLocaleString() : "0"}
+                    </Text>
+                    <Text style={[styles.avgPerMonthUnit, { color: theme.colors.mutedForeground }]}>
+                      / mo
                     </Text>
                   </View>
                 </View>
@@ -1352,6 +1399,13 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     marginBottom: 4,
   },
+  buyScoreSectionLabel: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#047857",
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
   buyScoreHint: {
     fontSize: 12,
     maxWidth: 200,
@@ -1457,6 +1511,46 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: 0.5,
   },
+  salesIntelHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingTop: 4,
+    paddingBottom: 12,
+    paddingHorizontal: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(4,120,87,0.15)",
+    marginBottom: 12,
+  },
+  salesIntelLeft: {
+    flex: 1,
+  },
+  salesIntelLabel: {
+    color: "#047857",
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 1.5,
+    marginBottom: 2,
+  },
+  salesIntelTitle: {
+    color: "#111827",
+    fontSize: 20,
+    fontWeight: "700",
+  },
+  salesIntelBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  salesIntelBadgeText: {
+    color: "#3D2E00",
+    fontSize: 12,
+    fontWeight: "800",
+    letterSpacing: 0.5,
+  },
   advancedSectionTitle: {
     fontSize: 18,
     fontWeight: "700",
@@ -1544,12 +1638,24 @@ const styles = StyleSheet.create({
   ebaySoldSummaryHeader: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(0,0,0,0.06)",
+  },
+  ebaySoldSummaryHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
-    marginBottom: 4,
   },
   ebaySoldSummaryTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "700",
+  },
+  ebaySoldMatchCount: {
+    fontSize: 13,
+    fontWeight: "500",
   },
   ebaySoldSummarySubtitle: {
     fontSize: 13,
@@ -1584,31 +1690,41 @@ const styles = StyleSheet.create({
     height: 36,
   },
   ebaySoldStatLabel: {
-    fontSize: 12,
-    fontWeight: "500",
+    fontSize: 11,
+    fontWeight: "600",
+    letterSpacing: 0.5,
     marginBottom: 4,
+    textTransform: "uppercase",
   },
   ebaySoldStatValue: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: "700",
+    marginBottom: 2,
+  },
+  ebaySoldStatSub: {
+    fontSize: 11,
+    fontWeight: "400",
   },
   avgPerMonthRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    marginTop: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 10,
+    marginTop: 16,
+    paddingTop: 14,
   },
   avgPerMonthLabel: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: "500",
     flex: 1,
   },
   avgPerMonthValue: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "700",
+  },
+  avgPerMonthUnit: {
+    fontSize: 13,
+    fontWeight: "500",
+    marginLeft: -4,
   },
   ebaySoldCondition: {
     fontSize: 12,
