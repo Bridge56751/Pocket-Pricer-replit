@@ -373,7 +373,7 @@ export default function SearchResultsScreen() {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <View style={[styles.container]}>
       <FlatList
         style={styles.list}
         contentContainerStyle={[
