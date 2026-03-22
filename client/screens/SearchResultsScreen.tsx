@@ -939,13 +939,7 @@ export default function SearchResultsScreen() {
 
             </View>
             </LinearGradient>
-            <LinearGradient
-              colors={["#1A6B3C", "#1A6B3C", "#3D8B5E", "#7BB896", "#B8D9C8", "#DDE9E2", "#EEF3F0", "#F9FAFB"]}
-              locations={[0, 0.05, 0.2, 0.4, 0.6, 0.75, 0.88, 1]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 0, y: 1 }}
-              style={styles.heroFadeBottom}
-            />
+            <View style={styles.heroFadeBottom} />
 
             <View style={styles.belowHeroContent}>
             <Text style={[styles.sectionTitle, { color: theme.colors.foreground }]}>
@@ -1052,7 +1046,7 @@ const styles = StyleSheet.create({
     paddingTop: 4,
   },
   heroFadeBottom: {
-    height: 60,
+    height: 12,
   },
   productCard: {
     flexDirection: "row",
