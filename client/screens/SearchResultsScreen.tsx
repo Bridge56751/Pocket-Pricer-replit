@@ -516,17 +516,21 @@ export default function SearchResultsScreen() {
             >
               {ebaySoldLoading ? (
                 <ActivityIndicator size="small" color="#F0D264" />
+              ) : rcReady && !isPro && !ebaySoldData ? (
+                <View style={styles.ebaySoldButtonContent}>
+                  <Text style={styles.ebaySoldButtonTitle}>See what items actually sell for</Text>
+                  <View style={styles.ebaySoldButtonCta}>
+                    <Feather name="lock" size={14} color="#F0D264" />
+                    <Text style={styles.ebaySoldButtonCtaText}>Try Pro free for 3 days</Text>
+                    <Feather name="arrow-right" size={14} color="#F0D264" />
+                  </View>
+                </View>
               ) : (
                 <>
-                  <Feather name={rcReady && !isPro && !ebaySoldData ? "lock" : "trending-up"} size={16} color="#F0D264" />
+                  <Feather name="trending-up" size={16} color="#F0D264" />
                   <Text style={styles.ebaySoldButtonTextPro}>
                     {ebaySoldData ? (showEbaySold ? "Hide Sales Data" : "Show Sales Data") : "See eBay Sales Data"}
                   </Text>
-                  {rcReady && !isPro && !ebaySoldData ? (
-                    <View style={styles.ebaySoldProBadge}>
-                      <Text style={styles.ebaySoldProBadgeText}>PRO</Text>
-                    </View>
-                  ) : null}
                 </>
               )}
             </Pressable>
@@ -1455,8 +1459,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#14532D",
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingVertical: 18,
+    borderRadius: 14,
     marginBottom: 16,
     gap: 8,
     borderWidth: 1.5,
@@ -1472,17 +1476,24 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
   },
-  ebaySoldProBadge: {
-    backgroundColor: "rgba(212, 169, 38, 0.25)",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
+  ebaySoldButtonContent: {
+    alignItems: "center",
+    gap: 6,
   },
-  ebaySoldProBadgeText: {
+  ebaySoldButtonTitle: {
+    color: "#FFFFFF",
+    fontSize: 17,
+    fontWeight: "700",
+  },
+  ebaySoldButtonCta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  ebaySoldButtonCtaText: {
     color: "#F0D264",
-    fontSize: 11,
-    fontWeight: "800",
-    letterSpacing: 0.5,
+    fontSize: 14,
+    fontWeight: "600",
   },
   ebaySoldErrorText: {
     fontSize: 14,
