@@ -9,6 +9,7 @@ import {
   Alert,
   Linking,
   ScrollView,
+  Image,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
@@ -212,7 +213,10 @@ export default function PaywallScreen() {
                 end={{ x: 1, y: 1 }}
                 style={styles.iconCircle}
               >
-                <Feather name="star" size={32} color="#3D2E00" />
+                <Image
+                  source={require("../../assets/images/icon.png")}
+                  style={styles.logoIcon}
+                />
               </LinearGradient>
             </View>
 
@@ -222,7 +226,7 @@ export default function PaywallScreen() {
               end={{ x: 1, y: 0 }}
               style={styles.proBadge}
             >
-              <Feather name="star" size={12} color="#3D2E00" />
+              <Feather name="tag" size={12} color="#3D2E00" />
               <Text style={styles.proBadgeText}>POCKET PRICER PRO</Text>
             </LinearGradient>
 
@@ -464,6 +468,12 @@ const styles = StyleSheet.create({
     borderRadius: 36,
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden" as const,
+  },
+  logoIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 12,
   },
   proBadge: {
     flexDirection: "row" as const,
