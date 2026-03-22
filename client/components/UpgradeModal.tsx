@@ -22,10 +22,10 @@ const PRIVACY_URL = "https://pocket-pricer.com/pocket-pricer-privacy-policy-v5.h
 const TERMS_URL = "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/";
 
 const FEATURES = [
-  { icon: "camera" as const,      text: "Unlimited product scans",                       color: "#10B981" },
-  { icon: "trending-up" as const, text: "Sold prices — see what items actually sell for", color: "#10B981" },
-  { icon: "bar-chart-2" as const, text: "Buy Score — instant demand & profit rating",     color: "#10B981" },
-  { icon: "dollar-sign" as const, text: "Unlimited price comparisons",                    color: "#10B981" },
+  { icon: "camera" as const,      text: "Unlimited product scans",                       color: "#047857" },
+  { icon: "trending-up" as const, text: "Sold prices — see what items actually sell for", color: "#047857" },
+  { icon: "bar-chart-2" as const, text: "Buy Score — instant demand & profit rating",     color: "#047857" },
+  { icon: "dollar-sign" as const, text: "Unlimited price comparisons",                    color: "#047857" },
 ];
 
 interface UpgradeModalProps {
@@ -156,7 +156,7 @@ export default function UpgradeModal({ visible, onClose, scansUsed = 0 }: Upgrad
             <View style={styles.iconWrap}>
               <View style={styles.iconGlow} />
               <LinearGradient
-                colors={["#34D399", "#10B981", "#059669"]}
+                colors={["#059669", "#047857", "#065F46"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.iconCircle}
@@ -182,17 +182,17 @@ export default function UpgradeModal({ visible, onClose, scansUsed = 0 }: Upgrad
                     styles.featureRow,
                     {
                       backgroundColor: "rgba(0,0,0,0.02)",
-                      borderColor: "rgba(16,185,129,0.25)",
+                      borderColor: "rgba(4,120,87,0.25)",
                     },
                   ]}
                 >
-                  <View style={[styles.featureIconCircle, { backgroundColor: "#10B98122" }]}>
+                  <View style={[styles.featureIconCircle, { backgroundColor: "#04785722" }]}>
                     <Feather name={f.icon} size={16} color={f.color} />
                   </View>
                   <Text style={[styles.featureText, { color: theme.colors.foreground }]}>
                     {f.text}
                   </Text>
-                  <Feather name="check" size={16} color="#10B981" />
+                  <Feather name="check" size={16} color="#047857" />
                 </View>
               ))}
             </View>
@@ -207,13 +207,13 @@ export default function UpgradeModal({ visible, onClose, scansUsed = 0 }: Upgrad
                       styles.planCard,
                       {
                         backgroundColor: selectedPlan === "weekly" ? planCardBg : "#F9FAFB",
-                        borderColor: selectedPlan === "weekly" ? "#10B981" : "#E5E7EB",
+                        borderColor: selectedPlan === "weekly" ? "#047857" : "#E5E7EB",
                       },
                     ]}
                   >
                     <View style={styles.planLeft}>
                       <Text style={[styles.planName, { color: theme.colors.foreground }]}>Weekly</Text>
-                      <Text style={[styles.planTrialText, { color: "#10B981" }]}>
+                      <Text style={[styles.planTrialText, { color: "#047857" }]}>
                         3-day free trial
                       </Text>
                       <Text style={[styles.planPrice, { color: theme.colors.mutedForeground }]}>
@@ -237,7 +237,7 @@ export default function UpgradeModal({ visible, onClose, scansUsed = 0 }: Upgrad
                       styles.planCard,
                       {
                         backgroundColor: selectedPlan === "monthly" ? planCardBg : "#F9FAFB",
-                        borderColor: selectedPlan === "monthly" ? "#10B981" : "#E5E7EB",
+                        borderColor: selectedPlan === "monthly" ? "#047857" : "#E5E7EB",
                       },
                     ]}
                   >
@@ -248,7 +248,7 @@ export default function UpgradeModal({ visible, onClose, scansUsed = 0 }: Upgrad
                           <Text style={styles.bestValueText}>Best Value</Text>
                         </View>
                       </View>
-                      <Text style={[styles.planTrialText, { color: "#10B981" }]}>
+                      <Text style={[styles.planTrialText, { color: "#047857" }]}>
                         3-day free trial
                       </Text>
                       <Text style={[styles.planPrice, { color: theme.colors.mutedForeground }]}>
@@ -267,9 +267,9 @@ export default function UpgradeModal({ visible, onClose, scansUsed = 0 }: Upgrad
                   </Pressable>
                 </>
               ) : (
-                <View style={[styles.planCard, { backgroundColor: planCardBg, borderColor: "#10B981" }]}>
+                <View style={[styles.planCard, { backgroundColor: planCardBg, borderColor: "#047857" }]}>
                   <View style={styles.planLeft}>
-                    <Text style={[styles.planTrialText, { color: "#10B981", fontSize: 16 }]}>
+                    <Text style={[styles.planTrialText, { color: "#047857", fontSize: 16 }]}>
                       3-Day Free Trial
                     </Text>
                     <Text style={[styles.planPrice, { color: theme.colors.mutedForeground }]}>
@@ -291,7 +291,7 @@ export default function UpgradeModal({ visible, onClose, scansUsed = 0 }: Upgrad
                 style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1, width: "100%" }]}
               >
                 <LinearGradient
-                  colors={["#34D399", "#10B981", "#059669"]}
+                  colors={["#059669", "#047857", "#065F46"]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={styles.ctaButton}
@@ -319,7 +319,7 @@ export default function UpgradeModal({ visible, onClose, scansUsed = 0 }: Upgrad
             <View style={styles.footer}>
               <Pressable onPress={handleRestore} disabled={isLoading || isRestoring}>
                 {isRestoring ? (
-                  <ActivityIndicator size="small" color="#10B981" />
+                  <ActivityIndicator size="small" color="#047857" />
                 ) : (
                   <Text style={[styles.footerLink, { color: theme.colors.mutedForeground }]}>
                     Restore Purchase
@@ -400,7 +400,7 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: "rgba(16, 185, 129, 0.15)",
+    backgroundColor: "rgba(4, 120, 87, 0.15)",
   },
   iconCircle: {
     width: 80,
@@ -408,7 +408,7 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#10B981",
+    shadowColor: "#047857",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.45,
     shadowRadius: 14,
@@ -488,7 +488,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   bestValueBadge: {
-    backgroundColor: "#10B981",
+    backgroundColor: "#047857",
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 6,
@@ -508,7 +508,7 @@ const styles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: "#10B981",
+    backgroundColor: "#047857",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -531,7 +531,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     gap: 10,
     width: "100%",
-    shadowColor: "#10B981",
+    shadowColor: "#047857",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.45,
     shadowRadius: 16,

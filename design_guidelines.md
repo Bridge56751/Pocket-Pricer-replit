@@ -82,7 +82,7 @@
 
 ## Color Palette
 
-- **Primary**: `#10B981` (Emerald green - profit, growth)
+- **Primary**: `#047857` (Emerald green - profit, growth)
 - **Danger**: `#EF4444` (Sharp red - losses)
 - **Background**: `#1F2937` (Dark charcoal - serious, data-focused)
 - **Surface**: `#374151` (Lighter charcoal - cards, elevated surfaces)
@@ -119,4 +119,4 @@
 5. **empty-favorites.png** - Star with bookmark, clean line art. WHERE USED: Favorites screen empty state
 6. **profit-success.png** - Upward arrow with dollar sign, celebratory but professional. WHERE USED: Product detail when profit margin exceeds user's threshold
 
-**Asset Style**: Minimal line art in emerald green (#10B981) on transparent background. Clean, professional, not cartoonish.
+**Asset Style**: Minimal line art in emerald green (#047857) on transparent background. Clean, professional, not cartoonish.

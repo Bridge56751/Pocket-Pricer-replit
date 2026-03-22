@@ -106,3 +106,11 @@ The application is built with a client-server architecture. The frontend is an E
   - StatusBar locked to `dark` content style globally
   - `useColorScheme` hook no longer used in App.tsx
   - Design tokens `Colors.dark` and `colors.dark` now mirror their light counterparts
+- **Mar 2026**: Darker green redesign & dark hero section
+  - Primary green changed from #10B981 (emerald-500) to #047857 (emerald-700) across all design tokens, screens, and components
+  - ScanScreen hero card restyled: dark green gradient background (#065F46→#047857→#059669), white title/description text, "MARKET INTELLIGENCE" label in lighter green
+  - Scan Product button inverted to white background with dark green text (was green gradient with white text)
+  - PRO upsell card added inside hero: dark semi-transparent background, gold PRO badge, "Unlock sold prices & Buy Score" text
+  - PaywallScreen and UpgradeModal updated with deeper green accents (CTA gradients, icon circles, feature checkmarks, plan card borders)
+  - All hardcoded #10B981 and #34D399 references replaced across OnboardingScreen, FavoritesScreen, SearchResultsScreen, emailClient.ts
+  - Gradient palette standardized: #059669→#047857→#065F46 for buttons/CTAs

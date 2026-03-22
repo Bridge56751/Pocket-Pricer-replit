@@ -22,7 +22,7 @@ const ONBOARDING_COMPLETE_KEY = "@pocket_pricer_onboarding_complete";
 const FEATURES = [
   { icon: "camera" as const, label: "Scan any product", color: "#3B82F6" },
   { icon: "bar-chart-2" as const, label: "Compare prices across stores", color: "#8B5CF6" },
-  { icon: "trending-up" as const, label: "See what items actually sold for", color: "#10B981" },
+  { icon: "trending-up" as const, label: "See what items actually sold for", color: "#047857" },
   { icon: "dollar-sign" as const, label: "See your profit instantly", color: "#F59E0B" },
 ];
 
@@ -102,7 +102,7 @@ function FloatingIcon() {
   return (
     <Animated.View style={[styles.heroIcon, animatedStyle]}>
       <View style={styles.heroIconInner}>
-        <Feather name="tag" size={52} color="#10B981" />
+        <Feather name="tag" size={52} color="#047857" />
       </View>
     </Animated.View>
   );
@@ -136,8 +136,8 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
 
       <View style={[styles.content, { paddingTop: insets.top + 40 }]}>
         <View style={styles.heroSection}>
-          <PulsingRing color="#10B981" delay={0} />
-          <PulsingRing color="#10B981" delay={1000} />
+          <PulsingRing color="#047857" delay={0} />
+          <PulsingRing color="#047857" delay={1000} />
           <FloatingIcon />
         </View>
 
@@ -247,10 +247,10 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: "#10B98120",
+    backgroundColor: "#04785720",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#10B981",
+    shadowColor: "#047857",
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.5,
     shadowRadius: 20,
@@ -260,10 +260,10 @@ const styles = StyleSheet.create({
     width: 88,
     height: 88,
     borderRadius: 44,
-    backgroundColor: "#10B98135",
+    backgroundColor: "#04785735",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#10B981",
+    shadowColor: "#047857",
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.4,
     shadowRadius: 12,

@@ -531,7 +531,7 @@ export default function SearchResultsScreen() {
                 </View>
                 <View style={[styles.ebaySoldSummary, { backgroundColor: theme.colors.card }]}>
                   <View style={styles.ebaySoldSummaryHeader}>
-                    <Feather name="info" size={18} color="#10B981" />
+                    <Feather name="info" size={18} color="#047857" />
                     <Text style={[styles.ebaySoldSummaryTitle, { color: theme.colors.foreground }]}>
                       No eBay Sales Found
                     </Text>
@@ -566,7 +566,7 @@ export default function SearchResultsScreen() {
                 </View>
                 <View style={[styles.ebaySoldSummary, { backgroundColor: theme.colors.card }]}>
                   <View style={styles.ebaySoldSummaryHeader}>
-                    <Feather name="info" size={18} color="#10B981" />
+                    <Feather name="info" size={18} color="#047857" />
                     <Text style={[styles.ebaySoldSummaryTitle, { color: theme.colors.foreground }]}>
                       No Similar Items Found
                     </Text>
@@ -642,7 +642,7 @@ export default function SearchResultsScreen() {
 
                 <View style={[styles.ebaySoldSummary, { backgroundColor: theme.colors.card }]}>
                   <View style={styles.ebaySoldSummaryHeader}>
-                    <Feather name="bar-chart-2" size={18} color="#10B981" />
+                    <Feather name="bar-chart-2" size={18} color="#047857" />
                     <Text style={[styles.ebaySoldSummaryTitle, { color: theme.colors.foreground }]}>
                       eBay Sales Summary
                     </Text>
@@ -707,7 +707,7 @@ export default function SearchResultsScreen() {
                   >
                     {renderSoldImage(item)}
                     <View style={styles.listingContent}>
-                      <View style={[styles.ebayBadge, { backgroundColor: "#10B981" }]}>
+                      <View style={[styles.ebayBadge, { backgroundColor: "#047857" }]}>
                         <Text style={styles.ebayBadgeText}>SOLD</Text>
                       </View>
                       <Text
@@ -1388,7 +1388,7 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     borderRadius: 20,
     borderWidth: 2.5,
-    borderColor: "#10B981",
+    borderColor: "#047857",
     padding: 12,
     marginBottom: 16,
   },
@@ -1396,7 +1396,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "#10B981",
+    backgroundColor: "#047857",
     alignSelf: "flex-start",
     paddingHorizontal: 12,
     paddingVertical: 6,

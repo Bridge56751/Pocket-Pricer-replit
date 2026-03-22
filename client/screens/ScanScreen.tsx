@@ -77,7 +77,7 @@ function ScanningImage({ uri, style, containerStyle }: { uri: string; style: any
             bottom: -3,
             borderRadius: 19,
             borderWidth: 2.5,
-            borderColor: "#10B981",
+            borderColor: "#047857",
           },
           glowStyle,
         ]}
@@ -432,64 +432,54 @@ export default function ScanScreen() {
           </Pressable>
         </View>
 
-        <View style={[styles.heroCard, { backgroundColor: theme.colors.card }]}>
-            <Text style={[styles.heroTitle, { color: theme.colors.foreground }]}>
+        <LinearGradient
+            colors={["#065F46", "#047857", "#059669"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.heroCard}
+          >
+            <Text style={styles.heroLabel}>MARKET INTELLIGENCE</Text>
+            <Text style={styles.heroTitle}>
               Scan & Price
             </Text>
-            <Text style={[styles.heroDescription, { color: theme.colors.mutedForeground }]}>
-              Point your camera at any product to get instant market pricing and sales data
+            <Text style={styles.heroDescription}>
+              Point at any item to see real sold prices instantly
             </Text>
 
             <Pressable
               onPress={handleScanProduct}
               style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}
             >
-              <LinearGradient
-                colors={["#34D399", "#10B981", "#059669"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.scanButton}
-              >
-                <Feather name="camera" size={20} color="#fff" />
+              <View style={styles.scanButton}>
+                <Feather name="camera" size={20} color="#047857" />
                 <Text style={styles.scanButtonText}>Scan Product</Text>
-              </LinearGradient>
+              </View>
             </Pressable>
 
             {isPro ? (
               <View style={styles.proBadgeContainer}>
-                <LinearGradient
-                  colors={["#34D399", "#10B981"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.proBadge}
-                >
+                <View style={styles.proBadge}>
                   <Feather name="zap" size={13} color="#fff" />
                   <Text style={styles.proBadgeText}>PRO</Text>
-                </LinearGradient>
+                </View>
               </View>
             ) : (
-              <View style={styles.scansRemainingContainer}>
-                <View style={styles.dotsRow}>
-                  {Array.from({ length: FREE_SCAN_LIMIT }).map((_, i) => (
-                    <View
-                      key={i}
-                      style={[
-                        styles.scanDot,
-                        i < FREE_SCAN_LIMIT - scansUsed
-                          ? styles.scanDotActive
-                          : { backgroundColor: "#D1D5DB" },
-                      ]}
-                    />
-                  ))}
+              <Pressable
+                onPress={() => navigation.navigate("Paywall", { context: "scan" })}
+                style={({ pressed }) => [styles.proUpsellCard, { opacity: pressed ? 0.9 : 1 }]}
+              >
+                <View style={styles.proUpsellLeft}>
+                  <View style={styles.proUpsellBadge}>
+                    <Feather name="star" size={11} color="#065F46" />
+                    <Text style={styles.proUpsellBadgeText}>PRO</Text>
+                  </View>
+                  <Text style={styles.proUpsellTitle}>Unlock sold prices & Buy Score</Text>
+                  <Text style={styles.proUpsellSub}>3-day free trial · $8.99/mo after</Text>
                 </View>
-                <Text style={[styles.scansRemainingText, { color: theme.colors.mutedForeground }]}>
-                  {scansUsed >= FREE_SCAN_LIMIT
-                    ? "No free scans remaining — start your 3-day free trial"
-                    : `${FREE_SCAN_LIMIT - scansUsed} free scan${FREE_SCAN_LIMIT - scansUsed === 1 ? "" : "s"} remaining`}
-                </Text>
-              </View>
+                <Feather name="chevron-right" size={18} color="rgba(255,255,255,0.6)" />
+              </Pressable>
             )}
-          </View>
+          </LinearGradient>
 
         <View style={styles.sectionHeader}>
           <Feather name="clock" size={18} color={theme.colors.primary} />
@@ -703,41 +693,53 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 24,
     marginBottom: 24,
+    overflow: "hidden" as const,
+  },
+  heroLabel: {
+    fontSize: 12,
+    fontWeight: "700" as const,
+    letterSpacing: 1.5,
+    color: "#6EE7B7",
+    marginBottom: 8,
   },
   heroTitle: {
-    fontSize: 22,
-    fontWeight: "700",
+    fontSize: 26,
+    fontWeight: "800" as const,
     marginBottom: 8,
+    color: "#FFFFFF",
   },
   heroDescription: {
     fontSize: 15,
     lineHeight: 22,
     marginBottom: 20,
+    color: "rgba(255,255,255,0.85)",
   },
   scanButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
     paddingVertical: 16,
     borderRadius: 14,
     gap: 10,
+    backgroundColor: "#FFFFFF",
   },
   scanButtonText: {
-    color: "#fff",
+    color: "#047857",
     fontSize: 17,
-    fontWeight: "600",
+    fontWeight: "700" as const,
   },
   proBadgeContainer: {
-    alignItems: "center",
+    alignItems: "center" as const,
     marginTop: 14,
   },
   proBadge: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
     gap: 5,
     paddingVertical: 6,
     paddingHorizontal: 14,
     borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.15)",
   },
   proBadgeText: {
     color: "#fff",
@@ -745,27 +747,46 @@ const styles = StyleSheet.create({
     fontWeight: "700" as const,
     letterSpacing: 1,
   },
-  scansRemainingContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 14,
-    gap: 8,
+  proUpsellCard: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    backgroundColor: "rgba(0,0,0,0.18)",
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.15)",
   },
-  dotsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
+  proUpsellLeft: {
+    flex: 1,
+    gap: 4,
   },
-  scanDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+  proUpsellBadge: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 4,
+    backgroundColor: "#FBBF24",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    alignSelf: "flex-start" as const,
+    marginBottom: 2,
   },
-  scanDotActive: {
-    backgroundColor: "#10B981",
+  proUpsellBadgeText: {
+    fontSize: 11,
+    fontWeight: "800" as const,
+    color: "#065F46",
+    letterSpacing: 0.5,
   },
-  scansRemainingText: {
+  proUpsellTitle: {
+    fontSize: 15,
+    fontWeight: "700" as const,
+    color: "#FFFFFF",
+  },
+  proUpsellSub: {
     fontSize: 12,
+    color: "rgba(255,255,255,0.6)",
   },
   scanOverlay: {
     ...StyleSheet.absoluteFillObject,
