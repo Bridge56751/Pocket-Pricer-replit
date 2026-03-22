@@ -3,13 +3,10 @@ import { View, StyleSheet, Pressable, Text, Alert, Platform, ActivityIndicator, 
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withRepeat,
-  withTiming,
-  Easing,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
-import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as WebBrowser from "expo-web-browser";
@@ -32,34 +29,27 @@ export default function ProfileScreen() {
   const { isPro, restorePurchases } = useRevenueCat();
   const [isRestoring, setIsRestoring] = useState(false);
 
-  const shimmerX = useSharedValue(-1.5);
-  const triggerShimmer = useCallback(() => {
-    shimmerX.value = -1.5;
-    shimmerX.value = withTiming(1.5, { duration: 800, easing: Easing.inOut(Easing.ease) });
+  const scrollY = useSharedValue(0);
+  const handleScroll = useCallback((event: any) => {
+    scrollY.value = event.nativeEvent.contentOffset.y;
   }, []);
-
-  useFocusEffect(
-    useCallback(() => {
-      if (!isPro) {
-        const timer = setTimeout(() => triggerShimmer(), 400);
-        return () => clearTimeout(timer);
-      }
-    }, [isPro, triggerShimmer])
-  );
-  const shimmerStyle = useAnimatedStyle(() => ({
-    position: "absolute" as const,
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    opacity: 0.4,
-    backgroundColor: "#FFFFFF",
-    transform: [
-      { translateX: shimmerX.value * 300 },
-      { skewX: "-20deg" },
-    ],
-    width: 60,
-  }));
+  const shimmerStyle = useAnimatedStyle(() => {
+    const mapped = ((scrollY.value % 400) / 400) * 2 - 1;
+    return {
+      position: "absolute" as const,
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      opacity: 0.3,
+      backgroundColor: "#FFFFFF",
+      transform: [
+        { translateX: mapped * 250 },
+        { skewX: "-20deg" },
+      ],
+      width: 50,
+    };
+  });
   const [scansUsed, setScansUsed] = useState(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -157,6 +147,8 @@ export default function ProfileScreen() {
           paddingBottom: insets.bottom + 24,
         },
       ]}
+      onScroll={handleScroll}
+      scrollEventThrottle={16}
     >
       {isPro ? (
         <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
