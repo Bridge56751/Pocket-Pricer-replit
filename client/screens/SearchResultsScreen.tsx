@@ -424,33 +424,38 @@ export default function SearchResultsScreen() {
             </LinearGradient>
 
             <View style={styles.belowHeroContent}>
-            <View style={[styles.calculatorCard, { backgroundColor: theme.colors.card }]}>
+            <LinearGradient
+              colors={["#0A3622", "#14532D", "#1A6B3C"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.calculatorCard}
+            >
               <View style={styles.calculatorHeader}>
-                <Feather name="dollar-sign" size={18} color={theme.colors.primary} />
-                <Text style={[styles.calculatorTitle, { color: theme.colors.foreground }]}>
+                <Feather name="dollar-sign" size={18} color="#4ADE80" />
+                <Text style={[styles.calculatorTitle, { color: "#FFFFFF" }]}>
                   Profit Calculator
                 </Text>
               </View>
 
               <View style={styles.calculatorRow}>
                 <View style={styles.labelWithHint}>
-                  <Text style={[styles.calculatorLabel, { color: theme.colors.mutedForeground }]}>
+                  <Text style={[styles.calculatorLabel, { color: "rgba(255,255,255,0.7)" }]}>
                     Your Selling Price
                   </Text>
                   <Pressable onPress={useSuggestedPrice} style={styles.suggestedHint}>
-                    <Text style={[styles.suggestedHintText, { color: theme.colors.primary }]}>
+                    <Text style={[styles.suggestedHintText, { color: "#4ADE80" }]}>
                       Suggested: ${suggestedPrice.toFixed(0)}
                     </Text>
                   </Pressable>
                 </View>
-                <View style={[styles.inputContainer, { backgroundColor: theme.colors.muted, borderColor: theme.colors.border }]}>
-                  <Text style={[styles.dollarSign, { color: theme.colors.mutedForeground }]}>$</Text>
+                <View style={[styles.inputContainer, { backgroundColor: "rgba(255,255,255,0.12)", borderColor: "rgba(255,255,255,0.2)" }]}>
+                  <Text style={[styles.dollarSign, { color: "rgba(255,255,255,0.5)" }]}>$</Text>
                   <TextInput
-                    style={[styles.priceInput, { color: theme.colors.foreground }]}
+                    style={[styles.priceInput, { color: "#FFFFFF" }]}
                     value={sellingPrice}
                     onChangeText={setSellingPrice}
                     placeholder={suggestedPrice.toFixed(2)}
-                    placeholderTextColor={theme.colors.mutedForeground}
+                    placeholderTextColor="rgba(255,255,255,0.4)"
                     keyboardType="decimal-pad"
                     returnKeyType="done"
                     onSubmitEditing={() => Keyboard.dismiss()}
@@ -459,17 +464,17 @@ export default function SearchResultsScreen() {
               </View>
 
               <View style={styles.calculatorRow}>
-                <Text style={[styles.calculatorLabel, { color: theme.colors.mutedForeground }]}>
+                <Text style={[styles.calculatorLabel, { color: "rgba(255,255,255,0.7)" }]}>
                   Your Purchase Price
                 </Text>
-                <View style={[styles.inputContainer, { backgroundColor: theme.colors.muted, borderColor: theme.colors.border }]}>
-                  <Text style={[styles.dollarSign, { color: theme.colors.mutedForeground }]}>$</Text>
+                <View style={[styles.inputContainer, { backgroundColor: "rgba(255,255,255,0.12)", borderColor: "rgba(255,255,255,0.2)" }]}>
+                  <Text style={[styles.dollarSign, { color: "rgba(255,255,255,0.5)" }]}>$</Text>
                   <TextInput
-                    style={[styles.priceInput, { color: theme.colors.foreground }]}
+                    style={[styles.priceInput, { color: "#FFFFFF" }]}
                     value={purchasePrice}
                     onChangeText={setPurchasePrice}
                     placeholder="0.00"
-                    placeholderTextColor={theme.colors.mutedForeground}
+                    placeholderTextColor="rgba(255,255,255,0.4)"
                     keyboardType="decimal-pad"
                     returnKeyType="done"
                     onSubmitEditing={() => Keyboard.dismiss()}
@@ -477,34 +482,34 @@ export default function SearchResultsScreen() {
                 </View>
               </View>
 
-              <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+              <View style={[styles.divider, { backgroundColor: "rgba(255,255,255,0.15)" }]} />
 
               <View style={styles.calculatorRow}>
-                <Text style={[styles.calculatorLabel, { color: theme.colors.mutedForeground }]}>
+                <Text style={[styles.calculatorLabel, { color: "rgba(255,255,255,0.7)" }]}>
                   Est. Fees (~13%)
                 </Text>
-                <Text style={[styles.calculatorValue, { color: theme.colors.danger }]}>
+                <Text style={[styles.calculatorValue, { color: "#F87171" }]}>
                   -${ebayFees.toFixed(2)}
                 </Text>
               </View>
 
-              <View style={[styles.profitRow, { backgroundColor: profit > 0 ? theme.colors.primary + '20' : theme.colors.danger + '20' }]}>
-                <Text style={[styles.profitLabel, { color: theme.colors.foreground }]}>
+              <View style={[styles.profitRow, { backgroundColor: profit > 0 ? "rgba(74,222,128,0.2)" : "rgba(248,113,113,0.2)" }]}>
+                <Text style={[styles.profitLabel, { color: "#FFFFFF" }]}>
                   Estimated Profit
                 </Text>
                 <Text style={[
                   styles.profitValue, 
-                  { color: profit > 0 ? theme.colors.primary : theme.colors.danger }
+                  { color: profit > 0 ? "#4ADE80" : "#F87171" }
                 ]}>
                   {profit >= 0 ? '+' : ''}${profit.toFixed(2)}
                 </Text>
               </View>
 
-              <Text style={[styles.calculatorNote, { color: theme.colors.mutedForeground }]}>
+              <Text style={[styles.calculatorNote, { color: "rgba(255,255,255,0.5)" }]}>
                 Based on {results.totalListings} active listings
               </Text>
 
-            </View>
+            </LinearGradient>
 
             <Pressable
               testID="button-ebay-sold-search"
