@@ -293,8 +293,19 @@ export default function PaywallScreen() {
                     },
                   ]}
                 >
+                  {(() => {
+                    const weeklyPrice = weeklyPkg!.product.price;
+                    const monthlyPrice = monthlyPkg!.product.price;
+                    const weeklyEquiv = weeklyPrice * 4.33;
+                    const savePct = Math.round(((weeklyEquiv - monthlyPrice) / weeklyEquiv) * 100);
+                    return savePct > 0 ? (
+                      <View style={styles.saveBadge}>
+                        <Text style={styles.saveBadgeText}>SAVE {savePct}%</Text>
+                      </View>
+                    ) : null;
+                  })()}
                   <Text style={styles.planCardLabel}>Monthly</Text>
-                  <Text style={styles.planCardPrice}>{monthlyPkg!.product.priceString}</Text>
+                  <Text style={styles.planCardPrice}>{monthlyPkg!.product.priceString}/mo</Text>
                   {selectedPlan === "monthly" ? (
                     <View style={styles.planRadioFilled}>
                       <View style={styles.planRadioInner} />
@@ -314,19 +325,8 @@ export default function PaywallScreen() {
                     },
                   ]}
                 >
-                  {(() => {
-                    const weeklyPrice = weeklyPkg!.product.price;
-                    const monthlyPrice = monthlyPkg!.product.price;
-                    const monthlyEquiv = weeklyPrice * 4.33;
-                    const savePct = Math.round(((monthlyEquiv - monthlyPrice) / monthlyEquiv) * 100);
-                    return savePct > 0 ? (
-                      <View style={styles.saveBadge}>
-                        <Text style={styles.saveBadgeText}>SAVE {savePct}%</Text>
-                      </View>
-                    ) : null;
-                  })()}
                   <Text style={[styles.planCardLabel, { color: "rgba(255,255,255,0.7)" }]}>Weekly</Text>
-                  <Text style={[styles.planCardPrice, { color: "#FFFFFF" }]}>{weeklyPkg!.product.priceString}</Text>
+                  <Text style={[styles.planCardPrice, { color: "#FFFFFF" }]}>{weeklyPkg!.product.priceString}/wk</Text>
                   {selectedPlan === "weekly" ? (
                     <View style={[styles.planRadioFilled, { borderColor: "#34D399" }]}>
                       <View style={[styles.planRadioInner, { backgroundColor: "#34D399" }]} />
