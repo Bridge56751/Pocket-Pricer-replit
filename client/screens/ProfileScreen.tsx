@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { View, StyleSheet, Pressable, Text, Alert, Platform, ActivityIndicator, Linking } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
+import { useNavigation } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as WebBrowser from "expo-web-browser";
@@ -10,7 +11,6 @@ import { ScrollView } from "react-native";
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRevenueCat } from "@/contexts/RevenueCatContext";
-import UpgradeModal from "@/components/UpgradeModal";
 import { resetOnboarding } from "@/screens/OnboardingScreen";
 import { triggerOnboardingReplay } from "@/components/AppContent";
 import { clearSearchHistory, clearFavorites } from "@/lib/storage";
@@ -18,11 +18,10 @@ import { clearSearchHistory, clearFavorites } from "@/lib/storage";
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
+  const navigation = useNavigation<any>();
   const { theme } = useDesignTokens();
   const { getScansUsed } = useAuth();
   const { isPro, restorePurchases } = useRevenueCat();
-
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [scansUsed, setScansUsed] = useState(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -33,7 +32,7 @@ export default function ProfileScreen() {
   }, []);
 
   const handleUpgrade = () => {
-    setShowUpgradeModal(true);
+    navigation.navigate("Paywall");
   };
 
   const handleManageSubscription = async () => {
@@ -359,11 +358,6 @@ export default function ProfileScreen() {
         </View>
       </View>
       
-      <UpgradeModal
-        visible={showUpgradeModal}
-        onClose={() => setShowUpgradeModal(false)}
-        scansUsed={scansUsed}
-      />
     </ScrollView>
   );
 }
