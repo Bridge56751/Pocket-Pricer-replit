@@ -421,9 +421,12 @@ export default function ScanScreen() {
             style={[styles.heroCard, { paddingTop: insets.top + 16 }]}
           >
           <View style={styles.header}>
-            <Text style={[styles.appName, { color: "#FFFFFF" }]}>
-              Pocket Pricer
-            </Text>
+            <View style={styles.headerLeft}>
+              <Feather name="tag" size={20} color="#FFFFFF" />
+              <Text style={[styles.appName, { color: "#FFFFFF" }]}>
+                Pocket Pricer
+              </Text>
+            </View>
             <Pressable 
               style={styles.headerIcon}
               onPress={() => navigation.navigate("Settings")}
@@ -691,8 +694,13 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "space-between",
     marginBottom: 20,
+  },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   headerAppIcon: {
     width: 36,
@@ -709,8 +717,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   headerIcon: {
-    position: "absolute" as const,
-    right: 0,
     width: 40,
     height: 40,
     alignItems: "center",
