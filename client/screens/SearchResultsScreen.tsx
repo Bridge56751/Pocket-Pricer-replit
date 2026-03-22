@@ -940,9 +940,10 @@ export default function SearchResultsScreen() {
             </View>
 
             <View style={styles.belowHeroContentDark}>
-            <Text style={[styles.sectionTitle, { color: "#FFFFFF" }]}>
-              Active Listings ({allListings.length})
-            </Text>
+              <Text style={[styles.sectionTitle, { color: "#FFFFFF" }]}>
+                Active Listings ({allListings.length})
+              </Text>
+            </View>
 
             {allListings.length > 0 ? (
               <ScrollView
@@ -981,7 +982,6 @@ export default function SearchResultsScreen() {
                 ))}
               </ScrollView>
             ) : null}
-            </View>
             </LinearGradient>
           </View>
         }
