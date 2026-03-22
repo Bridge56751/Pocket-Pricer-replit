@@ -131,12 +131,7 @@ export default function RootStackNavigator() {
         component={SearchResultsScreen}
         options={({ navigation }) => ({
           headerTitle: "Scan Result",
-          headerLeft: () => renderBackButton(navigation, "#FFFFFF"),
-          headerTintColor: "#FFFFFF",
-          headerTitleStyle: { color: "#FFFFFF" },
-          headerTransparent: true,
-          headerBlurEffect: undefined,
-          headerStyle: { backgroundColor: "transparent" },
+          headerLeft: () => renderBackButton(navigation),
         })}
       />
       <Stack.Screen
