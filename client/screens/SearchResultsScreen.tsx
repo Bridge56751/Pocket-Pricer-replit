@@ -1804,13 +1804,14 @@ const styles = StyleSheet.create({
   },
   salesIntelCardLeft: {
     flex: 1,
-    padding: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
   salesIntelCardTitleRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   salesIntelCardTitle: {
     fontSize: 18,
@@ -1832,7 +1833,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   salesIntelCardBullets: {
-    gap: 6,
+    gap: 4,
   },
   salesIntelCardBulletRow: {
     flexDirection: "row",
@@ -1846,29 +1847,29 @@ const styles = StyleSheet.create({
     backgroundColor: "#047857",
   },
   salesIntelCardBulletText: {
-    fontSize: 14,
+    fontSize: 13,
     color: "#6B7280",
   },
   salesIntelCardCta: {
-    width: 90,
+    width: 80,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 16,
-    gap: 2,
+    paddingVertical: 12,
+    gap: 1,
   },
   salesIntelCardCtaTitle: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "700",
     color: "#3D2E00",
-    marginTop: 4,
+    marginTop: 3,
   },
   salesIntelCardCtaTitleBold: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "800",
     color: "#3D2E00",
   },
   salesIntelCardCtaSub: {
-    fontSize: 11,
+    fontSize: 10,
     color: "#5C4A0A",
   },
 });
