@@ -129,7 +129,10 @@ export default function RootStackNavigator() {
       <Stack.Screen
         name="SearchResults"
         component={SearchResultsScreen}
-        options={{ headerShown: false }}
+        options={({ navigation }) => ({
+          headerTitle: "Scan Result",
+          headerLeft: () => renderBackButton(navigation),
+        })}
       />
       <Stack.Screen
         name="Paywall"

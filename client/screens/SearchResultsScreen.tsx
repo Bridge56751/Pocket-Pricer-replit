@@ -378,7 +378,7 @@ export default function SearchResultsScreen() {
         style={styles.list}
         contentContainerStyle={[
           styles.listContent,
-          { paddingBottom: 100 }
+          { paddingTop: headerHeight + theme.spacing.lg, paddingBottom: 100 }
         ]}
         scrollIndicatorInsets={{ bottom: insets.bottom }}
         keyboardDismissMode="on-drag"
@@ -391,14 +391,17 @@ export default function SearchResultsScreen() {
               colors={["#0A3622", "#14532D", "#1A6B3C"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={[styles.heroSection, { paddingTop: insets.top + 8 }]}
+              style={styles.heroSection}
             >
-              <Pressable
-                onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate("Home")}
-                style={styles.heroBackButton}
-              >
-                <Feather name="arrow-left" size={22} color="#FFFFFF" />
-              </Pressable>
+              {scannedImageUri ? (
+                <View style={styles.productCard}>
+                  <Image
+                    source={{ uri: scannedImageUri }}
+                    style={styles.scannedImageLarge}
+                    contentFit="cover"
+                  />
+                </View>
+              ) : null}
 
               <View style={styles.suggestedPrice}>
                 <View style={styles.suggestedPriceHeader}>
@@ -418,16 +421,6 @@ export default function SearchResultsScreen() {
                   </Text>
                 </View>
               </View>
-
-              {scannedImageUri ? (
-                <View style={styles.productCard}>
-                  <Image
-                    source={{ uri: scannedImageUri }}
-                    style={styles.scannedImageLarge}
-                    contentFit="cover"
-                  />
-                </View>
-              ) : null}
             </LinearGradient>
 
             <View style={styles.belowHeroContent}>
@@ -1000,7 +993,7 @@ const styles = StyleSheet.create({
   productCard: {
     flexDirection: "row",
     borderRadius: 16,
-    marginTop: 16,
+    marginBottom: 16,
     gap: 12,
     overflow: "hidden" as const,
   },
