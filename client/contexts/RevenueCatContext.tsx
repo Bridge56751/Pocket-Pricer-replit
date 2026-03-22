@@ -42,6 +42,14 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      const Constants = await import("expo-constants");
+      const isExpoGo = Constants.default?.appOwnership === "expo";
+      if (isExpoGo) {
+        console.log("RevenueCat: Expo Go detected - using mock mode");
+        setIsReady(true);
+        return;
+      }
+
       if (!REVENUECAT_API_KEY) {
         console.warn("RevenueCat API key not configured");
         setIsReady(true);

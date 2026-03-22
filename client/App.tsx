@@ -75,6 +75,10 @@ export default function App() {
     const initFirebaseAnalytics = async () => {
       if (Platform.OS === "web") return;
       try {
+        const Constants = await import("expo-constants");
+        const isExpoGo = Constants.default?.appOwnership === "expo";
+        if (isExpoGo) return;
+
         const analytics = await import("@react-native-firebase/analytics");
         await analytics.default().logAppOpen();
         console.log("Firebase Analytics initialized");
