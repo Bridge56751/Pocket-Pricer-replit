@@ -459,8 +459,8 @@ export default function ScanScreen() {
                 ) : (
                   <Text style={styles.scanButtonCount}>
                     {scansUsed >= FREE_SCAN_LIMIT
-                      ? "0 left"
-                      : `${FREE_SCAN_LIMIT - scansUsed} left`}
+                      ? "0 scans left"
+                      : `${FREE_SCAN_LIMIT - scansUsed} scan${FREE_SCAN_LIMIT - scansUsed === 1 ? "" : "s"} left`}
                   </Text>
                 )}
               </View>
