@@ -948,8 +948,8 @@ export default function SearchResultsScreen() {
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                style={styles.sortContainer}
-                contentContainerStyle={styles.sortContent}
+                style={styles.sortContainerFull}
+                contentContainerStyle={styles.sortContentFull}
               >
                 {sortOptions.map((option) => (
                   <Pressable
@@ -1397,6 +1397,15 @@ const styles = StyleSheet.create({
   sortContent: {
     gap: 8,
     paddingRight: 4,
+  },
+  sortContainerFull: {
+    marginTop: 12,
+    marginBottom: 8,
+    marginHorizontal: -16,
+  },
+  sortContentFull: {
+    gap: 8,
+    paddingHorizontal: 16,
   },
   sortChip: {
     paddingHorizontal: 14,
