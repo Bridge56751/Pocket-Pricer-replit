@@ -70,7 +70,7 @@ export default function RootStackNavigator() {
   const { theme } = useTheme();
   const { theme: designTheme } = useDesignTokens();
 
-  const renderBackButton = (navigation: any) => (
+  const renderBackButton = (navigation: any, color?: string) => (
     <HeaderButton
       onPress={() => {
         if (Platform.OS !== "web") {
@@ -84,7 +84,7 @@ export default function RootStackNavigator() {
       }}
       pressOpacity={0.7}
     >
-      <Feather name="arrow-left" size={24} color={designTheme.colors.foreground} />
+      <Feather name="arrow-left" size={24} color={color || designTheme.colors.foreground} />
     </HeaderButton>
   );
 
@@ -131,7 +131,12 @@ export default function RootStackNavigator() {
         component={SearchResultsScreen}
         options={({ navigation }) => ({
           headerTitle: "Scan Result",
-          headerLeft: () => renderBackButton(navigation),
+          headerLeft: () => renderBackButton(navigation, "#FFFFFF"),
+          headerTintColor: "#FFFFFF",
+          headerTitleStyle: { color: "#FFFFFF" },
+          headerTransparent: true,
+          headerBlurEffect: undefined,
+          headerStyle: { backgroundColor: "transparent" },
         })}
       />
       <Stack.Screen
