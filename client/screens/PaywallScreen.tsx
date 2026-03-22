@@ -212,9 +212,7 @@ export default function PaywallScreen() {
                 end={{ x: 1, y: 1 }}
                 style={styles.iconCircle}
               >
-                <View style={styles.iconInner}>
-                  <Feather name="tag" size={32} color="#000000" />
-                </View>
+                <Feather name="tag" size={32} color="#000000" />
               </LinearGradient>
             </View>
 
@@ -464,14 +462,6 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  iconInner: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    backgroundColor: "#0F2B1A",
     alignItems: "center",
     justifyContent: "center",
   },
