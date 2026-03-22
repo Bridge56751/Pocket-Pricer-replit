@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { View, StyleSheet, Pressable, Text, Alert, Platform, ActivityIndicator, Linking } from "react-native";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+  Easing,
+} from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useNavigation } from "@react-navigation/native";
@@ -24,6 +31,29 @@ export default function ProfileScreen() {
   const { getScansUsed } = useAuth();
   const { isPro, restorePurchases } = useRevenueCat();
   const [isRestoring, setIsRestoring] = useState(false);
+
+  const shimmerX = useSharedValue(-1);
+  useEffect(() => {
+    shimmerX.value = withRepeat(
+      withTiming(1, { duration: 2500, easing: Easing.inOut(Easing.ease) }),
+      -1,
+      false
+    );
+  }, []);
+  const shimmerStyle = useAnimatedStyle(() => ({
+    position: "absolute" as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    opacity: 0.35,
+    backgroundColor: "#FFFFFF",
+    transform: [
+      { translateX: shimmerX.value * 300 },
+      { skewX: "-20deg" },
+    ],
+    width: 60,
+  }));
   const [scansUsed, setScansUsed] = useState(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -177,6 +207,7 @@ export default function ProfileScreen() {
               { opacity: pressed ? 0.85 : 1 }
             ]}
           >
+            <Animated.View style={shimmerStyle} />
             <Feather name="zap" size={18} color="#3D2E00" />
             <Text style={styles.subGradientButtonText}>Upgrade to Pro</Text>
           </Pressable>
@@ -465,6 +496,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     gap: 8,
     backgroundColor: "#F0D264",
+    overflow: "hidden" as const,
   },
   subGradientButtonText: {
     color: "#3D2E00",
