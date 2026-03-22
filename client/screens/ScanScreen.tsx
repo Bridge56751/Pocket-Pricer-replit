@@ -490,10 +490,15 @@ export default function ScanScreen() {
                   style={({ pressed }) => [styles.proUpsellCard, { opacity: pressed ? 0.9 : 1 }]}
                 >
                   <View style={styles.proUpsellLeft}>
-                    <View style={styles.proUpsellBadge}>
-                      <Feather name="star" size={11} color="#14532D" />
+                    <LinearGradient
+                      colors={["#F5D87A", "#D4A926", "#E8C84A", "#D4A926"]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.proUpsellBadge}
+                    >
+                      <Feather name="star" size={11} color="#3D2E00" />
                       <Text style={styles.proUpsellBadgeText}>PRO</Text>
-                    </View>
+                    </LinearGradient>
                     <Text style={styles.proUpsellTitle}>Unlock sold prices & Buy Score</Text>
                     <Text style={styles.proUpsellSub}>3-day free trial · $8.99/mo after</Text>
                   </View>
@@ -812,13 +817,13 @@ const styles = StyleSheet.create({
   proUpsellCard: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
-    backgroundColor: "rgba(0,0,0,0.22)",
+    backgroundColor: "rgba(0,0,0,0.28)",
     borderRadius: 14,
     paddingVertical: 14,
     paddingHorizontal: 16,
     marginTop: 16,
     borderWidth: 1.5,
-    borderColor: "rgba(181, 155, 68, 0.45)",
+    borderColor: "rgba(212, 169, 38, 0.55)",
   },
   proUpsellLeft: {
     flex: 1,
@@ -828,23 +833,23 @@ const styles = StyleSheet.create({
     flexDirection: "row" as const,
     alignItems: "center" as const,
     gap: 4,
-    backgroundColor: "#C5A84C",
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
     alignSelf: "flex-start" as const,
     marginBottom: 2,
+    overflow: "hidden" as const,
   },
   proUpsellBadgeText: {
     fontSize: 11,
     fontWeight: "800" as const,
-    color: "#14532D",
+    color: "#3D2E00",
     letterSpacing: 0.5,
   },
   proUpsellTitle: {
     fontSize: 15,
     fontWeight: "700" as const,
-    color: "#C5A84C",
+    color: "#F0D264",
   },
   proUpsellSub: {
     fontSize: 12,
