@@ -7,6 +7,7 @@ import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as WebBrowser from "expo-web-browser";
 import { ScrollView } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { useAuth } from "@/contexts/AuthContext";
@@ -121,84 +122,87 @@ export default function ProfileScreen() {
         },
       ]}
     >
-      <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
-        <View style={styles.sectionHeader}>
-          <Feather name="zap" size={20} color={theme.colors.primary} />
-          <Text style={[styles.sectionTitle, { color: theme.colors.foreground }]}>
-            Subscription
-          </Text>
-          <View style={[
-            styles.planBadge,
-            { backgroundColor: isPro ? theme.colors.primary : theme.colors.muted }
-          ]}>
-            <Text style={[
-              styles.planBadgeText,
-              { color: isPro ? "#fff" : theme.colors.foreground }
-            ]}>
-              {isPro ? "Pro" : "Free"}
+      {isPro ? (
+        <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
+          <View style={styles.sectionHeader}>
+            <Feather name="zap" size={20} color={theme.colors.primary} />
+            <Text style={[styles.sectionTitle, { color: theme.colors.foreground }]}>
+              Subscription
             </Text>
+            <View style={[styles.planBadge, { backgroundColor: theme.colors.primary }]}>
+              <Text style={[styles.planBadgeText, { color: "#fff" }]}>Pro</Text>
+            </View>
           </View>
+          <Text style={[styles.upgradeHint, { color: theme.colors.mutedForeground }]}>
+            Unlimited product scans
+          </Text>
+          <Pressable
+            onPress={handleManageSubscription}
+            style={({ pressed }) => [
+              styles.manageButton,
+              { borderColor: theme.colors.border, opacity: pressed ? 0.7 : 1 }
+            ]}
+          >
+            <Feather name="settings" size={18} color={theme.colors.foreground} />
+            <Text style={[styles.manageButtonText, { color: theme.colors.foreground }]}>
+              Manage Subscription
+            </Text>
+          </Pressable>
         </View>
-
-        {isPro ? (
-          <>
-            <Text style={[styles.upgradeHint, { color: theme.colors.mutedForeground }]}>
-              Unlimited product scans
+      ) : (
+        <LinearGradient
+          colors={["#0A3622", "#14532D", "#1A6B3C"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.subscriptionGradient}
+        >
+          <View style={styles.sectionHeader}>
+            <Feather name="zap" size={20} color="#F0D264" />
+            <Text style={[styles.sectionTitle, { color: "#FFFFFF" }]}>
+              Subscription
             </Text>
-            <Pressable
-              onPress={handleManageSubscription}
-              style={({ pressed }) => [
-                styles.manageButton,
-                { borderColor: theme.colors.border, opacity: pressed ? 0.7 : 1 }
-              ]}
-            >
-              <Feather name="settings" size={18} color={theme.colors.foreground} />
-              <Text style={[styles.manageButtonText, { color: theme.colors.foreground }]}>
-                Manage Subscription
+            <View style={[styles.planBadge, { backgroundColor: "rgba(255,255,255,0.15)" }]}>
+              <Text style={[styles.planBadgeText, { color: "#FFFFFF" }]}>Free</Text>
+            </View>
+          </View>
+          <Text style={styles.subGradientHint}>
+            {freeScansRemaining > 0
+              ? `${freeScansRemaining} free scan${freeScansRemaining === 1 ? "" : "s"} remaining — try before you buy`
+              : "You've used all your free scans — start your 3-day free trial"}
+          </Text>
+          <Pressable
+            onPress={handleUpgrade}
+            style={({ pressed }) => [
+              styles.subGradientButton,
+              { opacity: pressed ? 0.85 : 1 }
+            ]}
+          >
+            <Feather name="zap" size={18} color="#3D2E00" />
+            <Text style={styles.subGradientButtonText}>Upgrade to Pro</Text>
+          </Pressable>
+          
+          <Pressable
+            onPress={handleRestorePurchases}
+            disabled={isRestoring}
+            style={({ pressed }) => [
+              styles.restoreButton,
+              { opacity: pressed || isRestoring ? 0.7 : 1 }
+            ]}
+          >
+            {isRestoring ? (
+              <ActivityIndicator size="small" color="#F0D264" />
+            ) : (
+              <Text style={[styles.restoreButtonText, { color: "rgba(255,255,255,0.6)" }]}>
+                Restore Purchase
               </Text>
-            </Pressable>
-          </>
-        ) : (
-          <>
-            <Text style={[styles.upgradeHint, { color: theme.colors.mutedForeground }]}>
-              {freeScansRemaining > 0
-                ? `${freeScansRemaining} free scan${freeScansRemaining === 1 ? "" : "s"} remaining — try before you buy`
-                : "You've used all your free scans — start your 3-day free trial"}
-            </Text>
-            <Pressable
-              onPress={handleUpgrade}
-              style={({ pressed }) => [
-                styles.upgradeButton,
-                { backgroundColor: theme.colors.primary, opacity: pressed ? 0.7 : 1 }
-              ]}
-            >
-              <Feather name="zap" size={18} color="#fff" />
-              <Text style={styles.upgradeButtonText}>Upgrade to Pro</Text>
-            </Pressable>
-            
-            <Pressable
-              onPress={handleRestorePurchases}
-              disabled={isRestoring}
-              style={({ pressed }) => [
-                styles.restoreButton,
-                { opacity: pressed || isRestoring ? 0.7 : 1 }
-              ]}
-            >
-              {isRestoring ? (
-                <ActivityIndicator size="small" color={theme.colors.primary} />
-              ) : (
-                <Text style={[styles.restoreButtonText, { color: theme.colors.primary }]}>
-                  Restore Purchase
-                </Text>
-              )}
-            </Pressable>
-            
-            <Text style={[styles.subscriptionDisclosure, { color: theme.colors.mutedForeground }]}>
-              Payment will be charged to your Apple ID account. Subscription automatically renews unless canceled at least 24 hours before the end of the current period. Manage or cancel in Settings → Apple ID → Subscriptions.
-            </Text>
-          </>
-        )}
-      </View>
+            )}
+          </Pressable>
+          
+          <Text style={styles.subGradientDisclosure}>
+            Payment will be charged to your Apple ID account. Subscription automatically renews unless canceled at least 24 hours before the end of the current period. Manage or cancel in Settings → Apple ID → Subscriptions.
+          </Text>
+        </LinearGradient>
+      )}
 
       <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
         <View style={styles.sectionHeader}>
@@ -442,6 +446,37 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 16,
     marginTop: 12,
+  },
+  subscriptionGradient: {
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+  },
+  subGradientHint: {
+    fontSize: 14,
+    marginBottom: 16,
+    color: "rgba(255,255,255,0.65)",
+  },
+  subGradientButton: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 8,
+    backgroundColor: "#F0D264",
+  },
+  subGradientButtonText: {
+    color: "#3D2E00",
+    fontSize: 16,
+    fontWeight: "700" as const,
+  },
+  subGradientDisclosure: {
+    fontSize: 11,
+    textAlign: "center" as const,
+    lineHeight: 16,
+    marginTop: 12,
+    color: "rgba(255,255,255,0.35)",
   },
   manageButton: {
     flexDirection: "row",
