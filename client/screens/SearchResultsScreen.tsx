@@ -403,53 +403,54 @@ export default function SearchResultsScreen() {
                 </View>
               ) : null}
 
-              <View style={styles.suggestedPrice}>
-                <View style={styles.suggestedPriceHeader}>
-                  <View>
-                    <View style={styles.suggestedPriceTitle}>
-                      <Feather name="star" size={16} color="#F5D87A" />
-                      <Text style={[styles.suggestedPriceLabel, { color: "#FFFFFF" }]}>
-                        Suggested Listing Price
-                      </Text>
-                    </View>
-                    <Text style={[styles.suggestedPriceNote, { color: "rgba(255,255,255,0.6)" }]}>
-                      Based on current market listings
-                    </Text>
-                  </View>
-                  <Text style={[styles.suggestedPriceValue, { color: "#FFFFFF" }]}>
-                    ${results.avgListPrice.toFixed(0)}
-                  </Text>
+              <View style={styles.suggestedPriceRow}>
+                <View>
+                  <Text style={styles.suggestedPriceLabelUpper}>SUGGESTED LISTING PRICE</Text>
+                  <Text style={styles.suggestedPriceBig}>${results.avgListPrice.toFixed(0)}</Text>
+                  <Text style={styles.suggestedPriceSubNote}>Current market rate</Text>
+                </View>
+                <View style={styles.activeListingsBox}>
+                  <Text style={styles.activeListingsLabel}>ACTIVE</Text>
+                  <Text style={styles.activeListingsCount}>{results.totalListings}</Text>
+                  <Text style={styles.activeListingsLabel}>listings</Text>
                 </View>
               </View>
 
-              <View style={styles.calculatorSection}>
-                <View style={[styles.calcDividerLine, { backgroundColor: "rgba(255,255,255,0.15)" }]} />
+              <Text style={[styles.calculatorNote, { color: "rgba(255,255,255,0.5)", marginTop: 4, marginBottom: 8 }]}>
+                Based on {results.totalListings} active listings
+              </Text>
+
+            </LinearGradient>
+
+            <View style={styles.lightSection}>
+
+              <View style={styles.calculatorCard}>
                 <View style={styles.calculatorHeader}>
-                  <Feather name="dollar-sign" size={18} color="#4ADE80" />
-                  <Text style={[styles.calculatorTitle, { color: "#FFFFFF" }]}>
+                  <Feather name="dollar-sign" size={18} color="#047857" />
+                  <Text style={[styles.calculatorTitle, { color: "#111827" }]}>
                     Profit Calculator
                   </Text>
                 </View>
 
                 <View style={styles.calculatorRow}>
                   <View style={styles.labelWithHint}>
-                    <Text style={[styles.calculatorLabel, { color: "rgba(255,255,255,0.7)" }]}>
+                    <Text style={[styles.calculatorLabel, { color: "#111827" }]}>
                       Your Selling Price
                     </Text>
                     <Pressable onPress={useSuggestedPrice} style={styles.suggestedHint}>
-                      <Text style={[styles.suggestedHintText, { color: "#4ADE80" }]}>
+                      <Text style={[styles.suggestedHintText, { color: "#047857" }]}>
                         Suggested: ${suggestedPrice.toFixed(0)}
                       </Text>
                     </Pressable>
                   </View>
-                  <View style={[styles.inputContainer, { backgroundColor: "rgba(255,255,255,0.12)", borderColor: "rgba(255,255,255,0.2)" }]}>
-                    <Text style={[styles.dollarSign, { color: "rgba(255,255,255,0.5)" }]}>$</Text>
+                  <View style={[styles.inputContainer, { backgroundColor: "#374151", borderColor: "#4B5563" }]}>
+                    <Text style={[styles.dollarSign, { color: "#9CA3AF" }]}>$</Text>
                     <TextInput
                       style={[styles.priceInput, { color: "#FFFFFF" }]}
                       value={sellingPrice}
                       onChangeText={setSellingPrice}
                       placeholder={suggestedPrice.toFixed(2)}
-                      placeholderTextColor="rgba(255,255,255,0.4)"
+                      placeholderTextColor="#6B7280"
                       keyboardType="decimal-pad"
                       returnKeyType="done"
                       onSubmitEditing={() => Keyboard.dismiss()}
@@ -458,17 +459,17 @@ export default function SearchResultsScreen() {
                 </View>
 
                 <View style={styles.calculatorRow}>
-                  <Text style={[styles.calculatorLabel, { color: "rgba(255,255,255,0.7)" }]}>
+                  <Text style={[styles.calculatorLabel, { color: "#111827" }]}>
                     Your Purchase Price
                   </Text>
-                  <View style={[styles.inputContainer, { backgroundColor: "rgba(255,255,255,0.12)", borderColor: "rgba(255,255,255,0.2)" }]}>
-                    <Text style={[styles.dollarSign, { color: "rgba(255,255,255,0.5)" }]}>$</Text>
+                  <View style={[styles.inputContainer, { backgroundColor: "#374151", borderColor: "#4B5563" }]}>
+                    <Text style={[styles.dollarSign, { color: "#9CA3AF" }]}>$</Text>
                     <TextInput
                       style={[styles.priceInput, { color: "#FFFFFF" }]}
                       value={purchasePrice}
                       onChangeText={setPurchasePrice}
                       placeholder="0.00"
-                      placeholderTextColor="rgba(255,255,255,0.4)"
+                      placeholderTextColor="#6B7280"
                       keyboardType="decimal-pad"
                       returnKeyType="done"
                       onSubmitEditing={() => Keyboard.dismiss()}
@@ -476,35 +477,36 @@ export default function SearchResultsScreen() {
                   </View>
                 </View>
 
-                <View style={[styles.divider, { backgroundColor: "rgba(255,255,255,0.15)" }]} />
+                <View style={[styles.divider, { backgroundColor: "#E5E7EB" }]} />
 
                 <View style={styles.calculatorRow}>
-                  <Text style={[styles.calculatorLabel, { color: "rgba(255,255,255,0.7)" }]}>
+                  <Text style={[styles.calculatorLabel, { color: "#6B7280" }]}>
                     Est. Fees (~13%)
                   </Text>
-                  <Text style={[styles.calculatorValue, { color: "#F87171" }]}>
+                  <Text style={[styles.calculatorValue, { color: "#EF4444" }]}>
                     -${ebayFees.toFixed(2)}
                   </Text>
                 </View>
 
-                <View style={[styles.profitRow, { backgroundColor: profit > 0 ? "rgba(74,222,128,0.2)" : "rgba(248,113,113,0.2)" }]}>
-                  <Text style={[styles.profitLabel, { color: "#FFFFFF" }]}>
-                    Estimated Profit
-                  </Text>
+                <View style={[styles.profitRow, { backgroundColor: profit > 0 ? "#ECFDF5" : "#FEF2F2" }]}>
+                  <View>
+                    <Text style={[styles.profitLabel, { color: "#047857" }]}>
+                      Estimated Profit
+                    </Text>
+                    <Text style={{ fontSize: 11, color: "#6B7280", marginTop: 1 }}>
+                      After fees · before shipping
+                    </Text>
+                  </View>
                   <Text style={[
                     styles.profitValue, 
-                    { color: profit > 0 ? "#4ADE80" : "#F87171" }
+                    { color: profit > 0 ? "#047857" : "#EF4444" }
                   ]}>
                     {profit >= 0 ? '+' : ''}${profit.toFixed(2)}
                   </Text>
                 </View>
-
-                <Text style={[styles.calculatorNote, { color: "rgba(255,255,255,0.5)" }]}>
-                  Based on {results.totalListings} active listings
-                </Text>
               </View>
 
-            <View style={styles.belowHeroContentDark}>
+            <View style={styles.belowHeroContent}>
             <Pressable
               testID="button-ebay-sold-search"
               onPress={() => handleEbaySoldSearch()}
@@ -766,7 +768,7 @@ export default function SearchResultsScreen() {
                   </View>
                 </View>
 
-                <Text style={[styles.advancedSectionTitle, { color: "#FFFFFF" }]}>
+                <Text style={[styles.advancedSectionTitle, { color: "#111827" }]}>
                   Recent eBay Sales ({ebaySoldData.items.length})
                 </Text>
 
@@ -878,7 +880,7 @@ export default function SearchResultsScreen() {
                   </View>
                 </View>
 
-                <Text style={[styles.advancedSectionTitle, { color: "#FFFFFF" }]}>
+                <Text style={[styles.advancedSectionTitle, { color: "#111827" }]}>
                   Similar Sales ({broadSoldData.items.length})
                 </Text>
 
@@ -936,8 +938,8 @@ export default function SearchResultsScreen() {
 
             </View>
 
-            <View style={styles.belowHeroContentDark}>
-              <Text style={[styles.sectionTitle, { color: "#FFFFFF" }]}>
+            <View style={styles.belowHeroContent}>
+              <Text style={[styles.sectionTitle, { color: "#111827" }]}>
                 Active Listings ({allListings.length})
               </Text>
             </View>
@@ -960,8 +962,8 @@ export default function SearchResultsScreen() {
                     style={[
                       styles.sortChip,
                       {
-                        backgroundColor: sortOption === option ? "#FFFFFF" : "rgba(255,255,255,0.15)",
-                        borderColor: sortOption === option ? "#FFFFFF" : "rgba(255,255,255,0.25)",
+                        backgroundColor: sortOption === option ? "#14532D" : "#F3F4F6",
+                        borderColor: sortOption === option ? "#14532D" : "#E5E7EB",
                       },
                     ]}
                   >
@@ -969,7 +971,7 @@ export default function SearchResultsScreen() {
                       style={[
                         styles.sortChipText,
                         {
-                          color: sortOption === option ? "#14532D" : "rgba(255,255,255,0.8)",
+                          color: sortOption === option ? "#FFFFFF" : "#6B7280",
                         },
                       ]}
                     >
@@ -979,13 +981,14 @@ export default function SearchResultsScreen() {
                 ))}
               </ScrollView>
             ) : null}
-            </LinearGradient>
+
+            </View>
           </View>
         }
         renderItem={renderListing}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Text style={[styles.emptyText, { color: "rgba(255,255,255,0.6)" }]}>
+            <Text style={[styles.emptyText, { color: "#9CA3AF" }]}>
               No listings found
             </Text>
           </View>
@@ -1013,7 +1016,7 @@ export default function SearchResultsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#14532D",
+    backgroundColor: "#F3F4F6",
   },
   list: {
     flex: 1,
@@ -1042,6 +1045,56 @@ const styles = StyleSheet.create({
   belowHeroContentDark: {
     paddingHorizontal: 16,
     paddingTop: 4,
+  },
+  lightSection: {
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 8,
+  },
+  calculatorCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+  },
+  suggestedPriceRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+    marginTop: 8,
+  },
+  suggestedPriceLabelUpper: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#4ADE80",
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+  suggestedPriceBig: {
+    fontSize: 48,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    lineHeight: 52,
+  },
+  suggestedPriceSubNote: {
+    fontSize: 13,
+    color: "rgba(255,255,255,0.6)",
+    marginTop: 2,
+  },
+  activeListingsBox: {
+    alignItems: "center",
+  },
+  activeListingsLabel: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "rgba(255,255,255,0.6)",
+    letterSpacing: 0.5,
+  },
+  activeListingsCount: {
+    fontSize: 28,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    lineHeight: 32,
   },
   heroFadeBottom: {
     height: 12,
@@ -1518,10 +1571,10 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   advancedSearchContainer: {
-    backgroundColor: "transparent",
+    backgroundColor: "#FFFFFF",
     borderRadius: 20,
-    borderWidth: 2.5,
-    borderColor: "rgba(212,169,38,0.55)",
+    borderWidth: 2,
+    borderColor: "rgba(212,169,38,0.4)",
     padding: 12,
     marginBottom: 16,
   },
@@ -1550,21 +1603,21 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     paddingHorizontal: 4,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.15)",
+    borderBottomColor: "#E5E7EB",
     marginBottom: 12,
   },
   salesIntelLeft: {
     flex: 1,
   },
   salesIntelLabel: {
-    color: "#4ADE80",
+    color: "#047857",
     fontSize: 11,
     fontWeight: "800",
     letterSpacing: 1.5,
     marginBottom: 2,
   },
   salesIntelTitle: {
-    color: "#FFFFFF",
+    color: "#111827",
     fontSize: 20,
     fontWeight: "700",
   },
