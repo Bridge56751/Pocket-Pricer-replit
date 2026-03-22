@@ -212,7 +212,7 @@ export default function PaywallScreen() {
                 end={{ x: 1, y: 1 }}
                 style={styles.iconCircle}
               >
-                <Feather name="tag" size={32} color="#000000" />
+                <Feather name="tag" size={32} color="#000000" style={{ transform: [{ scaleX: -1 }] }} />
               </LinearGradient>
             </View>
 
@@ -222,7 +222,7 @@ export default function PaywallScreen() {
               end={{ x: 1, y: 0 }}
               style={styles.proBadge}
             >
-              <Feather name="tag" size={12} color="#3D2E00" />
+              <Feather name="tag" size={12} color="#3D2E00" style={{ transform: [{ scaleX: -1 }] }} />
               <Text style={styles.proBadgeText}>POCKET PRICER PRO</Text>
             </LinearGradient>
 

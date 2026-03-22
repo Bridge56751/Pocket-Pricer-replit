@@ -422,7 +422,7 @@ export default function ScanScreen() {
           >
           <View style={styles.header}>
             <View style={styles.headerLeft}>
-              <Feather name="tag" size={20} color="#FFFFFF" />
+              <Feather name="tag" size={20} color="#FFFFFF" style={{ transform: [{ scaleX: -1 }] }} />
               <Text style={[styles.appName, { color: "#FFFFFF" }]}>
                 Pocket Pricer
               </Text>

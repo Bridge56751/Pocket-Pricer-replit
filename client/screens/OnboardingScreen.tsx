@@ -102,7 +102,7 @@ function FloatingIcon() {
   return (
     <Animated.View style={[styles.heroIcon, animatedStyle]}>
       <View style={styles.heroIconInner}>
-        <Feather name="tag" size={52} color="#047857" />
+        <Feather name="tag" size={52} color="#047857" style={{ transform: [{ scaleX: -1 }] }} />
       </View>
     </Animated.View>
   );
