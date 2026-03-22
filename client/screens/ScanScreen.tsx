@@ -466,6 +466,39 @@ export default function ScanScreen() {
               </View>
             </Pressable>
 
+            {__DEV__ ? (
+              <Pressable
+                onPress={() => {
+                  navigation.navigate("SearchResults", {
+                    results: {
+                      query: "Stanley Quencher H2.0 Tumbler",
+                      totalListings: 30,
+                      avgListPrice: 38,
+                      avgSalePrice: 35,
+                      soldCount: 142,
+                      bestBuyNow: 29.99,
+                      topSalePrice: 52,
+                      listings: [
+                        { id: "1", title: "Stanley Quencher H2.0 FlowState Tumbler 40oz - Black", imageUrl: "https://via.placeholder.com/200", currentPrice: 37.50, shipping: 0, link: "https://ebay.com", seller: "eBay", platform: "eBay" },
+                        { id: "2", title: "Stanley 40oz Quencher Tumbler H2.0 - Cream", imageUrl: "https://via.placeholder.com/200", currentPrice: 42.00, shipping: 5.99, link: "https://amazon.com", seller: "Amazon", platform: "Amazon" },
+                        { id: "3", title: "Stanley Adventure Quencher 40oz - Rose Quartz", imageUrl: "https://via.placeholder.com/200", currentPrice: 29.99, shipping: 0, link: "https://walmart.com", seller: "Walmart", platform: "Walmart" },
+                      ],
+                      usedLens: true,
+                      productInfo: { name: "Stanley Quencher H2.0 Tumbler 40oz", brand: "Stanley", category: "Drinkware" },
+                    },
+                  });
+                }}
+                style={({ pressed }) => [{ opacity: pressed ? 0.8 : 1, marginTop: 8 }]}
+              >
+                <View style={[styles.scanButton, { backgroundColor: "rgba(255,255,255,0.15)", borderColor: "rgba(255,255,255,0.25)" }]}>
+                  <View style={styles.scanButtonLeft}>
+                    <Feather name="play" size={18} color="#86EFAC" />
+                    <Text style={[styles.scanButtonText, { color: "#86EFAC", fontSize: 14 }]}>Dev: Preview Scan Result</Text>
+                  </View>
+                </View>
+              </Pressable>
+            ) : null}
+
             {isPro ? null : (
               <>
                 <Pressable
