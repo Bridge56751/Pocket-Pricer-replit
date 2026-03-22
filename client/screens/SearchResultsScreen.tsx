@@ -509,31 +509,55 @@ export default function SearchResultsScreen() {
               testID="button-ebay-sold-search"
               onPress={() => handleEbaySoldSearch()}
               style={({ pressed }) => [
-                styles.ebaySoldButtonPro,
+                rcReady && !isPro && !ebaySoldData ? styles.salesIntelCardWrapper : styles.ebaySoldButtonPro,
                 { opacity: pressed ? 0.7 : 1 }
               ]}
             >
               {ebaySoldLoading ? (
                 <ActivityIndicator size="small" color="#F0D264" />
               ) : rcReady && !isPro && !ebaySoldData ? (
-                <>
-                  <View style={styles.ebaySoldIconCircle}>
-                    <Feather name="star" size={16} color="#D4A926" />
-                  </View>
-                  <View style={styles.ebaySoldTextGroup}>
-                    <Text style={styles.ebaySoldButtonTitle}>View Sales Intelligence</Text>
-                    <Text style={styles.ebaySoldButtonSubtitle}>Real sold prices · Buy Score · Velocity</Text>
+                <View style={styles.salesIntelCard}>
+                  <View style={styles.salesIntelCardLeft}>
+                    <View style={styles.salesIntelCardTitleRow}>
+                      <Text style={styles.salesIntelCardTitle}>Sales Intelligence</Text>
+                      <LinearGradient
+                        colors={["#F5D87A", "#D4A926", "#E8C84A"]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.salesIntelCardProBadge}
+                      >
+                        <Feather name="star" size={9} color="#3D2E00" />
+                        <Text style={styles.salesIntelCardProText}>PRO</Text>
+                      </LinearGradient>
+                    </View>
+                    <View style={styles.salesIntelCardBullets}>
+                      <View style={styles.salesIntelCardBulletRow}>
+                        <View style={styles.salesIntelCardDot} />
+                        <Text style={styles.salesIntelCardBulletText}>Real sold prices</Text>
+                      </View>
+                      <View style={styles.salesIntelCardBulletRow}>
+                        <View style={styles.salesIntelCardDot} />
+                        <Text style={styles.salesIntelCardBulletText}>Buy Score · 0-100 rating</Text>
+                      </View>
+                      <View style={styles.salesIntelCardBulletRow}>
+                        <View style={styles.salesIntelCardDot} />
+                        <Text style={styles.salesIntelCardBulletText}>Sell velocity & demand</Text>
+                      </View>
+                    </View>
                   </View>
                   <LinearGradient
-                    colors={["#F5D87A", "#D4A926", "#E8C84A"]}
+                    colors={["#F5D87A", "#D4A926", "#C49B1F"]}
                     start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.ebaySoldProBadge}
+                    end={{ x: 0, y: 1 }}
+                    style={styles.salesIntelCardCta}
                   >
-                    <Feather name="star" size={10} color="#3D2E00" />
-                    <Text style={styles.ebaySoldProBadgeText}>PRO</Text>
+                    <Feather name="star" size={16} color="#3D2E00" />
+                    <Text style={styles.salesIntelCardCtaTitle}>Try Pro</Text>
+                    <Text style={styles.salesIntelCardCtaTitleBold}>Free</Text>
+                    <Text style={styles.salesIntelCardCtaSub}>3 days</Text>
+                    <Text style={styles.salesIntelCardCtaSub}>no charge</Text>
                   </LinearGradient>
-                </>
+                </View>
               ) : (
                 <>
                   <Feather name="trending-up" size={16} color="#F0D264" />
@@ -1767,5 +1791,84 @@ const styles = StyleSheet.create({
   ebaySoldDate: {
     fontSize: 11,
     marginTop: 2,
+  },
+  salesIntelCardWrapper: {
+    borderRadius: 16,
+    overflow: "hidden",
+    backgroundColor: "#FFFFFF",
+    marginBottom: 12,
+  },
+  salesIntelCard: {
+    flexDirection: "row",
+    alignItems: "stretch",
+  },
+  salesIntelCardLeft: {
+    flex: 1,
+    padding: 16,
+  },
+  salesIntelCardTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 12,
+  },
+  salesIntelCardTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#111827",
+  },
+  salesIntelCardProBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  salesIntelCardProText: {
+    color: "#3D2E00",
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 0.5,
+  },
+  salesIntelCardBullets: {
+    gap: 6,
+  },
+  salesIntelCardBulletRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  salesIntelCardDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: "#047857",
+  },
+  salesIntelCardBulletText: {
+    fontSize: 14,
+    color: "#6B7280",
+  },
+  salesIntelCardCta: {
+    width: 90,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 16,
+    gap: 2,
+  },
+  salesIntelCardCtaTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#3D2E00",
+    marginTop: 4,
+  },
+  salesIntelCardCtaTitleBold: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#3D2E00",
+  },
+  salesIntelCardCtaSub: {
+    fontSize: 11,
+    color: "#5C4A0A",
   },
 });
