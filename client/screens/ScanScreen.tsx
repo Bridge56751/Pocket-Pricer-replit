@@ -559,16 +559,19 @@ export default function ScanScreen() {
                   style={({ pressed }) => [styles.proUpsellCard, { opacity: pressed ? 0.9 : 1 }]}
                 >
                   <View style={styles.proUpsellLeft}>
-                    <View style={styles.proUpsellTopRow}>
-                      <View style={styles.proUpsellBadge}>
-                        <Feather name="star" size={10} color="#E8C84A" />
-                        <Text style={styles.proUpsellBadgeText}>PRO</Text>
-                      </View>
-                      <Text style={styles.proUpsellTitle}>Unlock sold prices & Buy Score</Text>
-                    </View>
+                    <LinearGradient
+                      colors={["#F5D87A", "#D4A926", "#E8C84A", "#D4A926"]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.proUpsellBadge}
+                    >
+                      <Feather name="star" size={11} color="#3D2E00" />
+                      <Text style={styles.proUpsellBadgeText}>PRO</Text>
+                    </LinearGradient>
+                    <Text style={styles.proUpsellTitle}>Unlock sold prices & Buy Score</Text>
                     <Text style={styles.proUpsellSub}>3-day free trial · $8.99/mo after</Text>
                   </View>
-                  <Feather name="chevron-right" size={16} color="#D4A926" />
+                  <Feather name="chevron-right" size={18} color="rgba(255,255,255,0.4)" />
                 </Pressable>
               </>
             )}
@@ -919,48 +922,43 @@ const styles = StyleSheet.create({
   proUpsellCard: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
-    backgroundColor: "transparent",
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
+    backgroundColor: "rgba(0,0,0,0.28)",
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     marginTop: 16,
-    borderWidth: 1,
-    borderColor: "rgba(228, 199, 100, 0.45)",
+    borderWidth: 1.5,
+    borderColor: "rgba(212, 169, 38, 0.55)",
   },
   proUpsellLeft: {
     flex: 1,
-    gap: 3,
-  },
-  proUpsellTopRow: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    gap: 8,
+    gap: 4,
   },
   proUpsellBadge: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
-    gap: 3,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: "rgba(228, 199, 100, 0.5)",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    alignSelf: "flex-start" as const,
+    marginBottom: 2,
+    overflow: "hidden" as const,
   },
   proUpsellBadgeText: {
-    fontSize: 10,
-    fontWeight: "700" as const,
-    color: "#E8C84A",
-    letterSpacing: 0.8,
+    fontSize: 11,
+    fontWeight: "800" as const,
+    color: "#3D2E00",
+    letterSpacing: 0.5,
   },
   proUpsellTitle: {
-    fontSize: 13,
-    fontWeight: "600" as const,
-    color: "rgba(255,255,255,0.85)",
+    fontSize: 15,
+    fontWeight: "700" as const,
+    color: "#F0D264",
   },
   proUpsellSub: {
-    fontSize: 11,
-    color: "rgba(255,255,255,0.4)",
-    marginTop: 1,
+    fontSize: 12,
+    color: "rgba(255,255,255,0.6)",
   },
   scanOverlay: {
     ...StyleSheet.absoluteFillObject,
