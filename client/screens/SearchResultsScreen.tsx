@@ -421,93 +421,88 @@ export default function SearchResultsScreen() {
                   </Text>
                 </View>
               </View>
-            </LinearGradient>
 
-            <LinearGradient
-              colors={["#1A6B3C", "#14532D", "#0A3622"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 0, y: 1 }}
-              style={styles.calculatorCardFull}
-            >
-              <View style={styles.calculatorHeader}>
-                <Feather name="dollar-sign" size={18} color="#4ADE80" />
-                <Text style={[styles.calculatorTitle, { color: "#FFFFFF" }]}>
-                  Profit Calculator
-                </Text>
-              </View>
-
-              <View style={styles.calculatorRow}>
-                <View style={styles.labelWithHint}>
-                  <Text style={[styles.calculatorLabel, { color: "rgba(255,255,255,0.7)" }]}>
-                    Your Selling Price
+              <View style={styles.calculatorSection}>
+                <View style={[styles.calcDividerLine, { backgroundColor: "rgba(255,255,255,0.15)" }]} />
+                <View style={styles.calculatorHeader}>
+                  <Feather name="dollar-sign" size={18} color="#4ADE80" />
+                  <Text style={[styles.calculatorTitle, { color: "#FFFFFF" }]}>
+                    Profit Calculator
                   </Text>
-                  <Pressable onPress={useSuggestedPrice} style={styles.suggestedHint}>
-                    <Text style={[styles.suggestedHintText, { color: "#4ADE80" }]}>
-                      Suggested: ${suggestedPrice.toFixed(0)}
+                </View>
+
+                <View style={styles.calculatorRow}>
+                  <View style={styles.labelWithHint}>
+                    <Text style={[styles.calculatorLabel, { color: "rgba(255,255,255,0.7)" }]}>
+                      Your Selling Price
                     </Text>
-                  </Pressable>
+                    <Pressable onPress={useSuggestedPrice} style={styles.suggestedHint}>
+                      <Text style={[styles.suggestedHintText, { color: "#4ADE80" }]}>
+                        Suggested: ${suggestedPrice.toFixed(0)}
+                      </Text>
+                    </Pressable>
+                  </View>
+                  <View style={[styles.inputContainer, { backgroundColor: "rgba(255,255,255,0.12)", borderColor: "rgba(255,255,255,0.2)" }]}>
+                    <Text style={[styles.dollarSign, { color: "rgba(255,255,255,0.5)" }]}>$</Text>
+                    <TextInput
+                      style={[styles.priceInput, { color: "#FFFFFF" }]}
+                      value={sellingPrice}
+                      onChangeText={setSellingPrice}
+                      placeholder={suggestedPrice.toFixed(2)}
+                      placeholderTextColor="rgba(255,255,255,0.4)"
+                      keyboardType="decimal-pad"
+                      returnKeyType="done"
+                      onSubmitEditing={() => Keyboard.dismiss()}
+                    />
+                  </View>
                 </View>
-                <View style={[styles.inputContainer, { backgroundColor: "rgba(255,255,255,0.12)", borderColor: "rgba(255,255,255,0.2)" }]}>
-                  <Text style={[styles.dollarSign, { color: "rgba(255,255,255,0.5)" }]}>$</Text>
-                  <TextInput
-                    style={[styles.priceInput, { color: "#FFFFFF" }]}
-                    value={sellingPrice}
-                    onChangeText={setSellingPrice}
-                    placeholder={suggestedPrice.toFixed(2)}
-                    placeholderTextColor="rgba(255,255,255,0.4)"
-                    keyboardType="decimal-pad"
-                    returnKeyType="done"
-                    onSubmitEditing={() => Keyboard.dismiss()}
-                  />
+
+                <View style={styles.calculatorRow}>
+                  <Text style={[styles.calculatorLabel, { color: "rgba(255,255,255,0.7)" }]}>
+                    Your Purchase Price
+                  </Text>
+                  <View style={[styles.inputContainer, { backgroundColor: "rgba(255,255,255,0.12)", borderColor: "rgba(255,255,255,0.2)" }]}>
+                    <Text style={[styles.dollarSign, { color: "rgba(255,255,255,0.5)" }]}>$</Text>
+                    <TextInput
+                      style={[styles.priceInput, { color: "#FFFFFF" }]}
+                      value={purchasePrice}
+                      onChangeText={setPurchasePrice}
+                      placeholder="0.00"
+                      placeholderTextColor="rgba(255,255,255,0.4)"
+                      keyboardType="decimal-pad"
+                      returnKeyType="done"
+                      onSubmitEditing={() => Keyboard.dismiss()}
+                    />
+                  </View>
                 </View>
-              </View>
 
-              <View style={styles.calculatorRow}>
-                <Text style={[styles.calculatorLabel, { color: "rgba(255,255,255,0.7)" }]}>
-                  Your Purchase Price
-                </Text>
-                <View style={[styles.inputContainer, { backgroundColor: "rgba(255,255,255,0.12)", borderColor: "rgba(255,255,255,0.2)" }]}>
-                  <Text style={[styles.dollarSign, { color: "rgba(255,255,255,0.5)" }]}>$</Text>
-                  <TextInput
-                    style={[styles.priceInput, { color: "#FFFFFF" }]}
-                    value={purchasePrice}
-                    onChangeText={setPurchasePrice}
-                    placeholder="0.00"
-                    placeholderTextColor="rgba(255,255,255,0.4)"
-                    keyboardType="decimal-pad"
-                    returnKeyType="done"
-                    onSubmitEditing={() => Keyboard.dismiss()}
-                  />
+                <View style={[styles.divider, { backgroundColor: "rgba(255,255,255,0.15)" }]} />
+
+                <View style={styles.calculatorRow}>
+                  <Text style={[styles.calculatorLabel, { color: "rgba(255,255,255,0.7)" }]}>
+                    Est. Fees (~13%)
+                  </Text>
+                  <Text style={[styles.calculatorValue, { color: "#F87171" }]}>
+                    -${ebayFees.toFixed(2)}
+                  </Text>
                 </View>
-              </View>
 
-              <View style={[styles.divider, { backgroundColor: "rgba(255,255,255,0.15)" }]} />
+                <View style={[styles.profitRow, { backgroundColor: profit > 0 ? "rgba(74,222,128,0.2)" : "rgba(248,113,113,0.2)" }]}>
+                  <Text style={[styles.profitLabel, { color: "#FFFFFF" }]}>
+                    Estimated Profit
+                  </Text>
+                  <Text style={[
+                    styles.profitValue, 
+                    { color: profit > 0 ? "#4ADE80" : "#F87171" }
+                  ]}>
+                    {profit >= 0 ? '+' : ''}${profit.toFixed(2)}
+                  </Text>
+                </View>
 
-              <View style={styles.calculatorRow}>
-                <Text style={[styles.calculatorLabel, { color: "rgba(255,255,255,0.7)" }]}>
-                  Est. Fees (~13%)
-                </Text>
-                <Text style={[styles.calculatorValue, { color: "#F87171" }]}>
-                  -${ebayFees.toFixed(2)}
-                </Text>
-              </View>
-
-              <View style={[styles.profitRow, { backgroundColor: profit > 0 ? "rgba(74,222,128,0.2)" : "rgba(248,113,113,0.2)" }]}>
-                <Text style={[styles.profitLabel, { color: "#FFFFFF" }]}>
-                  Estimated Profit
-                </Text>
-                <Text style={[
-                  styles.profitValue, 
-                  { color: profit > 0 ? "#4ADE80" : "#F87171" }
-                ]}>
-                  {profit >= 0 ? '+' : ''}${profit.toFixed(2)}
+                <Text style={[styles.calculatorNote, { color: "rgba(255,255,255,0.5)" }]}>
+                  Based on {results.totalListings} active listings
                 </Text>
               </View>
-
-              <Text style={[styles.calculatorNote, { color: "rgba(255,255,255,0.5)" }]}>
-                Based on {results.totalListings} active listings
-              </Text>
-
             </LinearGradient>
 
             <View style={styles.belowHeroContent}>
@@ -1028,7 +1023,7 @@ const styles = StyleSheet.create({
   heroSection: {
     paddingHorizontal: 16,
     paddingTop: 16,
-    paddingBottom: 0,
+    paddingBottom: 20,
   },
   heroBackButton: {
     width: 38,
@@ -1171,6 +1166,13 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     paddingHorizontal: 20,
     marginBottom: 16,
+  },
+  calculatorSection: {
+    marginTop: 20,
+  },
+  calcDividerLine: {
+    height: 1,
+    marginBottom: 20,
   },
   calculatorHeader: {
     flexDirection: "row",
