@@ -378,7 +378,7 @@ export default function SearchResultsScreen() {
         style={styles.list}
         contentContainerStyle={[
           styles.listContent,
-          { paddingTop: headerHeight + theme.spacing.lg, paddingBottom: 100 }
+          { paddingBottom: 100 }
         ]}
         scrollIndicatorInsets={{ bottom: insets.bottom }}
         keyboardDismissMode="on-drag"
@@ -391,17 +391,14 @@ export default function SearchResultsScreen() {
               colors={["#0A3622", "#14532D", "#1A6B3C"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={styles.heroSection}
+              style={[styles.heroSection, { paddingTop: insets.top + 8 }]}
             >
-              {scannedImageUri ? (
-                <View style={styles.productCard}>
-                  <Image
-                    source={{ uri: scannedImageUri }}
-                    style={styles.scannedImageLarge}
-                    contentFit="cover"
-                  />
-                </View>
-              ) : null}
+              <Pressable
+                onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate("Home")}
+                style={styles.heroBackButton}
+              >
+                <Feather name="arrow-left" size={22} color="#FFFFFF" />
+              </Pressable>
 
               <View style={styles.suggestedPrice}>
                 <View style={styles.suggestedPriceHeader}>
@@ -421,6 +418,16 @@ export default function SearchResultsScreen() {
                   </Text>
                 </View>
               </View>
+
+              {scannedImageUri ? (
+                <View style={styles.productCard}>
+                  <Image
+                    source={{ uri: scannedImageUri }}
+                    style={styles.scannedImageLarge}
+                    contentFit="cover"
+                  />
+                </View>
+              ) : null}
             </LinearGradient>
 
             <View style={styles.belowHeroContent}>
@@ -978,13 +985,22 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 24,
   },
+  heroBackButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "rgba(255,255,255,0.12)",
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    marginBottom: 12,
+  },
   belowHeroContent: {
     paddingHorizontal: 16,
   },
   productCard: {
     flexDirection: "row",
     borderRadius: 16,
-    marginBottom: 16,
+    marginTop: 16,
     gap: 12,
     overflow: "hidden" as const,
   },
