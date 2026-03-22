@@ -503,9 +503,8 @@ export default function SearchResultsScreen() {
                   Based on {results.totalListings} active listings
                 </Text>
               </View>
-            </LinearGradient>
 
-            <View style={styles.belowHeroContent}>
+            <View style={styles.belowHeroContentDark}>
             <Pressable
               testID="button-ebay-sold-search"
               onPress={() => handleEbaySoldSearch()}
@@ -770,7 +769,7 @@ export default function SearchResultsScreen() {
                   </View>
                 </View>
 
-                <Text style={[styles.advancedSectionTitle, { color: theme.colors.foreground }]}>
+                <Text style={[styles.advancedSectionTitle, { color: "#FFFFFF" }]}>
                   Recent eBay Sales ({ebaySoldData.items.length})
                 </Text>
 
@@ -882,7 +881,7 @@ export default function SearchResultsScreen() {
                   </View>
                 </View>
 
-                <Text style={[styles.advancedSectionTitle, { color: theme.colors.foreground }]}>
+                <Text style={[styles.advancedSectionTitle, { color: "#FFFFFF" }]}>
                   Similar Sales ({broadSoldData.items.length})
                 </Text>
 
@@ -938,6 +937,10 @@ export default function SearchResultsScreen() {
               </View>
             ) : null}
 
+            </View>
+            </LinearGradient>
+
+            <View style={styles.belowHeroContent}>
             <Text style={[styles.sectionTitle, { color: theme.colors.foreground }]}>
               Active Listings ({allListings.length})
             </Text>
@@ -1036,6 +1039,10 @@ const styles = StyleSheet.create({
   },
   belowHeroContent: {
     paddingHorizontal: 16,
+  },
+  belowHeroContentDark: {
+    paddingHorizontal: 16,
+    paddingTop: 4,
   },
   productCard: {
     flexDirection: "row",
@@ -1532,21 +1539,21 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     paddingHorizontal: 4,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(4,120,87,0.15)",
+    borderBottomColor: "rgba(255,255,255,0.15)",
     marginBottom: 12,
   },
   salesIntelLeft: {
     flex: 1,
   },
   salesIntelLabel: {
-    color: "#047857",
+    color: "#4ADE80",
     fontSize: 11,
     fontWeight: "800",
     letterSpacing: 1.5,
     marginBottom: 2,
   },
   salesIntelTitle: {
-    color: "#111827",
+    color: "#FFFFFF",
     fontSize: 20,
     fontWeight: "700",
   },
