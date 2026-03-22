@@ -1490,7 +1490,7 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     borderRadius: 20,
     borderWidth: 2.5,
-    borderColor: "#047857",
+    borderColor: "rgba(212,169,38,0.55)",
     padding: 12,
     marginBottom: 16,
   },
