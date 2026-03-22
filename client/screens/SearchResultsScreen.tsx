@@ -510,26 +510,23 @@ export default function SearchResultsScreen() {
               testID="button-ebay-sold-search"
               onPress={() => handleEbaySoldSearch()}
               style={({ pressed }) => [
-                rcReady && !isPro && !ebaySoldData ? styles.ebaySoldButtonPro : styles.ebaySoldButton,
+                styles.ebaySoldButtonPro,
                 { opacity: pressed ? 0.7 : 1 }
               ]}
             >
               {ebaySoldLoading ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : rcReady && !isPro && !ebaySoldData ? (
-                <>
-                  <Feather name="lock" size={16} color="#3D2E00" />
-                  <Text style={styles.ebaySoldButtonTextPro}>See eBay Sales Data</Text>
-                  <View style={styles.ebaySoldProBadge}>
-                    <Text style={styles.ebaySoldProBadgeText}>PRO</Text>
-                  </View>
-                </>
+                <ActivityIndicator size="small" color="#3D2E00" />
               ) : (
                 <>
-                  <Feather name="trending-up" size={18} color="#FFFFFF" />
-                  <Text style={styles.ebaySoldButtonText}>
+                  <Feather name={rcReady && !isPro && !ebaySoldData ? "lock" : "trending-up"} size={16} color="#3D2E00" />
+                  <Text style={styles.ebaySoldButtonTextPro}>
                     {ebaySoldData ? (showEbaySold ? "Hide Sales Data" : "Show Sales Data") : "See eBay Sales Data"}
                   </Text>
+                  {rcReady && !isPro && !ebaySoldData ? (
+                    <View style={styles.ebaySoldProBadge}>
+                      <Text style={styles.ebaySoldProBadgeText}>PRO</Text>
+                    </View>
+                  ) : null}
                 </>
               )}
             </Pressable>
