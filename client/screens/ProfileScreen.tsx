@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { View, StyleSheet, Pressable, Text, Alert, Platform, ActivityIndicator, Linking } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
+  useScrollViewOffset,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -10,7 +11,6 @@ import { useNavigation } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as WebBrowser from "expo-web-browser";
-import { ScrollView } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 
 import { useDesignTokens } from "@/hooks/useDesignTokens";
@@ -29,25 +29,22 @@ export default function ProfileScreen() {
   const { isPro, restorePurchases } = useRevenueCat();
   const [isRestoring, setIsRestoring] = useState(false);
 
-  const scrollY = useSharedValue(0);
-  const handleScroll = useCallback((event: any) => {
-    scrollY.value = event.nativeEvent.contentOffset.y;
-  }, []);
+  const scrollRef = useRef<Animated.ScrollView>(null);
+  const scrollY = useScrollViewOffset(scrollRef);
   const shimmerStyle = useAnimatedStyle(() => {
-    const mapped = ((scrollY.value % 400) / 400) * 2 - 1;
+    'worklet';
+    const mapped = ((scrollY.value % 300) / 300) * 2 - 1;
     return {
       position: "absolute" as const,
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      opacity: 0.3,
+      top: -10,
+      bottom: -10,
+      opacity: 0.35,
       backgroundColor: "#FFFFFF",
       transform: [
-        { translateX: mapped * 250 },
+        { translateX: mapped * 200 },
         { skewX: "-20deg" },
       ],
-      width: 50,
+      width: 60,
     };
   });
   const [scansUsed, setScansUsed] = useState(0);
@@ -138,7 +135,8 @@ export default function ProfileScreen() {
   const freeScansRemaining = Math.max(0, 3 - scansUsed);
 
   return (
-    <ScrollView
+    <Animated.ScrollView
+      ref={scrollRef}
       style={[styles.container, { backgroundColor: theme.colors.background }]}
       contentContainerStyle={[
         styles.content,
@@ -147,7 +145,6 @@ export default function ProfileScreen() {
           paddingBottom: insets.bottom + 24,
         },
       ]}
-      onScroll={handleScroll}
       scrollEventThrottle={16}
     >
       {isPro ? (
@@ -391,7 +388,7 @@ export default function ProfileScreen() {
         </View>
       </View>
       
-    </ScrollView>
+    </Animated.ScrollView>
   );
 }
 
