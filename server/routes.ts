@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "node:http";
 import { getGuestScanCount, incrementGuestScan } from "./db";
-import { logScanEvent, logEbaySearchEvent, supabase, initScanImagesBucket } from "./supabase";
+import { logScanEvent, logEbaySearchEvent, supabase, initScanImagesBucket, getDeviceStats } from "./supabase";
 
 const FREE_LIFETIME_SEARCHES = 3;
 const RATE_LIMIT_MAX = 20;
@@ -603,6 +603,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("eBay sold search error:", error);
       res.status(500).json({ error: "Failed to search eBay sold data" });
+    }
+  });
+
+  app.get("/api/device-stats/:deviceId", async (req: Request, res: Response) => {
+    try {
+      const { deviceId } = req.params;
+      if (!deviceId) {
+        return res.status(400).json({ error: "Missing deviceId" });
+      }
+      const stats = await getDeviceStats(deviceId);
+      res.json(stats);
+    } catch (error) {
+      console.error("Device stats error:", error);
+      res.status(500).json({ error: "Failed to fetch device stats" });
     }
   });
 

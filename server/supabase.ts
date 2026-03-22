@@ -113,6 +113,73 @@ export function logEbaySearchEvent(
   }
 }
 
+export async function getDeviceStats(deviceId: string): Promise<{
+  totalScans: number;
+  scansToday: number;
+  streak: number;
+}> {
+  const fallback = { totalScans: 0, scansToday: 0, streak: 0 };
+  if (!supabase) return fallback;
+
+  try {
+    const { data: device } = await supabase
+      .from("devices")
+      .select("total_scans")
+      .eq("device_id", deviceId)
+      .maybeSingle();
+
+    const totalScans = device?.total_scans || 0;
+
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const { count: scansToday } = await supabase
+      .from("scan_events")
+      .select("*", { count: "exact", head: true })
+      .eq("device_id", deviceId)
+      .gte("created_at", todayStart.toISOString());
+
+    const { data: scanDays } = await supabase
+      .from("scan_events")
+      .select("created_at")
+      .eq("device_id", deviceId)
+      .order("created_at", { ascending: false })
+      .limit(500);
+
+    let streak = 0;
+    if (scanDays && scanDays.length > 0) {
+      const uniqueDays = new Set<string>();
+      for (const row of scanDays) {
+        const d = new Date(row.created_at);
+        uniqueDays.add(`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`);
+      }
+
+      const today = new Date();
+      const checkDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const todayKey = `${checkDate.getFullYear()}-${checkDate.getMonth()}-${checkDate.getDate()}`;
+
+      if (!uniqueDays.has(todayKey)) {
+        checkDate.setDate(checkDate.getDate() - 1);
+      }
+
+      while (true) {
+        const key = `${checkDate.getFullYear()}-${checkDate.getMonth()}-${checkDate.getDate()}`;
+        if (uniqueDays.has(key)) {
+          streak++;
+          checkDate.setDate(checkDate.getDate() - 1);
+        } else {
+          break;
+        }
+      }
+    }
+
+    return { totalScans, scansToday: scansToday || 0, streak };
+  } catch (err: any) {
+    console.error("getDeviceStats error:", err?.message);
+    return fallback;
+  }
+}
+
 function upsertDevice(deviceId: string, isPro: boolean, eventType: "scan" | "ebay") {
   if (!supabase) return;
 

@@ -19,6 +19,7 @@ import Animated, {
   withSpring,
 } from "react-native-reanimated";
 
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { SkeletonLoader } from "@/components/SkeletonLoader";
 import { getSearchHistory, addSearchHistory } from "@/lib/storage";
@@ -153,9 +154,11 @@ export default function ScanScreen() {
 
   const { getDeviceId, getScansUsed, setScansUsed: persistScansUsed, incrementScans } = useAuth();
   const { isPro, isReady: rcReady } = useRevenueCat();
+  const queryClient = useQueryClient();
   
   const [recentScans, setRecentScans] = useState<SearchHistoryItem[]>([]);
   const [scansUsed, setScansUsed] = useState(0);
+  const [cachedDeviceId, setCachedDeviceId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analyzingProgress, setAnalyzingProgress] = useState("");
@@ -174,6 +177,27 @@ export default function ScanScreen() {
       setIsLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    (async () => {
+      const id = await getDeviceId();
+      setCachedDeviceId(id);
+    })();
+  }, [getDeviceId]);
+
+  const { data: deviceStats } = useQuery({
+    queryKey: ["/api/device-stats", cachedDeviceId],
+    queryFn: async () => {
+      if (!cachedDeviceId) return null;
+      const res = await fetch(
+        new URL(`/api/device-stats/${cachedDeviceId}`, getApiUrl()).toString()
+      );
+      if (!res.ok) return null;
+      return res.json() as Promise<{ totalScans: number; scansToday: number; streak: number }>;
+    },
+    enabled: !!cachedDeviceId,
+    staleTime: 30000,
+  });
 
   const processPhotos = useCallback(async (photos: CapturedPhoto[]) => {
     if (photos.length === 0 || processingRef.current) return;
@@ -298,6 +322,7 @@ export default function ScanScreen() {
 
       addSearchHistory(historyItem).catch(() => {});
       loadRecentScans();
+      queryClient.invalidateQueries({ queryKey: ["/api/device-stats"] });
 
       if (Platform.OS !== "web") {
         (async () => {
@@ -441,6 +466,33 @@ export default function ScanScreen() {
             <Text style={styles.heroDescription}>
               Point your camera at any product to get instant market pricing and sales data
             </Text>
+
+            <View style={styles.metricsRow}>
+              <View style={styles.metricCard}>
+                <Text style={styles.metricLabel}>STREAK</Text>
+                <View style={styles.metricValueRow}>
+                  <Text style={styles.metricValue}>{deviceStats?.streak ?? 0}</Text>
+                  <Text style={styles.metricUnit}>d</Text>
+                </View>
+                <View style={styles.streakDots}>
+                  {Array.from({ length: Math.min(deviceStats?.streak ?? 0, 7) }).map((_, i) => (
+                    <View key={i} style={styles.streakDot} />
+                  ))}
+                </View>
+              </View>
+              <View style={styles.metricCard}>
+                <Text style={styles.metricLabel}>TOTAL SCANS</Text>
+                <Text style={styles.metricValue}>{deviceStats?.totalScans ?? 0}</Text>
+                {(deviceStats?.scansToday ?? 0) > 0 ? (
+                  <Text style={styles.metricSub}>+{deviceStats?.scansToday} today</Text>
+                ) : null}
+              </View>
+              <View style={styles.metricCard}>
+                <Text style={styles.metricLabel}>TODAY</Text>
+                <Text style={styles.metricValue}>{deviceStats?.scansToday ?? 0}</Text>
+                <Text style={styles.metricSub}>scans</Text>
+              </View>
+            </View>
 
             <Pressable
               onPress={handleScanProduct}
@@ -768,8 +820,61 @@ const styles = StyleSheet.create({
   heroDescription: {
     fontSize: 15,
     lineHeight: 22,
-    marginBottom: 24,
+    marginBottom: 20,
     color: "rgba(255,255,255,0.75)",
+  },
+  metricsRow: {
+    flexDirection: "row" as const,
+    gap: 10,
+    marginBottom: 20,
+  },
+  metricCard: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.25)",
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+  },
+  metricLabel: {
+    fontSize: 10,
+    fontWeight: "700" as const,
+    color: "rgba(255,255,255,0.5)",
+    letterSpacing: 0.8,
+    marginBottom: 4,
+  },
+  metricValueRow: {
+    flexDirection: "row" as const,
+    alignItems: "baseline" as const,
+  },
+  metricValue: {
+    fontSize: 28,
+    fontWeight: "800" as const,
+    color: "#4ADE80",
+  },
+  metricUnit: {
+    fontSize: 16,
+    fontWeight: "600" as const,
+    color: "rgba(74,222,128,0.7)",
+    marginLeft: 2,
+  },
+  metricSub: {
+    fontSize: 11,
+    fontWeight: "500" as const,
+    color: "rgba(255,255,255,0.45)",
+    marginTop: 2,
+  },
+  streakDots: {
+    flexDirection: "row" as const,
+    gap: 4,
+    marginTop: 4,
+  },
+  streakDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#4ADE80",
   },
   scanButton: {
     flexDirection: "row" as const,

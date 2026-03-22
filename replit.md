@@ -125,3 +125,10 @@ The application is built with a client-server architecture. The frontend is an E
   - "SAVE 44%" red badge on weekly plan card
   - CTA: dark green gradient "Start 3-Day Free Trial →"
   - Apple compliance preserved: dismissible (gestureEnabled), legal auto-renewal text, Restore Purchase/Terms/Privacy links
+- **Mar 2026**: ScanScreen metric cards added
+  - Three metric cards (Streak, Total Scans, Today) displayed on the hero section between description and scan button
+  - New `GET /api/device-stats/:deviceId` endpoint queries Supabase `scan_events` and `devices` tables
+  - Streak counts consecutive days with at least one scan; Today counts scans since midnight; Total from `devices.total_scans`
+  - Stats fetched via React Query on screen load, invalidated after each scan for real-time updates
+  - Dark semi-transparent card backgrounds with green (#4ADE80) numbers, matching hero gradient aesthetic
+  - Streak card shows green dots (up to 7) for visual indicator
