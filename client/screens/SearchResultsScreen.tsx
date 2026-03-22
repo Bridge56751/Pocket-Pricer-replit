@@ -510,12 +510,20 @@ export default function SearchResultsScreen() {
               testID="button-ebay-sold-search"
               onPress={() => handleEbaySoldSearch()}
               style={({ pressed }) => [
-                styles.ebaySoldButton,
+                rcReady && !isPro && !ebaySoldData ? styles.ebaySoldButtonPro : styles.ebaySoldButton,
                 { opacity: pressed ? 0.7 : 1 }
               ]}
             >
               {ebaySoldLoading ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : rcReady && !isPro && !ebaySoldData ? (
+                <>
+                  <Feather name="lock" size={16} color="#3D2E00" />
+                  <Text style={styles.ebaySoldButtonTextPro}>See eBay Sales Data</Text>
+                  <View style={styles.ebaySoldProBadge}>
+                    <Text style={styles.ebaySoldProBadgeText}>PRO</Text>
+                  </View>
+                </>
               ) : (
                 <>
                   <Feather name="trending-up" size={18} color="#FFFFFF" />
@@ -1445,10 +1453,37 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     gap: 10,
   },
+  ebaySoldButtonPro: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#E8C84A",
+    paddingVertical: 14,
+    borderRadius: 12,
+    marginBottom: 16,
+    gap: 8,
+  },
   ebaySoldButtonText: {
     color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "700",
+  },
+  ebaySoldButtonTextPro: {
+    color: "#3D2E00",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  ebaySoldProBadge: {
+    backgroundColor: "#3D2E00",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  ebaySoldProBadgeText: {
+    color: "#E8C84A",
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 0.5,
   },
   ebaySoldErrorText: {
     fontSize: 14,
