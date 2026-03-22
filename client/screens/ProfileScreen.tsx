@@ -1,10 +1,5 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
-import { View, StyleSheet, Pressable, Text, Alert, Platform, ActivityIndicator, Linking } from "react-native";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  useScrollViewOffset,
-} from "react-native-reanimated";
+import React, { useState, useEffect, useCallback } from "react";
+import { View, StyleSheet, Pressable, Text, Alert, Platform, ActivityIndicator, Linking, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useNavigation } from "@react-navigation/native";
@@ -29,24 +24,6 @@ export default function ProfileScreen() {
   const { isPro, restorePurchases } = useRevenueCat();
   const [isRestoring, setIsRestoring] = useState(false);
 
-  const scrollRef = useRef<Animated.ScrollView>(null);
-  const scrollY = useScrollViewOffset(scrollRef);
-  const shimmerStyle = useAnimatedStyle(() => {
-    'worklet';
-    const mapped = ((scrollY.value % 300) / 300) * 2 - 1;
-    return {
-      position: "absolute" as const,
-      top: -10,
-      bottom: -10,
-      opacity: 0.35,
-      backgroundColor: "#FFFFFF",
-      transform: [
-        { translateX: mapped * 200 },
-        { skewX: "-20deg" },
-      ],
-      width: 60,
-    };
-  });
   const [scansUsed, setScansUsed] = useState(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -135,8 +112,7 @@ export default function ProfileScreen() {
   const freeScansRemaining = Math.max(0, 3 - scansUsed);
 
   return (
-    <Animated.ScrollView
-      ref={scrollRef}
+    <ScrollView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
       contentContainerStyle={[
         styles.content,
@@ -145,7 +121,6 @@ export default function ProfileScreen() {
           paddingBottom: insets.bottom + 24,
         },
       ]}
-      scrollEventThrottle={16}
     >
       {isPro ? (
         <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
@@ -202,7 +177,6 @@ export default function ProfileScreen() {
               { opacity: pressed ? 0.85 : 1 }
             ]}
           >
-            <Animated.View style={shimmerStyle} />
             <Feather name="zap" size={18} color="#3D2E00" />
             <Text style={styles.subGradientButtonText}>Upgrade to Pro</Text>
           </Pressable>
@@ -388,7 +362,7 @@ export default function ProfileScreen() {
         </View>
       </View>
       
-    </Animated.ScrollView>
+    </ScrollView>
   );
 }
 
