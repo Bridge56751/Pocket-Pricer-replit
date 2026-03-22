@@ -405,11 +405,12 @@ export default function ScanScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <View style={[styles.heroTopFill, { height: insets.top + 200 }]} />
       <ScrollView
-        style={[styles.scrollView, { backgroundColor: "#0A3622" }]}
+        style={styles.scrollView}
         contentContainerStyle={[
           styles.content,
-          { paddingBottom: insets.bottom + 100, backgroundColor: theme.colors.background },
+          { paddingBottom: insets.bottom + 100 },
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -675,8 +676,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  heroTopFill: {
+    position: "absolute" as const,
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "#0A3622",
+    zIndex: 0,
+  },
   scrollView: {
     flex: 1,
+    zIndex: 1,
   },
   content: {
   },
