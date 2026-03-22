@@ -7,6 +7,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { LinearGradient } from "expo-linear-gradient";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
 import { useDesignTokens } from "@/hooks/useDesignTokens";
@@ -386,35 +387,43 @@ export default function SearchResultsScreen() {
         keyExtractor={(item) => item.id}
         ListHeaderComponent={
           <View>
-            {scannedImageUri ? (
-              <View style={[styles.productCard, { backgroundColor: theme.colors.card }]}>
-                <Image
-                  source={{ uri: scannedImageUri }}
-                  style={styles.scannedImageLarge}
-                  contentFit="cover"
-                />
-              </View>
-            ) : null}
+            <LinearGradient
+              colors={["#0A3622", "#14532D", "#1A6B3C"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.heroSection}
+            >
+              {scannedImageUri ? (
+                <View style={styles.productCard}>
+                  <Image
+                    source={{ uri: scannedImageUri }}
+                    style={styles.scannedImageLarge}
+                    contentFit="cover"
+                  />
+                </View>
+              ) : null}
 
-            <View style={[styles.suggestedPrice, { backgroundColor: theme.colors.card }]}>
-              <View style={styles.suggestedPriceHeader}>
-                <View>
-                  <View style={styles.suggestedPriceTitle}>
-                    <Feather name="star" size={16} color={theme.colors.warning} />
-                    <Text style={[styles.suggestedPriceLabel, { color: theme.colors.foreground }]}>
-                      Suggested Listing Price
+              <View style={styles.suggestedPrice}>
+                <View style={styles.suggestedPriceHeader}>
+                  <View>
+                    <View style={styles.suggestedPriceTitle}>
+                      <Feather name="star" size={16} color="#F5D87A" />
+                      <Text style={[styles.suggestedPriceLabel, { color: "#FFFFFF" }]}>
+                        Suggested Listing Price
+                      </Text>
+                    </View>
+                    <Text style={[styles.suggestedPriceNote, { color: "rgba(255,255,255,0.6)" }]}>
+                      Based on current market listings
                     </Text>
                   </View>
-                  <Text style={[styles.suggestedPriceNote, { color: theme.colors.mutedForeground }]}>
-                    Based on current market listings
+                  <Text style={[styles.suggestedPriceValue, { color: "#FFFFFF" }]}>
+                    ${results.avgListPrice.toFixed(0)}
                   </Text>
                 </View>
-                <Text style={[styles.suggestedPriceValue, { color: theme.colors.primary }]}>
-                  ${results.avgListPrice.toFixed(0)}
-                </Text>
               </View>
-            </View>
+            </LinearGradient>
 
+            <View style={styles.belowHeroContent}>
             <View style={[styles.calculatorCard, { backgroundColor: theme.colors.card }]}>
               <View style={styles.calculatorHeader}>
                 <Feather name="dollar-sign" size={18} color={theme.colors.primary} />
@@ -904,6 +913,7 @@ export default function SearchResultsScreen() {
                 ))}
               </ScrollView>
             ) : null}
+            </View>
           </View>
         }
         renderItem={renderListing}
@@ -942,14 +952,22 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
+    paddingHorizontal: 0,
+  },
+  heroSection: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 24,
+  },
+  belowHeroContent: {
     paddingHorizontal: 16,
   },
   productCard: {
     flexDirection: "row",
     borderRadius: 16,
-    padding: 12,
     marginBottom: 16,
     gap: 12,
+    overflow: "hidden" as const,
   },
   scannedImage: {
     width: 100,
@@ -992,7 +1010,8 @@ const styles = StyleSheet.create({
   suggestedPrice: {
     borderRadius: 16,
     padding: 16,
-    marginBottom: 16,
+    marginBottom: 0,
+    backgroundColor: "rgba(255,255,255,0.08)",
   },
   suggestedPriceHeader: {
     flexDirection: "row",
@@ -1180,6 +1199,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: "hidden",
     marginBottom: 12,
+    marginHorizontal: 16,
   },
   listingImage: {
     width: 100,
