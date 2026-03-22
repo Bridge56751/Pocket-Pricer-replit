@@ -423,12 +423,11 @@ export default function SearchResultsScreen() {
               </View>
             </LinearGradient>
 
-            <View style={styles.belowHeroContent}>
             <LinearGradient
               colors={["#0A3622", "#14532D", "#1A6B3C"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={styles.calculatorCard}
+              style={styles.calculatorCardFull}
             >
               <View style={styles.calculatorHeader}>
                 <Feather name="dollar-sign" size={18} color="#4ADE80" />
@@ -511,6 +510,7 @@ export default function SearchResultsScreen() {
 
             </LinearGradient>
 
+            <View style={styles.belowHeroContent}>
             <Pressable
               testID="button-ebay-sold-search"
               onPress={() => handleEbaySoldSearch()}
@@ -1165,6 +1165,11 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 16,
     marginBottom: 24,
+  },
+  calculatorCardFull: {
+    padding: 20,
+    paddingHorizontal: 20,
+    marginBottom: 16,
   },
   calculatorHeader: {
     flexDirection: "row",
