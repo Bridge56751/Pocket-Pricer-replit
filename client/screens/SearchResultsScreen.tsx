@@ -987,8 +987,8 @@ export default function SearchResultsScreen() {
                     style={[
                       styles.sortChip,
                       {
-                        backgroundColor: sortOption === option ? "#4ADE80" : "rgba(255,255,255,0.12)",
-                        borderColor: sortOption === option ? "#4ADE80" : "rgba(255,255,255,0.2)",
+                        backgroundColor: sortOption === option ? "#FFFFFF" : "rgba(255,255,255,0.15)",
+                        borderColor: sortOption === option ? "#FFFFFF" : "rgba(255,255,255,0.25)",
                       },
                     ]}
                   >
@@ -996,7 +996,7 @@ export default function SearchResultsScreen() {
                       style={[
                         styles.sortChipText,
                         {
-                          color: sortOption === option ? "#14532D" : "rgba(255,255,255,0.7)",
+                          color: sortOption === option ? "#14532D" : "rgba(255,255,255,0.8)",
                         },
                       ]}
                     >
