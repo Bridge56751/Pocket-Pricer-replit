@@ -304,32 +304,37 @@ export default function PaywallScreen() {
                   )}
                 </Pressable>
 
-                <View>
-                  <View style={styles.saveBadge}>
-                    <Text style={styles.saveBadgeText}>SAVE 44%</Text>
-                  </View>
-                  <Pressable
-                    onPress={() => handleSelectPlan("weekly")}
-                    style={[
-                      styles.planCardSide,
-                      styles.planCardRight,
-                      {
-                        backgroundColor: selectedPlan === "weekly" ? "#065F46" : "#14532D",
-                        borderColor: selectedPlan === "weekly" ? "#34D399" : "#1A6B3C",
-                      },
-                    ]}
-                  >
-                    <Text style={[styles.planCardLabel, { color: "rgba(255,255,255,0.7)" }]}>Weekly</Text>
-                    <Text style={[styles.planCardPrice, { color: "#FFFFFF" }]}>{weeklyPkg!.product.priceString}</Text>
-                    {selectedPlan === "weekly" ? (
-                      <View style={[styles.planRadioFilled, { borderColor: "#34D399" }]}>
-                        <View style={[styles.planRadioInner, { backgroundColor: "#34D399" }]} />
+                <Pressable
+                  onPress={() => handleSelectPlan("weekly")}
+                  style={[
+                    styles.planCardSide,
+                    {
+                      backgroundColor: selectedPlan === "weekly" ? "#065F46" : "#14532D",
+                      borderColor: selectedPlan === "weekly" ? "#34D399" : "#1A6B3C",
+                    },
+                  ]}
+                >
+                  {(() => {
+                    const weeklyPrice = weeklyPkg!.product.price;
+                    const monthlyPrice = monthlyPkg!.product.price;
+                    const monthlyEquiv = weeklyPrice * 4.33;
+                    const savePct = Math.round(((monthlyEquiv - monthlyPrice) / monthlyEquiv) * 100);
+                    return savePct > 0 ? (
+                      <View style={styles.saveBadge}>
+                        <Text style={styles.saveBadgeText}>SAVE {savePct}%</Text>
                       </View>
-                    ) : (
-                      <View style={[styles.planRadioEmpty, { borderColor: "rgba(255,255,255,0.3)" }]} />
-                    )}
-                  </Pressable>
-                </View>
+                    ) : null;
+                  })()}
+                  <Text style={[styles.planCardLabel, { color: "rgba(255,255,255,0.7)" }]}>Weekly</Text>
+                  <Text style={[styles.planCardPrice, { color: "#FFFFFF" }]}>{weeklyPkg!.product.priceString}</Text>
+                  {selectedPlan === "weekly" ? (
+                    <View style={[styles.planRadioFilled, { borderColor: "#34D399" }]}>
+                      <View style={[styles.planRadioInner, { backgroundColor: "#34D399" }]} />
+                    </View>
+                  ) : (
+                    <View style={[styles.planRadioEmpty, { borderColor: "rgba(255,255,255,0.3)" }]} />
+                  )}
+                </Pressable>
               </View>
             ) : (
               <View style={[styles.planCardSide, { borderColor: "#047857", backgroundColor: "#F0FDF8", flex: 1 }]}>
@@ -557,8 +562,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     alignItems: "center" as const,
   },
-  planCardRight: {
-  },
   planCardLabel: {
     fontSize: 14,
     fontWeight: "500" as const,
@@ -594,14 +597,12 @@ const styles = StyleSheet.create({
     borderColor: "#D1D5DB",
   },
   saveBadge: {
-    position: "absolute" as const,
-    top: -10,
-    right: 10,
-    zIndex: 1,
     backgroundColor: "#EF4444",
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
+    alignSelf: "center" as const,
+    marginBottom: 4,
   },
   saveBadgeText: {
     fontSize: 10,
