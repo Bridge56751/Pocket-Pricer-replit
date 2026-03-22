@@ -404,9 +404,9 @@ export default function ScanScreen() {
   const displayedScans = recentScans.slice(0, 15);
 
   return (
-    <View style={[styles.container, { backgroundColor: "#0A3622" }]}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <ScrollView
-        style={styles.scrollView}
+        style={[styles.scrollView, { backgroundColor: "#0A3622" }]}
         contentContainerStyle={[
           styles.content,
           { paddingBottom: insets.bottom + 100, backgroundColor: theme.colors.background },
