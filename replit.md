@@ -114,3 +114,14 @@ The application is built with a client-server architecture. The frontend is an E
   - PaywallScreen and UpgradeModal updated with deeper green accents (CTA gradients, icon circles, feature checkmarks, plan card borders)
   - All hardcoded #10B981 and #34D399 references replaced across OnboardingScreen, FavoritesScreen, SearchResultsScreen, emailClient.ts
   - Gradient palette standardized: #059669→#047857→#065F46 for buttons/CTAs
+- **Mar 2026**: PaywallScreen premium redesign
+  - Dark green gradient hero (#0A3622→#14532D→#1A6B3C) goes edge-to-edge and to the top, matching ScanScreen hero
+  - Gold gradient star icon (#F5D87A→#D4A926→#E8C84A) centered in hero, with "POCKET PRICER PRO" gold gradient badge
+  - White title "Know exactly what to buy & sell" + muted subtitle on dark green
+  - Close (X) button in top-right of dark section with semi-transparent white circle
+  - Feature list redesigned: 4 rows with icon circles, title + description, green checkmark circles
+  - Features: "Unlimited scans", "Real sold prices", "Buy Score", "Profit calculator" with subtitle descriptions
+  - Plan selector changed to side-by-side cards (Monthly left, Weekly right with dark green bg)
+  - "SAVE 44%" red badge on weekly plan card
+  - CTA: dark green gradient "Start 3-Day Free Trial →"
+  - Apple compliance preserved: dismissible (gestureEnabled), legal auto-renewal text, Restore Purchase/Terms/Privacy links

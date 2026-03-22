@@ -26,10 +26,26 @@ const PRIVACY_URL = "https://pocket-pricer.com/pocket-pricer-privacy-policy-v5.h
 const TERMS_URL = "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/";
 
 const FEATURES = [
-  { icon: "camera" as const,      text: "Unlimited product scans",                       color: "#047857" },
-  { icon: "trending-up" as const, text: "Sold prices — see what items actually sell for", color: "#047857" },
-  { icon: "bar-chart-2" as const, text: "Buy Score — instant demand & profit rating",     color: "#047857" },
-  { icon: "dollar-sign" as const, text: "Unlimited price comparisons",                    color: "#047857" },
+  {
+    icon: "camera" as const,
+    title: "Unlimited scans",
+    desc: "No daily limits, scan as much as you want",
+  },
+  {
+    icon: "trending-up" as const,
+    title: "Real sold prices",
+    desc: "See what items actually sell for, not just listings",
+  },
+  {
+    icon: "bar-chart-2" as const,
+    title: "Buy Score",
+    desc: "Instant demand & profit rating per item",
+  },
+  {
+    icon: "dollar-sign" as const,
+    title: "Profit calculator",
+    desc: "Fees, shipping & net profit at a glance",
+  },
 ];
 
 export default function PaywallScreen() {
@@ -160,196 +176,172 @@ export default function PaywallScreen() {
 
   if (isPro) return null;
 
-  const cardColor = "#FFFFFF";
-  const planCardBg = "#F0FDF8";
-
   return (
-    <LinearGradient
-      colors={["#F0FDF8", "#FFFFFF", "#F0FDF8"]}
-      style={styles.container}
-    >
-      <Pressable
-        onPress={() => navigation.goBack()}
-        style={[styles.closeButton, { top: insets.top + 12 }]}
-        hitSlop={12}
-      >
-        <View style={[styles.closeCircle, { backgroundColor: "rgba(0,0,0,0.06)" }]}>
-          <Feather name="x" size={18} color="#6B7280" />
-        </View>
-      </Pressable>
-
+    <View style={styles.container}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 32 },
+          { paddingBottom: insets.bottom + 32 },
         ]}
         showsVerticalScrollIndicator={false}
         bounces={false}
       >
-        <Animated.View
-          entering={FadeInUp.delay(60).duration(480)}
-          style={[styles.card, { backgroundColor: cardColor }]}
+        <LinearGradient
+          colors={["#0A3622", "#14532D", "#1A6B3C"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.heroSection, { paddingTop: insets.top + 12 }]}
         >
-          {/* Icon */}
-          <View style={styles.iconWrap}>
-            <View style={styles.iconGlow} />
-            <LinearGradient
-              colors={["#059669", "#047857", "#065F46"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.iconCircle}
-            >
-              <Feather name="tag" size={36} color="#fff" />
-            </LinearGradient>
-          </View>
-
-          {/* Contextual banner */}
-          {context === "ebay" && (
-            <View style={styles.contextBanner}>
-              <Feather name="trending-up" size={14} color="#047857" />
-              <Text style={styles.contextBannerText}>
-                Sold price data is a Pro feature
-              </Text>
+          <Pressable
+            onPress={() => navigation.goBack()}
+            style={styles.closeButton}
+            hitSlop={12}
+          >
+            <View style={styles.closeCircle}>
+              <Feather name="x" size={18} color="rgba(255,255,255,0.7)" />
             </View>
-          )}
+          </Pressable>
 
-          {/* Title & subtitle */}
-          <Text style={[styles.title, { color: theme.colors.foreground }]}>
-            {context === "ebay"
-              ? "See what items actually sell for"
-              : "Know exactly what to buy & sell"}
-          </Text>
-          <Text style={[styles.subtitle, { color: theme.colors.mutedForeground }]}>
-            Real sold prices, unlimited scans, and instant profit data — everything you need to win as a reseller.
-          </Text>
-
-          {/* Features */}
-          <View style={styles.featuresList}>
-            {FEATURES.map((f) => (
-              <View
-                key={f.text}
-                style={[
-                  styles.featureRow,
-                  {
-                    backgroundColor: "rgba(0,0,0,0.02)",
-                    borderColor: "rgba(4,120,87,0.25)",
-                  },
-                ]}
+          <Animated.View entering={FadeInUp.delay(60).duration(480)} style={styles.heroContent}>
+            <View style={styles.iconWrap}>
+              <View style={styles.iconGlow} />
+              <LinearGradient
+                colors={["#F5D87A", "#D4A926", "#E8C84A", "#D4A926"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.iconCircle}
               >
-                <View style={[styles.featureIconCircle, { backgroundColor: "#04785722" }]}>
-                  <Feather name={f.icon} size={16} color={f.color} />
+                <Feather name="star" size={32} color="#3D2E00" />
+              </LinearGradient>
+            </View>
+
+            <LinearGradient
+              colors={["#F5D87A", "#D4A926", "#E8C84A", "#D4A926"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.proBadge}
+            >
+              <Feather name="star" size={12} color="#3D2E00" />
+              <Text style={styles.proBadgeText}>POCKET PRICER PRO</Text>
+            </LinearGradient>
+
+            {context === "ebay" ? (
+              <Text style={styles.heroTitle}>
+                See what items{"\n"}actually sell for
+              </Text>
+            ) : (
+              <Text style={styles.heroTitle}>
+                Know exactly what{"\n"}to buy & sell
+              </Text>
+            )}
+
+            <Text style={styles.heroSubtitle}>
+              Real sold prices, unlimited scans,{"\n"}and instant profit data.
+            </Text>
+          </Animated.View>
+        </LinearGradient>
+
+        <View style={styles.contentSection}>
+          <View style={styles.featuresList}>
+            {FEATURES.map((f, index) => (
+              <Animated.View
+                key={f.title}
+                entering={FadeInUp.delay(120 + index * 60).duration(400)}
+              >
+                <View style={styles.featureRow}>
+                  <View style={styles.featureIconCircle}>
+                    <Feather name={f.icon} size={18} color="#047857" />
+                  </View>
+                  <View style={styles.featureTextWrap}>
+                    <Text style={styles.featureTitle}>{f.title}</Text>
+                    <Text style={styles.featureDesc}>{f.desc}</Text>
+                  </View>
+                  <View style={styles.featureCheck}>
+                    <Feather name="check" size={14} color="#fff" />
+                  </View>
                 </View>
-                <Text style={[styles.featureText, { color: theme.colors.foreground }]}>
-                  {f.text}
-                </Text>
-                <Feather name="check" size={16} color="#047857" />
-              </View>
+              </Animated.View>
             ))}
           </View>
 
-          {/* Plan cards */}
           <View style={styles.planCards}>
             {showError ? (
-              <View style={[styles.errorCard, { backgroundColor: "#FEF2F2", borderColor: "#FECACA" }]}>
+              <View style={styles.errorCard}>
                 <Feather name="wifi-off" size={22} color="#EF4444" />
-                <Text style={[styles.errorTitle, { color: theme.colors.foreground }]}>Unable to load plans</Text>
-                <Text style={[styles.errorSub, { color: theme.colors.mutedForeground }]}>Check your connection and try again.</Text>
-                <Pressable
-                  onPress={handleRetry}
-                  style={[styles.retryButton, { backgroundColor: "#FFF" }]}
-                >
+                <Text style={styles.errorTitle}>Unable to load plans</Text>
+                <Text style={styles.errorSub}>Check your connection and try again.</Text>
+                <Pressable onPress={handleRetry} style={styles.retryButton}>
                   <Feather name="refresh-cw" size={14} color="#047857" />
                   <Text style={styles.retryText}>Try Again</Text>
                 </Pressable>
               </View>
             ) : packagesLoading ? (
-              <View style={[styles.planCard, styles.skeletonCard, { borderColor: "#E5E7EB", backgroundColor: "#F3F4F6" }]} />
+              <View style={styles.planCardsRow}>
+                <View style={[styles.planCardSide, styles.skeletonCard]} />
+                <View style={[styles.planCardSide, styles.skeletonCard]} />
+              </View>
             ) : hasMultiplePlans ? (
-              <>
-                <Pressable
-                  onPress={() => handleSelectPlan("weekly")}
-                  style={[
-                    styles.planCard,
-                    {
-                      backgroundColor: selectedPlan === "weekly" ? planCardBg : "#F9FAFB",
-                      borderColor: selectedPlan === "weekly" ? "#047857" : "#E5E7EB",
-                    },
-                  ]}
-                >
-                  <View style={styles.planLeft}>
-                    <Text style={[styles.planName, { color: theme.colors.foreground }]}>Weekly</Text>
-                    <Text style={[styles.planTrialText, { color: "#047857" }]}>
-                      3-day free trial
-                    </Text>
-                    <Text style={[styles.planPrice, { color: theme.colors.mutedForeground }]}>
-                      then {weeklyPkg!.product.priceString}/week
-                    </Text>
-                  </View>
-                  <View style={styles.planCheck}>
-                    {selectedPlan === "weekly" ? (
-                      <View style={styles.checkFilled}>
-                        <Feather name="check" size={14} color="#fff" />
-                      </View>
-                    ) : (
-                      <View style={[styles.radioOuter, { borderColor: "#D1D5DB" }]} />
-                    )}
-                  </View>
-                </Pressable>
-
+              <View style={styles.planCardsRow}>
                 <Pressable
                   onPress={() => handleSelectPlan("monthly")}
                   style={[
-                    styles.planCard,
+                    styles.planCardSide,
                     {
-                      backgroundColor: selectedPlan === "monthly" ? planCardBg : "#F9FAFB",
+                      backgroundColor: selectedPlan === "monthly" ? "#F0FDF8" : "#F9FAFB",
                       borderColor: selectedPlan === "monthly" ? "#047857" : "#E5E7EB",
                     },
                   ]}
                 >
-                  <View style={styles.planLeft}>
-                    <View style={styles.planNameRow}>
-                      <Text style={[styles.planName, { color: theme.colors.foreground }]}>Monthly</Text>
-                      <View style={styles.bestValueBadge}>
-                        <Text style={styles.bestValueText}>Best Value</Text>
-                      </View>
+                  <Text style={styles.planCardLabel}>Monthly</Text>
+                  <Text style={styles.planCardPrice}>{monthlyPkg!.product.priceString}</Text>
+                  {selectedPlan === "monthly" ? (
+                    <View style={styles.planRadioFilled}>
+                      <View style={styles.planRadioInner} />
                     </View>
-                    <Text style={[styles.planTrialText, { color: "#047857" }]}>
-                      3-day free trial
-                    </Text>
-                    <Text style={[styles.planPrice, { color: theme.colors.mutedForeground }]}>
-                      then {monthlyPkg!.product.priceString}/month
-                    </Text>
+                  ) : (
+                    <View style={styles.planRadioEmpty} />
+                  )}
+                </Pressable>
+
+                <View>
+                  <View style={styles.saveBadge}>
+                    <Text style={styles.saveBadgeText}>SAVE 44%</Text>
                   </View>
-                  <View style={styles.planCheck}>
-                    {selectedPlan === "monthly" ? (
-                      <View style={styles.checkFilled}>
-                        <Feather name="check" size={14} color="#fff" />
+                  <Pressable
+                    onPress={() => handleSelectPlan("weekly")}
+                    style={[
+                      styles.planCardSide,
+                      styles.planCardRight,
+                      {
+                        backgroundColor: selectedPlan === "weekly" ? "#065F46" : "#14532D",
+                        borderColor: selectedPlan === "weekly" ? "#34D399" : "#1A6B3C",
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.planCardLabel, { color: "rgba(255,255,255,0.7)" }]}>Weekly</Text>
+                    <Text style={[styles.planCardPrice, { color: "#FFFFFF" }]}>{weeklyPkg!.product.priceString}</Text>
+                    {selectedPlan === "weekly" ? (
+                      <View style={[styles.planRadioFilled, { borderColor: "#34D399" }]}>
+                        <View style={[styles.planRadioInner, { backgroundColor: "#34D399" }]} />
                       </View>
                     ) : (
-                      <View style={[styles.radioOuter, { borderColor: "#D1D5DB" }]} />
+                      <View style={[styles.planRadioEmpty, { borderColor: "rgba(255,255,255,0.3)" }]} />
                     )}
-                  </View>
-                </Pressable>
-              </>
-            ) : (
-              <View style={[styles.planCard, { backgroundColor: planCardBg, borderColor: "#047857" }]}>
-                <View style={styles.planLeft}>
-                  <Text style={[styles.planTrialText, { color: "#047857", fontSize: 16 }]}>
-                    3-Day Free Trial
-                  </Text>
-                  <Text style={[styles.planPrice, { color: theme.colors.mutedForeground }]}>
-                    then {getSelectedPrice()}/{getSelectedPeriod()}
-                  </Text>
+                  </Pressable>
                 </View>
-                <View style={styles.checkFilled}>
-                  <Feather name="check" size={14} color="#fff" />
+              </View>
+            ) : (
+              <View style={[styles.planCardSide, { borderColor: "#047857", backgroundColor: "#F0FDF8", flex: 1 }]}>
+                <Text style={styles.planCardLabel}>3-Day Free Trial</Text>
+                <Text style={styles.planCardPrice}>{getSelectedPrice()}/{getSelectedPeriod()}</Text>
+                <View style={styles.planRadioFilled}>
+                  <View style={styles.planRadioInner} />
                 </View>
               </View>
             )}
           </View>
 
-          {/* CTA */}
           <Animated.View entering={FadeInDown.delay(300).duration(480)} style={styles.ctaWrap}>
             <Pressable
               onPress={handleStartTrial}
@@ -357,7 +349,7 @@ export default function PaywallScreen() {
               style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1, width: "100%" }]}
             >
               <LinearGradient
-                colors={["#059669", "#047857", "#065F46"]}
+                colors={["#0A3622", "#14532D", "#065F46"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={[styles.ctaButton, packagesLoading && { opacity: 0.75 }]}
@@ -379,89 +371,78 @@ export default function PaywallScreen() {
             </Pressable>
 
             <View style={styles.ctaNoteRow}>
-              <Feather name="lock" size={12} color={theme.colors.mutedForeground} />
-              <Text style={[styles.ctaNote, { color: theme.colors.mutedForeground }]}>
-                No charge for 3 days. Cancel anytime.
+              <Feather name="lock" size={12} color="#9CA3AF" />
+              <Text style={styles.ctaNote}>
+                No charge for 3 days · Cancel anytime
               </Text>
             </View>
           </Animated.View>
 
-          {/* Footer */}
           <View style={styles.footer}>
             <Pressable onPress={handleRestore} disabled={isLoading || isRestoring}>
               {isRestoring ? (
                 <ActivityIndicator size="small" color="#047857" />
               ) : (
-                <Text style={[styles.footerLink, { color: theme.colors.mutedForeground }]}>
-                  Restore Purchase
-                </Text>
+                <Text style={styles.footerLink}>Restore Purchase</Text>
               )}
             </Pressable>
-            <Text style={[styles.footerDot, { color: theme.colors.mutedForeground }]}>·</Text>
+            <Text style={styles.footerDot}>·</Text>
             <Pressable onPress={() => Linking.openURL(TERMS_URL)}>
-              <Text style={[styles.footerLink, { color: theme.colors.mutedForeground }]}>
-                Terms
-              </Text>
+              <Text style={styles.footerLink}>Terms</Text>
             </Pressable>
-            <Text style={[styles.footerDot, { color: theme.colors.mutedForeground }]}>·</Text>
+            <Text style={styles.footerDot}>·</Text>
             <Pressable onPress={() => Linking.openURL(PRIVACY_URL)}>
-              <Text style={[styles.footerLink, { color: theme.colors.mutedForeground }]}>
-                Privacy
-              </Text>
+              <Text style={styles.footerLink}>Privacy</Text>
             </Pressable>
           </View>
 
-          {/* Legal disclosure */}
-          <Text style={[styles.legalText, { color: theme.colors.mutedForeground }]}>
+          <Text style={styles.legalText}>
             After your 3-day free trial, your subscription automatically renews at {getSelectedPrice()}/{getSelectedPeriod()}.
             Payment will be charged to your Apple ID account at confirmation of purchase. Subscription
             automatically renews unless canceled at least 24 hours before the end of the current period.
             Manage or cancel in Settings → Apple ID → Subscriptions.
           </Text>
-        </Animated.View>
+        </View>
       </ScrollView>
-    </LinearGradient>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#FFFFFF",
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+  },
+  heroSection: {
+    paddingHorizontal: 24,
+    paddingBottom: 32,
+    alignItems: "center",
   },
   closeButton: {
-    position: "absolute",
+    position: "absolute" as const,
     right: 16,
+    top: 12,
     zIndex: 10,
   },
   closeCircle: {
     width: 34,
     height: 34,
     borderRadius: 17,
+    backgroundColor: "rgba(255,255,255,0.12)",
     alignItems: "center",
     justifyContent: "center",
   },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
+  heroContent: {
     alignItems: "center",
-  },
-  card: {
-    width: "100%",
-    borderRadius: 28,
-    paddingHorizontal: 24,
-    paddingTop: 36,
-    paddingBottom: 28,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 24,
-    elevation: 10,
+    marginTop: 32,
   },
   iconWrap: {
-    marginBottom: 24,
+    marginBottom: 20,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -470,117 +451,195 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: "rgba(4, 120, 87, 0.15)",
+    backgroundColor: "rgba(212, 169, 38, 0.15)",
   },
   iconCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#047857",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.45,
-    shadowRadius: 14,
-    elevation: 8,
   },
-  contextBanner: {
-    flexDirection: "row",
-    alignItems: "center",
+  proBadge: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
     gap: 6,
-    backgroundColor: "rgba(4, 120, 87, 0.12)",
-    borderRadius: 20,
-    paddingVertical: 6,
     paddingHorizontal: 14,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "rgba(4, 120, 87, 0.25)",
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginBottom: 20,
   },
-  contextBannerText: {
-    color: "#047857",
+  proBadgeText: {
     fontSize: 13,
-    fontWeight: "600" as const,
+    fontWeight: "800" as const,
+    color: "#3D2E00",
+    letterSpacing: 0.8,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: "800",
-    textAlign: "center",
-    marginBottom: 10,
+  heroTitle: {
+    fontSize: 30,
+    fontWeight: "800" as const,
+    color: "#FFFFFF",
+    textAlign: "center" as const,
     letterSpacing: -0.5,
-    lineHeight: 34,
+    lineHeight: 38,
+    marginBottom: 12,
   },
-  subtitle: {
+  heroSubtitle: {
     fontSize: 15,
-    textAlign: "center",
+    color: "rgba(255,255,255,0.55)",
+    textAlign: "center" as const,
     lineHeight: 22,
-    marginBottom: 28,
-    paddingHorizontal: 4,
+  },
+  contentSection: {
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    marginTop: -16,
   },
   featuresList: {
-    width: "100%",
-    gap: 10,
+    gap: 4,
     marginBottom: 24,
   },
   featureRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 12,
-    borderWidth: 1,
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    paddingVertical: 16,
+    paddingHorizontal: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
   },
   featureIconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: "#F0FDF8",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 14,
+  },
+  featureTextWrap: {
+    flex: 1,
+  },
+  featureTitle: {
+    fontSize: 16,
+    fontWeight: "600" as const,
+    color: "#111827",
+    marginBottom: 2,
+  },
+  featureDesc: {
+    fontSize: 13,
+    color: "#9CA3AF",
+    lineHeight: 18,
+  },
+  featureCheck: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: "#047857",
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: 12,
+  },
+  planCards: {
+    marginBottom: 20,
+  },
+  planCardsRow: {
+    flexDirection: "row" as const,
+    gap: 10,
+  },
+  planCardSide: {
+    flex: 1,
+    borderRadius: 16,
+    borderWidth: 2,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    alignItems: "center" as const,
+  },
+  planCardRight: {
+  },
+  planCardLabel: {
+    fontSize: 14,
+    fontWeight: "500" as const,
+    color: "#6B7280",
+    marginBottom: 4,
+  },
+  planCardPrice: {
+    fontSize: 22,
+    fontWeight: "800" as const,
+    color: "#111827",
+    marginBottom: 10,
+  },
+  planRadioFilled: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: "#047857",
     alignItems: "center",
     justifyContent: "center",
   },
-  featureText: {
-    fontSize: 14,
-    fontWeight: "500",
-    flex: 1,
+  planRadioInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#047857",
   },
-  planCards: {
-    width: "100%",
-    gap: 10,
-    marginBottom: 24,
-  },
-  planCard: {
-    width: "100%",
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 16,
+  planRadioEmpty: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     borderWidth: 2,
-    paddingHorizontal: 18,
-    paddingVertical: 14,
+    borderColor: "#D1D5DB",
+  },
+  saveBadge: {
+    position: "absolute" as const,
+    top: -10,
+    right: 10,
+    zIndex: 1,
+    backgroundColor: "#EF4444",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  saveBadgeText: {
+    fontSize: 10,
+    fontWeight: "800" as const,
+    color: "#FFFFFF",
+    letterSpacing: 0.5,
   },
   skeletonCard: {
-    height: 72,
+    height: 100,
     borderWidth: 1,
+    borderColor: "#E5E7EB",
+    backgroundColor: "#F3F4F6",
   },
   errorCard: {
-    width: "100%",
+    width: "100%" as const,
     borderRadius: 16,
     borderWidth: 1,
+    borderColor: "#FECACA",
+    backgroundColor: "#FEF2F2",
     paddingVertical: 22,
     paddingHorizontal: 20,
-    alignItems: "center",
+    alignItems: "center" as const,
     gap: 8,
   },
   errorTitle: {
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "700" as const,
+    color: "#111827",
     marginTop: 2,
   },
   errorSub: {
     fontSize: 13,
-    textAlign: "center",
+    color: "#6B7280",
+    textAlign: "center" as const,
   },
   retryButton: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
     gap: 6,
     marginTop: 6,
     paddingVertical: 9,
@@ -588,114 +647,65 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     borderColor: "#047857",
+    backgroundColor: "#FFF",
   },
   retryText: {
     color: "#047857",
     fontSize: 14,
-    fontWeight: "700",
-  },
-  planLeft: {
-    flex: 1,
-  },
-  planNameRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 2,
-  },
-  planName: {
-    fontSize: 17,
-    fontWeight: "700",
-  },
-  planTrialText: {
-    fontSize: 14,
-    fontWeight: "700",
-    marginBottom: 2,
-  },
-  bestValueBadge: {
-    backgroundColor: "#047857",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  bestValueText: {
-    color: "#fff",
-    fontSize: 11,
-    fontWeight: "700",
-  },
-  planPrice: {
-    fontSize: 13,
-  },
-  planCheck: {
-    marginLeft: 12,
-  },
-  checkFilled: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: "#047857",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  radioOuter: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    borderWidth: 2,
+    fontWeight: "700" as const,
   },
   ctaWrap: {
-    width: "100%",
-    alignItems: "center",
+    width: "100%" as const,
+    alignItems: "center" as const,
     marginBottom: 20,
   },
   ctaButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
     paddingVertical: 19,
     borderRadius: 16,
     gap: 10,
-    width: "100%",
-    shadowColor: "#047857",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.45,
-    shadowRadius: 16,
-    elevation: 8,
+    width: "100%" as const,
   },
   ctaButtonText: {
     color: "#fff",
     fontSize: 18,
-    fontWeight: "800",
+    fontWeight: "800" as const,
     letterSpacing: 0.2,
   },
   ctaNoteRow: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
     gap: 5,
     marginTop: 10,
   },
   ctaNote: {
     fontSize: 13,
+    color: "#9CA3AF",
   },
   footer: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
     gap: 6,
     marginBottom: 16,
-    flexWrap: "wrap",
-    justifyContent: "center",
+    flexWrap: "wrap" as const,
+    justifyContent: "center" as const,
   },
   footerLink: {
     fontSize: 13,
-    fontWeight: "500",
+    fontWeight: "500" as const,
+    color: "#6B7280",
   },
   footerDot: {
     fontSize: 13,
+    color: "#6B7280",
   },
   legalText: {
     fontSize: 11,
-    textAlign: "center",
+    textAlign: "center" as const,
     lineHeight: 16,
     paddingHorizontal: 4,
+    color: "#9CA3AF",
   },
 });
