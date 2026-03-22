@@ -938,11 +938,9 @@ export default function SearchResultsScreen() {
             ) : null}
 
             </View>
-            </LinearGradient>
-            <View style={styles.heroFadeBottom} />
 
-            <View style={styles.belowHeroContent}>
-            <Text style={[styles.sectionTitle, { color: theme.colors.foreground }]}>
+            <View style={styles.belowHeroContentDark}>
+            <Text style={[styles.sectionTitle, { color: "#FFFFFF" }]}>
               Active Listings ({allListings.length})
             </Text>
 
@@ -964,8 +962,8 @@ export default function SearchResultsScreen() {
                     style={[
                       styles.sortChip,
                       {
-                        backgroundColor: sortOption === option ? theme.colors.primary : theme.colors.muted,
-                        borderColor: sortOption === option ? theme.colors.primary : theme.colors.border,
+                        backgroundColor: sortOption === option ? "#4ADE80" : "rgba(255,255,255,0.12)",
+                        borderColor: sortOption === option ? "#4ADE80" : "rgba(255,255,255,0.2)",
                       },
                     ]}
                   >
@@ -973,7 +971,7 @@ export default function SearchResultsScreen() {
                       style={[
                         styles.sortChipText,
                         {
-                          color: sortOption === option ? "#FFFFFF" : theme.colors.mutedForeground,
+                          color: sortOption === option ? "#14532D" : "rgba(255,255,255,0.7)",
                         },
                       ]}
                     >
@@ -984,12 +982,13 @@ export default function SearchResultsScreen() {
               </ScrollView>
             ) : null}
             </View>
+            </LinearGradient>
           </View>
         }
         renderItem={renderListing}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Text style={[styles.emptyText, { color: theme.colors.mutedForeground }]}>
+            <Text style={[styles.emptyText, { color: "rgba(255,255,255,0.6)" }]}>
               No listings found
             </Text>
           </View>
@@ -1017,12 +1016,14 @@ export default function SearchResultsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#14532D",
   },
   list: {
     flex: 1,
   },
   listContent: {
     paddingHorizontal: 0,
+    paddingBottom: 80,
   },
   heroSection: {
     paddingHorizontal: 16,
