@@ -150,37 +150,35 @@ export default function ProfileScreen() {
           </Pressable>
         </View>
       ) : (
-        <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
+        <LinearGradient
+          colors={["#14532D", "#14532D", "#14532D"]}
+          style={styles.subscriptionGradient}
+        >
           <View style={styles.sectionHeader}>
-            <Feather name="zap" size={20} color={theme.colors.primary} />
-            <Text style={[styles.sectionTitle, { color: theme.colors.foreground }]}>
+            <Feather name="zap" size={20} color="#F0D264" />
+            <Text style={[styles.sectionTitle, { color: "#FFFFFF" }]}>
               Subscription
             </Text>
-            <View style={[styles.planBadge, { backgroundColor: theme.colors.muted }]}>
-              <Text style={[styles.planBadgeText, { color: theme.colors.mutedForeground }]}>Free</Text>
+            <View style={[styles.planBadge, { backgroundColor: "rgba(255,255,255,0.15)" }]}>
+              <Text style={[styles.planBadgeText, { color: "#FFFFFF" }]}>Free</Text>
             </View>
           </View>
-
+          <Text style={styles.subGradientHint}>
+            {freeScansRemaining > 0
+              ? `${freeScansRemaining} free scan${freeScansRemaining === 1 ? "" : "s"} remaining — try before you buy`
+              : "You've used all your free scans — start your 3-day free trial"}
+          </Text>
           <Pressable
             onPress={handleUpgrade}
-            style={({ pressed }) => [styles.proUpsellCard, { opacity: pressed ? 0.9 : 1 }]}
+            style={({ pressed }) => [
+              styles.subGradientButton,
+              { opacity: pressed ? 0.85 : 1 }
+            ]}
           >
-            <View style={styles.proUpsellLeft}>
-              <LinearGradient
-                colors={["#F5D87A", "#D4A926", "#E8C84A", "#D4A926"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.proUpsellBadge}
-              >
-                <Feather name="star" size={11} color="#3D2E00" />
-                <Text style={styles.proUpsellBadgeText}>PRO</Text>
-              </LinearGradient>
-              <Text style={styles.proUpsellTitle}>Unlock sold prices & Buy Score</Text>
-              <Text style={styles.proUpsellSubtext}>3-day free trial · $8.99/mo after</Text>
-            </View>
-            <Feather name="chevron-right" size={18} color="rgba(255,255,255,0.4)" />
+            <Feather name="zap" size={18} color="#3D2E00" />
+            <Text style={styles.subGradientButtonText}>Upgrade to Pro</Text>
           </Pressable>
-
+          
           <Pressable
             onPress={handleRestorePurchases}
             disabled={isRestoring}
@@ -190,14 +188,18 @@ export default function ProfileScreen() {
             ]}
           >
             {isRestoring ? (
-              <ActivityIndicator size="small" color={theme.colors.mutedForeground} />
+              <ActivityIndicator size="small" color="#F0D264" />
             ) : (
-              <Text style={[styles.restoreButtonText, { color: theme.colors.mutedForeground }]}>
+              <Text style={[styles.restoreButtonText, { color: "rgba(255,255,255,0.6)" }]}>
                 Restore Purchase
               </Text>
             )}
           </Pressable>
-        </View>
+          
+          <Text style={styles.subGradientDisclosure}>
+            Payment will be charged to your Apple ID account. Subscription automatically renews unless canceled at least 24 hours before the end of the current period. Manage or cancel in Settings → Apple ID → Subscriptions.
+          </Text>
+        </LinearGradient>
       )}
 
       <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
@@ -443,46 +445,39 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     marginTop: 12,
   },
-  proUpsellCard: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    backgroundColor: "#14532D",
-    borderRadius: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    marginBottom: 12,
+  subscriptionGradient: {
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
     borderWidth: 1.5,
     borderColor: "rgba(212, 169, 38, 0.55)",
   },
-  proUpsellLeft: {
-    flex: 1,
-    gap: 4,
+  subGradientHint: {
+    fontSize: 14,
+    marginBottom: 16,
+    color: "rgba(255,255,255,0.65)",
   },
-  proUpsellBadge: {
+  subGradientButton: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    alignSelf: "flex-start" as const,
-    marginBottom: 2,
+    justifyContent: "center" as const,
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 8,
+    backgroundColor: "#F0D264",
     overflow: "hidden" as const,
   },
-  proUpsellBadgeText: {
-    fontSize: 11,
-    fontWeight: "800" as const,
+  subGradientButtonText: {
     color: "#3D2E00",
-    letterSpacing: 0.5,
-  },
-  proUpsellTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: "700" as const,
-    color: "#F0D264",
   },
-  proUpsellSubtext: {
-    fontSize: 12,
-    color: "rgba(255,255,255,0.6)",
+  subGradientDisclosure: {
+    fontSize: 11,
+    textAlign: "center" as const,
+    lineHeight: 16,
+    marginTop: 12,
+    color: "rgba(255,255,255,0.35)",
   },
   manageButton: {
     flexDirection: "row",
