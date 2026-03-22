@@ -434,7 +434,7 @@ export default function ScanScreen() {
               <Feather name="settings" size={22} color="rgba(255,255,255,0.6)" />
             </Pressable>
           </View>
-            <Text style={styles.heroLabel}>MARKET INTELLIGENCE</Text>
+
             <Text style={styles.heroTitle}>
               Scan & Price
             </Text>
