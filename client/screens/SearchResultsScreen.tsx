@@ -518,7 +518,8 @@ export default function SearchResultsScreen() {
                 <ActivityIndicator size="small" color="#F0D264" />
               ) : rcReady && !isPro && !ebaySoldData ? (
                 <View style={styles.ebaySoldButtonContent}>
-                  <Text style={styles.ebaySoldButtonTitle}>See what items actually sell for</Text>
+                  <Text style={styles.ebaySoldButtonTitle}>See eBay Sales Data</Text>
+                  <Text style={styles.ebaySoldButtonSubtitle}>See what items actually sell for</Text>
                   <View style={styles.ebaySoldButtonCta}>
                     <Feather name="lock" size={14} color="#F0D264" />
                     <Text style={styles.ebaySoldButtonCtaText}>Try Pro free for 3 days</Text>
@@ -1484,6 +1485,11 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 17,
     fontWeight: "700",
+  },
+  ebaySoldButtonSubtitle: {
+    color: "rgba(255,255,255,0.6)",
+    fontSize: 13,
+    fontWeight: "500",
   },
   ebaySoldButtonCta: {
     flexDirection: "row",
