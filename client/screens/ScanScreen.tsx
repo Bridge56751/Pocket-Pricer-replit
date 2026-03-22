@@ -681,7 +681,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "center",
     marginBottom: 20,
   },
   headerLeft: {
@@ -704,6 +704,8 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   headerIcon: {
+    position: "absolute" as const,
+    right: 0,
     width: 40,
     height: 40,
     alignItems: "center",
