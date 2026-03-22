@@ -439,6 +439,24 @@ export default function ScanScreen() {
               Point your camera at any product to get instant market pricing and sales data
             </Text>
 
+            <View style={styles.heroStats}>
+              <View style={styles.heroStatItem}>
+                <Text style={styles.heroStatValue}>
+                  {recentScans.filter(s => {
+                    const d = new Date(s.searchedAt);
+                    const now = new Date();
+                    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+                  }).length}
+                </Text>
+                <Text style={styles.heroStatLabel}>Scans Today</Text>
+              </View>
+              <View style={styles.heroStatDivider} />
+              <View style={styles.heroStatItem}>
+                <Text style={styles.heroStatValue}>{recentScans.length}</Text>
+                <Text style={styles.heroStatLabel}>Total Scans</Text>
+              </View>
+            </View>
+
             <Pressable
               onPress={handleScanProduct}
               style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}
@@ -720,6 +738,37 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 24,
     marginBottom: 0,
+  },
+  heroStats: {
+    flexDirection: "row" as const,
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderRadius: 12,
+    paddingVertical: 12,
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  heroStatItem: {
+    flex: 1,
+    alignItems: "center" as const,
+  },
+  heroStatValue: {
+    fontSize: 22,
+    fontWeight: "700" as const,
+    color: "#FFFFFF",
+  },
+  heroStatLabel: {
+    fontSize: 11,
+    fontWeight: "500" as const,
+    color: "rgba(255,255,255,0.55)",
+    marginTop: 2,
+    textTransform: "uppercase" as const,
+    letterSpacing: 0.5,
+  },
+  heroStatDivider: {
+    width: 1,
+    height: 28,
+    backgroundColor: "rgba(255,255,255,0.15)",
   },
   belowHeroContent: {
     paddingHorizontal: 20,
