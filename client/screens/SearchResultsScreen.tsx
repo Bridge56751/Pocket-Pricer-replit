@@ -938,8 +938,13 @@ export default function SearchResultsScreen() {
             ) : null}
 
             </View>
-            <View style={styles.heroFadeBottom} />
             </LinearGradient>
+            <LinearGradient
+              colors={["#1A6B3C", "#F9FAFB"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              style={styles.heroFadeBottom}
+            />
 
             <View style={styles.belowHeroContent}>
             <Text style={[styles.sectionTitle, { color: theme.colors.foreground }]}>
@@ -1028,9 +1033,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
     paddingBottom: 0,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    overflow: "hidden" as const,
   },
   heroBackButton: {
     width: 38,
@@ -1049,7 +1051,7 @@ const styles = StyleSheet.create({
     paddingTop: 4,
   },
   heroFadeBottom: {
-    height: 32,
+    height: 40,
   },
   productCard: {
     flexDirection: "row",
