@@ -1,50 +1,23 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, Pressable, ScrollView } from "react-native";
+import React, { useState } from "react";
+import { View, Text, StyleSheet, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import Animated, {
   FadeInUp,
   FadeInDown,
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  withTiming,
-  withRepeat,
-  withSequence,
-  Easing,
 } from "react-native-reanimated";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 
 const ONBOARDING_COMPLETE_KEY = "@pocket_pricer_onboarding_complete";
 
-type OnboardingStep = "categories" | "challenges" | "solution" | "ready";
-const STEPS: OnboardingStep[] = ["categories", "challenges", "solution", "ready"];
+type OnboardingStep = "problem" | "solution" | "features" | "trial";
+const STEPS: OnboardingStep[] = ["problem", "solution", "features", "trial"];
 
 interface OnboardingScreenProps {
   onComplete: () => void;
   isReplay?: boolean;
 }
-
-const CATEGORIES = [
-  { id: "sneakers", label: "Sneakers", icon: "sunrise" as const, color: "#3B82F6", bg: "#EFF6FF" },
-  { id: "electronics", label: "Electronics", icon: "smartphone" as const, color: "#8B5CF6", bg: "#F5F3FF" },
-  { id: "clothing", label: "Clothing", icon: "shopping-bag" as const, color: "#EC4899", bg: "#FDF2F8" },
-  { id: "toys", label: "Toys & Games", icon: "box" as const, color: "#F59E0B", bg: "#FFFBEB" },
-  { id: "books", label: "Books & Media", icon: "book-open" as const, color: "#10B981", bg: "#ECFDF5" },
-  { id: "home", label: "Home & Kitchen", icon: "home" as const, color: "#EF4444", bg: "#FEF2F2" },
-  { id: "sports", label: "Sports & Outdoors", icon: "activity" as const, color: "#06B6D4", bg: "#ECFEFF" },
-  { id: "vintage", label: "Vintage & Collectibles", icon: "award" as const, color: "#D97706", bg: "#FFF7ED" },
-];
-
-const CHALLENGES = [
-  { id: "pricing", label: "Not sure what things are worth", icon: "help-circle" as const, color: "#EF4444", bg: "#FEF2F2" },
-  { id: "research", label: "Too much time researching", icon: "clock" as const, color: "#F59E0B", bg: "#FFFBEB" },
-  { id: "bad-buys", label: "Bought items that didn't sell", icon: "thumbs-down" as const, color: "#8B5CF6", bg: "#F5F3FF" },
-  { id: "fees", label: "Surprised by platform fees", icon: "alert-circle" as const, color: "#EC4899", bg: "#FDF2F8" },
-  { id: "slow", label: "Miss deals by being too slow", icon: "zap-off" as const, color: "#3B82F6", bg: "#EFF6FF" },
-  { id: "competition", label: "Hard to compete with other sellers", icon: "users" as const, color: "#06B6D4", bg: "#ECFEFF" },
-];
 
 function ProgressBar({ current, total }: { current: number; total: number }) {
   return (
@@ -54,7 +27,7 @@ function ProgressBar({ current, total }: { current: number; total: number }) {
           key={i}
           style={[
             progressStyles.segment,
-            { backgroundColor: i <= current ? "#047857" : "#E5E7EB" },
+            { backgroundColor: i <= current ? "#10B981" : "rgba(255,255,255,0.2)" },
           ]}
         />
       ))}
@@ -65,7 +38,7 @@ function ProgressBar({ current, total }: { current: number; total: number }) {
 const progressStyles = StyleSheet.create({
   bar: {
     flexDirection: "row",
-    gap: 4,
+    gap: 6,
     height: 4,
   },
   segment: {
@@ -74,421 +47,184 @@ const progressStyles = StyleSheet.create({
   },
 });
 
-function GridTile({
-  label,
-  icon,
-  color,
-  bg,
-  selected,
-  onPress,
-  delay,
-}: {
-  label: string;
-  icon: any;
-  color: string;
-  bg: string;
-  selected: boolean;
-  onPress: () => void;
-  delay: number;
-}) {
+function ProblemStep() {
   return (
-    <Animated.View entering={FadeInUp.delay(delay).duration(350)} style={tileStyles.wrapper}>
-      <Pressable
-        onPress={onPress}
-        style={({ pressed }) => [
-          tileStyles.tile,
-          { backgroundColor: selected ? color + "12" : bg, borderColor: selected ? color : "#E5E7EB", opacity: pressed ? 0.85 : 1 },
-        ]}
-      >
-        <View style={[tileStyles.iconCircle, { backgroundColor: selected ? color + "20" : color + "12" }]}>
-          <Feather name={icon} size={24} color={color} />
-        </View>
-        <Text style={[tileStyles.label, { color: selected ? color : "#374151" }]} numberOfLines={2}>
-          {label}
-        </Text>
-        {selected ? (
-          <View style={[tileStyles.check, { backgroundColor: color }]}>
-            <Feather name="check" size={12} color="#fff" />
+    <View style={pageStyles.container}>
+      <Animated.View entering={FadeInUp.delay(100).duration(500)} style={pageStyles.iconWrap}>
+        <View style={pageStyles.iconSquare}>
+          <View style={pageStyles.alertCircle}>
+            <Feather name="alert-circle" size={28} color="#F97316" />
           </View>
-        ) : null}
-      </Pressable>
-    </Animated.View>
-  );
-}
-
-const tileStyles = StyleSheet.create({
-  wrapper: {
-    width: "48%" as any,
-    marginBottom: 10,
-  },
-  tile: {
-    alignItems: "center",
-    paddingVertical: 18,
-    paddingHorizontal: 8,
-    borderRadius: 16,
-    borderWidth: 2,
-    position: "relative",
-  },
-  iconCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 8,
-  },
-  label: {
-    fontSize: 13,
-    fontWeight: "700",
-    textAlign: "center",
-    lineHeight: 17,
-  },
-  check: {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
-
-function CategoriesStep({
-  selections,
-  onToggle,
-}: {
-  selections: Set<string>;
-  onToggle: (id: string) => void;
-}) {
-  return (
-    <View style={stepStyles.container}>
-      <Animated.Text entering={FadeInUp.delay(50).duration(400)} style={stepStyles.stepLabel}>
-        STEP 1 OF 4
-      </Animated.Text>
-      <Animated.Text entering={FadeInUp.delay(100).duration(400)} style={stepStyles.title}>
-        What do you resell?
-      </Animated.Text>
-      <Animated.Text entering={FadeInUp.delay(150).duration(400)} style={stepStyles.subtitle}>
-        Pick the categories you buy and flip
-      </Animated.Text>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={stepStyles.gridScroll}
-      >
-        <View style={stepStyles.grid}>
-          {CATEGORIES.map((cat, i) => (
-            <GridTile
-              key={cat.id}
-              label={cat.label}
-              icon={cat.icon}
-              color={cat.color}
-              bg={cat.bg}
-              selected={selections.has(cat.id)}
-              onPress={() => onToggle(cat.id)}
-              delay={200 + i * 60}
-            />
-          ))}
         </View>
-      </ScrollView>
+      </Animated.View>
+
+      <Animated.Text entering={FadeInUp.delay(250).duration(400)} style={pageStyles.label}>
+        THE PROBLEM
+      </Animated.Text>
+
+      <Animated.View entering={FadeInUp.delay(350).duration(500)}>
+        <Text style={pageStyles.title}>
+          Listing prices{"\n"}are <Text style={pageStyles.titleHighlight}>misleading</Text>
+        </Text>
+      </Animated.View>
+
+      <Animated.Text entering={FadeInUp.delay(500).duration(500)} style={pageStyles.subtitle}>
+        Most prices you see are what sellers ask — not what buyers actually pay.
+      </Animated.Text>
     </View>
   );
 }
-
-function ChallengesStep({
-  selections,
-  onToggle,
-}: {
-  selections: Set<string>;
-  onToggle: (id: string) => void;
-}) {
-  return (
-    <View style={stepStyles.container}>
-      <Animated.Text entering={FadeInUp.delay(50).duration(400)} style={stepStyles.stepLabel}>
-        STEP 2 OF 4
-      </Animated.Text>
-      <Animated.Text entering={FadeInUp.delay(100).duration(400)} style={stepStyles.title}>
-        Sound familiar?
-      </Animated.Text>
-      <Animated.Text entering={FadeInUp.delay(150).duration(400)} style={stepStyles.subtitle}>
-        Select your biggest reselling headaches
-      </Animated.Text>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={stepStyles.challengeScroll}
-      >
-        {CHALLENGES.map((ch, i) => (
-          <Animated.View key={ch.id} entering={FadeInUp.delay(200 + i * 80).duration(400)}>
-            <Pressable
-              onPress={() => onToggle(ch.id)}
-              style={({ pressed }) => [
-                challengeStyles.row,
-                {
-                  backgroundColor: selections.has(ch.id) ? ch.color + "10" : "#F9FAFB",
-                  borderColor: selections.has(ch.id) ? ch.color : "#E5E7EB",
-                  opacity: pressed ? 0.85 : 1,
-                },
-              ]}
-            >
-              <View style={[challengeStyles.iconBox, { backgroundColor: ch.bg }]}>
-                <Feather name={ch.icon} size={22} color={ch.color} />
-              </View>
-              <Text
-                style={[
-                  challengeStyles.text,
-                  { color: selections.has(ch.id) ? ch.color : "#374151" },
-                ]}
-              >
-                {ch.label}
-              </Text>
-              {selections.has(ch.id) ? (
-                <View style={[challengeStyles.check, { backgroundColor: ch.color }]}>
-                  <Feather name="check" size={13} color="#fff" />
-                </View>
-              ) : (
-                <View style={challengeStyles.emptyCheck} />
-              )}
-            </Pressable>
-          </Animated.View>
-        ))}
-      </ScrollView>
-    </View>
-  );
-}
-
-const challengeStyles = StyleSheet.create({
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 14,
-    borderWidth: 2,
-    marginBottom: 10,
-    gap: 14,
-  },
-  iconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  text: {
-    flex: 1,
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  check: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  emptyCheck: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    borderWidth: 2,
-    borderColor: "#D1D5DB",
-  },
-});
 
 function SolutionStep() {
-  const features = [
-    { icon: "camera" as const, title: "Scan any item", desc: "Point, scan, get results in seconds", gradient: ["#3B82F6", "#2563EB"] as [string, string] },
-    { icon: "trending-up" as const, title: "Real sold prices", desc: "What buyers actually paid, not listing prices", gradient: ["#047857", "#065F46"] as [string, string] },
-    { icon: "zap" as const, title: "Buy Score 0-100", desc: "Instantly know if it's worth buying", gradient: ["#F59E0B", "#D97706"] as [string, string] },
-    { icon: "dollar-sign" as const, title: "Profit calculator", desc: "See your profit after all fees", gradient: ["#EF4444", "#DC2626"] as [string, string] },
-  ];
-
   return (
-    <View style={stepStyles.container}>
-      <Animated.Text entering={FadeInUp.delay(50).duration(400)} style={stepStyles.stepLabel}>
-        STEP 3 OF 4
+    <View style={pageStyles.container}>
+      <Animated.View entering={FadeInUp.delay(100).duration(500)} style={pageStyles.iconWrap}>
+        <View style={pageStyles.iconSquare}>
+          <Feather name="check-circle" size={28} color="#10B981" />
+        </View>
+      </Animated.View>
+
+      <Animated.Text entering={FadeInUp.delay(250).duration(400)} style={pageStyles.label}>
+        THE SOLUTION
       </Animated.Text>
-      <Animated.Text entering={FadeInUp.delay(100).duration(400)} style={stepStyles.title}>
-        We solve all of that
+
+      <Animated.View entering={FadeInUp.delay(350).duration(500)}>
+        <Text style={pageStyles.title}>
+          See what items{"\n"}<Text style={pageStyles.titleHighlight}>actually sell for</Text>
+        </Text>
+      </Animated.View>
+
+      <Animated.Text entering={FadeInUp.delay(500).duration(500)} style={pageStyles.subtitle}>
+        Pocket Pricer shows you real sold prices from eBay, so you know exactly what buyers pay.
       </Animated.Text>
-      <Animated.Text entering={FadeInUp.delay(150).duration(400)} style={stepStyles.subtitle}>
-        Everything you need in one scan
-      </Animated.Text>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={stepStyles.solutionScroll}
-      >
-        {features.map((f, i) => (
-          <Animated.View key={f.title} entering={FadeInUp.delay(250 + i * 100).duration(400)}>
-            <View style={solutionStyles.card}>
-              <LinearGradient
-                colors={f.gradient}
-                style={solutionStyles.iconGradient}
-              >
-                <Feather name={f.icon} size={22} color="#fff" />
-              </LinearGradient>
-              <View style={solutionStyles.textWrap}>
-                <Text style={solutionStyles.cardTitle}>{f.title}</Text>
-                <Text style={solutionStyles.cardDesc}>{f.desc}</Text>
-              </View>
-              <Feather name="check-circle" size={20} color="#10B981" />
-            </View>
-          </Animated.View>
-        ))}
-        <Animated.View entering={FadeInUp.delay(700).duration(400)} style={solutionStyles.socialProof}>
-          <View style={solutionStyles.starsRow}>
-            {[0, 1, 2, 3, 4].map((i) => (
-              <Feather key={i} name="star" size={16} color="#F59E0B" />
-            ))}
-          </View>
-          <Text style={solutionStyles.socialText}>Trusted by thousands of resellers</Text>
-        </Animated.View>
-      </ScrollView>
     </View>
   );
 }
 
-const solutionStyles = StyleSheet.create({
-  card: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-    backgroundColor: "#FFFFFF",
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#F3F4F6",
-    marginBottom: 12,
-  },
-  iconGradient: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  textWrap: {
-    flex: 1,
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#111827",
-    marginBottom: 2,
-  },
-  cardDesc: {
-    fontSize: 13,
-    fontWeight: "400",
-    color: "#6B7280",
-    lineHeight: 17,
-  },
-  socialProof: {
-    alignItems: "center",
-    marginTop: 8,
-    paddingVertical: 16,
-  },
-  starsRow: {
-    flexDirection: "row",
-    gap: 2,
-    marginBottom: 6,
-  },
-  socialText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#6B7280",
-  },
-});
-
-function ReadyStep() {
-  const pulse = useSharedValue(1);
-
-  useEffect(() => {
-    pulse.value = withRepeat(
-      withSequence(
-        withTiming(1.06, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
-        withTiming(1, { duration: 1500, easing: Easing.inOut(Easing.ease) })
-      ),
-      -1,
-      true
-    );
-  }, []);
-
-  const pulseStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: pulse.value }],
-  }));
-
+function FeaturesStep() {
   return (
-    <View style={readyStyles.container}>
-      <Animated.View entering={FadeInUp.delay(100).duration(500)} style={pulseStyle}>
+    <View style={pageStyles.container}>
+      <Animated.View entering={FadeInUp.delay(100).duration(500)} style={pageStyles.iconWrap}>
+        <View style={pageStyles.iconSquare}>
+          <Feather name="zap" size={28} color="#F5D87A" />
+        </View>
+      </Animated.View>
+
+      <Animated.Text entering={FadeInUp.delay(250).duration(400)} style={pageStyles.label}>
+        HOW IT WORKS
+      </Animated.Text>
+
+      <Animated.View entering={FadeInUp.delay(350).duration(500)}>
+        <Text style={pageStyles.title}>
+          Scan. Price.{"\n"}<Text style={pageStyles.titleHighlight}>Profit.</Text>
+        </Text>
+      </Animated.View>
+
+      <Animated.Text entering={FadeInUp.delay(500).duration(500)} style={pageStyles.subtitle}>
+        Point your camera at any product, get instant prices from 4+ stores, and see your profit before you buy.
+      </Animated.Text>
+    </View>
+  );
+}
+
+function TrialStep() {
+  return (
+    <View style={pageStyles.container}>
+      <Animated.View entering={FadeInUp.delay(100).duration(500)} style={pageStyles.iconWrap}>
         <LinearGradient
           colors={["#F5D87A", "#D4A926", "#E8C84A", "#D4A926"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={readyStyles.iconBg}
+          style={pageStyles.iconSquare}
         >
-          <Feather name="tag" size={44} color="#3D2E00" style={{ transform: [{ scaleX: -1 }] }} />
+          <Feather name="tag" size={28} color="#3D2E00" style={{ transform: [{ scaleX: -1 }] }} />
         </LinearGradient>
       </Animated.View>
 
-      <Animated.View entering={FadeInUp.delay(250).duration(400)}>
+      <Animated.View entering={FadeInUp.delay(200).duration(400)}>
         <LinearGradient
           colors={["#F5D87A", "#D4A926", "#E8C84A", "#D4A926"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
-          style={readyStyles.proBadge}
+          style={pageStyles.proBadge}
         >
-          <Text style={readyStyles.proBadgeText}>POCKET PRICER PRO</Text>
+          <Text style={pageStyles.proBadgeText}>POCKET PRICER PRO</Text>
         </LinearGradient>
       </Animated.View>
 
-      <Animated.Text entering={FadeInUp.delay(350).duration(500)} style={readyStyles.title}>
-        Try Pro free for 3 days
-      </Animated.Text>
-      <Animated.Text entering={FadeInUp.delay(500).duration(500)} style={readyStyles.subtitle}>
+      <Animated.View entering={FadeInUp.delay(350).duration(500)}>
+        <Text style={pageStyles.title}>
+          Try Pro free{"\n"}for <Text style={pageStyles.titleGold}>3 days</Text>
+        </Text>
+      </Animated.View>
+
+      <Animated.Text entering={FadeInUp.delay(500).duration(500)} style={pageStyles.subtitle}>
         We want you to experience everything Pocket Pricer has to offer — unlimited scans, real sold prices, and profit tools — completely free.
       </Animated.Text>
 
-      <Animated.View entering={FadeInUp.delay(650).duration(400)} style={readyStyles.statsRow}>
-        <View style={readyStyles.stat}>
-          <Text style={readyStyles.statNumber}>3s</Text>
-          <Text style={readyStyles.statLabel}>Avg scan time</Text>
-        </View>
-        <View style={readyStyles.statDivider} />
-        <View style={readyStyles.stat}>
-          <Text style={readyStyles.statNumber}>4+</Text>
-          <Text style={readyStyles.statLabel}>Stores compared</Text>
-        </View>
-        <View style={readyStyles.statDivider} />
-        <View style={readyStyles.stat}>
-          <Text style={readyStyles.statNumber}>Free</Text>
-          <Text style={readyStyles.statLabel}>3-day trial</Text>
-        </View>
-      </Animated.View>
-
-      <Animated.View entering={FadeInUp.delay(800).duration(400)} style={readyStyles.trialBadge}>
+      <Animated.View entering={FadeInUp.delay(650).duration(400)} style={pageStyles.trialBadge}>
         <Feather name="shield" size={16} color="#D4A926" />
-        <Text style={readyStyles.trialText}>Cancel anytime. No commitment.</Text>
+        <Text style={pageStyles.trialBadgeText}>Cancel anytime. No commitment.</Text>
       </Animated.View>
     </View>
   );
 }
 
-const readyStyles = StyleSheet.create({
+const pageStyles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 28,
+    paddingHorizontal: 32,
   },
-  iconBg: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+  iconWrap: {
+    marginBottom: 24,
+  },
+  iconSquare: {
+    width: 88,
+    height: 88,
+    borderRadius: 22,
+    backgroundColor: "rgba(255,255,255,0.08)",
     alignItems: "center",
     justifyContent: "center",
+  },
+  alertCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(249,115,22,0.15)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: "700",
+    letterSpacing: 2,
+    color: "rgba(255,255,255,0.5)",
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    textAlign: "center",
+    lineHeight: 40,
     marginBottom: 16,
+  },
+  titleHighlight: {
+    color: "#F87171",
+  },
+  titleGold: {
+    color: "#F5D87A",
+  },
+  subtitle: {
+    fontSize: 17,
+    fontWeight: "400",
+    color: "rgba(255,255,255,0.55)",
+    textAlign: "center",
+    lineHeight: 25,
+    paddingHorizontal: 8,
   },
   proBadge: {
     flexDirection: "row",
@@ -504,75 +240,26 @@ const readyStyles = StyleSheet.create({
     letterSpacing: 1.5,
     color: "#3D2E00",
   },
-  title: {
-    fontSize: 28,
-    fontWeight: "800",
-    color: "#111827",
-    textAlign: "center",
-    marginBottom: 12,
-  },
-  subtitle: {
-    fontSize: 16,
-    fontWeight: "400",
-    color: "#6B7280",
-    textAlign: "center",
-    lineHeight: 23,
-    marginBottom: 28,
-    paddingHorizontal: 8,
-  },
-  statsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F0FDF4",
-    borderRadius: 16,
-    paddingVertical: 18,
-    paddingHorizontal: 20,
-    width: "100%",
-    justifyContent: "space-around",
-    marginBottom: 20,
-  },
-  stat: {
-    alignItems: "center",
-  },
-  statNumber: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: "#047857",
-    marginBottom: 2,
-  },
-  statLabel: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#6B7280",
-    textTransform: "uppercase",
-    letterSpacing: 0.3,
-  },
-  statDivider: {
-    width: 1,
-    height: 32,
-    backgroundColor: "#D1FAE5",
-  },
   trialBadge: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    marginTop: 24,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
     borderRadius: 20,
-    backgroundColor: "#ECFDF5",
   },
-  trialText: {
+  trialBadgeText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#047857",
+    color: "rgba(255,255,255,0.5)",
   },
 });
 
 export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   const insets = useSafeAreaInsets();
   const [stepIndex, setStepIndex] = useState(0);
-  const [categorySelections, setCategorySelections] = useState<Set<string>>(new Set());
-  const [challengeSelections, setChallengeSelections] = useState<Set<string>>(new Set());
   const [transitioning, setTransitioning] = useState(false);
 
   const currentStep = STEPS[stepIndex];
@@ -581,30 +268,6 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
   const handleComplete = async () => {
     await AsyncStorage.setItem(ONBOARDING_COMPLETE_KEY, "true");
     onComplete();
-  };
-
-  const toggleCategory = (id: string) => {
-    setCategorySelections((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const toggleChallenge = (id: string) => {
-    setChallengeSelections((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const canContinue = () => {
-    if (currentStep === "categories") return categorySelections.size > 0;
-    if (currentStep === "challenges") return challengeSelections.size > 0;
-    return true;
   };
 
   const goNext = () => {
@@ -629,14 +292,15 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
     }, 50);
   };
 
-  const ctaLabel = isLastStep ? "Start Free Trial" : "Continue";
-
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
+    <LinearGradient
+      colors={["#064E3B", "#065F46", "#047857", "#065F46"]}
+      style={[styles.container, { paddingTop: insets.top + 8 }]}
+    >
       <View style={styles.topBar}>
         {stepIndex > 0 ? (
           <Pressable onPress={goBack} hitSlop={12} style={styles.backBtn}>
-            <Feather name="arrow-left" size={22} color="#6B7280" />
+            <Feather name="arrow-left" size={22} color="rgba(255,255,255,0.5)" />
           </Pressable>
         ) : (
           <View style={styles.backBtn} />
@@ -650,14 +314,14 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
       </View>
 
       <View style={styles.content} key={currentStep}>
-        {currentStep === "categories" ? (
-          <CategoriesStep selections={categorySelections} onToggle={toggleCategory} />
-        ) : currentStep === "challenges" ? (
-          <ChallengesStep selections={challengeSelections} onToggle={toggleChallenge} />
+        {currentStep === "problem" ? (
+          <ProblemStep />
         ) : currentStep === "solution" ? (
           <SolutionStep />
+        ) : currentStep === "features" ? (
+          <FeaturesStep />
         ) : (
-          <ReadyStep />
+          <TrialStep />
         )}
       </View>
 
@@ -667,34 +331,30 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
       >
         <Pressable
           onPress={goNext}
-          disabled={!canContinue()}
           style={({ pressed }) => [
             styles.ctaButton,
-            canContinue() ? { opacity: pressed ? 0.85 : 1 } : { opacity: 0.35 },
+            { opacity: pressed ? 0.85 : 1 },
           ]}
         >
-          <LinearGradient
-            colors={isLastStep ? ["#F5D87A", "#D4A926", "#E8C84A"] : ["#047857", "#065F46"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.ctaGradient}
-          >
-            <Text style={[styles.ctaText, isLastStep ? { color: "#3D2E00" } : null]}>
-              {isLastStep ? "Claim Your Free Trial" : ctaLabel}
-            </Text>
-            <Feather name="arrow-right" size={20} color={isLastStep ? "#3D2E00" : "#fff"} />
-          </LinearGradient>
+          {isLastStep ? (
+            <LinearGradient
+              colors={["#F5D87A", "#D4A926", "#E8C84A"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.ctaGradient}
+            >
+              <Text style={[styles.ctaText, { color: "#3D2E00" }]}>Claim Your Free Trial</Text>
+              <Feather name="arrow-right" size={20} color="#3D2E00" />
+            </LinearGradient>
+          ) : (
+            <View style={styles.ctaOutline}>
+              <Text style={styles.ctaText}>Next</Text>
+              <Feather name="arrow-right" size={20} color="#fff" />
+            </View>
+          )}
         </Pressable>
-
-        {currentStep === "categories" || currentStep === "challenges" ? (
-          <Text style={styles.selectionCount}>
-            {currentStep === "categories"
-              ? `${categorySelections.size} selected`
-              : `${challengeSelections.size} selected`}
-          </Text>
-        ) : null}
       </Animated.View>
-    </View>
+    </LinearGradient>
   );
 }
 
@@ -711,51 +371,9 @@ export async function resetOnboarding(): Promise<void> {
   await AsyncStorage.removeItem(ONBOARDING_COMPLETE_KEY);
 }
 
-const stepStyles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  stepLabel: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#047857",
-    letterSpacing: 1.5,
-    marginBottom: 8,
-    marginTop: 8,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: "800",
-    color: "#111827",
-    marginBottom: 6,
-  },
-  subtitle: {
-    fontSize: 15,
-    fontWeight: "500",
-    color: "#9CA3AF",
-    marginBottom: 20,
-  },
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-  },
-  gridScroll: {
-    paddingBottom: 20,
-  },
-  challengeScroll: {
-    paddingBottom: 20,
-  },
-  solutionScroll: {
-    paddingBottom: 20,
-  },
-});
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
   },
   topBar: {
     flexDirection: "row",
@@ -780,13 +398,13 @@ const styles = StyleSheet.create({
   skipText: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#9CA3AF",
+    color: "rgba(255,255,255,0.4)",
   },
   content: {
     flex: 1,
   },
   footer: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     alignItems: "center",
   },
   ctaButton: {
@@ -801,15 +419,20 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
     gap: 8,
   },
+  ctaOutline: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 18,
+    gap: 8,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "rgba(255,255,255,0.05)",
+  },
   ctaText: {
     color: "#fff",
     fontSize: 18,
     fontWeight: "700",
-  },
-  selectionCount: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#9CA3AF",
-    marginTop: 10,
   },
 });
