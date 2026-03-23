@@ -213,6 +213,9 @@ export default function ProfileScreen() {
                   <Text style={styles.restoreBtnText}>Restore Purchase</Text>
                 )}
               </Pressable>
+              <Text style={styles.heroLegalText}>
+                Payment will be charged to your Apple ID account. Subscription automatically renews unless canceled at least 24 hours before the end of the current period. Manage or cancel in Settings → Apple ID → Subscriptions.
+              </Text>
             </View>
           )}
 
@@ -336,12 +339,6 @@ export default function ProfileScreen() {
           </View>
 
           <Text style={styles.versionText}>Version 1.4.0</Text>
-
-          {!isPro ? (
-            <Text style={styles.legalDisclosure}>
-              Payment will be charged to your Apple ID account. Subscription automatically renews unless canceled at least 24 hours before the end of the current period. Manage or cancel in Settings → Apple ID → Subscriptions.
-            </Text>
-          ) : null}
         </View>
       </ScrollView>
     </View>
@@ -510,6 +507,13 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     color: "rgba(255,255,255,0.45)",
   },
+  heroLegalText: {
+    fontSize: 11,
+    textAlign: "center",
+    lineHeight: 16,
+    marginTop: 10,
+    color: "rgba(255,255,255,0.3)",
+  },
   deleteBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -621,13 +625,5 @@ const styles = StyleSheet.create({
     color: "#9CA3AF",
     textAlign: "center",
     marginTop: 20,
-  },
-  legalDisclosure: {
-    fontSize: 11,
-    textAlign: "center",
-    lineHeight: 16,
-    marginTop: 16,
-    color: "#9CA3AF",
-    paddingHorizontal: 12,
   },
 });
