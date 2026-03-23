@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useCallback, useRef } from "react";
-import { View, StyleSheet, FlatList, Pressable, Text, Linking, TextInput, ActivityIndicator, ScrollView, Keyboard, NativeScrollEvent, NativeSyntheticEvent } from "react-native";
+import React, { useState, useMemo } from "react";
+import { View, StyleSheet, FlatList, Pressable, Text, Linking, TextInput, ActivityIndicator, ScrollView, Keyboard } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useRoute, RouteProp, useNavigation } from "@react-navigation/native";
@@ -86,43 +86,6 @@ export default function SearchResultsScreen() {
   const [showEbaySold, setShowEbaySold] = useState(false);
   const [brokenImages, setBrokenImages] = useState<Set<string>>(new Set());
 
-  const isHeaderDark = useRef(true);
-  const HERO_SCROLL_THRESHOLD = 200;
-
-  const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const y = e.nativeEvent.contentOffset.y;
-    const shouldBeDark = y < HERO_SCROLL_THRESHOLD;
-    if (shouldBeDark !== isHeaderDark.current) {
-      isHeaderDark.current = shouldBeDark;
-      navigation.setOptions({
-        headerStyle: {
-          backgroundColor: shouldBeDark ? "#14532D" : "#FFFFFF",
-        },
-        headerTintColor: shouldBeDark ? "#FFFFFF" : "#111827",
-        headerTitleStyle: {
-          color: shouldBeDark ? "#FFFFFF" : "#111827",
-          fontWeight: "700" as const,
-        },
-        headerShadowVisible: !shouldBeDark,
-        headerTransparent: false,
-      });
-    }
-  }, [navigation]);
-
-  React.useEffect(() => {
-    navigation.setOptions({
-      headerStyle: {
-        backgroundColor: "#14532D",
-      },
-      headerTintColor: "#FFFFFF",
-      headerTitleStyle: {
-        color: "#FFFFFF",
-        fontWeight: "700" as const,
-      },
-      headerShadowVisible: false,
-      headerTransparent: false,
-    });
-  }, [navigation]);
 
   const suggestedPrice = results.avgListPrice;
   const EBAY_FEE_RATE = 0.13;
@@ -430,8 +393,6 @@ export default function SearchResultsScreen() {
         scrollIndicatorInsets={{ bottom: insets.bottom }}
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
         data={sortedListings}
         keyExtractor={(item) => item.id}
         ListHeaderComponent={
