@@ -668,45 +668,41 @@ export default function SearchResultsScreen() {
                 <ActivityIndicator size="small" color="#F0D264" />
               ) : rcReady && !isPro && !ebaySoldData ? (
                 <View style={styles.salesIntelCard}>
-                  <View style={styles.salesIntelCardLeft}>
-                    <View style={styles.salesIntelCardTitleRow}>
-                      <Text style={styles.salesIntelCardTitle}>Sales Intelligence</Text>
-                      <LinearGradient
-                        colors={["#F5D87A", "#D4A926", "#E8C84A"]}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={styles.salesIntelCardProPill}
-                      >
-                        <Feather name="star" size={9} color="#3D2E00" />
-                        <Text style={styles.salesIntelCardProPillText}>PRO</Text>
-                      </LinearGradient>
-                    </View>
-                    <View style={styles.salesIntelBulletList}>
-                      <View style={styles.salesIntelBulletRow}>
-                        <View style={styles.salesIntelBulletDot} />
-                        <Text style={styles.salesIntelBulletText}>Real sold prices</Text>
+                  <View style={styles.salesIntelCardTitleRow}>
+                    <Text style={styles.salesIntelCardTitle}>Sales Intelligence</Text>
+                    <LinearGradient
+                      colors={["#F5D87A", "#D4A926", "#E8C84A"]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.salesIntelCardProPill}
+                    >
+                      <Feather name="star" size={9} color="#3D2E00" />
+                      <Text style={styles.salesIntelCardProPillText}>PRO</Text>
+                    </LinearGradient>
+                  </View>
+
+                  <View style={styles.blurredMetricsContainer}>
+                    <View style={styles.blurredMetricsRow}>
+                      <View style={styles.blurredMetricBox}>
+                        <Text style={styles.blurredMetricLabel}>Avg Sold</Text>
+                        <Text style={styles.blurredMetricValue}>$██.██</Text>
                       </View>
-                      <View style={styles.salesIntelBulletRow}>
-                        <View style={styles.salesIntelBulletDot} />
-                        <Text style={styles.salesIntelBulletText}>Buy Score · 0–100 rating</Text>
+                      <View style={styles.blurredMetricBox}>
+                        <Text style={styles.blurredMetricLabel}>Buy Score</Text>
+                        <Text style={styles.blurredMetricValue}>██/100</Text>
                       </View>
-                      <View style={styles.salesIntelBulletRow}>
-                        <View style={styles.salesIntelBulletDot} />
-                        <Text style={styles.salesIntelBulletText}>Sell velocity & demand</Text>
+                      <View style={styles.blurredMetricBox}>
+                        <Text style={styles.blurredMetricLabel}>Sold/mo</Text>
+                        <Text style={styles.blurredMetricValue}>██</Text>
                       </View>
                     </View>
                   </View>
-                  <LinearGradient
-                    colors={["#F5D87A", "#D4A926", "#C49B1F"]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 0, y: 1 }}
-                    style={styles.salesIntelCardCtaGold}
-                  >
-                    <Feather name="star" size={16} color="#3D2E00" />
-                    <Text style={styles.salesIntelCardCtaTitleGold}>Try Pro</Text>
-                    <Text style={styles.salesIntelCardCtaBold}>Free</Text>
-                    <Text style={styles.salesIntelCardCtaSub}>3 days{"\n"}no charge</Text>
-                  </LinearGradient>
+
+                  <View style={styles.salesIntelCtaRow}>
+                    <Feather name="lock" size={14} color="#047857" />
+                    <Text style={styles.salesIntelCtaText}>See eBay Sales Data</Text>
+                    <Feather name="chevron-right" size={16} color="#047857" />
+                  </View>
                 </View>
               ) : (
                 <>
@@ -2135,20 +2131,13 @@ const styles = StyleSheet.create({
     borderColor: "#E5E7EB",
   },
   salesIntelCard: {
-    flexDirection: "row",
-    alignItems: "stretch",
-  },
-  salesIntelCardLeft: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    justifyContent: "center",
+    padding: 16,
   },
   salesIntelCardTitleRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    marginBottom: 8,
+    marginBottom: 12,
   },
   salesIntelCardTitle: {
     fontSize: 17,
@@ -2169,47 +2158,46 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     letterSpacing: 0.5,
   },
-  salesIntelBulletList: {
-    gap: 4,
+  blurredMetricsContainer: {
+    marginBottom: 14,
   },
-  salesIntelBulletRow: {
+  blurredMetricsRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  blurredMetricBox: {
+    flex: 1,
+    backgroundColor: "#F9FAFB",
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    alignItems: "center",
+  },
+  blurredMetricLabel: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#9CA3AF",
+    marginBottom: 4,
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+  },
+  blurredMetricValue: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#D1D5DB",
+  },
+  salesIntelCtaRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-  },
-  salesIntelBulletDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: "#047857",
-  },
-  salesIntelBulletText: {
-    fontSize: 14,
-    color: "#6B7280",
-  },
-  salesIntelCardCtaGold: {
-    width: 85,
-    alignItems: "center",
     justifyContent: "center",
+    gap: 6,
+    backgroundColor: "#ECFDF5",
+    borderRadius: 10,
     paddingVertical: 10,
-    gap: 1,
-    borderTopLeftRadius: 16,
-    borderBottomLeftRadius: 16,
   },
-  salesIntelCardCtaTitleGold: {
-    fontSize: 13,
+  salesIntelCtaText: {
+    fontSize: 14,
     fontWeight: "700",
-    color: "#3D2E00",
-    marginTop: 4,
-  },
-  salesIntelCardCtaBold: {
-    fontSize: 16,
-    fontWeight: "800",
-    color: "#3D2E00",
-  },
-  salesIntelCardCtaSub: {
-    fontSize: 10,
-    color: "#5C4A0A",
-    textAlign: "center",
+    color: "#047857",
   },
 });
