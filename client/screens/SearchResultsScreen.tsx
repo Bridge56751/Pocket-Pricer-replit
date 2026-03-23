@@ -474,6 +474,10 @@ export default function SearchResultsScreen() {
                 </View>
               </View>
 
+              <Text style={[styles.calculatorNote, { color: "rgba(255,255,255,0.5)", marginTop: 4, marginBottom: 8 }]}>
+                Based on {results.totalListings} active listings
+              </Text>
+
             </LinearGradient>
 
             <View style={styles.lightSection}>
