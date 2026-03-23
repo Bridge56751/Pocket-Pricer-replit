@@ -495,6 +495,28 @@ export default function ScanScreen() {
               </View>
             </View>
 
+            {isPro ? null : (
+              <Pressable
+                onPress={() => navigation.navigate("Paywall", { context: "scan" })}
+                style={({ pressed }) => [styles.proUpsellCard, { opacity: pressed ? 0.9 : 1 }]}
+              >
+                <View style={styles.proUpsellLeft}>
+                  <LinearGradient
+                    colors={["#F5D87A", "#D4A926", "#E8C84A", "#D4A926"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.proUpsellBadge}
+                  >
+                    <Feather name="star" size={11} color="#3D2E00" />
+                    <Text style={styles.proUpsellBadgeText}>PRO</Text>
+                  </LinearGradient>
+                  <Text style={styles.proUpsellTitle}>Unlimited scans, sales prices & Buy Score</Text>
+                  <Text style={styles.proUpsellSub}>3-day free trial · as low as $4.99/mo</Text>
+                </View>
+                <Feather name="chevron-right" size={18} color="rgba(255,255,255,0.4)" />
+              </Pressable>
+            )}
+
             <Pressable
               onPress={handleScanProduct}
               style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}
@@ -523,31 +545,6 @@ export default function ScanScreen() {
                 )}
               </View>
             </Pressable>
-
-
-            {isPro ? null : (
-              <>
-                <Pressable
-                  onPress={() => navigation.navigate("Paywall", { context: "scan" })}
-                  style={({ pressed }) => [styles.proUpsellCard, { opacity: pressed ? 0.9 : 1 }]}
-                >
-                  <View style={styles.proUpsellLeft}>
-                    <LinearGradient
-                      colors={["#F5D87A", "#D4A926", "#E8C84A", "#D4A926"]}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={styles.proUpsellBadge}
-                    >
-                      <Feather name="star" size={11} color="#3D2E00" />
-                      <Text style={styles.proUpsellBadgeText}>PRO</Text>
-                    </LinearGradient>
-                    <Text style={styles.proUpsellTitle}>Unlimited scans, sales prices & Buy Score</Text>
-                    <Text style={styles.proUpsellSub}>3-day free trial · as low as $4.99/mo</Text>
-                  </View>
-                  <Feather name="chevron-right" size={18} color="rgba(255,255,255,0.4)" />
-                </Pressable>
-              </>
-            )}
           </LinearGradient>
 
         <View style={styles.belowHeroContent}>
