@@ -465,7 +465,6 @@ export default function SearchResultsScreen() {
                 <View>
                   <Text style={styles.suggestedPriceLabelUpper}>SUGGESTED LISTING PRICE</Text>
                   <Text style={styles.suggestedPriceBig}>${results.avgListPrice.toFixed(0)}</Text>
-                  <Text style={styles.suggestedPriceSubNote}>Current market rate</Text>
                 </View>
               </View>
 
