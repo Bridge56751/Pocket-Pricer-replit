@@ -424,6 +424,7 @@ export default function SearchResultsScreen() {
 
   return (
     <View style={[styles.container]}>
+      <View style={styles.topOverscrollBg} />
       <RNAnimated.FlatList
         style={styles.list}
         contentContainerStyle={[
@@ -1169,6 +1170,14 @@ export default function SearchResultsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#F3F4F6",
+  },
+  topOverscrollBg: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 500,
     backgroundColor: "#0A3622",
   },
   list: {
