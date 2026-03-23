@@ -369,7 +369,7 @@ export default function ProfileScreen() {
 
         <View style={styles.versionContainer}>
           <Text style={[styles.versionText, { color: theme.colors.mutedForeground }]}>
-            Version 1.0.0
+            Version 1.4.0
           </Text>
         </View>
       </View>
