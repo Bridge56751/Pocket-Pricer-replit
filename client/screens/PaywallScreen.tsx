@@ -220,18 +220,6 @@ export default function PaywallScreen() {
           </Pressable>
 
           <Animated.View entering={FadeInUp.delay(60).duration(480)} style={styles.heroContent}>
-            <View style={styles.iconWrap}>
-              <View style={styles.iconGlow} />
-              <LinearGradient
-                colors={["#F5D87A", "#D4A926", "#E8C84A", "#D4A926"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.iconCircle}
-              >
-                <Feather name="tag" size={32} color="#000000" style={{ transform: [{ scaleX: -1 }] }} />
-              </LinearGradient>
-            </View>
-
             <LinearGradient
               colors={["#F5D87A", "#D4A926", "#E8C84A", "#D4A926"]}
               start={{ x: 0, y: 0 }}
@@ -584,25 +572,6 @@ const styles = StyleSheet.create({
   heroContent: {
     alignItems: "center",
     marginTop: 32,
-  },
-  iconWrap: {
-    marginBottom: 20,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  iconGlow: {
-    position: "absolute",
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: "rgba(212, 169, 38, 0.15)",
-  },
-  iconCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    alignItems: "center",
-    justifyContent: "center",
   },
   proBadge: {
     flexDirection: "row" as const,

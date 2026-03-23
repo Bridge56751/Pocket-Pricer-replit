@@ -152,18 +152,15 @@ export default function UpgradeModal({ visible, onClose, scansUsed = 0 }: Upgrad
             entering={FadeInUp.delay(60).duration(480)}
             style={[styles.card, { backgroundColor: cardColor }]}
           >
-            {/* Icon */}
-            <View style={styles.iconWrap}>
-              <View style={styles.iconGlow} />
-              <LinearGradient
-                colors={["#059669", "#047857", "#065F46"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.iconCircle}
-              >
-                <Feather name="tag" size={36} color="#fff" />
-              </LinearGradient>
-            </View>
+            <LinearGradient
+              colors={["#F5D87A", "#D4A926", "#E8C84A", "#D4A926"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.proBadge}
+            >
+              <Feather name="tag" size={12} color="#3D2E00" style={{ transform: [{ scaleX: -1 }] }} />
+              <Text style={styles.proBadgeText}>POCKET PRICER PRO</Text>
+            </LinearGradient>
 
             {/* Title & subtitle */}
             <Text style={[styles.title, { color: theme.colors.foreground }]}>
@@ -390,29 +387,20 @@ const styles = StyleSheet.create({
     shadowRadius: 24,
     elevation: 10,
   },
-  iconWrap: {
-    marginBottom: 24,
-    alignItems: "center",
-    justifyContent: "center",
+  proBadge: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginBottom: 16,
   },
-  iconGlow: {
-    position: "absolute",
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: "rgba(4, 120, 87, 0.15)",
-  },
-  iconCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#047857",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.45,
-    shadowRadius: 14,
-    elevation: 8,
+  proBadgeText: {
+    fontSize: 13,
+    fontWeight: "800" as const,
+    letterSpacing: 1.5,
+    color: "#3D2E00",
   },
   title: {
     fontSize: 28,
