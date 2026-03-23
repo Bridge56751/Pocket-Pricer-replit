@@ -525,7 +525,7 @@ export default function SearchResultsScreen() {
                         <Svg width={100} height={100} viewBox="0 0 100 100">
                           <Circle cx="50" cy="50" r="40" stroke="#F3F4F6" strokeWidth="12" fill="none" />
                           {costLen > 0 ? (
-                            <Circle cx="50" cy="50" r="40" stroke="#D1D5DB" strokeWidth="12" fill="none"
+                            <Circle cx="50" cy="50" r="40" stroke="#EF4444" strokeWidth="12" fill="none"
                               strokeDasharray={`${costLen} ${circumference - costLen}`}
                               strokeDashoffset={costOffset}
                               strokeLinecap="round"
@@ -563,9 +563,9 @@ export default function SearchResultsScreen() {
                       <Text style={[styles.legendValue, { color: "#D97706" }]}>-${ebayFees.toFixed(2)}</Text>
                     </View>
                     <View style={styles.legendRow}>
-                      <View style={[styles.legendDot, { backgroundColor: "#D1D5DB" }]} />
+                      <View style={[styles.legendDot, { backgroundColor: "#EF4444" }]} />
                       <Text style={styles.legendLabel}>Buy cost</Text>
-                      <Text style={styles.legendValue}>${purchase.toFixed(2)}</Text>
+                      <Text style={[styles.legendValue, { color: "#EF4444" }]}>-${purchase.toFixed(2)}</Text>
                     </View>
                   </View>
                 </View>
