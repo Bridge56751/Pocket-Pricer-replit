@@ -1439,7 +1439,7 @@ const styles = StyleSheet.create({
   calcFeesValue: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#EF4444",
+    color: "#F59E0B",
   },
   donutSection: {
     flexDirection: "row",
