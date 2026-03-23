@@ -685,15 +685,24 @@ export default function SearchResultsScreen() {
                     <View style={styles.blurredMetricsRow}>
                       <View style={styles.blurredMetricBox}>
                         <Text style={styles.blurredMetricLabel}>Avg Sold</Text>
-                        <Text style={styles.blurredMetricValue}>$██.██</Text>
+                        <View style={styles.blurredValueRow}>
+                          <Text style={styles.blurredMetricValueFake}>$34.50</Text>
+                          <View style={styles.blurredOverlay} />
+                        </View>
                       </View>
                       <View style={styles.blurredMetricBox}>
                         <Text style={styles.blurredMetricLabel}>Buy Score</Text>
-                        <Text style={styles.blurredMetricValue}>██/100</Text>
+                        <View style={styles.blurredValueRow}>
+                          <Text style={styles.blurredMetricValueFake}>72/100</Text>
+                          <View style={styles.blurredOverlay} />
+                        </View>
                       </View>
                       <View style={styles.blurredMetricBox}>
                         <Text style={styles.blurredMetricLabel}>Sold/mo</Text>
-                        <Text style={styles.blurredMetricValue}>██</Text>
+                        <View style={styles.blurredValueRow}>
+                          <Text style={styles.blurredMetricValueFake}>18</Text>
+                          <View style={styles.blurredOverlay} />
+                        </View>
                       </View>
                     </View>
                   </View>
@@ -2181,10 +2190,24 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.3,
   },
-  blurredMetricValue: {
+  blurredValueRow: {
+    position: "relative",
+    overflow: "hidden",
+    borderRadius: 4,
+  },
+  blurredMetricValueFake: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#D1D5DB",
+    color: "#374151",
+  },
+  blurredOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(249,250,251,0.85)",
+    borderRadius: 4,
   },
   salesIntelCtaRow: {
     flexDirection: "row",
