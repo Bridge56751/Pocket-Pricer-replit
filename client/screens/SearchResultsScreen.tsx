@@ -609,21 +609,23 @@ export default function SearchResultsScreen() {
               ) : rcReady && !isPro && !ebaySoldData ? (
                 <View style={styles.salesIntelCard}>
                   <View style={styles.salesIntelCardLeft}>
-                    <Text style={styles.salesIntelCardTitleGreen}>Sales Intelligence</Text>
-                    <View style={styles.salesIntelCardBullets}>
-                      <View style={styles.salesIntelCardBulletRow}>
-                        <View style={styles.salesIntelCardDot} />
-                        <Text style={styles.salesIntelCardBulletText}>Real sold prices</Text>
-                      </View>
-                      <View style={styles.salesIntelCardBulletRow}>
-                        <View style={styles.salesIntelCardDot} />
-                        <Text style={styles.salesIntelCardBulletText}>Buy Score · 0-100 rating</Text>
-                      </View>
-                      <View style={styles.salesIntelCardBulletRow}>
-                        <View style={styles.salesIntelCardDot} />
-                        <Text style={styles.salesIntelCardBulletText}>Sell velocity & demand</Text>
-                      </View>
+                    <View style={styles.salesIntelCardTitleRow}>
+                      <Text style={styles.salesIntelCardTitleGreen}>Sales Intelligence</Text>
+                      <LinearGradient
+                        colors={["#F5D87A", "#D4A926", "#E8C84A"]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.salesIntelCardProPill}
+                      >
+                        <Feather name="star" size={9} color="#3D2E00" />
+                        <Text style={styles.salesIntelCardProPillText}>PRO</Text>
+                      </LinearGradient>
                     </View>
+                    <Text style={styles.salesIntelCardInlineBullets}>
+                      <Text style={{ color: "#4ADE80" }}>{"\u2022"} </Text>Sold prices{"   "}
+                      <Text style={{ color: "#4ADE80" }}>{"\u2022"} </Text>Buy Score{"   "}
+                      <Text style={{ color: "#4ADE80" }}>{"\u2022"} </Text>Velocity
+                    </Text>
                   </View>
                   <LinearGradient
                     colors={["#F5D87A", "#D4A926", "#C49B1F"]}
@@ -631,11 +633,10 @@ export default function SearchResultsScreen() {
                     end={{ x: 0, y: 1 }}
                     style={styles.salesIntelCardCtaGold}
                   >
-                    <Feather name="star" size={16} color="#3D2E00" />
+                    <Feather name="star" size={14} color="#3D2E00" />
                     <Text style={styles.salesIntelCardCtaTitleGold}>Try Pro</Text>
                     <Text style={styles.salesIntelCardCtaBold}>Free</Text>
-                    <Text style={styles.salesIntelCardCtaSub}>3 days · no</Text>
-                    <Text style={styles.salesIntelCardCtaSub}>charge</Text>
+                    <Text style={styles.salesIntelCardCtaSub}>3 days</Text>
                   </LinearGradient>
                 </View>
               ) : (
@@ -2068,46 +2069,52 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 14,
     paddingVertical: 10,
+    justifyContent: "center",
   },
-  salesIntelCardTitleGreen: {
-    fontSize: 15,
-    fontWeight: "800",
-    color: "#FFFFFF",
-    marginBottom: 6,
-  },
-  salesIntelCardBullets: {
-    gap: 4,
-  },
-  salesIntelCardBulletRow: {
+  salesIntelCardTitleRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+    marginBottom: 4,
   },
-  salesIntelCardDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: "#4ADE80",
+  salesIntelCardTitleGreen: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#FFFFFF",
   },
-  salesIntelCardBulletText: {
+  salesIntelCardProPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 12,
+  },
+  salesIntelCardProPillText: {
+    color: "#3D2E00",
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 0.5,
+  },
+  salesIntelCardInlineBullets: {
     fontSize: 12,
-    color: "rgba(255,255,255,0.7)",
+    color: "rgba(255,255,255,0.6)",
   },
   salesIntelCardCtaGold: {
-    width: 80,
+    width: 78,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 10,
+    paddingVertical: 8,
     gap: 1,
   },
   salesIntelCardCtaTitleGold: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "700",
     color: "#3D2E00",
-    marginTop: 4,
+    marginTop: 3,
   },
   salesIntelCardCtaBold: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "800",
     color: "#3D2E00",
   },
