@@ -467,6 +467,11 @@ export default function SearchResultsScreen() {
                   <Text style={styles.suggestedPriceBig}>${results.avgListPrice.toFixed(0)}</Text>
                   <Text style={styles.suggestedPriceSubNote}>Current market rate</Text>
                 </View>
+                <View style={styles.activeListingsBox}>
+                  <Text style={styles.activeListingsLabel}>ACTIVE</Text>
+                  <Text style={styles.activeListingsCount}>{results.totalListings}</Text>
+                  <Text style={styles.activeListingsLabel}>listings</Text>
+                </View>
               </View>
 
             </LinearGradient>
