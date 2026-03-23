@@ -447,21 +447,10 @@ export default function ScanScreen() {
           >
           <View style={styles.header}>
             <View style={styles.headerLeft}>
-              <Feather name="tag" size={20} color={isPro ? "#F5D87A" : "#FFFFFF"} style={{ transform: [{ scaleX: -1 }] }} />
-              <Text style={[styles.appName, { color: isPro ? "#F5D87A" : "#FFFFFF" }]}>
+              <Feather name="tag" size={20} color="#FFFFFF" style={{ transform: [{ scaleX: -1 }] }} />
+              <Text style={[styles.appName, { color: "#FFFFFF" }]}>
                 Pocket Pricer
               </Text>
-              {isPro ? (
-                <LinearGradient
-                  colors={["#F5D87A", "#D4A926", "#E8C84A"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={{ flexDirection: "row", alignItems: "center", gap: 3, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 }}
-                >
-                  <Feather name="star" size={9} color="#3D2E00" />
-                  <Text style={{ fontSize: 10, fontWeight: "800", color: "#3D2E00", letterSpacing: 0.5 }}>PRO</Text>
-                </LinearGradient>
-              ) : null}
             </View>
             <Pressable 
               style={styles.headerIcon}
@@ -510,16 +499,21 @@ export default function ScanScreen() {
               onPress={handleScanProduct}
               style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}
             >
-              <View style={styles.scanButton}>
+              <View style={[styles.scanButton, isPro ? { borderColor: "rgba(212,169,38,0.4)" } : undefined]}>
                 <View style={styles.scanButtonLeft}>
-                  <Feather name="camera" size={20} color="#14532D" />
-                  <Text style={styles.scanButtonText}>Scan Product</Text>
+                  <Feather name="camera" size={20} color={isPro ? "#D4A926" : "#14532D"} />
+                  <Text style={[styles.scanButtonText, isPro ? { color: "#B8941F" } : undefined]}>Scan Product</Text>
                 </View>
                 {isPro ? (
-                  <View style={styles.scanButtonBadge}>
-                    <Feather name="zap" size={11} color="#fff" />
-                    <Text style={styles.scanButtonBadgeText}>PRO</Text>
-                  </View>
+                  <LinearGradient
+                    colors={["#F5D87A", "#D4A926", "#E8C84A"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.scanButtonBadge}
+                  >
+                    <Feather name="star" size={11} color="#3D2E00" />
+                    <Text style={[styles.scanButtonBadgeText, { color: "#3D2E00" }]}>PRO</Text>
+                  </LinearGradient>
                 ) : (
                   <Text style={styles.scanButtonCount}>
                     {scansUsed >= FREE_SCAN_LIMIT
