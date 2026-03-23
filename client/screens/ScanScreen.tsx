@@ -447,10 +447,21 @@ export default function ScanScreen() {
           >
           <View style={styles.header}>
             <View style={styles.headerLeft}>
-              <Feather name="tag" size={20} color="#FFFFFF" style={{ transform: [{ scaleX: -1 }] }} />
-              <Text style={[styles.appName, { color: "#FFFFFF" }]}>
+              <Feather name="tag" size={20} color={isPro ? "#F5D87A" : "#FFFFFF"} style={{ transform: [{ scaleX: -1 }] }} />
+              <Text style={[styles.appName, { color: isPro ? "#F5D87A" : "#FFFFFF" }]}>
                 Pocket Pricer
               </Text>
+              {isPro ? (
+                <LinearGradient
+                  colors={["#F5D87A", "#D4A926", "#E8C84A"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={{ flexDirection: "row", alignItems: "center", gap: 3, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 }}
+                >
+                  <Feather name="star" size={9} color="#3D2E00" />
+                  <Text style={{ fontSize: 10, fontWeight: "800", color: "#3D2E00", letterSpacing: 0.5 }}>PRO</Text>
+                </LinearGradient>
+              ) : null}
             </View>
             <Pressable 
               style={styles.headerIcon}
