@@ -110,7 +110,7 @@ export default function ProfileScreen() {
       <View style={styles.topOverscrollBg} />
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 32, flexGrow: 1 }}
         showsVerticalScrollIndicator={false}
       >
         <LinearGradient
@@ -601,6 +601,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#F3F4F6",
     paddingHorizontal: 16,
     paddingTop: 20,
+    flexGrow: 1,
+    paddingBottom: 40,
   },
   aboutCard: {
     backgroundColor: "#FFFFFF",

@@ -774,6 +774,7 @@ const styles = StyleSheet.create({
   },
   belowHeroContent: {
     paddingHorizontal: 20,
+    backgroundColor: "#F3F4F6",
   },
   heroLabel: {
     fontSize: 11,
