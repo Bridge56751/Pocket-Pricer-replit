@@ -132,11 +132,11 @@ export default function RootStackNavigator() {
         options={{
           headerTitle: "",
           headerBackVisible: false,
-          headerTransparent: false,
+          headerTransparent: true,
           headerBlurEffect: undefined,
           headerShadowVisible: false,
           headerStyle: {
-            backgroundColor: "#0A3622",
+            backgroundColor: "transparent",
           },
         }}
       />

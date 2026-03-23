@@ -89,29 +89,34 @@ export default function SearchResultsScreen() {
   const scrollY = useRef(new RNAnimated.Value(0)).current;
   const HERO_THRESHOLD = 250;
 
-  const [headerWhite, setHeaderWhite] = useState(false);
-
-  const scrollListener = useRef<string | null>(null);
-  React.useEffect(() => {
-    scrollListener.current = scrollY.addListener(({ value }) => {
-      const shouldBeWhite = value >= HERO_THRESHOLD;
-      setHeaderWhite((prev) => (prev !== shouldBeWhite ? shouldBeWhite : prev));
-    });
-    return () => {
-      if (scrollListener.current) scrollY.removeListener(scrollListener.current);
-    };
-  }, [scrollY]);
+  const headerBgColor = scrollY.interpolate({
+    inputRange: [0, HERO_THRESHOLD],
+    outputRange: ["#0A3622", "#FFFFFF"],
+    extrapolate: "clamp",
+  });
+  const headerTextColor = scrollY.interpolate({
+    inputRange: [0, HERO_THRESHOLD * 0.85, HERO_THRESHOLD],
+    outputRange: ["#FFFFFF", "#FFFFFF", "#111827"],
+    extrapolate: "clamp",
+  });
+  const headerArrowColor = scrollY.interpolate({
+    inputRange: [0, HERO_THRESHOLD * 0.85, HERO_THRESHOLD],
+    outputRange: ["#FFFFFF", "#FFFFFF", "#111827"],
+    extrapolate: "clamp",
+  });
 
   React.useEffect(() => {
     navigation.setOptions({
-      headerStyle: {
-        backgroundColor: headerWhite ? "#FFFFFF" : "#0A3622",
-      },
-      headerShadowVisible: headerWhite,
+      headerTransparent: true,
+      headerShadowVisible: false,
+      headerStyle: { backgroundColor: "transparent" },
+      headerBackground: () => (
+        <RNAnimated.View style={{ flex: 1, backgroundColor: headerBgColor }} />
+      ),
       headerTitle: () => (
-        <Text style={{ fontSize: 17, fontWeight: "700", color: headerWhite ? "#111827" : "#FFFFFF" }}>
+        <RNAnimated.Text style={{ fontSize: 17, fontWeight: "700", color: headerTextColor }}>
           Scan Result
-        </Text>
+        </RNAnimated.Text>
       ),
       headerLeft: () => (
         <HeaderButton
@@ -127,11 +132,13 @@ export default function SearchResultsScreen() {
           }}
           pressOpacity={0.7}
         >
-          <Feather name="arrow-left" size={24} color={headerWhite ? "#111827" : "#FFFFFF"} />
+          <RNAnimated.Text>
+            <Feather name="arrow-left" size={24} color="#FFFFFF" />
+          </RNAnimated.Text>
         </HeaderButton>
       ),
     });
-  }, [navigation, headerWhite]);
+  }, [navigation, headerBgColor, headerTextColor, headerArrowColor]);
 
   const suggestedPrice = results.avgListPrice;
   const EBAY_FEE_RATE = 0.13;
@@ -434,7 +441,7 @@ export default function SearchResultsScreen() {
         style={styles.list}
         contentContainerStyle={[
           styles.listContent,
-          { paddingTop: 0, paddingBottom: 100 }
+          { paddingTop: headerHeight, paddingBottom: 100 }
         ]}
         scrollIndicatorInsets={{ bottom: insets.bottom }}
         keyboardDismissMode="on-drag"
