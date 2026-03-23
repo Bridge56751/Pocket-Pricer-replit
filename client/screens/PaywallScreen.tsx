@@ -303,7 +303,7 @@ export default function PaywallScreen() {
                       styles.planRowCard,
                       {
                         borderColor: selectedPlan === "weekly" ? "#047857" : "#E5E7EB",
-                        backgroundColor: selectedPlan === "weekly" ? "#F0FDF8" : "#FFFFFF",
+                        backgroundColor: selectedPlan === "weekly" ? "#F0FDF8" : "#F9FAFB",
                       },
                     ]}
                   >
@@ -317,7 +317,7 @@ export default function PaywallScreen() {
                       )}
                       <View>
                         <Text style={styles.planRowTitle}>Weekly</Text>
-                        <Text style={styles.planRowSub}>Try it out, cancel anytime</Text>
+                        <Text style={styles.planRowSub}>Flexible, cancel anytime</Text>
                       </View>
                     </View>
                     <View style={styles.planRowRight}>
@@ -328,48 +328,58 @@ export default function PaywallScreen() {
                 ) : null}
 
                 {monthlyPkg ? (
-                  <Pressable
-                    onPress={() => handleSelectPlan("monthly")}
-                    style={[
-                      styles.planRowCard,
-                      {
-                        borderColor: selectedPlan === "monthly" ? "#047857" : "#E5E7EB",
-                        backgroundColor: selectedPlan === "monthly" ? "#F0FDF8" : "#FFFFFF",
-                      },
-                    ]}
-                  >
-                    <View style={styles.planRowLeft}>
-                      {selectedPlan === "monthly" ? (
-                        <View style={styles.planRadioFilled}>
-                          <View style={styles.planRadioInner} />
+                  <View>
+                    {weeklyPkg ? (() => {
+                      const weeklyMonthly = weeklyPkg.product.price * 4.33;
+                      const monthlyPrice = monthlyPkg.product.price;
+                      const savePct = Math.round(((weeklyMonthly - monthlyPrice) / weeklyMonthly) * 100);
+                      return savePct > 0 ? (
+                        <View style={styles.saveBadgeFloatGreen}>
+                          <Text style={styles.saveBadgeFloatText}>Save {savePct}%</Text>
                         </View>
-                      ) : (
-                        <View style={styles.planRadioEmpty} />
-                      )}
-                      <View>
-                        <Text style={styles.planRowTitle}>Monthly</Text>
-                        <Text style={styles.planRowSub}>Most flexible option</Text>
+                      ) : null;
+                    })() : null}
+                    <Pressable
+                      onPress={() => handleSelectPlan("monthly")}
+                      style={[
+                        styles.planRowCard,
+                        {
+                          borderColor: selectedPlan === "monthly" ? "#047857" : "#047857",
+                          borderWidth: 2,
+                          backgroundColor: selectedPlan === "monthly" ? "#F0FDF8" : "#FFFFFF",
+                        },
+                      ]}
+                    >
+                      <View style={styles.planRowLeft}>
+                        {selectedPlan === "monthly" ? (
+                          <View style={styles.planRadioFilled}>
+                            <View style={styles.planRadioInner} />
+                          </View>
+                        ) : (
+                          <View style={styles.planRadioEmpty} />
+                        )}
+                        <View>
+                          <Text style={styles.planRowTitle}>Monthly</Text>
+                          {weeklyPkg ? (
+                            <Text style={styles.planRowSub}>
+                              ~${(monthlyPkg.product.price / 4.33).toFixed(2)}/wk · vs weekly
+                            </Text>
+                          ) : (
+                            <Text style={styles.planRowSub}>Most flexible option</Text>
+                          )}
+                        </View>
                       </View>
-                    </View>
-                    <View style={styles.planRowRight}>
-                      <Text style={styles.planRowPrice}>{monthlyPkg.product.priceString}</Text>
-                      <Text style={styles.planRowPeriod}>per month</Text>
-                    </View>
-                  </Pressable>
+                      <View style={styles.planRowRight}>
+                        <Text style={styles.planRowPrice}>{monthlyPkg.product.priceString}</Text>
+                        <Text style={styles.planRowPeriod}>per month</Text>
+                      </View>
+                    </Pressable>
+                  </View>
                 ) : null}
 
                 {yearlyPkg ? (
-                  <Pressable
-                    onPress={() => handleSelectPlan("yearly")}
-                    style={[
-                      styles.planRowCard,
-                      {
-                        borderColor: selectedPlan === "yearly" ? "#047857" : "#E5E7EB",
-                        backgroundColor: selectedPlan === "yearly" ? "#F0FDF8" : "#FFFFFF",
-                      },
-                    ]}
-                  >
-                    <View style={styles.planRowBadgeRow}>
+                  <View>
+                    <View style={styles.yearlyBadgeRow}>
                       <View style={styles.bestValueBadge}>
                         <Text style={styles.bestValueText}>Best value</Text>
                       </View>
@@ -378,34 +388,55 @@ export default function PaywallScreen() {
                         const yearlyPrice = yearlyPkg.product.price;
                         const savePct = Math.round(((weeklyAnnual - yearlyPrice) / weeklyAnnual) * 100);
                         return savePct > 0 ? (
-                          <View style={styles.saveBadge}>
-                            <Text style={styles.saveBadgeText}>SAVE {savePct}%</Text>
+                          <View style={styles.saveBadgeFloatGold}>
+                            <Text style={styles.saveBadgeFloatTextGold}>Save {savePct}%</Text>
                           </View>
                         ) : null;
                       })() : null}
                     </View>
-                    <View style={styles.planRowMain}>
+                    <Pressable
+                      onPress={() => handleSelectPlan("yearly")}
+                      style={[
+                        styles.planRowCard,
+                        {
+                          borderColor: selectedPlan === "yearly" ? "#C49B1F" : "#D4A926",
+                          borderWidth: 2,
+                          backgroundColor: selectedPlan === "yearly" ? "#FFFBEB" : "#FFFFFF",
+                        },
+                      ]}
+                    >
                       <View style={styles.planRowLeft}>
                         {selectedPlan === "yearly" ? (
-                          <View style={styles.planRadioFilled}>
-                            <View style={styles.planRadioInner} />
+                          <View style={[styles.planRadioFilled, { borderColor: "#C49B1F" }]}>
+                            <View style={[styles.planRadioInner, { backgroundColor: "#C49B1F" }]} />
                           </View>
                         ) : (
-                          <View style={styles.planRadioEmpty} />
+                          <View style={[styles.planRadioEmpty, { borderColor: "#D4A926" }]} />
                         )}
                         <View>
                           <Text style={styles.planRowTitle}>Yearly</Text>
-                          <Text style={styles.planRowSub}>
-                            ${(yearlyPkg.product.price / 12).toFixed(2)} / mo · billed annually
-                          </Text>
+                          {weeklyPkg ? (
+                            <Text style={styles.planRowSub}>
+                              ~${(yearlyPkg.product.price / 52).toFixed(2)}/wk · vs weekly
+                            </Text>
+                          ) : (
+                            <Text style={styles.planRowSub}>
+                              ${(yearlyPkg.product.price / 12).toFixed(2)} / mo · billed annually
+                            </Text>
+                          )}
                         </View>
                       </View>
                       <View style={styles.planRowRight}>
+                        {weeklyPkg ? (
+                          <Text style={styles.planRowStrikePrice}>
+                            ${(weeklyPkg.product.price * 52).toFixed(2)}
+                          </Text>
+                        ) : null}
                         <Text style={styles.planRowPrice}>{yearlyPkg.product.priceString}</Text>
                         <Text style={styles.planRowPeriod}>per year</Text>
                       </View>
-                    </View>
-                  </Pressable>
+                    </Pressable>
+                  </View>
                 ) : null}
               </View>
             ) : (
@@ -667,18 +698,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     flexWrap: "wrap" as const,
   },
-  planRowBadgeRow: {
+  yearlyBadgeRow: {
     flexDirection: "row" as const,
-    alignItems: "center" as const,
-    gap: 8,
-    width: "100%" as const,
-    marginBottom: 6,
-  },
-  planRowMain: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
     justifyContent: "space-between" as const,
-    width: "100%" as const,
+    alignItems: "center" as const,
+    marginBottom: -10,
+    paddingHorizontal: 4,
+    zIndex: 1,
   },
   planRowLeft: {
     flexDirection: "row" as const,
@@ -730,28 +756,48 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#D1D5DB",
   },
+  planRowStrikePrice: {
+    fontSize: 13,
+    color: "#9CA3AF",
+    textDecorationLine: "line-through" as const,
+    marginBottom: 1,
+  },
+  saveBadgeFloatGreen: {
+    alignSelf: "flex-end" as const,
+    backgroundColor: "#047857",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginBottom: -10,
+    marginRight: 4,
+    zIndex: 1,
+  },
+  saveBadgeFloatText: {
+    fontSize: 11,
+    fontWeight: "700" as const,
+    color: "#FFFFFF",
+  },
+  saveBadgeFloatGold: {
+    backgroundColor: "#C49B1F",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  saveBadgeFloatTextGold: {
+    fontSize: 11,
+    fontWeight: "700" as const,
+    color: "#FFFFFF",
+  },
   bestValueBadge: {
     backgroundColor: "#111827",
     paddingHorizontal: 10,
-    paddingVertical: 3,
+    paddingVertical: 4,
     borderRadius: 8,
   },
   bestValueText: {
     fontSize: 11,
     fontWeight: "700" as const,
     color: "#FFFFFF",
-  },
-  saveBadge: {
-    backgroundColor: "#047857",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-  },
-  saveBadgeText: {
-    fontSize: 10,
-    fontWeight: "800" as const,
-    color: "#FFFFFF",
-    letterSpacing: 0.5,
   },
   skeletonCard: {
     height: 60,
