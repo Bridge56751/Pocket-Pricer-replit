@@ -89,26 +89,29 @@ export default function SearchResultsScreen() {
   const scrollY = useRef(new RNAnimated.Value(0)).current;
   const HERO_THRESHOLD = 250;
 
-  const headerBgColor = scrollY.interpolate({
-    inputRange: [0, HERO_THRESHOLD],
-    outputRange: ["#0A3622", "#FFFFFF"],
-    extrapolate: "clamp",
-  });
-  const headerTextColor = scrollY.interpolate({
-    inputRange: [0, HERO_THRESHOLD * 0.8, HERO_THRESHOLD],
-    outputRange: ["#FFFFFF", "#FFFFFF", "#111827"],
-    extrapolate: "clamp",
-  });
+  const [headerWhite, setHeaderWhite] = useState(false);
+
+  const scrollListener = useRef<string | null>(null);
+  React.useEffect(() => {
+    scrollListener.current = scrollY.addListener(({ value }) => {
+      const shouldBeWhite = value >= HERO_THRESHOLD;
+      setHeaderWhite((prev) => (prev !== shouldBeWhite ? shouldBeWhite : prev));
+    });
+    return () => {
+      if (scrollListener.current) scrollY.removeListener(scrollListener.current);
+    };
+  }, [scrollY]);
 
   React.useEffect(() => {
     navigation.setOptions({
-      headerBackground: () => (
-        <RNAnimated.View style={{ flex: 1, backgroundColor: headerBgColor }} />
-      ),
+      headerStyle: {
+        backgroundColor: headerWhite ? "#FFFFFF" : "#0A3622",
+      },
+      headerShadowVisible: headerWhite,
       headerTitle: () => (
-        <RNAnimated.Text style={{ fontSize: 17, fontWeight: "700", color: headerTextColor }}>
+        <Text style={{ fontSize: 17, fontWeight: "700", color: headerWhite ? "#111827" : "#FFFFFF" }}>
           Scan Result
-        </RNAnimated.Text>
+        </Text>
       ),
       headerLeft: () => (
         <HeaderButton
@@ -124,13 +127,11 @@ export default function SearchResultsScreen() {
           }}
           pressOpacity={0.7}
         >
-          <RNAnimated.View>
-            <Feather name="arrow-left" size={24} color="#FFFFFF" />
-          </RNAnimated.View>
+          <Feather name="arrow-left" size={24} color={headerWhite ? "#111827" : "#FFFFFF"} />
         </HeaderButton>
       ),
     });
-  }, [navigation, headerBgColor, headerTextColor]);
+  }, [navigation, headerWhite]);
 
   const suggestedPrice = results.avgListPrice;
   const EBAY_FEE_RATE = 0.13;
