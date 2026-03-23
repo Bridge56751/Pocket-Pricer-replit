@@ -2206,7 +2206,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(243,244,246,0.92)",
+    backgroundColor: "#F9FAFB",
     borderRadius: 4,
   },
   salesIntelCtaRow: {
