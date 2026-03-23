@@ -9,7 +9,6 @@ import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import Animated, { FadeInDown } from "react-native-reanimated";
-import Svg, { Circle } from "react-native-svg";
 
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { SkeletonLoader } from "@/components/SkeletonLoader";
@@ -554,72 +553,6 @@ export default function SearchResultsScreen() {
                     </View>
                   </View>
                   <Text style={styles.calcFeesValue}>-${ebayFees.toFixed(2)}</Text>
-                </View>
-
-                <View style={styles.donutSection}>
-                  <View style={styles.donutChartContainer}>
-                    {(() => {
-                      const circumference = 2 * Math.PI * 40;
-                      const total = selling > 0 ? selling : 1;
-                      const profitFrac = Math.max(0, profit) / total;
-                      const feesFrac = ebayFees / total;
-                      const costFrac = purchase / total;
-                      const profitLen = profitFrac * circumference;
-                      const feesLen = feesFrac * circumference;
-                      const costLen = costFrac * circumference;
-                      let offset = circumference * 0.25;
-                      const profitOffset = offset;
-                      offset -= profitLen;
-                      const feesOffset = offset;
-                      offset -= feesLen;
-                      const costOffset = offset;
-                      return (
-                        <Svg width={100} height={100} viewBox="0 0 100 100">
-                          <Circle cx="50" cy="50" r="40" stroke="#F3F4F6" strokeWidth="12" fill="none" />
-                          {costLen > 0 ? (
-                            <Circle cx="50" cy="50" r="40" stroke="#EF4444" strokeWidth="12" fill="none"
-                              strokeDasharray={`${costLen} ${circumference - costLen}`}
-                              strokeDashoffset={costOffset}
-                              strokeLinecap="round"
-                            />
-                          ) : null}
-                          <Circle cx="50" cy="50" r="40" stroke="#F59E0B" strokeWidth="12" fill="none"
-                            strokeDasharray={`${feesLen} ${circumference - feesLen}`}
-                            strokeDashoffset={feesOffset}
-                            strokeLinecap="round"
-                          />
-                          {profitLen > 0 ? (
-                            <Circle cx="50" cy="50" r="40" stroke="#047857" strokeWidth="12" fill="none"
-                              strokeDasharray={`${profitLen} ${circumference - profitLen}`}
-                              strokeDashoffset={profitOffset}
-                              strokeLinecap="round"
-                            />
-                          ) : null}
-                        </Svg>
-                      );
-                    })()}
-                    <View style={styles.donutCenter}>
-                      <Text style={styles.donutPercent}>{Math.max(0, margin)}%</Text>
-                      <Text style={styles.donutMarginLabel}>margin</Text>
-                    </View>
-                  </View>
-                  <View style={styles.donutLegend}>
-                    <View style={styles.legendRow}>
-                      <View style={[styles.legendDot, { backgroundColor: "#047857" }]} />
-                      <Text style={styles.legendLabel}>Profit</Text>
-                      <Text style={[styles.legendValue, { color: "#047857" }]}>+${Math.max(0, profit).toFixed(2)}</Text>
-                    </View>
-                    <View style={styles.legendRow}>
-                      <View style={[styles.legendDot, { backgroundColor: "#F59E0B" }]} />
-                      <Text style={styles.legendLabel}>Platform fees</Text>
-                      <Text style={[styles.legendValue, { color: "#D97706" }]}>-${ebayFees.toFixed(2)}</Text>
-                    </View>
-                    <View style={styles.legendRow}>
-                      <View style={[styles.legendDot, { backgroundColor: "#EF4444" }]} />
-                      <Text style={styles.legendLabel}>Buy cost</Text>
-                      <Text style={[styles.legendValue, { color: "#EF4444" }]}>-${purchase.toFixed(2)}</Text>
-                    </View>
-                  </View>
                 </View>
 
                 <View style={[styles.profitRow, { backgroundColor: profit > 0 ? "#ECFDF5" : "#FEF2F2" }]}>
@@ -1510,56 +1443,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "700",
     color: "#F59E0B",
-  },
-  donutSection: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 16,
-    gap: 16,
-  },
-  donutChartContainer: {
-    width: 100,
-    height: 100,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  donutCenter: {
-    position: "absolute",
-    alignItems: "center",
-  },
-  donutPercent: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: "#111827",
-  },
-  donutMarginLabel: {
-    fontSize: 11,
-    color: "#9CA3AF",
-    fontWeight: "500",
-  },
-  donutLegend: {
-    flex: 1,
-    gap: 10,
-  },
-  legendRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  legendDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  legendLabel: {
-    fontSize: 14,
-    color: "#374151",
-    flex: 1,
-  },
-  legendValue: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#374151",
   },
   calculatorTitle: {
     fontSize: 18,
