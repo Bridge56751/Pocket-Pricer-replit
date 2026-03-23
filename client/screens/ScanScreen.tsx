@@ -691,10 +691,10 @@ export default function ScanScreen() {
         </View>
       ) : null}
 
-      <View style={[styles.fabContainer, { bottom: insets.bottom + 90 }]}>
+      <View style={[styles.fabContainer, { bottom: insets.bottom + 70 }]}>
         <Pressable
           onPress={handleScanProduct}
-          style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1, transform: [{ scale: pressed ? 0.95 : 1 }] }]}
+          style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1, transform: [{ scale: pressed ? 0.96 : 1 }] }]}
         >
           <LinearGradient
             colors={["#059669", "#047857", "#065F46"]}
@@ -702,22 +702,16 @@ export default function ScanScreen() {
             end={{ x: 1, y: 1 }}
             style={styles.fabButton}
           >
-            <Feather name="camera" size={28} color="#FFFFFF" />
-            <Text style={styles.fabLabel}>Scan</Text>
+            <Feather name="camera" size={20} color="#FFFFFF" />
+            <Text style={styles.fabLabel}>Scan Product</Text>
           </LinearGradient>
         </Pressable>
-        {isPro ? (
-          <View style={styles.fabBadge}>
-            <Feather name="zap" size={10} color="#fff" />
-          </View>
-        ) : (
-          <View style={styles.fabCountBadge}>
-            <Text style={styles.fabCountText}>
-              {scansUsed >= FREE_SCAN_LIMIT
-                ? "0"
-                : `${FREE_SCAN_LIMIT - scansUsed}`}
-            </Text>
-          </View>
+        {isPro ? null : (
+          <Text style={styles.fabScansRemaining}>
+            {scansUsed >= FREE_SCAN_LIMIT
+              ? "0 scans remaining"
+              : `${FREE_SCAN_LIMIT - scansUsed} scan${FREE_SCAN_LIMIT - scansUsed === 1 ? "" : "s"} remaining`}
+          </Text>
         )}
       </View>
     </View>
@@ -904,54 +898,28 @@ const styles = StyleSheet.create({
     zIndex: 100,
   },
   fabButton: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    flexDirection: "row" as const,
     alignItems: "center" as const,
-    justifyContent: "center" as const,
+    paddingHorizontal: 28,
+    paddingVertical: 16,
+    borderRadius: 30,
+    gap: 10,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowRadius: 6,
+    elevation: 6,
   },
   fabLabel: {
     color: "#FFFFFF",
-    fontSize: 12,
+    fontSize: 16,
     fontWeight: "700" as const,
-    marginTop: 2,
   },
-  fabBadge: {
-    position: "absolute" as const,
-    top: -2,
-    right: -2,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: "#047857",
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-    borderWidth: 2,
-    borderColor: "#F3F4F6",
-  },
-  fabCountBadge: {
-    position: "absolute" as const,
-    top: -2,
-    right: -2,
-    minWidth: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: "#EF4444",
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-    paddingHorizontal: 6,
-    borderWidth: 2,
-    borderColor: "#F3F4F6",
-  },
-  fabCountText: {
-    color: "#FFFFFF",
-    fontSize: 11,
-    fontWeight: "800" as const,
+  fabScansRemaining: {
+    color: "#9CA3AF",
+    fontSize: 12,
+    fontWeight: "500" as const,
+    marginTop: 6,
   },
   proUpsellCard: {
     flexDirection: "row" as const,
