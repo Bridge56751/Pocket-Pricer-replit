@@ -1,63 +1,60 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { View, Text, StyleSheet, Pressable, Dimensions } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet, Pressable, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import Animated, {
-  FadeIn,
-  FadeOut,
   FadeInUp,
   FadeInDown,
-  SlideInRight,
-  SlideOutLeft,
   useSharedValue,
   useAnimatedStyle,
   withSpring,
   withTiming,
-  withSequence,
-  withDelay,
   withRepeat,
+  withSequence,
   Easing,
-  runOnJS,
 } from "react-native-reanimated";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 
 const ONBOARDING_COMPLETE_KEY = "@pocket_pricer_onboarding_complete";
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
-type OnboardingStep =
-  | "welcome"
-  | "pain1"
-  | "pain2"
-  | "pain3"
-  | "solution"
-  | "features"
-  | "ready";
-
-const STEPS: OnboardingStep[] = [
-  "welcome",
-  "pain1",
-  "pain2",
-  "pain3",
-  "solution",
-  "features",
-  "ready",
-];
+type OnboardingStep = "categories" | "challenges" | "solution" | "ready";
+const STEPS: OnboardingStep[] = ["categories", "challenges", "solution", "ready"];
 
 interface OnboardingScreenProps {
   onComplete: () => void;
   isReplay?: boolean;
 }
 
+const CATEGORIES = [
+  { id: "sneakers", label: "Sneakers", icon: "sunrise" as const, color: "#3B82F6", bg: "#EFF6FF" },
+  { id: "electronics", label: "Electronics", icon: "smartphone" as const, color: "#8B5CF6", bg: "#F5F3FF" },
+  { id: "clothing", label: "Clothing", icon: "shopping-bag" as const, color: "#EC4899", bg: "#FDF2F8" },
+  { id: "toys", label: "Toys & Games", icon: "box" as const, color: "#F59E0B", bg: "#FFFBEB" },
+  { id: "books", label: "Books & Media", icon: "book-open" as const, color: "#10B981", bg: "#ECFDF5" },
+  { id: "home", label: "Home & Kitchen", icon: "home" as const, color: "#EF4444", bg: "#FEF2F2" },
+  { id: "sports", label: "Sports & Outdoors", icon: "activity" as const, color: "#06B6D4", bg: "#ECFEFF" },
+  { id: "vintage", label: "Vintage & Collectibles", icon: "award" as const, color: "#D97706", bg: "#FFF7ED" },
+];
+
+const CHALLENGES = [
+  { id: "pricing", label: "Not sure what things are worth", icon: "help-circle" as const, color: "#EF4444", bg: "#FEF2F2" },
+  { id: "research", label: "Too much time researching", icon: "clock" as const, color: "#F59E0B", bg: "#FFFBEB" },
+  { id: "bad-buys", label: "Bought items that didn't sell", icon: "thumbs-down" as const, color: "#8B5CF6", bg: "#F5F3FF" },
+  { id: "fees", label: "Surprised by platform fees", icon: "alert-circle" as const, color: "#EC4899", bg: "#FDF2F8" },
+  { id: "slow", label: "Miss deals by being too slow", icon: "zap-off" as const, color: "#3B82F6", bg: "#EFF6FF" },
+  { id: "competition", label: "Hard to compete with other sellers", icon: "users" as const, color: "#06B6D4", bg: "#ECFEFF" },
+];
+
 function ProgressBar({ current, total }: { current: number; total: number }) {
   return (
-    <View style={progressStyles.container}>
+    <View style={progressStyles.bar}>
       {Array.from({ length: total }).map((_, i) => (
         <View
           key={i}
           style={[
-            progressStyles.dot,
-            i <= current ? progressStyles.dotActive : progressStyles.dotInactive,
+            progressStyles.segment,
+            { backgroundColor: i <= current ? "#047857" : "#E5E7EB" },
           ]}
         />
       ))}
@@ -66,340 +63,343 @@ function ProgressBar({ current, total }: { current: number; total: number }) {
 }
 
 const progressStyles = StyleSheet.create({
-  container: {
+  bar: {
     flexDirection: "row",
-    gap: 6,
-    justifyContent: "center",
-    marginBottom: 16,
-  },
-  dot: {
+    gap: 4,
     height: 4,
+  },
+  segment: {
+    flex: 1,
     borderRadius: 2,
-  },
-  dotActive: {
-    width: 24,
-    backgroundColor: "#047857",
-  },
-  dotInactive: {
-    width: 12,
-    backgroundColor: "#D1D5DB",
   },
 });
 
-function PainPointOption({
-  text,
+function GridTile({
+  label,
+  icon,
+  color,
+  bg,
   selected,
   onPress,
   delay,
 }: {
-  text: string;
+  label: string;
+  icon: any;
+  color: string;
+  bg: string;
   selected: boolean;
   onPress: () => void;
   delay: number;
 }) {
   return (
-    <Animated.View entering={FadeInUp.delay(delay).duration(400)}>
+    <Animated.View entering={FadeInUp.delay(delay).duration(350)} style={tileStyles.wrapper}>
       <Pressable
         onPress={onPress}
         style={({ pressed }) => [
-          optionStyles.option,
-          selected ? optionStyles.optionSelected : optionStyles.optionDefault,
-          { opacity: pressed ? 0.85 : 1 },
+          tileStyles.tile,
+          { backgroundColor: selected ? color + "12" : bg, borderColor: selected ? color : "#E5E7EB", opacity: pressed ? 0.85 : 1 },
         ]}
       >
-        <Text
-          style={[
-            optionStyles.optionText,
-            selected ? optionStyles.optionTextSelected : optionStyles.optionTextDefault,
-          ]}
-        >
-          {text}
+        <View style={[tileStyles.iconCircle, { backgroundColor: selected ? color + "20" : color + "12" }]}>
+          <Feather name={icon} size={24} color={color} />
+        </View>
+        <Text style={[tileStyles.label, { color: selected ? color : "#374151" }]} numberOfLines={2}>
+          {label}
         </Text>
         {selected ? (
-          <View style={optionStyles.checkCircle}>
-            <Feather name="check" size={14} color="#fff" />
+          <View style={[tileStyles.check, { backgroundColor: color }]}>
+            <Feather name="check" size={12} color="#fff" />
           </View>
-        ) : (
-          <View style={optionStyles.emptyCircle} />
-        )}
+        ) : null}
       </Pressable>
     </Animated.View>
   );
 }
 
-const optionStyles = StyleSheet.create({
-  option: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderRadius: 14,
-    borderWidth: 2,
+const tileStyles = StyleSheet.create({
+  wrapper: {
+    width: "48%" as any,
     marginBottom: 10,
   },
-  optionDefault: {
-    backgroundColor: "#F9FAFB",
-    borderColor: "#E5E7EB",
+  tile: {
+    alignItems: "center",
+    paddingVertical: 18,
+    paddingHorizontal: 8,
+    borderRadius: 16,
+    borderWidth: 2,
+    position: "relative",
   },
-  optionSelected: {
-    backgroundColor: "#ECFDF5",
-    borderColor: "#047857",
+  iconCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 8,
   },
-  optionText: {
-    fontSize: 16,
-    fontWeight: "600",
-    flex: 1,
-    marginRight: 12,
+  label: {
+    fontSize: 13,
+    fontWeight: "700",
+    textAlign: "center",
+    lineHeight: 17,
   },
-  optionTextDefault: {
-    color: "#374151",
-  },
-  optionTextSelected: {
-    color: "#047857",
-  },
-  checkCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "#047857",
+  check: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     alignItems: "center",
     justifyContent: "center",
   },
-  emptyCircle: {
-    width: 28,
-    height: 28,
+});
+
+function CategoriesStep({
+  selections,
+  onToggle,
+}: {
+  selections: Set<string>;
+  onToggle: (id: string) => void;
+}) {
+  return (
+    <View style={stepStyles.container}>
+      <Animated.Text entering={FadeInUp.delay(50).duration(400)} style={stepStyles.stepLabel}>
+        STEP 1 OF 4
+      </Animated.Text>
+      <Animated.Text entering={FadeInUp.delay(100).duration(400)} style={stepStyles.title}>
+        What do you resell?
+      </Animated.Text>
+      <Animated.Text entering={FadeInUp.delay(150).duration(400)} style={stepStyles.subtitle}>
+        Pick the categories you buy and flip
+      </Animated.Text>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={stepStyles.gridScroll}
+      >
+        <View style={stepStyles.grid}>
+          {CATEGORIES.map((cat, i) => (
+            <GridTile
+              key={cat.id}
+              label={cat.label}
+              icon={cat.icon}
+              color={cat.color}
+              bg={cat.bg}
+              selected={selections.has(cat.id)}
+              onPress={() => onToggle(cat.id)}
+              delay={200 + i * 60}
+            />
+          ))}
+        </View>
+      </ScrollView>
+    </View>
+  );
+}
+
+function ChallengesStep({
+  selections,
+  onToggle,
+}: {
+  selections: Set<string>;
+  onToggle: (id: string) => void;
+}) {
+  return (
+    <View style={stepStyles.container}>
+      <Animated.Text entering={FadeInUp.delay(50).duration(400)} style={stepStyles.stepLabel}>
+        STEP 2 OF 4
+      </Animated.Text>
+      <Animated.Text entering={FadeInUp.delay(100).duration(400)} style={stepStyles.title}>
+        Sound familiar?
+      </Animated.Text>
+      <Animated.Text entering={FadeInUp.delay(150).duration(400)} style={stepStyles.subtitle}>
+        Select your biggest reselling headaches
+      </Animated.Text>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={stepStyles.challengeScroll}
+      >
+        {CHALLENGES.map((ch, i) => (
+          <Animated.View key={ch.id} entering={FadeInUp.delay(200 + i * 80).duration(400)}>
+            <Pressable
+              onPress={() => onToggle(ch.id)}
+              style={({ pressed }) => [
+                challengeStyles.row,
+                {
+                  backgroundColor: selections.has(ch.id) ? ch.color + "10" : "#F9FAFB",
+                  borderColor: selections.has(ch.id) ? ch.color : "#E5E7EB",
+                  opacity: pressed ? 0.85 : 1,
+                },
+              ]}
+            >
+              <View style={[challengeStyles.iconBox, { backgroundColor: ch.bg }]}>
+                <Feather name={ch.icon} size={22} color={ch.color} />
+              </View>
+              <Text
+                style={[
+                  challengeStyles.text,
+                  { color: selections.has(ch.id) ? ch.color : "#374151" },
+                ]}
+              >
+                {ch.label}
+              </Text>
+              {selections.has(ch.id) ? (
+                <View style={[challengeStyles.check, { backgroundColor: ch.color }]}>
+                  <Feather name="check" size={13} color="#fff" />
+                </View>
+              ) : (
+                <View style={challengeStyles.emptyCheck} />
+              )}
+            </Pressable>
+          </Animated.View>
+        ))}
+      </ScrollView>
+    </View>
+  );
+}
+
+const challengeStyles = StyleSheet.create({
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     borderRadius: 14,
+    borderWidth: 2,
+    marginBottom: 10,
+    gap: 14,
+  },
+  iconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  text: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  check: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyCheck: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     borderWidth: 2,
     borderColor: "#D1D5DB",
   },
 });
 
-function BouncingIcon({ name, size, color }: { name: any; size: number; color: string }) {
-  const scale = useSharedValue(0);
-
-  useEffect(() => {
-    scale.value = withSpring(1, { damping: 8, stiffness: 120 });
-  }, []);
-
-  const animStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
-  return (
-    <Animated.View style={animStyle}>
-      <View style={[iconStyles.circle, { backgroundColor: color + "15" }]}>
-        <Feather name={name} size={size} color={color} />
-      </View>
-    </Animated.View>
-  );
-}
-
-const iconStyles = StyleSheet.create({
-  circle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
-
-function WelcomeStep() {
-  return (
-    <View style={stepStyles.centered}>
-      <Animated.View entering={FadeInUp.delay(100).duration(500)}>
-        <View style={stepStyles.welcomeIconWrap}>
-          <LinearGradient
-            colors={["#ECFDF5", "#D1FAE5"]}
-            style={stepStyles.welcomeIconBg}
-          >
-            <Feather name="tag" size={48} color="#047857" style={{ transform: [{ scaleX: -1 }] }} />
-          </LinearGradient>
-        </View>
-      </Animated.View>
-      <Animated.Text entering={FadeInUp.delay(300).duration(500)} style={stepStyles.bigTitle}>
-        Welcome to{"\n"}Pocket Pricer
-      </Animated.Text>
-      <Animated.Text entering={FadeInUp.delay(500).duration(500)} style={stepStyles.subtitle}>
-        Let's find out how we can help you make more money reselling.
-      </Animated.Text>
-    </View>
-  );
-}
-
-function PainStep1({ selections, onToggle }: { selections: Set<string>; onToggle: (s: string) => void }) {
-  const options = [
-    "I never know if an item is worth buying",
-    "I spend too long researching prices",
-    "I've bought items that didn't sell",
-    "I miss good deals because I'm too slow",
-  ];
-
-  return (
-    <View style={stepStyles.fullWidth}>
-      <Animated.View entering={FadeInUp.delay(100).duration(400)}>
-        <BouncingIcon name="help-circle" size={40} color="#3B82F6" />
-      </Animated.View>
-      <Animated.Text entering={FadeInUp.delay(200).duration(400)} style={stepStyles.question}>
-        What's your biggest challenge when sourcing items to resell?
-      </Animated.Text>
-      <Animated.Text entering={FadeInUp.delay(300).duration(400)} style={stepStyles.hint}>
-        Select all that apply
-      </Animated.Text>
-      <View style={stepStyles.optionsWrap}>
-        {options.map((opt, i) => (
-          <PainPointOption
-            key={opt}
-            text={opt}
-            selected={selections.has(opt)}
-            onPress={() => onToggle(opt)}
-            delay={400 + i * 100}
-          />
-        ))}
-      </View>
-    </View>
-  );
-}
-
-function PainStep2({ selections, onToggle }: { selections: Set<string>; onToggle: (s: string) => void }) {
-  const options = [
-    "Thrift stores & garage sales",
-    "Retail & clearance aisles",
-    "Online arbitrage",
-    "Wholesale & liquidation",
-  ];
-
-  return (
-    <View style={stepStyles.fullWidth}>
-      <Animated.View entering={FadeInUp.delay(100).duration(400)}>
-        <BouncingIcon name="shopping-bag" size={40} color="#8B5CF6" />
-      </Animated.View>
-      <Animated.Text entering={FadeInUp.delay(200).duration(400)} style={stepStyles.question}>
-        Where do you usually find items to resell?
-      </Animated.Text>
-      <Animated.Text entering={FadeInUp.delay(300).duration(400)} style={stepStyles.hint}>
-        Select all that apply
-      </Animated.Text>
-      <View style={stepStyles.optionsWrap}>
-        {options.map((opt, i) => (
-          <PainPointOption
-            key={opt}
-            text={opt}
-            selected={selections.has(opt)}
-            onPress={() => onToggle(opt)}
-            delay={400 + i * 100}
-          />
-        ))}
-      </View>
-    </View>
-  );
-}
-
-function PainStep3({ selected, onSelect }: { selected: string | null; onSelect: (s: string) => void }) {
-  const options = [
-    "Just getting started",
-    "A few sales per month",
-    "Consistent side income",
-    "Full-time reseller",
-  ];
-
-  return (
-    <View style={stepStyles.fullWidth}>
-      <Animated.View entering={FadeInUp.delay(100).duration(400)}>
-        <BouncingIcon name="trending-up" size={40} color="#F59E0B" />
-      </Animated.View>
-      <Animated.Text entering={FadeInUp.delay(200).duration(400)} style={stepStyles.question}>
-        How would you describe your reselling experience?
-      </Animated.Text>
-      <View style={stepStyles.optionsWrap}>
-        {options.map((opt, i) => (
-          <PainPointOption
-            key={opt}
-            text={opt}
-            selected={selected === opt}
-            onPress={() => onSelect(opt)}
-            delay={400 + i * 100}
-          />
-        ))}
-      </View>
-    </View>
-  );
-}
-
 function SolutionStep() {
-  return (
-    <View style={stepStyles.centered}>
-      <Animated.View entering={FadeInUp.delay(100).duration(500)}>
-        <View style={stepStyles.solutionIconWrap}>
-          <View style={stepStyles.solutionIconBg}>
-            <Feather name="check-circle" size={52} color="#047857" />
-          </View>
-        </View>
-      </Animated.View>
-      <Animated.Text entering={FadeInUp.delay(300).duration(500)} style={stepStyles.bigTitle}>
-        We've got you covered
-      </Animated.Text>
-      <Animated.Text entering={FadeInUp.delay(500).duration(500)} style={stepStyles.subtitle}>
-        Pocket Pricer gives you instant pricing data so you can make confident buy decisions in seconds — not hours.
-      </Animated.Text>
-    </View>
-  );
-}
-
-function FeaturesStep() {
   const features = [
-    {
-      icon: "camera" as const,
-      title: "Scan any product",
-      desc: "Point your camera and identify items instantly",
-      color: "#3B82F6",
-    },
-    {
-      icon: "bar-chart-2" as const,
-      title: "See real sold prices",
-      desc: "Know what items actually sell for, not just listing prices",
-      color: "#047857",
-    },
-    {
-      icon: "zap" as const,
-      title: "Buy Score rating",
-      desc: "0-100 score tells you if it's worth buying",
-      color: "#F59E0B",
-    },
-    {
-      icon: "dollar-sign" as const,
-      title: "Instant profit calc",
-      desc: "See your profit after fees before you buy",
-      color: "#EF4444",
-    },
+    { icon: "camera" as const, title: "Scan any item", desc: "Point, scan, get results in seconds", gradient: ["#3B82F6", "#2563EB"] as [string, string] },
+    { icon: "trending-up" as const, title: "Real sold prices", desc: "What buyers actually paid, not listing prices", gradient: ["#047857", "#065F46"] as [string, string] },
+    { icon: "zap" as const, title: "Buy Score 0-100", desc: "Instantly know if it's worth buying", gradient: ["#F59E0B", "#D97706"] as [string, string] },
+    { icon: "dollar-sign" as const, title: "Profit calculator", desc: "See your profit after all fees", gradient: ["#EF4444", "#DC2626"] as [string, string] },
   ];
 
   return (
-    <View style={stepStyles.fullWidth}>
-      <Animated.Text entering={FadeInUp.delay(100).duration(400)} style={stepStyles.question}>
-        Here's how it works
+    <View style={stepStyles.container}>
+      <Animated.Text entering={FadeInUp.delay(50).duration(400)} style={stepStyles.stepLabel}>
+        STEP 3 OF 4
       </Animated.Text>
-      <View style={stepStyles.featuresList}>
+      <Animated.Text entering={FadeInUp.delay(100).duration(400)} style={stepStyles.title}>
+        We solve all of that
+      </Animated.Text>
+      <Animated.Text entering={FadeInUp.delay(150).duration(400)} style={stepStyles.subtitle}>
+        Everything you need in one scan
+      </Animated.Text>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={stepStyles.solutionScroll}
+      >
         {features.map((f, i) => (
-          <Animated.View
-            key={f.title}
-            entering={FadeInUp.delay(300 + i * 120).duration(400)}
-            style={stepStyles.featureCard}
-          >
-            <View style={[stepStyles.featureIconCircle, { backgroundColor: f.color + "15" }]}>
-              <Feather name={f.icon} size={22} color={f.color} />
-            </View>
-            <View style={stepStyles.featureTextWrap}>
-              <Text style={stepStyles.featureTitle}>{f.title}</Text>
-              <Text style={stepStyles.featureDesc}>{f.desc}</Text>
+          <Animated.View key={f.title} entering={FadeInUp.delay(250 + i * 100).duration(400)}>
+            <View style={solutionStyles.card}>
+              <LinearGradient
+                colors={f.gradient}
+                style={solutionStyles.iconGradient}
+              >
+                <Feather name={f.icon} size={22} color="#fff" />
+              </LinearGradient>
+              <View style={solutionStyles.textWrap}>
+                <Text style={solutionStyles.cardTitle}>{f.title}</Text>
+                <Text style={solutionStyles.cardDesc}>{f.desc}</Text>
+              </View>
+              <Feather name="check-circle" size={20} color="#10B981" />
             </View>
           </Animated.View>
         ))}
-      </View>
+        <Animated.View entering={FadeInUp.delay(700).duration(400)} style={solutionStyles.socialProof}>
+          <View style={solutionStyles.starsRow}>
+            {[0, 1, 2, 3, 4].map((i) => (
+              <Feather key={i} name="star" size={16} color="#F59E0B" />
+            ))}
+          </View>
+          <Text style={solutionStyles.socialText}>Trusted by thousands of resellers</Text>
+        </Animated.View>
+      </ScrollView>
     </View>
   );
 }
+
+const solutionStyles = StyleSheet.create({
+  card: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    backgroundColor: "#FFFFFF",
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#F3F4F6",
+    marginBottom: 12,
+  },
+  iconGradient: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  textWrap: {
+    flex: 1,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 2,
+  },
+  cardDesc: {
+    fontSize: 13,
+    fontWeight: "400",
+    color: "#6B7280",
+    lineHeight: 17,
+  },
+  socialProof: {
+    alignItems: "center",
+    marginTop: 8,
+    paddingVertical: 16,
+  },
+  starsRow: {
+    flexDirection: "row",
+    gap: 2,
+    marginBottom: 6,
+  },
+  socialText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#6B7280",
+  },
+});
 
 function ReadyStep() {
   const pulse = useSharedValue(1);
@@ -407,8 +407,8 @@ function ReadyStep() {
   useEffect(() => {
     pulse.value = withRepeat(
       withSequence(
-        withTiming(1.08, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
-        withTiming(1, { duration: 1200, easing: Easing.inOut(Easing.ease) })
+        withTiming(1.06, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
+        withTiming(1, { duration: 1500, easing: Easing.inOut(Easing.ease) })
       ),
       -1,
       true
@@ -420,35 +420,131 @@ function ReadyStep() {
   }));
 
   return (
-    <View style={stepStyles.centered}>
+    <View style={readyStyles.container}>
       <Animated.View entering={FadeInUp.delay(100).duration(500)} style={pulseStyle}>
         <LinearGradient
           colors={["#065F46", "#047857", "#059669"]}
-          style={stepStyles.readyIconBg}
+          style={readyStyles.iconBg}
         >
-          <Feather name="tag" size={44} color="#fff" style={{ transform: [{ scaleX: -1 }] }} />
+          <Feather name="tag" size={48} color="#fff" style={{ transform: [{ scaleX: -1 }] }} />
         </LinearGradient>
       </Animated.View>
-      <Animated.Text entering={FadeInUp.delay(300).duration(500)} style={stepStyles.bigTitle}>
-        You're all set!
+      <Animated.Text entering={FadeInUp.delay(300).duration(500)} style={readyStyles.title}>
+        You're ready to profit
       </Animated.Text>
-      <Animated.Text entering={FadeInUp.delay(500).duration(500)} style={stepStyles.subtitle}>
-        Start your free trial and never overpay for inventory again.
+      <Animated.Text entering={FadeInUp.delay(450).duration(500)} style={readyStyles.subtitle}>
+        Start scanning items and see exactly what they're worth — before you buy.
       </Animated.Text>
-      <Animated.View entering={FadeInUp.delay(700).duration(400)} style={stepStyles.trialBadge}>
-        <Feather name="gift" size={16} color="#047857" />
-        <Text style={stepStyles.trialBadgeText}>3-day free trial included</Text>
+
+      <Animated.View entering={FadeInUp.delay(600).duration(400)} style={readyStyles.statsRow}>
+        <View style={readyStyles.stat}>
+          <Text style={readyStyles.statNumber}>3s</Text>
+          <Text style={readyStyles.statLabel}>Avg scan time</Text>
+        </View>
+        <View style={readyStyles.statDivider} />
+        <View style={readyStyles.stat}>
+          <Text style={readyStyles.statNumber}>4+</Text>
+          <Text style={readyStyles.statLabel}>Stores compared</Text>
+        </View>
+        <View style={readyStyles.statDivider} />
+        <View style={readyStyles.stat}>
+          <Text style={readyStyles.statNumber}>Free</Text>
+          <Text style={readyStyles.statLabel}>3-day trial</Text>
+        </View>
+      </Animated.View>
+
+      <Animated.View entering={FadeInUp.delay(750).duration(400)} style={readyStyles.trialBadge}>
+        <Feather name="shield" size={16} color="#047857" />
+        <Text style={readyStyles.trialText}>Cancel anytime. No commitment.</Text>
       </Animated.View>
     </View>
   );
 }
 
+const readyStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 28,
+  },
+  iconBg: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 28,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: "800",
+    color: "#111827",
+    textAlign: "center",
+    marginBottom: 12,
+  },
+  subtitle: {
+    fontSize: 16,
+    fontWeight: "400",
+    color: "#6B7280",
+    textAlign: "center",
+    lineHeight: 23,
+    marginBottom: 28,
+    paddingHorizontal: 8,
+  },
+  statsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F0FDF4",
+    borderRadius: 16,
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    width: "100%",
+    justifyContent: "space-around",
+    marginBottom: 20,
+  },
+  stat: {
+    alignItems: "center",
+  },
+  statNumber: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#047857",
+    marginBottom: 2,
+  },
+  statLabel: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#6B7280",
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+  },
+  statDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: "#D1FAE5",
+  },
+  trialBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: "#ECFDF5",
+  },
+  trialText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#047857",
+  },
+});
+
 export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   const insets = useSafeAreaInsets();
   const [stepIndex, setStepIndex] = useState(0);
-  const [pain1Selections, setPain1Selections] = useState<Set<string>>(new Set());
-  const [pain2Selections, setPain2Selections] = useState<Set<string>>(new Set());
-  const [pain3Selected, setPain3Selected] = useState<string | null>(null);
+  const [categorySelections, setCategorySelections] = useState<Set<string>>(new Set());
+  const [challengeSelections, setChallengeSelections] = useState<Set<string>>(new Set());
   const [transitioning, setTransitioning] = useState(false);
 
   const currentStep = STEPS[stepIndex];
@@ -459,28 +555,27 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
     onComplete();
   };
 
-  const togglePain1 = (opt: string) => {
-    setPain1Selections((prev) => {
+  const toggleCategory = (id: string) => {
+    setCategorySelections((prev) => {
       const next = new Set(prev);
-      if (next.has(opt)) next.delete(opt);
-      else next.add(opt);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   };
 
-  const togglePain2 = (opt: string) => {
-    setPain2Selections((prev) => {
+  const toggleChallenge = (id: string) => {
+    setChallengeSelections((prev) => {
       const next = new Set(prev);
-      if (next.has(opt)) next.delete(opt);
-      else next.add(opt);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   };
 
   const canContinue = () => {
-    if (currentStep === "pain1") return pain1Selections.size > 0;
-    if (currentStep === "pain2") return pain2Selections.size > 0;
-    if (currentStep === "pain3") return pain3Selected !== null;
+    if (currentStep === "categories") return categorySelections.size > 0;
+    if (currentStep === "challenges") return challengeSelections.size > 0;
     return true;
   };
 
@@ -506,10 +601,10 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
     }, 50);
   };
 
-  const ctaLabel = isLastStep ? "Get Started" : "Continue";
+  const ctaLabel = isLastStep ? "Start Free Trial" : "Continue";
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 12 }]}>
+    <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
       <View style={styles.topBar}>
         {stepIndex > 0 ? (
           <Pressable onPress={goBack} hitSlop={12} style={styles.backBtn}>
@@ -527,45 +622,48 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
       </View>
 
       <View style={styles.content} key={currentStep}>
-        {currentStep === "welcome" ? (
-          <WelcomeStep />
-        ) : currentStep === "pain1" ? (
-          <PainStep1 selections={pain1Selections} onToggle={togglePain1} />
-        ) : currentStep === "pain2" ? (
-          <PainStep2 selections={pain2Selections} onToggle={togglePain2} />
-        ) : currentStep === "pain3" ? (
-          <PainStep3 selected={pain3Selected} onSelect={setPain3Selected} />
+        {currentStep === "categories" ? (
+          <CategoriesStep selections={categorySelections} onToggle={toggleCategory} />
+        ) : currentStep === "challenges" ? (
+          <ChallengesStep selections={challengeSelections} onToggle={toggleChallenge} />
         ) : currentStep === "solution" ? (
           <SolutionStep />
-        ) : currentStep === "features" ? (
-          <FeaturesStep />
         ) : (
           <ReadyStep />
         )}
       </View>
 
-      <View style={[styles.footer, { paddingBottom: insets.bottom + 24 }]}>
+      <Animated.View
+        entering={FadeInDown.delay(300).duration(400)}
+        style={[styles.footer, { paddingBottom: insets.bottom + 20 }]}
+      >
         <Pressable
           onPress={goNext}
           disabled={!canContinue()}
           style={({ pressed }) => [
             styles.ctaButton,
-            canContinue()
-              ? { opacity: pressed ? 0.85 : 1 }
-              : { opacity: 0.4 },
+            canContinue() ? { opacity: pressed ? 0.85 : 1 } : { opacity: 0.35 },
           ]}
         >
           <LinearGradient
-            colors={["#059669", "#047857", "#065F46"]}
+            colors={isLastStep ? ["#059669", "#047857", "#065F46"] : ["#047857", "#065F46"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.ctaGradient}
           >
             <Text style={styles.ctaText}>{ctaLabel}</Text>
-            <Feather name={isLastStep ? "arrow-right" : "arrow-right"} size={20} color="#fff" />
+            <Feather name="arrow-right" size={20} color="#fff" />
           </LinearGradient>
         </Pressable>
-      </View>
+
+        {currentStep === "categories" || currentStep === "challenges" ? (
+          <Text style={styles.selectionCount}>
+            {currentStep === "categories"
+              ? `${categorySelections.size} selected`
+              : `${challengeSelections.size} selected`}
+          </Text>
+        ) : null}
+      </Animated.View>
     </View>
   );
 }
@@ -584,131 +682,43 @@ export async function resetOnboarding(): Promise<void> {
 }
 
 const stepStyles = StyleSheet.create({
-  centered: {
+  container: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 28,
+    paddingHorizontal: 20,
   },
-  fullWidth: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 16,
+  stepLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#047857",
+    letterSpacing: 1.5,
+    marginBottom: 8,
+    marginTop: 8,
   },
-  welcomeIconWrap: {
-    marginBottom: 32,
-    alignItems: "center",
-  },
-  welcomeIconBg: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  solutionIconWrap: {
-    marginBottom: 32,
-    alignItems: "center",
-  },
-  solutionIconBg: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    backgroundColor: "#ECFDF5",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  readyIconBg: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 32,
-  },
-  bigTitle: {
-    fontSize: 30,
+  title: {
+    fontSize: 26,
     fontWeight: "800",
     color: "#111827",
-    textAlign: "center",
-    marginBottom: 12,
-    lineHeight: 38,
-  },
-  subtitle: {
-    fontSize: 17,
-    fontWeight: "400",
-    color: "#6B7280",
-    textAlign: "center",
-    lineHeight: 24,
-    paddingHorizontal: 8,
-  },
-  question: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "#111827",
-    marginTop: 16,
     marginBottom: 6,
   },
-  hint: {
-    fontSize: 14,
+  subtitle: {
+    fontSize: 15,
     fontWeight: "500",
     color: "#9CA3AF",
     marginBottom: 20,
   },
-  optionsWrap: {
-    marginTop: 4,
-  },
-  featuresList: {
-    marginTop: 20,
-    gap: 14,
-  },
-  featureCard: {
+  grid: {
     flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-    backgroundColor: "#F9FAFB",
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#F3F4F6",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
   },
-  featureIconCircle: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    alignItems: "center",
-    justifyContent: "center",
+  gridScroll: {
+    paddingBottom: 20,
   },
-  featureTextWrap: {
-    flex: 1,
+  challengeScroll: {
+    paddingBottom: 20,
   },
-  featureTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#111827",
-    marginBottom: 2,
-  },
-  featureDesc: {
-    fontSize: 13,
-    fontWeight: "400",
-    color: "#6B7280",
-    lineHeight: 18,
-  },
-  trialBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 28,
-    backgroundColor: "#ECFDF5",
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 24,
-  },
-  trialBadgeText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#047857",
+  solutionScroll: {
+    paddingBottom: 20,
   },
 });
 
@@ -721,7 +731,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    marginBottom: 8,
+    marginBottom: 4,
   },
   backBtn: {
     width: 40,
@@ -746,11 +756,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   footer: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
+    alignItems: "center",
   },
   ctaButton: {
     borderRadius: 16,
     overflow: "hidden",
+    width: "100%",
   },
   ctaGradient: {
     flexDirection: "row",
@@ -763,5 +775,11 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 18,
     fontWeight: "700",
+  },
+  selectionCount: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#9CA3AF",
+    marginTop: 10,
   },
 });
