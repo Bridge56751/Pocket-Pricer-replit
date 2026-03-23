@@ -96,7 +96,7 @@ export default function SearchResultsScreen() {
       isHeaderDark.current = shouldBeDark;
       navigation.setOptions({
         headerStyle: {
-          backgroundColor: shouldBeDark ? "transparent" : "#FFFFFF",
+          backgroundColor: shouldBeDark ? "#14532D" : "#FFFFFF",
         },
         headerTintColor: shouldBeDark ? "#FFFFFF" : "#111827",
         headerTitleStyle: {
@@ -104,7 +104,7 @@ export default function SearchResultsScreen() {
           fontWeight: "700" as const,
         },
         headerShadowVisible: !shouldBeDark,
-        headerTransparent: shouldBeDark,
+        headerTransparent: false,
       });
     }
   }, [navigation]);
@@ -112,7 +112,7 @@ export default function SearchResultsScreen() {
   React.useEffect(() => {
     navigation.setOptions({
       headerStyle: {
-        backgroundColor: "transparent",
+        backgroundColor: "#14532D",
       },
       headerTintColor: "#FFFFFF",
       headerTitleStyle: {
@@ -120,7 +120,7 @@ export default function SearchResultsScreen() {
         fontWeight: "700" as const,
       },
       headerShadowVisible: false,
-      headerTransparent: true,
+      headerTransparent: false,
     });
   }, [navigation]);
 
