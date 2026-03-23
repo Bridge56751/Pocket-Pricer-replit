@@ -136,18 +136,32 @@ export default function ProfileScreen() {
           <Text style={[styles.upgradeHint, { color: theme.colors.mutedForeground }]}>
             Unlimited product scans
           </Text>
-          <Pressable
-            onPress={handleManageSubscription}
-            style={({ pressed }) => [
-              styles.manageButton,
-              { borderColor: theme.colors.border, opacity: pressed ? 0.7 : 1 }
-            ]}
-          >
-            <Feather name="settings" size={18} color={theme.colors.foreground} />
-            <Text style={[styles.manageButtonText, { color: theme.colors.foreground }]}>
-              Manage Subscription
-            </Text>
-          </Pressable>
+          <View style={{ gap: 8 }}>
+            <Pressable
+              onPress={handleUpgrade}
+              style={({ pressed }) => [
+                styles.manageButton,
+                { borderColor: theme.colors.primary, opacity: pressed ? 0.7 : 1 }
+              ]}
+            >
+              <Feather name="repeat" size={18} color={theme.colors.primary} />
+              <Text style={[styles.manageButtonText, { color: theme.colors.primary }]}>
+                Change Plan
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={handleManageSubscription}
+              style={({ pressed }) => [
+                styles.manageButton,
+                { borderColor: theme.colors.border, opacity: pressed ? 0.7 : 1 }
+              ]}
+            >
+              <Feather name="settings" size={18} color={theme.colors.foreground} />
+              <Text style={[styles.manageButtonText, { color: theme.colors.foreground }]}>
+                Manage Subscription
+              </Text>
+            </Pressable>
+          </View>
         </View>
       ) : (
         <LinearGradient

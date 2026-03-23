@@ -53,7 +53,17 @@ export default function PaywallScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, "Paywall">>();
   const context = route.params?.context;
-  const { packages, purchasePackage, restorePurchases, reloadOfferings, isPro, isReady: rcReady } = useRevenueCat();
+  const { packages, purchasePackage, restorePurchases, reloadOfferings, isPro, isReady: rcReady, customerInfo } = useRevenueCat();
+
+  const currentPlanType = (() => {
+    if (!isPro || !customerInfo) return null;
+    const subs = customerInfo.activeSubscriptions ?? [];
+    const subStr = subs.join(" ").toLowerCase();
+    if (subStr.includes("weekly") || subStr.includes("week")) return "weekly";
+    if (subStr.includes("yearly") || subStr.includes("year") || subStr.includes("annual")) return "yearly";
+    if (subStr.includes("monthly") || subStr.includes("month")) return "monthly";
+    return "monthly";
+  })();
 
   const [isLoading, setIsLoading] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
@@ -321,6 +331,11 @@ export default function PaywallScreen() {
                       </View>
                     </View>
                     <View style={styles.planRowRight}>
+                      {currentPlanType === "weekly" ? (
+                        <View style={styles.currentPlanBadge}>
+                          <Text style={styles.currentPlanBadgeText}>Current</Text>
+                        </View>
+                      ) : null}
                       <Text style={styles.planRowPrice}>{weeklyPkg.product.priceString}</Text>
                       <Text style={styles.planRowPeriod}>per week</Text>
                     </View>
@@ -370,6 +385,11 @@ export default function PaywallScreen() {
                         </View>
                       </View>
                       <View style={styles.planRowRight}>
+                        {currentPlanType === "monthly" ? (
+                          <View style={styles.currentPlanBadge}>
+                            <Text style={styles.currentPlanBadgeText}>Current</Text>
+                          </View>
+                        ) : null}
                         <Text style={styles.planRowPrice}>{monthlyPkg.product.priceString}</Text>
                         <Text style={styles.planRowPeriod}>per month</Text>
                       </View>
@@ -427,6 +447,11 @@ export default function PaywallScreen() {
                         </View>
                       </View>
                       <View style={styles.planRowRight}>
+                        {currentPlanType === "yearly" ? (
+                          <View style={styles.currentPlanBadge}>
+                            <Text style={styles.currentPlanBadgeText}>Current</Text>
+                          </View>
+                        ) : null}
                         {weeklyPkg ? (
                           <Text style={styles.planRowStrikePrice}>
                             ${(weeklyPkg.product.price * 52).toFixed(2)}
@@ -481,7 +506,7 @@ export default function PaywallScreen() {
                   </>
                 ) : (
                   <>
-                    <Text style={styles.ctaButtonText}>Start 3-Day Free Trial</Text>
+                    <Text style={styles.ctaButtonText}>{isPro ? "Switch Plan" : "Start 3-Day Free Trial"}</Text>
                     <Feather name="arrow-right" size={20} color="#fff" />
                   </>
                 )}
@@ -733,6 +758,19 @@ const styles = StyleSheet.create({
   planRowPeriod: {
     fontSize: 12,
     color: "#9CA3AF",
+  },
+  currentPlanBadge: {
+    backgroundColor: "#047857",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+    marginBottom: 2,
+  },
+  currentPlanBadgeText: {
+    fontSize: 10,
+    fontWeight: "700" as const,
+    color: "#FFFFFF",
+    letterSpacing: 0.3,
   },
   planRadioFilled: {
     width: 22,
