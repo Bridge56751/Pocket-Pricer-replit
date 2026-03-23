@@ -1189,7 +1189,7 @@ export default function SearchResultsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: "#0A3622",
   },
   list: {
     flex: 1,
@@ -1197,6 +1197,7 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: 0,
     paddingBottom: 80,
+    backgroundColor: "#F3F4F6",
   },
   heroSection: {
     paddingHorizontal: 16,
@@ -1220,6 +1221,7 @@ const styles = StyleSheet.create({
     paddingTop: 4,
   },
   lightSection: {
+    backgroundColor: "#F3F4F6",
     paddingHorizontal: 16,
     paddingTop: 20,
     paddingBottom: 8,
