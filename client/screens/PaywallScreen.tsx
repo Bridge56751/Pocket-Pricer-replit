@@ -29,22 +29,21 @@ const FEATURES = [
   {
     icon: "camera" as const,
     title: "Unlimited scans",
-    desc: "No daily limits, scan as much as you want",
+    desc: "No daily cap — scan as much as you want",
   },
   {
     icon: "trending-up" as const,
     title: "Real sold prices",
-    desc: "See what items actually sell for, not just listings",
+    desc: "What buyers actually paid, not asking prices",
+    badge: "Most valuable",
+    badgeColor: "#047857",
   },
   {
     icon: "bar-chart-2" as const,
-    title: "Buy Score",
-    desc: "Instant demand & profit rating per item",
-  },
-  {
-    icon: "dollar-sign" as const,
-    title: "Profit calculator",
-    desc: "Fees, shipping & net profit at a glance",
+    title: "Buy Score & Profit Calculator",
+    desc: "0–100 rating + fees, shipping & net profit",
+    badge: "New",
+    badgeColor: "#047857",
   },
 ];
 
@@ -85,17 +84,21 @@ export default function PaywallScreen() {
   const monthlyPkg = packages.find(
     (pkg) => pkg.packageType === "MONTHLY" || pkg.identifier === "$rc_monthly"
   );
-  const hasMultiplePlans = !!(weeklyPkg && monthlyPkg);
-  const [selectedPlan, setSelectedPlan] = useState<"weekly" | "monthly">("weekly");
+  const yearlyPkg = packages.find(
+    (pkg) => pkg.packageType === "ANNUAL" || pkg.identifier === "$rc_annual"
+  );
+  const hasMultiplePlans = [weeklyPkg, monthlyPkg, yearlyPkg].filter(Boolean).length > 1;
+  const [selectedPlan, setSelectedPlan] = useState<"weekly" | "monthly" | "yearly">("monthly");
   const userHasChosen = useRef(false);
 
   useEffect(() => {
     if (userHasChosen.current) return;
-    if (weeklyPkg) setSelectedPlan("weekly");
-    else if (monthlyPkg) setSelectedPlan("monthly");
-  }, [weeklyPkg, monthlyPkg]);
+    if (monthlyPkg) setSelectedPlan("monthly");
+    else if (weeklyPkg) setSelectedPlan("weekly");
+    else if (yearlyPkg) setSelectedPlan("yearly");
+  }, [weeklyPkg, monthlyPkg, yearlyPkg]);
 
-  const handleSelectPlan = (plan: "weekly" | "monthly") => {
+  const handleSelectPlan = (plan: "weekly" | "monthly" | "yearly") => {
     userHasChosen.current = true;
     setSelectedPlan(plan);
   };
@@ -103,12 +106,15 @@ export default function PaywallScreen() {
   const activePkg =
     selectedPlan === "weekly" && weeklyPkg
       ? weeklyPkg
-      : monthlyPkg || weeklyPkg || packages[0];
+      : selectedPlan === "yearly" && yearlyPkg
+        ? yearlyPkg
+        : monthlyPkg || weeklyPkg || yearlyPkg || packages[0];
 
   const getSelectedPrice = () => activePkg?.product.priceString ?? "$8.99";
   const getSelectedPeriod = () => {
     if (!activePkg) return "month";
     if (activePkg === weeklyPkg) return "week";
+    if (activePkg === yearlyPkg) return "year";
     return "month";
   };
 
@@ -256,6 +262,11 @@ export default function PaywallScreen() {
                   <View style={styles.featureTextWrap}>
                     <Text style={styles.featureTitle}>{f.title}</Text>
                     <Text style={styles.featureDesc}>{f.desc}</Text>
+                    {"badge" in f && f.badge ? (
+                      <View style={[styles.featureBadge, { backgroundColor: f.badgeColor + "15" }]}>
+                        <Text style={[styles.featureBadgeText, { color: f.badgeColor }]}>{f.badge}</Text>
+                      </View>
+                    ) : null}
                   </View>
                   <View style={styles.featureCheck}>
                     <Feather name="check" size={14} color="#fff" />
@@ -264,6 +275,8 @@ export default function PaywallScreen() {
               </Animated.View>
             ))}
           </View>
+
+          <Text style={styles.planSectionTitle}>CHOOSE YOUR PLAN</Text>
 
           <View style={styles.planCards}>
             {showError ? (
@@ -277,73 +290,142 @@ export default function PaywallScreen() {
                 </Pressable>
               </View>
             ) : packagesLoading ? (
-              <View style={styles.planCardsRow}>
-                <View style={[styles.planCardSide, styles.skeletonCard]} />
-                <View style={[styles.planCardSide, styles.skeletonCard]} />
+              <View style={styles.planStackCol}>
+                <View style={[styles.planRowCard, styles.skeletonCard]} />
+                <View style={[styles.planRowCard, styles.skeletonCard]} />
               </View>
             ) : hasMultiplePlans ? (
-              <View style={styles.planCardsRow}>
-                <Pressable
-                  onPress={() => handleSelectPlan("monthly")}
-                  style={[
-                    styles.planCardSide,
-                    {
-                      backgroundColor: selectedPlan === "monthly" ? "#F0FDF8" : "#F9FAFB",
-                      borderColor: selectedPlan === "monthly" ? "#047857" : "#E5E7EB",
-                    },
-                  ]}
-                >
-                  {(() => {
-                    const weeklyPrice = weeklyPkg!.product.price;
-                    const monthlyPrice = monthlyPkg!.product.price;
-                    const weeklyEquiv = weeklyPrice * 4.33;
-                    const savePct = Math.round(((weeklyEquiv - monthlyPrice) / weeklyEquiv) * 100);
-                    return savePct > 0 ? (
-                      <View style={styles.saveBadge}>
-                        <Text style={styles.saveBadgeText}>SAVE {savePct}%</Text>
+              <View style={styles.planStackCol}>
+                {weeklyPkg ? (
+                  <Pressable
+                    onPress={() => handleSelectPlan("weekly")}
+                    style={[
+                      styles.planRowCard,
+                      {
+                        borderColor: selectedPlan === "weekly" ? "#047857" : "#E5E7EB",
+                        backgroundColor: selectedPlan === "weekly" ? "#F0FDF8" : "#FFFFFF",
+                      },
+                    ]}
+                  >
+                    <View style={styles.planRowLeft}>
+                      {selectedPlan === "weekly" ? (
+                        <View style={styles.planRadioFilled}>
+                          <View style={styles.planRadioInner} />
+                        </View>
+                      ) : (
+                        <View style={styles.planRadioEmpty} />
+                      )}
+                      <View>
+                        <Text style={styles.planRowTitle}>Weekly</Text>
+                        <Text style={styles.planRowSub}>Try it out, cancel anytime</Text>
                       </View>
-                    ) : null;
-                  })()}
-                  <Text style={styles.planCardLabel}>Monthly</Text>
-                  <Text style={styles.planCardPrice}>{monthlyPkg!.product.priceString}/mo</Text>
-                  {selectedPlan === "monthly" ? (
-                    <View style={styles.planRadioFilled}>
-                      <View style={styles.planRadioInner} />
                     </View>
-                  ) : (
-                    <View style={styles.planRadioEmpty} />
-                  )}
-                </Pressable>
+                    <View style={styles.planRowRight}>
+                      <Text style={styles.planRowPrice}>{weeklyPkg.product.priceString}</Text>
+                      <Text style={styles.planRowPeriod}>per week</Text>
+                    </View>
+                  </Pressable>
+                ) : null}
 
-                <Pressable
-                  onPress={() => handleSelectPlan("weekly")}
-                  style={[
-                    styles.planCardSide,
-                    {
-                      backgroundColor: selectedPlan === "weekly" ? "#065F46" : "#14532D",
-                      borderColor: selectedPlan === "weekly" ? "#34D399" : "#1A6B3C",
-                    },
-                  ]}
-                >
-                  <Text style={[styles.planCardLabel, { color: "rgba(255,255,255,0.7)" }]}>Weekly</Text>
-                  <Text style={[styles.planCardPrice, { color: "#FFFFFF" }]}>{weeklyPkg!.product.priceString}/wk</Text>
-                  {selectedPlan === "weekly" ? (
-                    <View style={[styles.planRadioFilled, { borderColor: "#34D399" }]}>
-                      <View style={[styles.planRadioInner, { backgroundColor: "#34D399" }]} />
+                {monthlyPkg ? (
+                  <Pressable
+                    onPress={() => handleSelectPlan("monthly")}
+                    style={[
+                      styles.planRowCard,
+                      {
+                        borderColor: selectedPlan === "monthly" ? "#047857" : "#E5E7EB",
+                        backgroundColor: selectedPlan === "monthly" ? "#F0FDF8" : "#FFFFFF",
+                      },
+                    ]}
+                  >
+                    <View style={styles.planRowLeft}>
+                      {selectedPlan === "monthly" ? (
+                        <View style={styles.planRadioFilled}>
+                          <View style={styles.planRadioInner} />
+                        </View>
+                      ) : (
+                        <View style={styles.planRadioEmpty} />
+                      )}
+                      <View>
+                        <Text style={styles.planRowTitle}>Monthly</Text>
+                        <Text style={styles.planRowSub}>Most flexible option</Text>
+                      </View>
                     </View>
-                  ) : (
-                    <View style={[styles.planRadioEmpty, { borderColor: "rgba(255,255,255,0.3)" }]} />
-                  )}
-                </Pressable>
+                    <View style={styles.planRowRight}>
+                      <Text style={styles.planRowPrice}>{monthlyPkg.product.priceString}</Text>
+                      <Text style={styles.planRowPeriod}>per month</Text>
+                    </View>
+                  </Pressable>
+                ) : null}
+
+                {yearlyPkg ? (
+                  <Pressable
+                    onPress={() => handleSelectPlan("yearly")}
+                    style={[
+                      styles.planRowCard,
+                      {
+                        borderColor: selectedPlan === "yearly" ? "#047857" : "#E5E7EB",
+                        backgroundColor: selectedPlan === "yearly" ? "#F0FDF8" : "#FFFFFF",
+                      },
+                    ]}
+                  >
+                    <View style={styles.planRowBadgeRow}>
+                      <View style={styles.bestValueBadge}>
+                        <Text style={styles.bestValueText}>Best value</Text>
+                      </View>
+                      {weeklyPkg ? (() => {
+                        const weeklyAnnual = weeklyPkg.product.price * 52;
+                        const yearlyPrice = yearlyPkg.product.price;
+                        const savePct = Math.round(((weeklyAnnual - yearlyPrice) / weeklyAnnual) * 100);
+                        return savePct > 0 ? (
+                          <View style={styles.saveBadge}>
+                            <Text style={styles.saveBadgeText}>SAVE {savePct}%</Text>
+                          </View>
+                        ) : null;
+                      })() : null}
+                    </View>
+                    <View style={styles.planRowMain}>
+                      <View style={styles.planRowLeft}>
+                        {selectedPlan === "yearly" ? (
+                          <View style={styles.planRadioFilled}>
+                            <View style={styles.planRadioInner} />
+                          </View>
+                        ) : (
+                          <View style={styles.planRadioEmpty} />
+                        )}
+                        <View>
+                          <Text style={styles.planRowTitle}>Yearly</Text>
+                          <Text style={styles.planRowSub}>
+                            ${(yearlyPkg.product.price / 12).toFixed(2)} / mo · billed annually
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={styles.planRowRight}>
+                        <Text style={styles.planRowPrice}>{yearlyPkg.product.priceString}</Text>
+                        <Text style={styles.planRowPeriod}>per year</Text>
+                      </View>
+                    </View>
+                  </Pressable>
+                ) : null}
               </View>
             ) : (
-              <View style={[styles.planCardSide, { borderColor: "#047857", backgroundColor: "#F0FDF8", flex: 1 }]}>
-                <Text style={styles.planCardLabel}>3-Day Free Trial</Text>
-                <Text style={styles.planCardPrice}>{getSelectedPrice()}/{getSelectedPeriod()}</Text>
-                <View style={styles.planRadioFilled}>
-                  <View style={styles.planRadioInner} />
+              <Pressable
+                style={[styles.planRowCard, { borderColor: "#047857", backgroundColor: "#F0FDF8" }]}
+              >
+                <View style={styles.planRowLeft}>
+                  <View style={styles.planRadioFilled}>
+                    <View style={styles.planRadioInner} />
+                  </View>
+                  <View>
+                    <Text style={styles.planRowTitle}>3-Day Free Trial</Text>
+                    <Text style={styles.planRowSub}>Cancel anytime</Text>
+                  </View>
                 </View>
-              </View>
+                <View style={styles.planRowRight}>
+                  <Text style={styles.planRowPrice}>{getSelectedPrice()}</Text>
+                  <Text style={styles.planRowPeriod}>per {getSelectedPeriod()}</Text>
+                </View>
+              </Pressable>
             )}
           </View>
 
@@ -548,62 +630,120 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginLeft: 12,
   },
+  featureBadge: {
+    alignSelf: "flex-start" as const,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    marginTop: 4,
+  },
+  featureBadgeText: {
+    fontSize: 11,
+    fontWeight: "700" as const,
+  },
+  planSectionTitle: {
+    fontSize: 12,
+    fontWeight: "600" as const,
+    color: "#9CA3AF",
+    letterSpacing: 1.5,
+    textAlign: "center" as const,
+    marginBottom: 14,
+  },
   planCards: {
     marginBottom: 20,
   },
-  planCardsRow: {
-    flexDirection: "row" as const,
+  planStackCol: {
     gap: 10,
   },
-  planCardSide: {
-    flex: 1,
+  planRowCard: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "space-between" as const,
     borderRadius: 16,
     borderWidth: 2,
-    paddingVertical: 16,
+    paddingVertical: 14,
     paddingHorizontal: 16,
+    flexWrap: "wrap" as const,
+  },
+  planRowBadgeRow: {
+    flexDirection: "row" as const,
     alignItems: "center" as const,
+    gap: 8,
+    width: "100%" as const,
+    marginBottom: 6,
   },
-  planCardLabel: {
-    fontSize: 14,
-    fontWeight: "500" as const,
-    color: "#6B7280",
-    marginBottom: 4,
+  planRowMain: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "space-between" as const,
+    width: "100%" as const,
   },
-  planCardPrice: {
+  planRowLeft: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    gap: 12,
+    flex: 1,
+  },
+  planRowRight: {
+    alignItems: "flex-end" as const,
+  },
+  planRowTitle: {
+    fontSize: 16,
+    fontWeight: "700" as const,
+    color: "#111827",
+    marginBottom: 1,
+  },
+  planRowSub: {
+    fontSize: 12,
+    color: "#9CA3AF",
+  },
+  planRowPrice: {
     fontSize: 22,
     fontWeight: "800" as const,
     color: "#111827",
-    marginBottom: 10,
+  },
+  planRowPeriod: {
+    fontSize: 12,
+    color: "#9CA3AF",
   },
   planRadioFilled: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     borderWidth: 2,
     borderColor: "#047857",
     alignItems: "center",
     justifyContent: "center",
   },
   planRadioInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
     backgroundColor: "#047857",
   },
   planRadioEmpty: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     borderWidth: 2,
     borderColor: "#D1D5DB",
   },
+  bestValueBadge: {
+    backgroundColor: "#111827",
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  bestValueText: {
+    fontSize: 11,
+    fontWeight: "700" as const,
+    color: "#FFFFFF",
+  },
   saveBadge: {
-    backgroundColor: "#EF4444",
+    backgroundColor: "#047857",
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
-    alignSelf: "center" as const,
-    marginBottom: 4,
   },
   saveBadgeText: {
     fontSize: 10,
@@ -612,7 +752,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   skeletonCard: {
-    height: 100,
+    height: 60,
     borderWidth: 1,
     borderColor: "#E5E7EB",
     backgroundColor: "#F3F4F6",
