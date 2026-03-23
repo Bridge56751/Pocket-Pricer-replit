@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from "react";
-import { View, StyleSheet, FlatList, Pressable, Text, Linking, TextInput, ActivityIndicator, ScrollView, Keyboard } from "react-native";
+import React, { useState, useMemo, useCallback, useRef } from "react";
+import { View, StyleSheet, FlatList, Pressable, Text, Linking, TextInput, ActivityIndicator, ScrollView, Keyboard, Animated as RNAnimated } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useHeaderHeight } from "@react-navigation/elements";
+import { useHeaderHeight, HeaderButton } from "@react-navigation/elements";
 import { useRoute, RouteProp, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Image } from "expo-image";
@@ -86,6 +86,51 @@ export default function SearchResultsScreen() {
   const [showEbaySold, setShowEbaySold] = useState(false);
   const [brokenImages, setBrokenImages] = useState<Set<string>>(new Set());
 
+  const scrollY = useRef(new RNAnimated.Value(0)).current;
+  const HERO_THRESHOLD = 250;
+
+  const headerBgColor = scrollY.interpolate({
+    inputRange: [0, HERO_THRESHOLD],
+    outputRange: ["#0A3622", "#FFFFFF"],
+    extrapolate: "clamp",
+  });
+  const headerTextColor = scrollY.interpolate({
+    inputRange: [0, HERO_THRESHOLD * 0.8, HERO_THRESHOLD],
+    outputRange: ["#FFFFFF", "#FFFFFF", "#111827"],
+    extrapolate: "clamp",
+  });
+
+  React.useEffect(() => {
+    navigation.setOptions({
+      headerBackground: () => (
+        <RNAnimated.View style={{ flex: 1, backgroundColor: headerBgColor }} />
+      ),
+      headerTitle: () => (
+        <RNAnimated.Text style={{ fontSize: 17, fontWeight: "700", color: headerTextColor }}>
+          Scan Result
+        </RNAnimated.Text>
+      ),
+      headerLeft: () => (
+        <HeaderButton
+          onPress={() => {
+            if (require("react-native").Platform.OS !== "web") {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }
+            if (navigation.canGoBack()) {
+              navigation.goBack();
+            } else {
+              navigation.navigate("Home" as never);
+            }
+          }}
+          pressOpacity={0.7}
+        >
+          <RNAnimated.View>
+            <Feather name="arrow-left" size={24} color="#FFFFFF" />
+          </RNAnimated.View>
+        </HeaderButton>
+      ),
+    });
+  }, [navigation, headerBgColor, headerTextColor]);
 
   const suggestedPrice = results.avgListPrice;
   const EBAY_FEE_RATE = 0.13;
@@ -384,7 +429,7 @@ export default function SearchResultsScreen() {
 
   return (
     <View style={[styles.container]}>
-      <FlatList
+      <RNAnimated.FlatList
         style={styles.list}
         contentContainerStyle={[
           styles.listContent,
@@ -393,6 +438,11 @@ export default function SearchResultsScreen() {
         scrollIndicatorInsets={{ bottom: insets.bottom }}
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
+        onScroll={RNAnimated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: false }
+        )}
+        scrollEventThrottle={16}
         data={sortedListings}
         keyExtractor={(item) => item.id}
         ListHeaderComponent={
