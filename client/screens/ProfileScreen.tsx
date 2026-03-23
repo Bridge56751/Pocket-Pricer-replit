@@ -26,6 +26,7 @@ export default function ProfileScreen() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [aboutExpanded, setAboutExpanded] = useState(false);
+  const [supportExpanded, setSupportExpanded] = useState(false);
 
   useEffect(() => {
     getScansUsed().then(setScansUsed);
@@ -283,6 +284,45 @@ export default function ProfileScreen() {
         <View style={styles.lightSection}>
           <View style={styles.aboutCard}>
             <Pressable
+              onPress={() => setSupportExpanded(!supportExpanded)}
+              style={styles.aboutHeaderBtn}
+            >
+              <View style={styles.aboutHeaderLeft}>
+                <Feather name="life-buoy" size={18} color={theme.colors.primary} />
+                <Text style={styles.aboutTitle}>Support</Text>
+              </View>
+              <Feather
+                name={supportExpanded ? "chevron-up" : "chevron-down"}
+                size={20}
+                color="#9CA3AF"
+              />
+            </Pressable>
+
+            {supportExpanded ? (
+              <View style={styles.aboutContent}>
+                <MenuItem
+                  label="Email Support"
+                  rightText="pricerpocket@gmail.com"
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    Linking.openURL("mailto:pricerpocket@gmail.com");
+                  }}
+                />
+                <MenuItem
+                  label="Replay Tutorial"
+                  onPress={async () => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    await resetOnboarding();
+                    triggerOnboardingReplay();
+                  }}
+                  showChevron
+                />
+              </View>
+            ) : null}
+          </View>
+
+          <View style={styles.aboutCard}>
+            <Pressable
               onPress={() => setAboutExpanded(!aboutExpanded)}
               style={styles.aboutHeaderBtn}
             >
@@ -314,23 +354,6 @@ export default function ProfileScreen() {
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     WebBrowser.openBrowserAsync("https://pocket-pricer.com");
-                  }}
-                  showChevron
-                />
-                <MenuItem
-                  label="Email Support"
-                  rightText="pricerpocket@gmail.com"
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    Linking.openURL("mailto:pricerpocket@gmail.com");
-                  }}
-                />
-                <MenuItem
-                  label="Replay Tutorial"
-                  onPress={async () => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                    await resetOnboarding();
-                    triggerOnboardingReplay();
                   }}
                   showChevron
                 />
