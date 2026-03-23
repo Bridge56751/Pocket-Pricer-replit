@@ -731,16 +731,13 @@ export default function ScanScreen() {
             style={styles.fabButton}
           >
             <Feather name="camera" size={20} color="#FFFFFF" />
-            <Text style={styles.fabLabel}>Scan Product</Text>
+            <Text style={styles.fabLabel}>
+              {isPro ? "Scan Product" : scansUsed >= FREE_SCAN_LIMIT
+                ? "0 scans remaining"
+                : `${FREE_SCAN_LIMIT - scansUsed} scan${FREE_SCAN_LIMIT - scansUsed === 1 ? "" : "s"} remaining`}
+            </Text>
           </LinearGradient>
         </Pressable>
-        {isPro ? null : (
-          <Text style={styles.fabScansRemaining}>
-            {scansUsed >= FREE_SCAN_LIMIT
-              ? "0 scans remaining"
-              : `${FREE_SCAN_LIMIT - scansUsed} scan${FREE_SCAN_LIMIT - scansUsed === 1 ? "" : "s"} remaining`}
-          </Text>
-        )}
       </View>
     </View>
   );
