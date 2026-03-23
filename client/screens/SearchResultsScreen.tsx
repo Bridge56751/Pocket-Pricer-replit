@@ -85,6 +85,7 @@ export default function SearchResultsScreen() {
   const [ebaySoldError, setEbaySoldError] = useState<string | null>(null);
   const [showEbaySold, setShowEbaySold] = useState(false);
   const [brokenImages, setBrokenImages] = useState<Set<string>>(new Set());
+  const [calcExpanded, setCalcExpanded] = useState(true);
 
   const scrollY = useRef(new RNAnimated.Value(0)).current;
   const HERO_THRESHOLD = 250;
@@ -482,18 +483,27 @@ export default function SearchResultsScreen() {
             <View style={styles.lightSection}>
 
               <View style={styles.calculatorCard}>
-                <View style={styles.calcHeaderRow}>
+                <Pressable onPress={() => setCalcExpanded(prev => !prev)} style={styles.calcHeaderRow}>
                   <View style={styles.calculatorHeader}>
                     <Feather name="dollar-sign" size={18} color="#047857" />
                     <Text style={styles.calculatorTitleText}>Profit Calculator</Text>
                   </View>
-                  {profit > 0 ? (
-                    <View style={styles.marginBadge}>
-                      <Text style={styles.marginBadgeText}>{getMarginLabel(margin)}</Text>
-                    </View>
-                  ) : null}
-                </View>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                    {!calcExpanded && selling > 0 ? (
+                      <Text style={{ fontSize: 15, fontWeight: "700", color: profit >= 0 ? "#047857" : "#EF4444" }}>
+                        {profit >= 0 ? "+" : ""}${profit.toFixed(2)}
+                      </Text>
+                    ) : profit > 0 ? (
+                      <View style={styles.marginBadge}>
+                        <Text style={styles.marginBadgeText}>{getMarginLabel(margin)}</Text>
+                      </View>
+                    ) : null}
+                    <Feather name={calcExpanded ? "chevron-up" : "chevron-down"} size={20} color="#9CA3AF" />
+                  </View>
+                </Pressable>
 
+                {calcExpanded ? (
+                  <>
                 <View style={styles.calcDividerThin} />
 
                 <View style={styles.calculatorRow}>
@@ -641,6 +651,8 @@ export default function SearchResultsScreen() {
                     ) : null}
                   </View>
                 </View>
+                  </>
+                ) : null}
               </View>
 
             <View style={styles.belowHeroContent}>
