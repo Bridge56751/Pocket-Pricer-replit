@@ -8,7 +8,6 @@ import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
-import { BlurView } from "expo-blur";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import Svg, { Circle } from "react-native-svg";
 
@@ -686,23 +685,20 @@ export default function SearchResultsScreen() {
                     <View style={styles.blurredMetricsRow}>
                       <View style={styles.blurredMetricBox}>
                         <Text style={styles.blurredMetricLabel}>Avg Sold</Text>
-                        <View style={styles.blurredValueRow}>
-                          <Text style={styles.blurredMetricValueFake}>$34.50</Text>
-                          <BlurView intensity={25} tint="light" style={styles.blurredOverlay} />
+                        <View style={styles.redactedBar}>
+                          <View style={[styles.redactedBlock, { width: 48 }]} />
                         </View>
                       </View>
                       <View style={styles.blurredMetricBox}>
                         <Text style={styles.blurredMetricLabel}>Buy Score</Text>
-                        <View style={styles.blurredValueRow}>
-                          <Text style={styles.blurredMetricValueFake}>72/100</Text>
-                          <BlurView intensity={25} tint="light" style={styles.blurredOverlay} />
+                        <View style={styles.redactedBar}>
+                          <View style={[styles.redactedBlock, { width: 42 }]} />
                         </View>
                       </View>
                       <View style={styles.blurredMetricBox}>
                         <Text style={styles.blurredMetricLabel}>Sold/mo</Text>
-                        <View style={styles.blurredValueRow}>
-                          <Text style={styles.blurredMetricValueFake}>18</Text>
-                          <BlurView intensity={25} tint="light" style={styles.blurredOverlay} />
+                        <View style={styles.redactedBar}>
+                          <View style={[styles.redactedBlock, { width: 28 }]} />
                         </View>
                       </View>
                     </View>
@@ -2191,23 +2187,16 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.3,
   },
-  blurredValueRow: {
-    position: "relative",
-    overflow: "hidden",
-    borderRadius: 4,
+  redactedBar: {
+    height: 18,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 2,
   },
-  blurredMetricValueFake: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#374151",
-  },
-  blurredOverlay: {
-    position: "absolute",
-    top: -4,
-    left: -4,
-    right: -4,
-    bottom: -4,
+  redactedBlock: {
+    height: 14,
     borderRadius: 4,
+    backgroundColor: "#E5E7EB",
   },
   salesIntelCtaRow: {
     flexDirection: "row",
