@@ -495,6 +495,30 @@ export default function ScanScreen() {
               </View>
             </View>
 
+            <Pressable
+              onPress={handleScanProduct}
+              style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}
+            >
+              <View style={styles.scanButton}>
+                <View style={styles.scanButtonLeft}>
+                  <Feather name="camera" size={20} color="#14532D" />
+                  <Text style={styles.scanButtonText}>Scan Product</Text>
+                </View>
+                {isPro ? (
+                  <View style={styles.scanButtonBadge}>
+                    <Feather name="zap" size={11} color="#fff" />
+                    <Text style={styles.scanButtonBadgeText}>PRO</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.scanButtonCount}>
+                    {scansUsed >= FREE_SCAN_LIMIT
+                      ? "0 scans left"
+                      : `${FREE_SCAN_LIMIT - scansUsed} scan${FREE_SCAN_LIMIT - scansUsed === 1 ? "" : "s"} left`}
+                  </Text>
+                )}
+              </View>
+            </Pressable>
+
             {__DEV__ ? (
               <Pressable
                 onPress={() => {
@@ -545,7 +569,7 @@ export default function ScanScreen() {
                       <Text style={styles.proUpsellBadgeText}>PRO</Text>
                     </LinearGradient>
                     <Text style={styles.proUpsellTitle}>Unlimited scans, sales prices & Buy Score</Text>
-                    <Text style={styles.proUpsellSub}>3-day free trial · As low as $4.99/mo</Text>
+                    <Text style={styles.proUpsellSub}>3-day free trial · $8.99/mo after</Text>
                   </View>
                   <Feather name="chevron-right" size={18} color="rgba(255,255,255,0.4)" />
                 </Pressable>
@@ -718,27 +742,6 @@ export default function ScanScreen() {
           </View>
         </View>
       ) : null}
-
-      <View style={[styles.fabContainer, { bottom: insets.bottom + 70 }]}>
-        <Pressable
-          onPress={handleScanProduct}
-          style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1, transform: [{ scale: pressed ? 0.96 : 1 }] }]}
-        >
-          <LinearGradient
-            colors={["#059669", "#047857", "#065F46"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.fabButton}
-          >
-            <Feather name="camera" size={20} color="#FFFFFF" />
-            <Text style={styles.fabLabel}>
-              {isPro ? "Scan Product" : scansUsed >= FREE_SCAN_LIMIT
-                ? "0 scans remaining"
-                : `${FREE_SCAN_LIMIT - scansUsed} scan${FREE_SCAN_LIMIT - scansUsed === 1 ? "" : "s"} remaining`}
-            </Text>
-          </LinearGradient>
-        </Pressable>
-      </View>
     </View>
   );
 }
@@ -915,75 +918,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "700" as const,
     letterSpacing: 0.5,
-  },
-  metricCardLight: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-  },
-  metricLabelLight: {
-    fontSize: 10,
-    fontWeight: "700" as const,
-    color: "#9CA3AF",
-    letterSpacing: 0.8,
-    marginBottom: 4,
-  },
-  metricValueLight: {
-    fontSize: 28,
-    fontWeight: "800" as const,
-    color: "#047857",
-  },
-  metricUnitLight: {
-    fontSize: 16,
-    fontWeight: "600" as const,
-    color: "rgba(4,120,87,0.6)",
-    marginLeft: 2,
-  },
-  metricSubLight: {
-    fontSize: 11,
-    fontWeight: "500" as const,
-    color: "#9CA3AF",
-    marginTop: 2,
-  },
-  streakDotLight: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: "#047857",
-  },
-  fabContainer: {
-    position: "absolute" as const,
-    alignSelf: "center" as const,
-    alignItems: "center" as const,
-    zIndex: 100,
-  },
-  fabButton: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    paddingHorizontal: 28,
-    paddingVertical: 16,
-    borderRadius: 30,
-    gap: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 6,
-  },
-  fabLabel: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "700" as const,
-  },
-  fabScansRemaining: {
-    color: "#9CA3AF",
-    fontSize: 12,
-    fontWeight: "500" as const,
-    marginTop: 6,
   },
   proUpsellCard: {
     flexDirection: "row" as const,
