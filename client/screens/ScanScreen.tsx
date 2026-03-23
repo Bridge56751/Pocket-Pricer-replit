@@ -467,58 +467,6 @@ export default function ScanScreen() {
               Point your camera at any product to get instant market pricing and sales data
             </Text>
 
-            <View style={styles.metricsRow}>
-              <View style={styles.metricCard}>
-                <Text style={styles.metricLabel}>STREAK</Text>
-                <View style={styles.metricValueRow}>
-                  <Text style={styles.metricValue}>{deviceStats?.streak ?? 0}</Text>
-                  <Text style={styles.metricUnit}>d</Text>
-                </View>
-                <View style={styles.streakDots}>
-                  {Array.from({ length: Math.min(deviceStats?.streak ?? 0, 7) }).map((_, i) => (
-                    <View key={i} style={styles.streakDot} />
-                  ))}
-                </View>
-              </View>
-              <View style={styles.metricCard}>
-                <Text style={styles.metricLabel}>MEMBER</Text>
-                <View style={styles.metricValueRow}>
-                  <Text style={styles.metricValue}>{deviceStats?.memberDays ?? 0}</Text>
-                  <Text style={styles.metricUnit}>d</Text>
-                </View>
-                <Text style={styles.metricSub}>since joined</Text>
-              </View>
-              <View style={styles.metricCard}>
-                <Text style={styles.metricLabel}>TODAY</Text>
-                <Text style={styles.metricValue}>{deviceStats?.scansToday ?? 0}</Text>
-                <Text style={styles.metricSub}>scans</Text>
-              </View>
-            </View>
-
-            <Pressable
-              onPress={handleScanProduct}
-              style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}
-            >
-              <View style={styles.scanButton}>
-                <View style={styles.scanButtonLeft}>
-                  <Feather name="camera" size={20} color="#14532D" />
-                  <Text style={styles.scanButtonText}>Scan Product</Text>
-                </View>
-                {isPro ? (
-                  <View style={styles.scanButtonBadge}>
-                    <Feather name="zap" size={11} color="#fff" />
-                    <Text style={styles.scanButtonBadgeText}>PRO</Text>
-                  </View>
-                ) : (
-                  <Text style={styles.scanButtonCount}>
-                    {scansUsed >= FREE_SCAN_LIMIT
-                      ? "0 scans left"
-                      : `${FREE_SCAN_LIMIT - scansUsed} scan${FREE_SCAN_LIMIT - scansUsed === 1 ? "" : "s"} left`}
-                  </Text>
-                )}
-              </View>
-            </Pressable>
-
             {__DEV__ ? (
               <Pressable
                 onPress={() => {
@@ -742,6 +690,36 @@ export default function ScanScreen() {
           </View>
         </View>
       ) : null}
+
+      <View style={[styles.fabContainer, { bottom: insets.bottom + 90 }]}>
+        <Pressable
+          onPress={handleScanProduct}
+          style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1, transform: [{ scale: pressed ? 0.95 : 1 }] }]}
+        >
+          <LinearGradient
+            colors={["#059669", "#047857", "#065F46"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.fabButton}
+          >
+            <Feather name="camera" size={28} color="#FFFFFF" />
+            <Text style={styles.fabLabel}>Scan</Text>
+          </LinearGradient>
+        </Pressable>
+        {isPro ? (
+          <View style={styles.fabBadge}>
+            <Feather name="zap" size={10} color="#fff" />
+          </View>
+        ) : (
+          <View style={styles.fabCountBadge}>
+            <Text style={styles.fabCountText}>
+              {scansUsed >= FREE_SCAN_LIMIT
+                ? "0"
+                : `${FREE_SCAN_LIMIT - scansUsed}`}
+            </Text>
+          </View>
+        )}
+      </View>
     </View>
   );
 }
@@ -918,6 +896,62 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "700" as const,
     letterSpacing: 0.5,
+  },
+  fabContainer: {
+    position: "absolute" as const,
+    alignSelf: "center" as const,
+    alignItems: "center" as const,
+    zIndex: 100,
+  },
+  fabButton: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  fabLabel: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "700" as const,
+    marginTop: 2,
+  },
+  fabBadge: {
+    position: "absolute" as const,
+    top: -2,
+    right: -2,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "#047857",
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    borderWidth: 2,
+    borderColor: "#F3F4F6",
+  },
+  fabCountBadge: {
+    position: "absolute" as const,
+    top: -2,
+    right: -2,
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "#EF4444",
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    paddingHorizontal: 6,
+    borderWidth: 2,
+    borderColor: "#F3F4F6",
+  },
+  fabCountText: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "800" as const,
   },
   proUpsellCard: {
     flexDirection: "row" as const,
