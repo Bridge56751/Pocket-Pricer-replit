@@ -11,11 +11,12 @@ import { LinearGradient } from "expo-linear-gradient";
 
 const ONBOARDING_COMPLETE_KEY = "@pocket_pricer_onboarding_complete";
 
-type OnboardingStep = "problem" | "solution" | "features" | "trial";
-const STEPS: OnboardingStep[] = ["problem", "solution", "features", "trial"];
+type OnboardingStep = "problem" | "solution" | "trial";
+const STEPS: OnboardingStep[] = ["problem", "solution", "trial"];
 
 interface OnboardingScreenProps {
   onComplete: () => void;
+  onStartTrial?: () => void;
   isReplay?: boolean;
 }
 
@@ -64,7 +65,7 @@ function ProblemStep() {
 
       <Animated.View entering={FadeInUp.delay(350).duration(500)}>
         <Text style={pageStyles.title}>
-          Listing prices{"\n"}are <Text style={pageStyles.titleHighlight}>misleading</Text>
+          Listing prices{"\n"}are <Text style={pageStyles.titleCoral}>misleading</Text>
         </Text>
       </Animated.View>
 
@@ -75,12 +76,12 @@ function ProblemStep() {
   );
 }
 
-function SolutionStep() {
+function SolutionStepContent() {
   return (
     <View style={pageStyles.container}>
       <Animated.View entering={FadeInUp.delay(100).duration(500)} style={pageStyles.iconWrap}>
         <View style={pageStyles.iconSquare}>
-          <Feather name="check-circle" size={28} color="#10B981" />
+          <Feather name="camera" size={30} color="#10B981" />
         </View>
       </Animated.View>
 
@@ -90,38 +91,12 @@ function SolutionStep() {
 
       <Animated.View entering={FadeInUp.delay(350).duration(500)}>
         <Text style={pageStyles.title}>
-          See what items{"\n"}<Text style={pageStyles.titleHighlight}>actually sell for</Text>
+          Scan any item.{"\n"}<Text style={pageStyles.titleGreen}>Know its value.</Text>
         </Text>
       </Animated.View>
 
       <Animated.Text entering={FadeInUp.delay(500).duration(500)} style={pageStyles.subtitle}>
-        Pocket Pricer shows you real sold prices from eBay, so you know exactly what buyers pay.
-      </Animated.Text>
-    </View>
-  );
-}
-
-function FeaturesStep() {
-  return (
-    <View style={pageStyles.container}>
-      <Animated.View entering={FadeInUp.delay(100).duration(500)} style={pageStyles.iconWrap}>
-        <View style={pageStyles.iconSquare}>
-          <Feather name="zap" size={28} color="#F5D87A" />
-        </View>
-      </Animated.View>
-
-      <Animated.Text entering={FadeInUp.delay(250).duration(400)} style={pageStyles.label}>
-        HOW IT WORKS
-      </Animated.Text>
-
-      <Animated.View entering={FadeInUp.delay(350).duration(500)}>
-        <Text style={pageStyles.title}>
-          Scan. Price.{"\n"}<Text style={pageStyles.titleHighlight}>Profit.</Text>
-        </Text>
-      </Animated.View>
-
-      <Animated.Text entering={FadeInUp.delay(500).duration(500)} style={pageStyles.subtitle}>
-        Point your camera at any product, get instant prices from 4+ stores, and see your profit before you buy.
+        Point your camera and get real sold prices from actual eBay transactions.
       </Animated.Text>
     </View>
   );
@@ -129,15 +104,15 @@ function FeaturesStep() {
 
 function TrialStep() {
   return (
-    <View style={pageStyles.container}>
-      <Animated.View entering={FadeInUp.delay(100).duration(500)} style={pageStyles.iconWrap}>
+    <View style={trialStyles.container}>
+      <Animated.View entering={FadeInUp.delay(100).duration(500)} style={trialStyles.iconWrap}>
         <LinearGradient
           colors={["#F5D87A", "#D4A926", "#E8C84A", "#D4A926"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={pageStyles.iconSquare}
+          style={trialStyles.iconCircle}
         >
-          <Feather name="tag" size={28} color="#3D2E00" style={{ transform: [{ scaleX: -1 }] }} />
+          <Feather name="tag" size={30} color="#3D2E00" style={{ transform: [{ scaleX: -1 }] }} />
         </LinearGradient>
       </Animated.View>
 
@@ -146,29 +121,122 @@ function TrialStep() {
           colors={["#F5D87A", "#D4A926", "#E8C84A", "#D4A926"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
-          style={pageStyles.proBadge}
+          style={trialStyles.proBadge}
         >
-          <Text style={pageStyles.proBadgeText}>POCKET PRICER PRO</Text>
+          <Feather name="star" size={13} color="#3D2E00" />
+          <Text style={trialStyles.proBadgeText}>POCKET PRICER PRO</Text>
         </LinearGradient>
       </Animated.View>
 
-      <Animated.View entering={FadeInUp.delay(350).duration(500)}>
-        <Text style={pageStyles.title}>
-          Try Pro free{"\n"}for <Text style={pageStyles.titleGold}>3 days</Text>
+      <Animated.View entering={FadeInUp.delay(300).duration(500)}>
+        <Text style={trialStyles.title}>
+          You're ready.{"\n"}<Text style={trialStyles.titleGreen}>Let's flip smarter.</Text>
         </Text>
       </Animated.View>
 
-      <Animated.Text entering={FadeInUp.delay(500).duration(500)} style={pageStyles.subtitle}>
-        We want you to experience everything Pocket Pricer has to offer — unlimited scans, real sold prices, and profit tools — completely free.
+      <Animated.Text entering={FadeInUp.delay(420).duration(400)} style={trialStyles.subtitle}>
+        Try free for 3 days,{"\n"}no charge until day 4
       </Animated.Text>
 
-      <Animated.View entering={FadeInUp.delay(650).duration(400)} style={pageStyles.trialBadge}>
-        <Feather name="shield" size={16} color="#D4A926" />
-        <Text style={pageStyles.trialBadgeText}>Cancel anytime. No commitment.</Text>
+      <Animated.View entering={FadeInUp.delay(540).duration(400)} style={trialStyles.featureList}>
+        <View style={trialStyles.featureRow}>
+          <View style={trialStyles.checkCircle}>
+            <Feather name="check" size={14} color="#10B981" />
+          </View>
+          <Text style={trialStyles.featureText}>Unlimited scans</Text>
+        </View>
+        <View style={trialStyles.featureRow}>
+          <View style={trialStyles.checkCircle}>
+            <Feather name="check" size={14} color="#10B981" />
+          </View>
+          <Text style={trialStyles.featureText}>Real sold prices</Text>
+        </View>
+        <View style={trialStyles.featureRow}>
+          <View style={trialStyles.checkCircle}>
+            <Feather name="check" size={14} color="#10B981" />
+          </View>
+          <Text style={trialStyles.featureText}>Buy Score + Profit calc</Text>
+        </View>
       </Animated.View>
     </View>
   );
 }
+
+const trialStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 32,
+  },
+  iconWrap: {
+    marginBottom: 16,
+  },
+  iconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  proBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 7,
+    borderRadius: 20,
+    marginBottom: 16,
+  },
+  proBadgeText: {
+    fontSize: 14,
+    fontWeight: "800",
+    letterSpacing: 1.5,
+    color: "#3D2E00",
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    textAlign: "center",
+    lineHeight: 36,
+    marginBottom: 10,
+  },
+  titleGreen: {
+    color: "#34D399",
+  },
+  subtitle: {
+    fontSize: 16,
+    fontWeight: "400",
+    color: "rgba(255,255,255,0.45)",
+    textAlign: "center",
+    lineHeight: 23,
+    marginBottom: 28,
+  },
+  featureList: {
+    alignSelf: "stretch",
+    gap: 14,
+    paddingHorizontal: 20,
+  },
+  featureRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  checkCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "rgba(16,185,129,0.15)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  featureText: {
+    fontSize: 17,
+    fontWeight: "600",
+    color: "rgba(255,255,255,0.85)",
+  },
+});
 
 const pageStyles = StyleSheet.create({
   container: {
@@ -212,11 +280,11 @@ const pageStyles = StyleSheet.create({
     lineHeight: 40,
     marginBottom: 16,
   },
-  titleHighlight: {
+  titleCoral: {
     color: "#F87171",
   },
-  titleGold: {
-    color: "#F5D87A",
+  titleGreen: {
+    color: "#34D399",
   },
   subtitle: {
     fontSize: 17,
@@ -226,38 +294,9 @@ const pageStyles = StyleSheet.create({
     lineHeight: 25,
     paddingHorizontal: 8,
   },
-  proBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 7,
-    borderRadius: 20,
-    marginBottom: 16,
-  },
-  proBadgeText: {
-    fontSize: 14,
-    fontWeight: "800",
-    letterSpacing: 1.5,
-    color: "#3D2E00",
-  },
-  trialBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 24,
-    backgroundColor: "rgba(255,255,255,0.06)",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 20,
-  },
-  trialBadgeText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "rgba(255,255,255,0.5)",
-  },
 });
 
-export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
+export default function OnboardingScreen({ onComplete, onStartTrial }: OnboardingScreenProps) {
   const insets = useSafeAreaInsets();
   const [stepIndex, setStepIndex] = useState(0);
   const [transitioning, setTransitioning] = useState(false);
@@ -270,12 +309,18 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
     onComplete();
   };
 
+  const handleStartTrial = async () => {
+    await AsyncStorage.setItem(ONBOARDING_COMPLETE_KEY, "true");
+    if (onStartTrial) {
+      onStartTrial();
+    } else {
+      onComplete();
+    }
+  };
+
   const goNext = () => {
     if (transitioning) return;
-    if (isLastStep) {
-      handleComplete();
-      return;
-    }
+    if (isLastStep) return;
     setTransitioning(true);
     setTimeout(() => {
       setStepIndex((prev) => prev + 1);
@@ -317,9 +362,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
         {currentStep === "problem" ? (
           <ProblemStep />
         ) : currentStep === "solution" ? (
-          <SolutionStep />
-        ) : currentStep === "features" ? (
-          <FeaturesStep />
+          <SolutionStepContent />
         ) : (
           <TrialStep />
         )}
@@ -327,32 +370,54 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
 
       <Animated.View
         entering={FadeInDown.delay(300).duration(400)}
-        style={[styles.footer, { paddingBottom: insets.bottom + 20 }]}
+        style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}
       >
-        <Pressable
-          onPress={goNext}
-          style={({ pressed }) => [
-            styles.ctaButton,
-            { opacity: pressed ? 0.85 : 1 },
-          ]}
-        >
-          {isLastStep ? (
-            <LinearGradient
-              colors={["#F5D87A", "#D4A926", "#E8C84A"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.ctaGradient}
+        {isLastStep ? (
+          <>
+            <Pressable
+              onPress={handleStartTrial}
+              style={({ pressed }) => [
+                styles.ctaButton,
+                { opacity: pressed ? 0.85 : 1 },
+              ]}
             >
-              <Text style={[styles.ctaText, { color: "#3D2E00" }]}>Claim Your Free Trial</Text>
-              <Feather name="arrow-right" size={20} color="#3D2E00" />
-            </LinearGradient>
-          ) : (
+              <LinearGradient
+                colors={["#F5D87A", "#D4A926", "#E8C84A"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.ctaGradient}
+              >
+                <Text style={[styles.ctaText, { color: "#3D2E00" }]}>Start Free Trial</Text>
+                <Feather name="arrow-right" size={20} color="#3D2E00" />
+              </LinearGradient>
+            </Pressable>
+            <Pressable
+              onPress={handleComplete}
+              style={({ pressed }) => [
+                styles.ctaButton,
+                { opacity: pressed ? 0.85 : 1, marginTop: 10 },
+              ]}
+            >
+              <View style={styles.ctaOutline}>
+                <Text style={styles.ctaText}>Start without Pro</Text>
+              </View>
+            </Pressable>
+            <Text style={styles.legalNote}>No charge for 3 days · Cancel anytime</Text>
+          </>
+        ) : (
+          <Pressable
+            onPress={goNext}
+            style={({ pressed }) => [
+              styles.ctaButton,
+              { opacity: pressed ? 0.85 : 1 },
+            ]}
+          >
             <View style={styles.ctaOutline}>
               <Text style={styles.ctaText}>Next</Text>
               <Feather name="arrow-right" size={20} color="#fff" />
             </View>
-          )}
-        </Pressable>
+          </Pressable>
+        )}
       </Animated.View>
     </LinearGradient>
   );
@@ -434,5 +499,11 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 18,
     fontWeight: "700",
+  },
+  legalNote: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: "#10B981",
+    marginTop: 14,
   },
 });

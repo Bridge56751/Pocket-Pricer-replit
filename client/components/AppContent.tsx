@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { View, ActivityIndicator, StyleSheet } from "react-native";
-import { NavigationContainer } from "@react-navigation/native";
+import { NavigationContainer, NavigationContainerRef } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 import * as Linking from "expo-linking";
 
 import RootStackNavigator from "@/navigation/RootStackNavigator";
+import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import OnboardingScreen, { checkOnboardingComplete } from "@/screens/OnboardingScreen";
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { useRevenueCat } from "@/contexts/RevenueCatContext";
@@ -19,7 +20,9 @@ export function AppContent() {
   const { isPro, isReady: rcReady } = useRevenueCat();
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
   const [isOnboardingReplay, setIsOnboardingReplay] = useState(false);
+  const [showPaywallAfterOnboarding, setShowPaywallAfterOnboarding] = useState(false);
   const hasCompletedOnboardingOnce = React.useRef(false);
+  const navigationRef = useRef<NavigationContainerRef<RootStackParamList>>(null);
 
   useEffect(() => {
     checkOnboardingComplete().then((complete) => {
@@ -44,6 +47,21 @@ export function AppContent() {
     setShowOnboarding(false);
     setIsOnboardingReplay(false);
   };
+
+  const handleStartTrial = () => {
+    setShowPaywallAfterOnboarding(true);
+    setShowOnboarding(false);
+    setIsOnboardingReplay(false);
+  };
+
+  useEffect(() => {
+    if (showPaywallAfterOnboarding && navigationRef.current) {
+      setTimeout(() => {
+        navigationRef.current?.navigate("Paywall");
+        setShowPaywallAfterOnboarding(false);
+      }, 100);
+    }
+  }, [showPaywallAfterOnboarding]);
 
   useEffect(() => {
     const handleDeepLink = (event: { url: string }) => {
@@ -80,15 +98,15 @@ export function AppContent() {
   if (showOnboarding) {
     return (
       <>
-        <OnboardingScreen onComplete={handleOnboardingComplete} isReplay={isOnboardingReplay} />
-        <StatusBar style="dark" />
+        <OnboardingScreen onComplete={handleOnboardingComplete} onStartTrial={handleStartTrial} isReplay={isOnboardingReplay} />
+        <StatusBar style="light" />
       </>
     );
   }
 
   return (
     <>
-      <NavigationContainer>
+      <NavigationContainer ref={navigationRef}>
         <RootStackNavigator />
       </NavigationContainer>
       <StatusBar style="dark" />
