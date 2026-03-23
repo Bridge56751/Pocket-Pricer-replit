@@ -506,41 +506,46 @@ export default function SearchResultsScreen() {
 
                 <View style={styles.donutSection}>
                   <View style={styles.donutChartContainer}>
-                    <Svg width={100} height={100} viewBox="0 0 100 100">
-                      <Circle cx="50" cy="50" r="40" stroke="#E5E7EB" strokeWidth="12" fill="none" />
-                      {purchase > 0 ? (
-                        <Circle
-                          cx="50" cy="50" r="40"
-                          stroke="#D1D5DB"
-                          strokeWidth="12"
-                          fill="none"
-                          strokeDasharray={`${(purchase / selling) * 251.3} 251.3`}
-                          strokeDashoffset={0}
-                          rotation="-90"
-                          origin="50,50"
-                        />
-                      ) : null}
-                      <Circle
-                        cx="50" cy="50" r="40"
-                        stroke="#F59E0B"
-                        strokeWidth="12"
-                        fill="none"
-                        strokeDasharray={`${(ebayFees / selling) * 251.3} 251.3`}
-                        strokeDashoffset={`${-(purchase / selling) * 251.3}`}
-                        rotation="-90"
-                        origin="50,50"
-                      />
-                      <Circle
-                        cx="50" cy="50" r="40"
-                        stroke="#047857"
-                        strokeWidth="12"
-                        fill="none"
-                        strokeDasharray={`${Math.max(0, (profit / selling)) * 251.3} 251.3`}
-                        strokeDashoffset={`${-((purchase + ebayFees) / selling) * 251.3}`}
-                        rotation="-90"
-                        origin="50,50"
-                      />
-                    </Svg>
+                    {(() => {
+                      const circumference = 2 * Math.PI * 40;
+                      const total = selling > 0 ? selling : 1;
+                      const profitFrac = Math.max(0, profit) / total;
+                      const feesFrac = ebayFees / total;
+                      const costFrac = purchase / total;
+                      const profitLen = profitFrac * circumference;
+                      const feesLen = feesFrac * circumference;
+                      const costLen = costFrac * circumference;
+                      let offset = circumference * 0.25;
+                      const profitOffset = offset;
+                      offset -= profitLen;
+                      const feesOffset = offset;
+                      offset -= feesLen;
+                      const costOffset = offset;
+                      return (
+                        <Svg width={100} height={100} viewBox="0 0 100 100">
+                          <Circle cx="50" cy="50" r="40" stroke="#F3F4F6" strokeWidth="12" fill="none" />
+                          {costLen > 0 ? (
+                            <Circle cx="50" cy="50" r="40" stroke="#D1D5DB" strokeWidth="12" fill="none"
+                              strokeDasharray={`${costLen} ${circumference - costLen}`}
+                              strokeDashoffset={costOffset}
+                              strokeLinecap="round"
+                            />
+                          ) : null}
+                          <Circle cx="50" cy="50" r="40" stroke="#F59E0B" strokeWidth="12" fill="none"
+                            strokeDasharray={`${feesLen} ${circumference - feesLen}`}
+                            strokeDashoffset={feesOffset}
+                            strokeLinecap="round"
+                          />
+                          {profitLen > 0 ? (
+                            <Circle cx="50" cy="50" r="40" stroke="#047857" strokeWidth="12" fill="none"
+                              strokeDasharray={`${profitLen} ${circumference - profitLen}`}
+                              strokeDashoffset={profitOffset}
+                              strokeLinecap="round"
+                            />
+                          ) : null}
+                        </Svg>
+                      );
+                    })()}
                     <View style={styles.donutCenter}>
                       <Text style={styles.donutPercent}>{Math.max(0, margin)}%</Text>
                       <Text style={styles.donutMarginLabel}>margin</Text>
