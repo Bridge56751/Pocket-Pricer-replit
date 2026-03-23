@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useRef } from "react";
-import { View, StyleSheet, FlatList, Pressable, Text, Linking, TextInput, ActivityIndicator, ScrollView, Keyboard, Animated as RNAnimated } from "react-native";
+import { View, StyleSheet, FlatList, Pressable, Text, Linking, TextInput, ActivityIndicator, ScrollView, Keyboard } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight, HeaderButton } from "@react-navigation/elements";
 import { useRoute, RouteProp, useNavigation } from "@react-navigation/native";
@@ -86,37 +86,15 @@ export default function SearchResultsScreen() {
   const [showEbaySold, setShowEbaySold] = useState(false);
   const [brokenImages, setBrokenImages] = useState<Set<string>>(new Set());
 
-  const scrollY = useRef(new RNAnimated.Value(0)).current;
-  const HERO_THRESHOLD = 250;
-
-  const headerBgColor = scrollY.interpolate({
-    inputRange: [0, HERO_THRESHOLD],
-    outputRange: ["#0A3622", "#FFFFFF"],
-    extrapolate: "clamp",
-  });
-  const headerTextColor = scrollY.interpolate({
-    inputRange: [0, HERO_THRESHOLD * 0.85, HERO_THRESHOLD],
-    outputRange: ["#FFFFFF", "#FFFFFF", "#111827"],
-    extrapolate: "clamp",
-  });
-  const headerBgOpacity = scrollY.interpolate({
-    inputRange: [0, HERO_THRESHOLD * 0.85, HERO_THRESHOLD],
-    outputRange: ["rgba(255,255,255,0.18)", "rgba(255,255,255,0.18)", "rgba(0,0,0,0)"],
-    extrapolate: "clamp",
-  });
-
   React.useEffect(() => {
     navigation.setOptions({
       headerTransparent: true,
       headerShadowVisible: false,
       headerStyle: { backgroundColor: "transparent" },
-      headerBackground: () => (
-        <RNAnimated.View style={{ flex: 1, backgroundColor: headerBgColor }} />
-      ),
       headerTitle: () => (
-        <RNAnimated.Text style={{ fontSize: 17, fontWeight: "700", color: headerTextColor }}>
+        <Text style={{ fontSize: 17, fontWeight: "700", color: "#FFFFFF" }}>
           Scan Result
-        </RNAnimated.Text>
+        </Text>
       ),
       headerLeft: () => (
         <HeaderButton
@@ -132,20 +110,11 @@ export default function SearchResultsScreen() {
           }}
           pressOpacity={0.7}
         >
-          <RNAnimated.View style={{
-            width: 36,
-            height: 36,
-            borderRadius: 18,
-            backgroundColor: headerBgOpacity,
-            alignItems: "center",
-            justifyContent: "center",
-          }}>
-            <Feather name="arrow-left" size={22} color="#111827" />
-          </RNAnimated.View>
+          <Feather name="arrow-left" size={24} color="#FFFFFF" />
         </HeaderButton>
       ),
     });
-  }, [navigation, headerBgColor, headerTextColor, headerBgOpacity]);
+  }, [navigation]);
 
   const suggestedPrice = results.avgListPrice;
   const EBAY_FEE_RATE = 0.13;
@@ -444,7 +413,7 @@ export default function SearchResultsScreen() {
 
   return (
     <View style={[styles.container]}>
-      <RNAnimated.FlatList
+      <FlatList
         style={styles.list}
         contentContainerStyle={[
           styles.listContent,
@@ -453,11 +422,6 @@ export default function SearchResultsScreen() {
         scrollIndicatorInsets={{ bottom: insets.bottom }}
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
-        onScroll={RNAnimated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: false }
-        )}
-        scrollEventThrottle={16}
         data={sortedListings}
         keyExtractor={(item) => item.id}
         ListHeaderComponent={
