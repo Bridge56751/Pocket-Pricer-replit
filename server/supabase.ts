@@ -132,7 +132,9 @@ export async function getDeviceStats(deviceId: string): Promise<{
     if (device?.first_seen) {
       const firstSeen = new Date(device.first_seen);
       const now = new Date();
-      memberDays = Math.max(1, Math.ceil((now.getTime() - firstSeen.getTime()) / (1000 * 60 * 60 * 24)));
+      const firstDay = new Date(firstSeen.getFullYear(), firstSeen.getMonth(), firstSeen.getDate());
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      memberDays = Math.max(1, Math.round((today.getTime() - firstDay.getTime()) / (1000 * 60 * 60 * 24)) + 1);
     }
 
     const todayStart = new Date();
