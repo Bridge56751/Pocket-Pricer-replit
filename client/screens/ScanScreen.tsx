@@ -568,7 +568,7 @@ export default function ScanScreen() {
                       <Feather name="star" size={11} color="#3D2E00" />
                       <Text style={styles.proUpsellBadgeText}>PRO</Text>
                     </LinearGradient>
-                    <Text style={styles.proUpsellTitle}>Unlock sold prices & Buy Score</Text>
+                    <Text style={styles.proUpsellTitle}>Unlimited scans, sales prices & Buy Score</Text>
                     <Text style={styles.proUpsellSub}>3-day free trial · $8.99/mo after</Text>
                   </View>
                   <Feather name="chevron-right" size={18} color="rgba(255,255,255,0.4)" />
