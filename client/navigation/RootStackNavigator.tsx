@@ -136,7 +136,7 @@ export default function RootStackNavigator() {
           headerTransparent: false,
           headerBlurEffect: undefined,
           headerStyle: {
-            backgroundColor: "#14532D",
+            backgroundColor: "#0A3622",
           },
           headerTintColor: "#FFFFFF",
           headerTitleStyle: {
