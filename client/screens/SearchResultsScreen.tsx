@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useRef } from "react";
-import { View, StyleSheet, FlatList, Pressable, Text, Linking, TextInput, ActivityIndicator, ScrollView, Keyboard } from "react-native";
+import { View, StyleSheet, FlatList, Pressable, Text, Linking, TextInput, ActivityIndicator, ScrollView, Keyboard, Animated as RNAnimated } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight, HeaderButton } from "@react-navigation/elements";
 import { useRoute, RouteProp, useNavigation } from "@react-navigation/native";
@@ -86,15 +86,24 @@ export default function SearchResultsScreen() {
   const [showEbaySold, setShowEbaySold] = useState(false);
   const [brokenImages, setBrokenImages] = useState<Set<string>>(new Set());
 
+  const scrollY = useRef(new RNAnimated.Value(0)).current;
+  const HERO_THRESHOLD = 250;
+
+  const headerTextColor = scrollY.interpolate({
+    inputRange: [0, HERO_THRESHOLD * 0.85, HERO_THRESHOLD],
+    outputRange: ["#FFFFFF", "#FFFFFF", "#111827"],
+    extrapolate: "clamp",
+  });
+
   React.useEffect(() => {
     navigation.setOptions({
       headerTransparent: true,
       headerShadowVisible: false,
       headerStyle: { backgroundColor: "transparent" },
       headerTitle: () => (
-        <Text style={{ fontSize: 17, fontWeight: "700", color: "#FFFFFF" }}>
+        <RNAnimated.Text style={{ fontSize: 17, fontWeight: "700", color: headerTextColor }}>
           Scan Result
-        </Text>
+        </RNAnimated.Text>
       ),
       headerLeft: () => (
         <HeaderButton
@@ -110,11 +119,13 @@ export default function SearchResultsScreen() {
           }}
           pressOpacity={0.7}
         >
-          <Feather name="arrow-left" size={24} color="#FFFFFF" />
+          <RNAnimated.Text style={{ color: headerTextColor }}>
+            <Feather name="arrow-left" size={24} />
+          </RNAnimated.Text>
         </HeaderButton>
       ),
     });
-  }, [navigation]);
+  }, [navigation, headerTextColor]);
 
   const suggestedPrice = results.avgListPrice;
   const EBAY_FEE_RATE = 0.13;
@@ -413,7 +424,7 @@ export default function SearchResultsScreen() {
 
   return (
     <View style={[styles.container]}>
-      <FlatList
+      <RNAnimated.FlatList
         style={styles.list}
         contentContainerStyle={[
           styles.listContent,
@@ -422,6 +433,11 @@ export default function SearchResultsScreen() {
         scrollIndicatorInsets={{ bottom: insets.bottom }}
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
+        onScroll={RNAnimated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: false }
+        )}
+        scrollEventThrottle={16}
         data={sortedListings}
         keyExtractor={(item) => item.id}
         ListHeaderComponent={
