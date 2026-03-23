@@ -107,12 +107,12 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.outerContainer}>
-      <View style={styles.topOverscrollBg} />
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={{ paddingBottom: insets.bottom + 32, flexGrow: 1 }}
         showsVerticalScrollIndicator={false}
       >
+        <View style={styles.topOverscrollFill} />
         <LinearGradient
           colors={["#0A3622", "#0A3622", "#14532D", "#1A6B3C"]}
           start={{ x: 0, y: 0 }}
@@ -402,12 +402,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F3F4F6",
   },
-  topOverscrollBg: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 500,
+  topOverscrollFill: {
+    height: 800,
+    marginTop: -800,
     backgroundColor: "#0A3622",
   },
   scrollView: {
