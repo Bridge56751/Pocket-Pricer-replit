@@ -519,7 +519,7 @@ export default function ScanScreen() {
 
             <Pressable
               onPress={handleScanProduct}
-              style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}
+              style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1, marginTop: 12 }]}
             >
               <View style={[styles.scanButton, isPro ? { borderColor: "rgba(212,169,38,0.4)" } : undefined]}>
                 <View style={styles.scanButtonLeft}>
