@@ -526,6 +526,35 @@ export default function ScanScreen() {
           </LinearGradient>
 
         <View style={styles.belowHeroContent}>
+
+        <View style={styles.metricsRow}>
+          <View style={styles.metricCardLight}>
+            <Text style={styles.metricLabelLight}>STREAK</Text>
+            <View style={styles.metricValueRow}>
+              <Text style={styles.metricValueLight}>{deviceStats?.streak ?? 0}</Text>
+              <Text style={styles.metricUnitLight}>d</Text>
+            </View>
+            <View style={styles.streakDots}>
+              {Array.from({ length: Math.min(deviceStats?.streak ?? 0, 7) }).map((_, i) => (
+                <View key={i} style={styles.streakDotLight} />
+              ))}
+            </View>
+          </View>
+          <View style={styles.metricCardLight}>
+            <Text style={styles.metricLabelLight}>MEMBER</Text>
+            <View style={styles.metricValueRow}>
+              <Text style={styles.metricValueLight}>{deviceStats?.memberDays ?? 0}</Text>
+              <Text style={styles.metricUnitLight}>d</Text>
+            </View>
+            <Text style={styles.metricSubLight}>since joined</Text>
+          </View>
+          <View style={styles.metricCardLight}>
+            <Text style={styles.metricLabelLight}>TODAY</Text>
+            <Text style={styles.metricValueLight}>{deviceStats?.scansToday ?? 0}</Text>
+            <Text style={styles.metricSubLight}>scans</Text>
+          </View>
+        </View>
+
         <View style={styles.sectionHeader}>
           <Feather name="clock" size={18} color={theme.colors.primary} />
           <Text style={[styles.sectionTitle, { color: theme.colors.foreground }]}>
@@ -890,6 +919,45 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "700" as const,
     letterSpacing: 0.5,
+  },
+  metricCardLight: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  metricLabelLight: {
+    fontSize: 10,
+    fontWeight: "700" as const,
+    color: "#9CA3AF",
+    letterSpacing: 0.8,
+    marginBottom: 4,
+  },
+  metricValueLight: {
+    fontSize: 28,
+    fontWeight: "800" as const,
+    color: "#047857",
+  },
+  metricUnitLight: {
+    fontSize: 16,
+    fontWeight: "600" as const,
+    color: "rgba(4,120,87,0.6)",
+    marginLeft: 2,
+  },
+  metricSubLight: {
+    fontSize: 11,
+    fontWeight: "500" as const,
+    color: "#9CA3AF",
+    marginTop: 2,
+  },
+  streakDotLight: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#047857",
   },
   fabContainer: {
     position: "absolute" as const,
