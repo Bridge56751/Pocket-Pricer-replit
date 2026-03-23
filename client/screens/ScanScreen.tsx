@@ -467,6 +467,34 @@ export default function ScanScreen() {
               Point your camera at any product to get instant market pricing and sales data
             </Text>
 
+            <View style={styles.metricsRow}>
+              <View style={styles.metricCard}>
+                <Text style={styles.metricLabel}>STREAK</Text>
+                <View style={styles.metricValueRow}>
+                  <Text style={styles.metricValue}>{deviceStats?.streak ?? 0}</Text>
+                  <Text style={styles.metricUnit}>d</Text>
+                </View>
+                <View style={styles.streakDots}>
+                  {Array.from({ length: Math.min(deviceStats?.streak ?? 0, 7) }).map((_, i) => (
+                    <View key={i} style={styles.streakDot} />
+                  ))}
+                </View>
+              </View>
+              <View style={styles.metricCard}>
+                <Text style={styles.metricLabel}>MEMBER</Text>
+                <View style={styles.metricValueRow}>
+                  <Text style={styles.metricValue}>{deviceStats?.memberDays ?? 0}</Text>
+                  <Text style={styles.metricUnit}>d</Text>
+                </View>
+                <Text style={styles.metricSub}>since joined</Text>
+              </View>
+              <View style={styles.metricCard}>
+                <Text style={styles.metricLabel}>TODAY</Text>
+                <Text style={styles.metricValue}>{deviceStats?.scansToday ?? 0}</Text>
+                <Text style={styles.metricSub}>scans</Text>
+              </View>
+            </View>
+
             {__DEV__ ? (
               <Pressable
                 onPress={() => {
@@ -526,35 +554,6 @@ export default function ScanScreen() {
           </LinearGradient>
 
         <View style={styles.belowHeroContent}>
-
-        <View style={styles.metricsRow}>
-          <View style={styles.metricCardLight}>
-            <Text style={styles.metricLabelLight}>STREAK</Text>
-            <View style={styles.metricValueRow}>
-              <Text style={styles.metricValueLight}>{deviceStats?.streak ?? 0}</Text>
-              <Text style={styles.metricUnitLight}>d</Text>
-            </View>
-            <View style={styles.streakDots}>
-              {Array.from({ length: Math.min(deviceStats?.streak ?? 0, 7) }).map((_, i) => (
-                <View key={i} style={styles.streakDotLight} />
-              ))}
-            </View>
-          </View>
-          <View style={styles.metricCardLight}>
-            <Text style={styles.metricLabelLight}>MEMBER</Text>
-            <View style={styles.metricValueRow}>
-              <Text style={styles.metricValueLight}>{deviceStats?.memberDays ?? 0}</Text>
-              <Text style={styles.metricUnitLight}>d</Text>
-            </View>
-            <Text style={styles.metricSubLight}>since joined</Text>
-          </View>
-          <View style={styles.metricCardLight}>
-            <Text style={styles.metricLabelLight}>TODAY</Text>
-            <Text style={styles.metricValueLight}>{deviceStats?.scansToday ?? 0}</Text>
-            <Text style={styles.metricSubLight}>scans</Text>
-          </View>
-        </View>
-
         <View style={styles.sectionHeader}>
           <Feather name="clock" size={18} color={theme.colors.primary} />
           <Text style={[styles.sectionTitle, { color: theme.colors.foreground }]}>
