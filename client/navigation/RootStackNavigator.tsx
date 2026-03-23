@@ -129,9 +129,10 @@ export default function RootStackNavigator() {
       <Stack.Screen
         name="SearchResults"
         component={SearchResultsScreen}
-        options={{
+        options={({ navigation }) => ({
           headerTitle: "Scan Result",
-          headerBackVisible: true,
+          headerBackVisible: false,
+          headerLeft: () => renderBackButton(navigation, "#FFFFFF"),
           headerTransparent: false,
           headerBlurEffect: undefined,
           headerStyle: {
@@ -143,7 +144,7 @@ export default function RootStackNavigator() {
             fontWeight: "700",
           },
           headerShadowVisible: false,
-        }}
+        })}
       />
       <Stack.Screen
         name="Paywall"

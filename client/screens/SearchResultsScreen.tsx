@@ -425,7 +425,7 @@ export default function SearchResultsScreen() {
         style={styles.list}
         contentContainerStyle={[
           styles.listContent,
-          { paddingTop: theme.spacing.md, paddingBottom: 100 }
+          { paddingTop: 0, paddingBottom: 100 }
         ]}
         scrollIndicatorInsets={{ bottom: insets.bottom }}
         keyboardDismissMode="on-drag"
