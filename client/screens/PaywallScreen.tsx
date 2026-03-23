@@ -255,9 +255,9 @@ export default function PaywallScreen() {
                 key={f.title}
                 entering={FadeInUp.delay(120 + index * 60).duration(400)}
               >
-                <View style={styles.featureRow}>
+                <View style={styles.featureCard}>
                   <View style={styles.featureIconCircle}>
-                    <Feather name={f.icon} size={18} color="#047857" />
+                    <Feather name={f.icon} size={20} color="#047857" />
                   </View>
                   <View style={styles.featureTextWrap}>
                     <Text style={styles.featureTitle}>{f.title}</Text>
@@ -269,7 +269,7 @@ export default function PaywallScreen() {
                     ) : null}
                   </View>
                   <View style={styles.featureCheck}>
-                    <Feather name="check" size={14} color="#fff" />
+                    <Feather name="check" size={15} color="#fff" />
                   </View>
                 </View>
               </Animated.View>
@@ -579,7 +579,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   contentSection: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#F3F4F6",
     paddingHorizontal: 20,
     paddingTop: 24,
     borderTopLeftRadius: 24,
@@ -587,22 +587,24 @@ const styles = StyleSheet.create({
     marginTop: -16,
   },
   featuresList: {
-    gap: 4,
+    gap: 10,
     marginBottom: 24,
   },
-  featureRow: {
+  featureCard: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
     paddingVertical: 16,
-    paddingHorizontal: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
   },
   featureIconCircle: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: "#F0FDF8",
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    backgroundColor: "#ECFDF5",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 14,
@@ -612,19 +614,19 @@ const styles = StyleSheet.create({
   },
   featureTitle: {
     fontSize: 16,
-    fontWeight: "600" as const,
+    fontWeight: "700" as const,
     color: "#111827",
-    marginBottom: 2,
+    marginBottom: 3,
   },
   featureDesc: {
     fontSize: 13,
-    color: "#9CA3AF",
+    color: "#6B7280",
     lineHeight: 18,
   },
   featureCheck: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: "#047857",
     alignItems: "center",
     justifyContent: "center",
@@ -635,7 +637,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
-    marginTop: 4,
+    marginTop: 5,
   },
   featureBadgeText: {
     fontSize: 11,
