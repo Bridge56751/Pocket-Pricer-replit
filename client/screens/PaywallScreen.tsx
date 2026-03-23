@@ -186,11 +186,13 @@ export default function PaywallScreen() {
     }
   };
 
-  useEffect(() => {
-    if (isPro) navigateHome();
-  }, [isPro]);
+  const wasProOnMount = useRef(isPro);
 
-  if (isPro) return null;
+  useEffect(() => {
+    if (isPro && !wasProOnMount.current) {
+      navigateHome();
+    }
+  }, [isPro]);
 
   return (
     <View style={styles.container}>
@@ -230,7 +232,11 @@ export default function PaywallScreen() {
               <Text style={styles.proBadgeText}>POCKET PRICER PRO</Text>
             </LinearGradient>
 
-            {context === "ebay" ? (
+            {isPro ? (
+              <Text style={styles.heroTitle}>
+                Change your{"\n"}subscription plan
+              </Text>
+            ) : context === "ebay" ? (
               <Text style={styles.heroTitle}>
                 See what items{"\n"}actually sell for
               </Text>
@@ -241,7 +247,7 @@ export default function PaywallScreen() {
             )}
 
             <Text style={styles.heroSubtitle}>
-              Real sold prices, unlimited scans,{"\n"}and instant profit data.
+              {isPro ? "Select a new plan below to switch." : "Real sold prices, unlimited scans,\nand instant profit data."}
             </Text>
           </Animated.View>
         </LinearGradient>
@@ -274,7 +280,7 @@ export default function PaywallScreen() {
             ))}
           </View>
 
-          <Text style={styles.planSectionTitle}>CHOOSE YOUR PLAN</Text>
+          <Text style={styles.planSectionTitle}>{isPro ? "SWITCH YOUR PLAN" : "CHOOSE YOUR PLAN"}</Text>
 
           <View style={styles.planCards}>
             {showError ? (
@@ -504,7 +510,7 @@ export default function PaywallScreen() {
             <View style={styles.ctaNoteRow}>
               <Feather name="lock" size={12} color="#9CA3AF" />
               <Text style={styles.ctaNote}>
-                No charge for 3 days · Cancel anytime
+                {isPro ? "Plan change takes effect at next billing cycle" : "No charge for 3 days · Cancel anytime"}
               </Text>
             </View>
           </Animated.View>
@@ -528,10 +534,9 @@ export default function PaywallScreen() {
           </View>
 
           <Text style={styles.legalText}>
-            After your 3-day free trial, your subscription automatically renews at {getSelectedPrice()}/{getSelectedPeriod()}.
-            Payment will be charged to your Apple ID account at confirmation of purchase. Subscription
-            automatically renews unless canceled at least 24 hours before the end of the current period.
-            Manage or cancel in Settings → Apple ID → Subscriptions.
+            {isPro
+              ? `Your plan change will take effect at the end of your current billing period. Your new plan will renew at ${getSelectedPrice()}/${getSelectedPeriod()}. Manage or cancel in Settings → Apple ID → Subscriptions.`
+              : `After your 3-day free trial, your subscription automatically renews at ${getSelectedPrice()}/${getSelectedPeriod()}. Payment will be charged to your Apple ID account at confirmation of purchase. Subscription automatically renews unless canceled at least 24 hours before the end of the current period. Manage or cancel in Settings → Apple ID → Subscriptions.`}
           </Text>
         </View>
       </ScrollView>
