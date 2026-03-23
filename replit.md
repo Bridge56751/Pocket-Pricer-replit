@@ -132,3 +132,11 @@ The application is built with a client-server architecture. The frontend is an E
   - Stats fetched via React Query on screen load, invalidated after each scan for real-time updates
   - Dark semi-transparent card backgrounds with green (#4ADE80) numbers, matching hero gradient aesthetic
   - Streak card shows green dots (up to 7) for visual indicator
+- **Mar 2026**: Codebase cleanup
+  - Removed dead server files: `emailClient.ts`, `githubClient.ts`, `storage.ts` (none were imported)
+  - Removed unused `server/replit_integrations/` directory (chat/image/batch scaffolding never wired in)
+  - Removed orphaned client component `UpgradeModal.tsx` (no longer imported after paywall redesign)
+  - Removed dead client components: `ProductCard`, `ProfitBreakdown`, `ProfitBadge`, `Card`, `Button`, `SearchBar`, `Spacer`, `KeyboardAwareScrollViewCompat` (none imported by any live screen)
+  - Removed unused navigator files: `MainTabNavigator`, `ScanStackNavigator`, `CameraScanStackNavigator`, `ProfileStackNavigator`, `FavoritesStackNavigator`, `HistoryStackNavigator` (app uses flat RootStackNavigator)
+  - Added `X-Device-Id` and `X-Is-Pro` to CORS allowed headers
+  - Known benign warning: require cycle AppContent → RootStackNavigator → ProfileScreen → AppContent (from `triggerOnboardingReplay` import)
