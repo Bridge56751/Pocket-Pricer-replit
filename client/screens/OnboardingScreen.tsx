@@ -423,20 +423,34 @@ function ReadyStep() {
     <View style={readyStyles.container}>
       <Animated.View entering={FadeInUp.delay(100).duration(500)} style={pulseStyle}>
         <LinearGradient
-          colors={["#065F46", "#047857", "#059669"]}
+          colors={["#F5D87A", "#D4A926", "#E8C84A", "#D4A926"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
           style={readyStyles.iconBg}
         >
-          <Feather name="tag" size={48} color="#fff" style={{ transform: [{ scaleX: -1 }] }} />
+          <Feather name="tag" size={44} color="#3D2E00" style={{ transform: [{ scaleX: -1 }] }} />
         </LinearGradient>
       </Animated.View>
-      <Animated.Text entering={FadeInUp.delay(300).duration(500)} style={readyStyles.title}>
-        You're ready to profit
+
+      <Animated.View entering={FadeInUp.delay(250).duration(400)}>
+        <LinearGradient
+          colors={["#F5D87A", "#D4A926", "#E8C84A", "#D4A926"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={readyStyles.proBadge}
+        >
+          <Text style={readyStyles.proBadgeText}>POCKET PRICER PRO</Text>
+        </LinearGradient>
+      </Animated.View>
+
+      <Animated.Text entering={FadeInUp.delay(350).duration(500)} style={readyStyles.title}>
+        Try Pro free for 3 days
       </Animated.Text>
-      <Animated.Text entering={FadeInUp.delay(450).duration(500)} style={readyStyles.subtitle}>
-        Start scanning items and see exactly what they're worth — before you buy.
+      <Animated.Text entering={FadeInUp.delay(500).duration(500)} style={readyStyles.subtitle}>
+        We want you to experience everything Pocket Pricer has to offer — unlimited scans, real sold prices, and profit tools — completely free.
       </Animated.Text>
 
-      <Animated.View entering={FadeInUp.delay(600).duration(400)} style={readyStyles.statsRow}>
+      <Animated.View entering={FadeInUp.delay(650).duration(400)} style={readyStyles.statsRow}>
         <View style={readyStyles.stat}>
           <Text style={readyStyles.statNumber}>3s</Text>
           <Text style={readyStyles.statLabel}>Avg scan time</Text>
@@ -453,8 +467,8 @@ function ReadyStep() {
         </View>
       </Animated.View>
 
-      <Animated.View entering={FadeInUp.delay(750).duration(400)} style={readyStyles.trialBadge}>
-        <Feather name="shield" size={16} color="#047857" />
+      <Animated.View entering={FadeInUp.delay(800).duration(400)} style={readyStyles.trialBadge}>
+        <Feather name="shield" size={16} color="#D4A926" />
         <Text style={readyStyles.trialText}>Cancel anytime. No commitment.</Text>
       </Animated.View>
     </View>
@@ -469,12 +483,26 @@ const readyStyles = StyleSheet.create({
     paddingHorizontal: 28,
   },
   iconBg: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 28,
+    marginBottom: 16,
+  },
+  proBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 7,
+    borderRadius: 20,
+    marginBottom: 16,
+  },
+  proBadgeText: {
+    fontSize: 14,
+    fontWeight: "800",
+    letterSpacing: 1.5,
+    color: "#3D2E00",
   },
   title: {
     fontSize: 28,
@@ -646,13 +674,15 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
           ]}
         >
           <LinearGradient
-            colors={isLastStep ? ["#059669", "#047857", "#065F46"] : ["#047857", "#065F46"]}
+            colors={isLastStep ? ["#F5D87A", "#D4A926", "#E8C84A"] : ["#047857", "#065F46"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.ctaGradient}
           >
-            <Text style={styles.ctaText}>{ctaLabel}</Text>
-            <Feather name="arrow-right" size={20} color="#fff" />
+            <Text style={[styles.ctaText, isLastStep ? { color: "#3D2E00" } : null]}>
+              {isLastStep ? "Claim Your Free Trial" : ctaLabel}
+            </Text>
+            <Feather name="arrow-right" size={20} color={isLastStep ? "#3D2E00" : "#fff"} />
           </LinearGradient>
         </Pressable>
 
