@@ -121,10 +121,9 @@ export default function RootStackNavigator() {
       <Stack.Screen
         name="Settings"
         component={ProfileScreen}
-        options={({ navigation }) => ({
-          headerTitle: "Settings",
-          headerLeft: () => renderBackButton(navigation),
-        })}
+        options={{
+          headerShown: false,
+        }}
       />
       <Stack.Screen
         name="SearchResults"

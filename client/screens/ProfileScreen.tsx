@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { View, StyleSheet, Pressable, Text, Alert, Platform, ActivityIndicator, Linking, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useHeaderHeight } from "@react-navigation/elements";
 import { useNavigation } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -17,7 +16,6 @@ import { clearSearchHistory, clearFavorites } from "@/lib/storage";
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
-  const headerHeight = useHeaderHeight();
   const navigation = useNavigation<any>();
   const { theme } = useDesignTokens();
   const { getScansUsed } = useAuth();
@@ -38,7 +36,6 @@ export default function ProfileScreen() {
 
   const handleManageSubscription = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
     if (Platform.OS === "ios") {
       await Linking.openURL("https://apps.apple.com/account/subscriptions");
     } else if (Platform.OS === "android") {
@@ -56,13 +53,10 @@ export default function ProfileScreen() {
       Alert.alert("Mobile Only", "Please use the mobile app to restore purchases.");
       return;
     }
-
     setIsRestoring(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-
     try {
       const result = await restorePurchases();
-
       if (result.success) {
         Alert.alert("Restored", "Your Pro subscription has been restored!");
       } else {
@@ -78,8 +72,7 @@ export default function ProfileScreen() {
   const handleOpenPrivacyPolicy = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
-      const privacyUrl = "https://pocket-pricer.com/pocket-pricer-privacy-policy-v5.html";
-      await WebBrowser.openBrowserAsync(privacyUrl);
+      await WebBrowser.openBrowserAsync("https://pocket-pricer.com/pocket-pricer-privacy-policy-v5.html");
     } catch (error) {
       console.error("Failed to open privacy policy:", error);
     }
@@ -88,8 +81,7 @@ export default function ProfileScreen() {
   const handleOpenTermsOfService = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
-      const termsUrl = "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/";
-      await WebBrowser.openBrowserAsync(termsUrl);
+      await WebBrowser.openBrowserAsync("https://www.apple.com/legal/internet-services/itunes/dev/stdeula/");
     } catch (error) {
       console.error("Failed to open terms of service:", error);
     }
@@ -112,293 +104,461 @@ export default function ProfileScreen() {
   const freeScansRemaining = Math.max(0, 3 - scansUsed);
 
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
-      contentContainerStyle={[
-        styles.content,
-        {
-          paddingTop: headerHeight + 24,
-          paddingBottom: insets.bottom + 24,
-        },
-      ]}
-    >
-      {isPro ? (
-        <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
-          <View style={styles.sectionHeader}>
-            <Feather name="zap" size={20} color={theme.colors.primary} />
-            <Text style={[styles.sectionTitle, { color: theme.colors.foreground }]}>
-              Subscription
-            </Text>
-            <View style={[styles.planBadge, { backgroundColor: theme.colors.primary }]}>
-              <Text style={[styles.planBadgeText, { color: "#fff" }]}>Pro</Text>
-            </View>
-          </View>
-          <Text style={[styles.upgradeHint, { color: theme.colors.mutedForeground }]}>
-            Unlimited product scans
-          </Text>
-          <View style={{ gap: 8 }}>
-            <Pressable
-              onPress={handleUpgrade}
-              style={({ pressed }) => [
-                styles.manageButton,
-                { borderColor: theme.colors.primary, opacity: pressed ? 0.7 : 1 }
-              ]}
-            >
-              <Feather name="repeat" size={18} color={theme.colors.primary} />
-              <Text style={[styles.manageButtonText, { color: theme.colors.primary }]}>
-                Change Plan
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={handleManageSubscription}
-              style={({ pressed }) => [
-                styles.manageButton,
-                { borderColor: theme.colors.border, opacity: pressed ? 0.7 : 1 }
-              ]}
-            >
-              <Feather name="settings" size={18} color={theme.colors.foreground} />
-              <Text style={[styles.manageButtonText, { color: theme.colors.foreground }]}>
-                Manage Subscription
-              </Text>
-            </Pressable>
-          </View>
-        </View>
-      ) : (
+    <View style={styles.outerContainer}>
+      <View style={styles.topOverscrollBg} />
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}
+        showsVerticalScrollIndicator={false}
+      >
         <LinearGradient
-          colors={["#14532D", "#14532D", "#14532D"]}
-          style={styles.subscriptionGradient}
+          colors={["#0A3622", "#0A3622", "#14532D", "#1A6B3C"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={[styles.heroGradient, { paddingTop: insets.top + 12 }]}
         >
-          <View style={styles.sectionHeader}>
-            <Feather name="zap" size={20} color="#F0D264" />
-            <Text style={[styles.sectionTitle, { color: "#FFFFFF" }]}>
-              Subscription
-            </Text>
-            <View style={[styles.planBadge, { backgroundColor: "rgba(255,255,255,0.15)" }]}>
-              <Text style={[styles.planBadgeText, { color: "#FFFFFF" }]}>Free</Text>
-            </View>
+          <View style={styles.heroTitleRow}>
+            <Pressable
+              onPress={() => navigation.goBack()}
+              hitSlop={12}
+              style={styles.backButton}
+            >
+              <Feather name="arrow-left" size={22} color="#FFFFFF" />
+            </Pressable>
+            <Feather name="settings" size={20} color="rgba(255,255,255,0.7)" />
+            <Text style={styles.heroTitle}>Settings</Text>
           </View>
-          <Text style={styles.subGradientHint}>
-            {freeScansRemaining > 0
-              ? `${freeScansRemaining} free scan${freeScansRemaining === 1 ? "" : "s"} remaining — try before you buy`
-              : "You've used all your free scans — start your 3-day free trial"}
-          </Text>
-          <Pressable
-            onPress={handleUpgrade}
-            style={({ pressed }) => [
-              styles.subGradientButton,
-              { opacity: pressed ? 0.85 : 1 }
-            ]}
-          >
-            <Feather name="zap" size={18} color="#3D2E00" />
-            <Text style={styles.subGradientButtonText}>Upgrade to Pro</Text>
-          </Pressable>
-          
-          <Pressable
-            onPress={handleRestorePurchases}
-            disabled={isRestoring}
-            style={({ pressed }) => [
-              styles.restoreButton,
-              { opacity: pressed || isRestoring ? 0.7 : 1 }
-            ]}
-          >
-            {isRestoring ? (
-              <ActivityIndicator size="small" color="#F0D264" />
-            ) : (
-              <Text style={[styles.restoreButtonText, { color: "rgba(255,255,255,0.6)" }]}>
-                Restore Purchase
+
+          {isPro ? (
+            <View style={styles.heroCard}>
+              <View style={styles.heroCardHeader}>
+                <View style={styles.heroCardHeaderLeft}>
+                  <Feather name="zap" size={18} color="#F5D87A" />
+                  <Text style={styles.heroCardTitle}>Subscription</Text>
+                </View>
+                <LinearGradient
+                  colors={["#F5D87A", "#D4A926", "#E8C84A"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.proBadge}
+                >
+                  <Feather name="star" size={10} color="#3D2E00" />
+                  <Text style={styles.proBadgeText}>PRO</Text>
+                </LinearGradient>
+              </View>
+              <Text style={styles.heroCardSubtitle}>Unlimited product scans</Text>
+              <View style={{ gap: 8, marginTop: 4 }}>
+                <Pressable
+                  onPress={handleUpgrade}
+                  style={({ pressed }) => [
+                    styles.heroOutlineBtn,
+                    { borderColor: "rgba(255,255,255,0.3)", opacity: pressed ? 0.7 : 1 },
+                  ]}
+                >
+                  <Feather name="repeat" size={16} color="#fff" />
+                  <Text style={styles.heroOutlineBtnText}>Change Plan</Text>
+                </Pressable>
+                <Pressable
+                  onPress={handleManageSubscription}
+                  style={({ pressed }) => [
+                    styles.heroOutlineBtn,
+                    { borderColor: "rgba(255,255,255,0.15)", opacity: pressed ? 0.7 : 1 },
+                  ]}
+                >
+                  <Feather name="external-link" size={16} color="rgba(255,255,255,0.7)" />
+                  <Text style={[styles.heroOutlineBtnText, { color: "rgba(255,255,255,0.7)" }]}>
+                    Manage Subscription
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.heroCard}>
+              <View style={styles.heroCardHeader}>
+                <View style={styles.heroCardHeaderLeft}>
+                  <Feather name="zap" size={18} color="#F5D87A" />
+                  <Text style={styles.heroCardTitle}>Subscription</Text>
+                </View>
+                <View style={styles.freeBadge}>
+                  <Text style={styles.freeBadgeText}>Free</Text>
+                </View>
+              </View>
+              <Text style={styles.heroCardSubtitle}>
+                {freeScansRemaining > 0
+                  ? `${freeScansRemaining} free scan${freeScansRemaining === 1 ? "" : "s"} remaining`
+                  : "You've used all your free scans"}
               </Text>
-            )}
-          </Pressable>
-          
-          <Text style={styles.subGradientDisclosure}>
-            Payment will be charged to your Apple ID account. Subscription automatically renews unless canceled at least 24 hours before the end of the current period. Manage or cancel in Settings → Apple ID → Subscriptions.
-          </Text>
-        </LinearGradient>
-      )}
-
-      <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
-        <View style={styles.sectionHeader}>
-          <Feather name="database" size={20} color={theme.colors.primary} />
-          <Text style={[styles.sectionTitle, { color: theme.colors.foreground }]}>
-            Data Management
-          </Text>
-        </View>
-
-        <Text style={[styles.dataDescription, { color: theme.colors.mutedForeground }]}>
-          Your scan history is stored locally on this device.
-        </Text>
-
-        {showDeleteConfirm ? (
-          <View style={[styles.deleteConfirmBox, { backgroundColor: theme.colors.danger + '10', borderColor: theme.colors.danger + '30' }]}>
-            <Feather name="alert-triangle" size={20} color={theme.colors.danger} />
-            <Text style={[styles.deleteConfirmText, { color: theme.colors.foreground }]}>
-              This will permanently delete your scan history. Your scan count and subscription will not be affected.
-            </Text>
-            <View style={styles.deleteConfirmButtons}>
               <Pressable
-                onPress={() => setShowDeleteConfirm(false)}
-                disabled={isDeleting}
+                onPress={handleUpgrade}
                 style={({ pressed }) => [
-                  styles.deleteConfirmCancel,
-                  { backgroundColor: theme.colors.muted, opacity: pressed ? 0.7 : 1 }
+                  styles.goldCta,
+                  { opacity: pressed ? 0.85 : 1 },
                 ]}
               >
-                <Text style={[styles.deleteConfirmCancelText, { color: theme.colors.foreground }]}>
-                  Cancel
-                </Text>
+                <Feather name="zap" size={18} color="#3D2E00" />
+                <Text style={styles.goldCtaText}>Upgrade to Pro</Text>
               </Pressable>
               <Pressable
-                onPress={handleDeleteLocalData}
-                disabled={isDeleting}
+                onPress={handleRestorePurchases}
+                disabled={isRestoring}
                 style={({ pressed }) => [
-                  styles.deleteConfirmAction,
-                  { backgroundColor: theme.colors.danger, opacity: pressed || isDeleting ? 0.7 : 1 }
+                  styles.restoreBtn,
+                  { opacity: pressed || isRestoring ? 0.5 : 1 },
                 ]}
               >
-                {isDeleting ? (
-                  <ActivityIndicator size="small" color="#fff" />
+                {isRestoring ? (
+                  <ActivityIndicator size="small" color="rgba(255,255,255,0.5)" />
                 ) : (
-                  <Text style={styles.deleteConfirmActionText}>Delete Data</Text>
+                  <Text style={styles.restoreBtnText}>Restore Purchase</Text>
                 )}
               </Pressable>
             </View>
-          </View>
-        ) : (
-          <Pressable
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              setShowDeleteConfirm(true);
-            }}
-            style={({ pressed }) => [
-              styles.deleteDataButton,
-              { borderColor: theme.colors.danger, opacity: pressed ? 0.7 : 1 }
-            ]}
-          >
-            <Feather name="trash-2" size={18} color={theme.colors.danger} />
-            <Text style={[styles.deleteDataButtonText, { color: theme.colors.danger }]}>
-              Delete Local Data
+          )}
+
+          <View style={styles.heroCard}>
+            <View style={styles.heroCardHeader}>
+              <View style={styles.heroCardHeaderLeft}>
+                <Feather name="database" size={18} color="rgba(255,255,255,0.7)" />
+                <Text style={styles.heroCardTitle}>Data Management</Text>
+              </View>
+            </View>
+            <Text style={styles.heroCardSubtitle}>
+              Your scan history is stored locally on this device.
             </Text>
-          </Pressable>
-        )}
-      </View>
+            {showDeleteConfirm ? (
+              <View style={styles.deleteConfirmBox}>
+                <Feather name="alert-triangle" size={18} color="#EF4444" />
+                <Text style={styles.deleteConfirmText}>
+                  This will permanently delete your scan history. Your scan count and subscription will not be affected.
+                </Text>
+                <View style={styles.deleteConfirmBtns}>
+                  <Pressable
+                    onPress={() => setShowDeleteConfirm(false)}
+                    disabled={isDeleting}
+                    style={({ pressed }) => [
+                      styles.deleteCancel,
+                      { opacity: pressed ? 0.7 : 1 },
+                    ]}
+                  >
+                    <Text style={styles.deleteCancelText}>Cancel</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={handleDeleteLocalData}
+                    disabled={isDeleting}
+                    style={({ pressed }) => [
+                      styles.deleteAction,
+                      { opacity: pressed || isDeleting ? 0.7 : 1 },
+                    ]}
+                  >
+                    {isDeleting ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Text style={styles.deleteActionText}>Delete</Text>
+                    )}
+                  </Pressable>
+                </View>
+              </View>
+            ) : (
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  setShowDeleteConfirm(true);
+                }}
+                style={({ pressed }) => [
+                  styles.heroOutlineBtn,
+                  { borderColor: "rgba(239,68,68,0.5)", opacity: pressed ? 0.7 : 1 },
+                ]}
+              >
+                <Feather name="trash-2" size={16} color="#F87171" />
+                <Text style={[styles.heroOutlineBtnText, { color: "#F87171" }]}>Delete Local Data</Text>
+              </Pressable>
+            )}
+          </View>
+        </LinearGradient>
 
-      <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
-        <View style={styles.sectionHeader}>
-          <Feather name="info" size={20} color={theme.colors.primary} />
-          <Text style={[styles.sectionTitle, { color: theme.colors.foreground }]}>
-            About
-          </Text>
+        <View style={styles.lightSection}>
+          <View style={styles.aboutCard}>
+            <View style={styles.aboutHeader}>
+              <Feather name="info" size={18} color={theme.colors.primary} />
+              <Text style={styles.aboutTitle}>About</Text>
+            </View>
+
+            <MenuItem
+              label="Privacy Policy"
+              onPress={handleOpenPrivacyPolicy}
+              showChevron
+            />
+            <MenuItem
+              label="Terms of Service"
+              onPress={handleOpenTermsOfService}
+              showChevron
+            />
+            <MenuItem
+              label="Website"
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                WebBrowser.openBrowserAsync("https://pocket-pricer.com");
+              }}
+              showChevron
+            />
+            <MenuItem
+              label="Email Support"
+              rightText="pricerpocket@gmail.com"
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                Linking.openURL("mailto:pricerpocket@gmail.com");
+              }}
+            />
+            <MenuItem
+              label="Replay Tutorial"
+              onPress={async () => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                await resetOnboarding();
+                triggerOnboardingReplay();
+              }}
+              showChevron
+            />
+          </View>
+
+          <Text style={styles.versionText}>Version 1.4.0</Text>
+
+          {!isPro ? (
+            <Text style={styles.legalDisclosure}>
+              Payment will be charged to your Apple ID account. Subscription automatically renews unless canceled at least 24 hours before the end of the current period. Manage or cancel in Settings → Apple ID → Subscriptions.
+            </Text>
+          ) : null}
         </View>
+      </ScrollView>
+    </View>
+  );
+}
 
-        <Pressable 
-          onPress={handleOpenPrivacyPolicy}
-          style={({ pressed }) => [
-            styles.menuItem, 
-            { borderBottomColor: theme.colors.border, opacity: pressed ? 0.7 : 1 }
-          ]}
-        >
-          <Text style={[styles.menuItemText, { color: theme.colors.foreground }]}>
-            Privacy Policy
-          </Text>
-          <Feather name="chevron-right" size={20} color={theme.colors.mutedForeground} />
-        </Pressable>
-
-        <Pressable 
-          onPress={handleOpenTermsOfService}
-          style={({ pressed }) => [
-            styles.menuItem, 
-            { borderBottomColor: theme.colors.border, opacity: pressed ? 0.7 : 1 }
-          ]}
-        >
-          <Text style={[styles.menuItemText, { color: theme.colors.foreground }]}>
-            Terms of Service
-          </Text>
-          <Feather name="chevron-right" size={20} color={theme.colors.mutedForeground} />
-        </Pressable>
-
-        <Pressable 
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            WebBrowser.openBrowserAsync("https://pocket-pricer.com");
-          }}
-          style={({ pressed }) => [
-            styles.menuItem, 
-            { borderBottomColor: theme.colors.border, opacity: pressed ? 0.7 : 1 }
-          ]}
-        >
-          <Text style={[styles.menuItemText, { color: theme.colors.foreground }]}>
-            Website
-          </Text>
-          <Feather name="chevron-right" size={20} color={theme.colors.mutedForeground} />
-        </Pressable>
-
-        <Pressable 
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            Linking.openURL("mailto:pricerpocket@gmail.com");
-          }}
-          style={({ pressed }) => [
-            styles.menuItem, 
-            { borderBottomColor: theme.colors.border, opacity: pressed ? 0.7 : 1 }
-          ]}
-        >
-          <Text style={[styles.menuItemText, { color: theme.colors.foreground }]}>
-            Email Support
-          </Text>
-          <Text style={[styles.menuItemText, { color: theme.colors.mutedForeground }]}>
-            pricerpocket@gmail.com
-          </Text>
-        </Pressable>
-
-        <Pressable 
-          onPress={async () => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            await resetOnboarding();
-            triggerOnboardingReplay();
-          }}
-          style={({ pressed }) => [
-            styles.menuItem, 
-            { borderBottomColor: theme.colors.border, opacity: pressed ? 0.7 : 1 }
-          ]}
-        >
-          <Text style={[styles.menuItemText, { color: theme.colors.foreground }]}>
-            Replay Tutorial
-          </Text>
-          <Feather name="chevron-right" size={20} color={theme.colors.mutedForeground} />
-        </Pressable>
-
-        <View style={styles.versionContainer}>
-          <Text style={[styles.versionText, { color: theme.colors.mutedForeground }]}>
-            Version 1.4.0
-          </Text>
-        </View>
-      </View>
-      
-    </ScrollView>
+function MenuItem({
+  label,
+  rightText,
+  onPress,
+  showChevron,
+}: {
+  label: string;
+  rightText?: string;
+  onPress: () => void;
+  showChevron?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.menuItem,
+        { opacity: pressed ? 0.7 : 1 },
+      ]}
+    >
+      <Text style={styles.menuLabel}>{label}</Text>
+      {rightText ? (
+        <Text style={styles.menuRight}>{rightText}</Text>
+      ) : showChevron ? (
+        <Feather name="chevron-right" size={18} color="#9CA3AF" />
+      ) : null}
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  outerContainer: {
+    flex: 1,
+    backgroundColor: "#F3F4F6",
+  },
+  topOverscrollBg: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 500,
+    backgroundColor: "#0A3622",
+  },
+  scrollView: {
     flex: 1,
   },
-  content: {
+  heroGradient: {
     paddingHorizontal: 16,
+    paddingBottom: 28,
   },
-  section: {
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 20,
-  },
-  sectionHeader: {
+  heroTitleRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 16,
+    gap: 8,
+    marginBottom: 20,
+  },
+  backButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 4,
+  },
+  heroTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  heroCard: {
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+  },
+  heroCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  heroCardHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  heroCardTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  heroCardSubtitle: {
+    fontSize: 14,
+    color: "rgba(255,255,255,0.55)",
+    marginBottom: 14,
+    lineHeight: 20,
+  },
+  proBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  proBadgeText: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#3D2E00",
+  },
+  freeBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.12)",
+  },
+  freeBadgeText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "rgba(255,255,255,0.7)",
+  },
+  heroOutlineBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 8,
+  },
+  heroOutlineBtnText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#FFFFFF",
+  },
+  goldCta: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 8,
+    backgroundColor: "#F0D264",
+  },
+  goldCtaText: {
+    color: "#3D2E00",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  restoreBtn: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 10,
+    marginTop: 4,
+  },
+  restoreBtnText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "rgba(255,255,255,0.45)",
+  },
+  deleteConfirmBox: {
+    backgroundColor: "rgba(239,68,68,0.1)",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(239,68,68,0.25)",
+    padding: 14,
     gap: 10,
   },
-  sectionTitle: {
-    fontSize: 17,
+  deleteConfirmText: {
+    fontSize: 13,
+    color: "rgba(255,255,255,0.7)",
+    lineHeight: 18,
+  },
+  deleteConfirmBtns: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 2,
+  },
+  deleteCancel: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: "rgba(255,255,255,0.1)",
+  },
+  deleteCancelText: {
+    fontSize: 14,
     fontWeight: "600",
+    color: "#FFFFFF",
+  },
+  deleteAction: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: "#EF4444",
+  },
+  deleteActionText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  lightSection: {
+    backgroundColor: "#F3F4F6",
+    paddingHorizontal: 16,
+    paddingTop: 20,
+  },
+  aboutCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 18,
+  },
+  aboutHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 8,
+  },
+  aboutTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#111827",
   },
   menuItem: {
     flexDirection: "row",
@@ -406,160 +566,29 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 14,
     borderBottomWidth: 0.5,
+    borderBottomColor: "#F3F4F6",
   },
-  menuItemText: {
-    fontSize: 16,
+  menuLabel: {
+    fontSize: 15,
+    fontWeight: "500",
+    color: "#111827",
   },
-  versionContainer: {
-    marginTop: 16,
-    alignItems: "center",
+  menuRight: {
+    fontSize: 14,
+    color: "#9CA3AF",
   },
   versionText: {
     fontSize: 13,
+    color: "#9CA3AF",
+    textAlign: "center",
+    marginTop: 20,
   },
-  planBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  planBadgeText: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  upgradeHint: {
-    fontSize: 14,
-    marginBottom: 12,
-  },
-  upgradeButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 14,
-    borderRadius: 12,
-    gap: 8,
-  },
-  upgradeButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  restoreButton: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 12,
-    marginTop: 8,
-  },
-  restoreButtonText: {
-    fontSize: 15,
-    fontWeight: "500",
-  },
-  subscriptionDisclosure: {
+  legalDisclosure: {
     fontSize: 11,
     textAlign: "center",
     lineHeight: 16,
-    marginTop: 12,
-  },
-  subscriptionGradient: {
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 20,
-    borderWidth: 1.5,
-    borderColor: "rgba(212, 169, 38, 0.55)",
-  },
-  subGradientHint: {
-    fontSize: 14,
-    marginBottom: 16,
-    color: "rgba(255,255,255,0.65)",
-  },
-  subGradientButton: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-    paddingVertical: 14,
-    borderRadius: 12,
-    gap: 8,
-    backgroundColor: "#F0D264",
-    overflow: "hidden" as const,
-  },
-  subGradientButtonText: {
-    color: "#3D2E00",
-    fontSize: 16,
-    fontWeight: "700" as const,
-  },
-  subGradientDisclosure: {
-    fontSize: 11,
-    textAlign: "center" as const,
-    lineHeight: 16,
-    marginTop: 12,
-    color: "rgba(255,255,255,0.35)",
-  },
-  manageButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    gap: 8,
-  },
-  manageButtonText: {
-    fontSize: 15,
-    fontWeight: "500",
-  },
-  dataDescription: {
-    fontSize: 14,
-    lineHeight: 20,
-    marginBottom: 16,
-  },
-  deleteDataButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    gap: 8,
-  },
-  deleteDataButtonText: {
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  deleteConfirmBox: {
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 16,
-    gap: 12,
-  },
-  deleteConfirmText: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  deleteConfirmButtons: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 4,
-  },
-  deleteConfirmCancel: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 12,
-    borderRadius: 10,
-  },
-  deleteConfirmCancelText: {
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  deleteConfirmAction: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 12,
-    borderRadius: 10,
-  },
-  deleteConfirmActionText: {
-    color: "#fff",
-    fontSize: 15,
-    fontWeight: "600",
+    marginTop: 16,
+    color: "#9CA3AF",
+    paddingHorizontal: 12,
   },
 });
