@@ -8,6 +8,7 @@ import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
+import { BlurView } from "expo-blur";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import Svg, { Circle } from "react-native-svg";
 
@@ -687,21 +688,21 @@ export default function SearchResultsScreen() {
                         <Text style={styles.blurredMetricLabel}>Avg Sold</Text>
                         <View style={styles.blurredValueRow}>
                           <Text style={styles.blurredMetricValueFake}>$34.50</Text>
-                          <View style={styles.blurredOverlay} />
+                          <BlurView intensity={25} tint="light" style={styles.blurredOverlay} />
                         </View>
                       </View>
                       <View style={styles.blurredMetricBox}>
                         <Text style={styles.blurredMetricLabel}>Buy Score</Text>
                         <View style={styles.blurredValueRow}>
                           <Text style={styles.blurredMetricValueFake}>72/100</Text>
-                          <View style={styles.blurredOverlay} />
+                          <BlurView intensity={25} tint="light" style={styles.blurredOverlay} />
                         </View>
                       </View>
                       <View style={styles.blurredMetricBox}>
                         <Text style={styles.blurredMetricLabel}>Sold/mo</Text>
                         <View style={styles.blurredValueRow}>
                           <Text style={styles.blurredMetricValueFake}>18</Text>
-                          <View style={styles.blurredOverlay} />
+                          <BlurView intensity={25} tint="light" style={styles.blurredOverlay} />
                         </View>
                       </View>
                     </View>
@@ -2202,11 +2203,10 @@ const styles = StyleSheet.create({
   },
   blurredOverlay: {
     position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "#F9FAFB",
+    top: -4,
+    left: -4,
+    right: -4,
+    bottom: -4,
     borderRadius: 4,
   },
   salesIntelCtaRow: {
