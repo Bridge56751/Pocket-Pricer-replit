@@ -624,7 +624,7 @@ export default function SearchResultsScreen() {
                     <Text style={styles.salesIntelCardInlineBullets}>
                       <Text style={{ color: "#4ADE80" }}>{"\u2022"} </Text>Sold prices{"   "}
                       <Text style={{ color: "#4ADE80" }}>{"\u2022"} </Text>Buy Score{"   "}
-                      <Text style={{ color: "#4ADE80" }}>{"\u2022"} </Text>Velocity
+                      <Text style={{ color: "#4ADE80" }}>{"\u2022"} </Text>Sales volume
                     </Text>
                   </View>
                   <LinearGradient
