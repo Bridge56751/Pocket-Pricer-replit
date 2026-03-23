@@ -9,6 +9,7 @@ import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import Animated, { FadeInDown } from "react-native-reanimated";
+import Svg, { Circle } from "react-native-svg";
 
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { SkeletonLoader } from "@/components/SkeletonLoader";
@@ -93,10 +94,18 @@ export default function SearchResultsScreen() {
     const selling = parseFloat(sellingPrice) || suggestedPrice;
     const ebayFees = selling * EBAY_FEE_RATE;
     const profit = selling - purchase - ebayFees;
-    return { ebayFees, profit, selling };
+    const margin = selling > 0 ? Math.round((profit / selling) * 100) : 0;
+    return { ebayFees, profit, selling, purchase, margin };
   };
   
-  const { ebayFees, profit, selling } = calculateProfit();
+  const { ebayFees, profit, selling, purchase, margin } = calculateProfit();
+
+  const getMarginLabel = (m: number) => {
+    if (m >= 60) return "Great margin";
+    if (m >= 30) return "Good margin";
+    if (m >= 10) return "Low margin";
+    return "No margin";
+  };
 
   const buyScore = useMemo(() => {
     if (!ebaySoldData || !showEbaySold) return null;
@@ -425,32 +434,38 @@ export default function SearchResultsScreen() {
             <View style={styles.lightSection}>
 
               <View style={styles.calculatorCard}>
-                <View style={styles.calculatorHeader}>
-                  <Feather name="dollar-sign" size={18} color="#047857" />
-                  <Text style={[styles.calculatorTitle, { color: "#111827" }]}>
-                    Profit Calculator
-                  </Text>
+                <View style={styles.calcHeaderRow}>
+                  <View style={styles.calculatorHeader}>
+                    <Feather name="dollar-sign" size={18} color="#047857" />
+                    <Text style={styles.calculatorTitleText}>Profit Calculator</Text>
+                  </View>
+                  {profit > 0 ? (
+                    <View style={styles.marginBadge}>
+                      <Text style={styles.marginBadgeText}>{getMarginLabel(margin)}</Text>
+                    </View>
+                  ) : null}
                 </View>
+
+                <View style={styles.calcDividerThin} />
 
                 <View style={styles.calculatorRow}>
                   <View style={styles.labelWithHint}>
-                    <Text style={[styles.calculatorLabel, { color: "#111827" }]}>
-                      Your Selling Price
-                    </Text>
+                    <Text style={styles.calcLabel}>Your Selling Price</Text>
                     <Pressable onPress={useSuggestedPrice} style={styles.suggestedHint}>
-                      <Text style={[styles.suggestedHintText, { color: "#047857" }]}>
-                        Suggested: ${suggestedPrice.toFixed(0)}
+                      <Feather name="corner-down-right" size={12} color="#047857" />
+                      <Text style={styles.calcSuggestedText}>
+                        Use suggested: ${suggestedPrice.toFixed(0)}
                       </Text>
                     </Pressable>
                   </View>
-                  <View style={[styles.inputContainer, { backgroundColor: "#374151", borderColor: "#4B5563" }]}>
-                    <Text style={[styles.dollarSign, { color: "#9CA3AF" }]}>$</Text>
+                  <View style={styles.calcInputBox}>
+                    <Text style={styles.calcInputDollar}>$</Text>
                     <TextInput
-                      style={[styles.priceInput, { color: "#FFFFFF" }]}
+                      style={styles.calcInputValue}
                       value={sellingPrice}
                       onChangeText={setSellingPrice}
-                      placeholder={suggestedPrice.toFixed(2)}
-                      placeholderTextColor="#6B7280"
+                      placeholder={suggestedPrice.toFixed(0)}
+                      placeholderTextColor="#9CA3AF"
                       keyboardType="decimal-pad"
                       returnKeyType="done"
                       onSubmitEditing={() => Keyboard.dismiss()}
@@ -458,18 +473,18 @@ export default function SearchResultsScreen() {
                   </View>
                 </View>
 
+                <View style={styles.calcDividerThin} />
+
                 <View style={styles.calculatorRow}>
-                  <Text style={[styles.calculatorLabel, { color: "#111827" }]}>
-                    Your Purchase Price
-                  </Text>
-                  <View style={[styles.inputContainer, { backgroundColor: "#374151", borderColor: "#4B5563" }]}>
-                    <Text style={[styles.dollarSign, { color: "#9CA3AF" }]}>$</Text>
+                  <Text style={styles.calcLabel}>Your Purchase Price</Text>
+                  <View style={styles.calcInputBox}>
+                    <Text style={styles.calcInputDollar}>$</Text>
                     <TextInput
-                      style={[styles.priceInput, { color: "#FFFFFF" }]}
+                      style={styles.calcInputValue}
                       value={purchasePrice}
                       onChangeText={setPurchasePrice}
-                      placeholder="0.00"
-                      placeholderTextColor="#6B7280"
+                      placeholder="0"
+                      placeholderTextColor="#9CA3AF"
                       keyboardType="decimal-pad"
                       returnKeyType="done"
                       onSubmitEditing={() => Keyboard.dismiss()}
@@ -477,32 +492,101 @@ export default function SearchResultsScreen() {
                   </View>
                 </View>
 
-                <View style={[styles.divider, { backgroundColor: "#E5E7EB" }]} />
+                <View style={styles.calcDividerThin} />
 
                 <View style={styles.calculatorRow}>
-                  <Text style={[styles.calculatorLabel, { color: "#6B7280" }]}>
-                    Est. Fees (~13%)
-                  </Text>
-                  <Text style={[styles.calculatorValue, { color: "#EF4444" }]}>
-                    -${ebayFees.toFixed(2)}
-                  </Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    <Text style={styles.calcLabel}>Est. Fees</Text>
+                    <View style={styles.feesPill}>
+                      <Text style={styles.feesPillText}>~13%</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.calcFeesValue}>-${ebayFees.toFixed(2)}</Text>
+                </View>
+
+                <View style={styles.donutSection}>
+                  <View style={styles.donutChartContainer}>
+                    <Svg width={100} height={100} viewBox="0 0 100 100">
+                      <Circle cx="50" cy="50" r="40" stroke="#E5E7EB" strokeWidth="12" fill="none" />
+                      {purchase > 0 ? (
+                        <Circle
+                          cx="50" cy="50" r="40"
+                          stroke="#D1D5DB"
+                          strokeWidth="12"
+                          fill="none"
+                          strokeDasharray={`${(purchase / selling) * 251.3} 251.3`}
+                          strokeDashoffset={0}
+                          rotation="-90"
+                          origin="50,50"
+                        />
+                      ) : null}
+                      <Circle
+                        cx="50" cy="50" r="40"
+                        stroke="#F59E0B"
+                        strokeWidth="12"
+                        fill="none"
+                        strokeDasharray={`${(ebayFees / selling) * 251.3} 251.3`}
+                        strokeDashoffset={`${-(purchase / selling) * 251.3}`}
+                        rotation="-90"
+                        origin="50,50"
+                      />
+                      <Circle
+                        cx="50" cy="50" r="40"
+                        stroke="#047857"
+                        strokeWidth="12"
+                        fill="none"
+                        strokeDasharray={`${Math.max(0, (profit / selling)) * 251.3} 251.3`}
+                        strokeDashoffset={`${-((purchase + ebayFees) / selling) * 251.3}`}
+                        rotation="-90"
+                        origin="50,50"
+                      />
+                    </Svg>
+                    <View style={styles.donutCenter}>
+                      <Text style={styles.donutPercent}>{Math.max(0, margin)}%</Text>
+                      <Text style={styles.donutMarginLabel}>margin</Text>
+                    </View>
+                  </View>
+                  <View style={styles.donutLegend}>
+                    <View style={styles.legendRow}>
+                      <View style={[styles.legendDot, { backgroundColor: "#047857" }]} />
+                      <Text style={styles.legendLabel}>Profit</Text>
+                      <Text style={[styles.legendValue, { color: "#047857" }]}>+${Math.max(0, profit).toFixed(2)}</Text>
+                    </View>
+                    <View style={styles.legendRow}>
+                      <View style={[styles.legendDot, { backgroundColor: "#F59E0B" }]} />
+                      <Text style={styles.legendLabel}>Platform fees</Text>
+                      <Text style={[styles.legendValue, { color: "#D97706" }]}>-${ebayFees.toFixed(2)}</Text>
+                    </View>
+                    <View style={styles.legendRow}>
+                      <View style={[styles.legendDot, { backgroundColor: "#D1D5DB" }]} />
+                      <Text style={styles.legendLabel}>Buy cost</Text>
+                      <Text style={styles.legendValue}>${purchase.toFixed(2)}</Text>
+                    </View>
+                  </View>
                 </View>
 
                 <View style={[styles.profitRow, { backgroundColor: profit > 0 ? "#ECFDF5" : "#FEF2F2" }]}>
                   <View>
-                    <Text style={[styles.profitLabel, { color: "#047857" }]}>
+                    <Text style={[styles.profitLabel, { color: profit > 0 ? "#047857" : "#EF4444" }]}>
                       Estimated Profit
                     </Text>
                     <Text style={{ fontSize: 11, color: "#6B7280", marginTop: 1 }}>
                       After fees · before shipping
                     </Text>
                   </View>
-                  <Text style={[
-                    styles.profitValue, 
-                    { color: profit > 0 ? "#047857" : "#EF4444" }
-                  ]}>
-                    {profit >= 0 ? '+' : ''}${profit.toFixed(2)}
-                  </Text>
+                  <View style={{ alignItems: "flex-end" }}>
+                    <Text style={[
+                      styles.profitValue, 
+                      { color: profit > 0 ? "#047857" : "#EF4444" }
+                    ]}>
+                      {profit >= 0 ? '+' : ''}${profit.toFixed(2)}
+                    </Text>
+                    {profit > 0 ? (
+                      <Text style={{ fontSize: 12, color: "#047857", marginTop: 1 }}>
+                        {margin}% margin
+                      </Text>
+                    ) : null}
+                  </View>
                 </View>
               </View>
 
@@ -1236,34 +1320,160 @@ const styles = StyleSheet.create({
     height: 1,
     marginBottom: 20,
   },
+  calcHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 4,
+  },
   calculatorHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    marginBottom: 20,
+    gap: 8,
   },
-  calculatorTitle: {
+  calculatorTitleText: {
     fontSize: 18,
     fontWeight: "700",
+    color: "#111827",
+  },
+  marginBadge: {
+    borderWidth: 1.5,
+    borderColor: "#047857",
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+  },
+  marginBadgeText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#047857",
+  },
+  calcDividerThin: {
+    height: 1,
+    backgroundColor: "#F3F4F6",
+    marginVertical: 14,
   },
   calculatorRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 4,
   },
-  calculatorLabel: {
-    fontSize: 14,
-    fontWeight: "500",
+  calcLabel: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#111827",
   },
   labelWithHint: {
     flexDirection: "column",
     gap: 4,
   },
   suggestedHint: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 6,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 2,
+  },
+  calcSuggestedText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#047857",
+  },
+  calcInputBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F3F4F6",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    minWidth: 100,
+  },
+  calcInputDollar: {
+    fontSize: 18,
+    fontWeight: "500",
+    color: "#9CA3AF",
+    marginRight: 4,
+  },
+  calcInputValue: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#111827",
+    minWidth: 50,
+    textAlign: "right",
+  },
+  feesPill: {
+    backgroundColor: "#F3F4F6",
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  },
+  feesPillText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#9CA3AF",
+  },
+  calcFeesValue: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#EF4444",
+  },
+  donutSection: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 16,
+    gap: 16,
+  },
+  donutChartContainer: {
+    width: 100,
+    height: 100,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  donutCenter: {
+    position: "absolute",
+    alignItems: "center",
+  },
+  donutPercent: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#111827",
+  },
+  donutMarginLabel: {
+    fontSize: 11,
+    color: "#9CA3AF",
+    fontWeight: "500",
+  },
+  donutLegend: {
+    flex: 1,
+    gap: 10,
+  },
+  legendRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  legendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  legendLabel: {
+    fontSize: 14,
+    color: "#374151",
+    flex: 1,
+  },
+  legendValue: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#374151",
+  },
+  calculatorTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  calculatorLabel: {
+    fontSize: 14,
+    fontWeight: "500",
   },
   suggestedHintText: {
     fontSize: 16,
