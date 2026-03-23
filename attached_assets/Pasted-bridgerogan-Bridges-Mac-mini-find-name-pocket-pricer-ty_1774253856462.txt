@@ -1,0 +1,35 @@
+bridgerogan@Bridges-Mac-mini ~ % find ~ -name "pocket-pricer*" -type d -maxdepth 3
+find: /Users/bridgerogan/Music/Music: Operation not permitted
+find: /Users/bridgerogan/Pictures/Photos Library.photoslibrary: Operation not permitted
+find: /Users/bridgerogan/Library/Daemon Containers: Operation not permitted
+find: /Users/bridgerogan/Library/Autosave Information: Operation not permitted
+find: /Users/bridgerogan/Library/IdentityServices: Operation not permitted
+find: /Users/bridgerogan/Library/Messages: Operation not permitted
+find: /Users/bridgerogan/Library/HomeKit: Operation not permitted
+find: /Users/bridgerogan/Library/Sharing: Operation not permitted
+find: /Users/bridgerogan/Library/com.apple.aiml.instrumentation: Operation not permitted
+find: /Users/bridgerogan/Library/Mail: Operation not permitted
+find: /Users/bridgerogan/Library/Trial: Operation not permitted
+find: /Users/bridgerogan/Library/AppleMediaServices: Operation not permitted
+find: /Users/bridgerogan/Library/DuetExpertCenter: Operation not permitted
+find: /Users/bridgerogan/Library/Accounts: Operation not permitted
+find: /Users/bridgerogan/Library/Safari: Operation not permitted
+find: /Users/bridgerogan/Library/Biome: Operation not permitted
+find: /Users/bridgerogan/Library/IntelligencePlatform: Operation not permitted
+find: /Users/bridgerogan/Library/Shortcuts: Operation not permitted
+find: /Users/bridgerogan/Library/Mobile Documents: Operation not permitted
+find: /Users/bridgerogan/Library/Suggestions: Operation not permitted
+find: /Users/bridgerogan/Library/Weather: Operation not permitted
+find: /Users/bridgerogan/Library/ContainerManager: Operation not permitted
+find: /Users/bridgerogan/Library/PersonalizationPortrait: Operation not permitted
+find: /Users/bridgerogan/Library/Photos: Operation not permitted
+find: /Users/bridgerogan/Library/Cookies: Operation not permitted
+find: /Users/bridgerogan/Library/CoreFollowUp: Operation not permitted
+find: /Users/bridgerogan/Library/StatusKit: Operation not permitted
+find: /Users/bridgerogan/Library/DoNotDisturb: Operation not permitted
+find: /Users/bridgerogan/Movies/TV: Operation not permitted
+find: /Users/bridgerogan/.Trash: Operation not permitted
+find: /Users/bridgerogan/Documents: Operation not permitted
+bridgerogan@Bridges-Mac-mini ~ % 
+
+
