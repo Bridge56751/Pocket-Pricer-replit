@@ -132,6 +132,17 @@ export default function RootStackNavigator() {
         options={{
           headerTitle: "Scan Result",
           headerBackVisible: true,
+          headerTransparent: false,
+          headerBlurEffect: undefined,
+          headerStyle: {
+            backgroundColor: "#14532D",
+          },
+          headerTintColor: "#FFFFFF",
+          headerTitleStyle: {
+            color: "#FFFFFF",
+            fontWeight: "700",
+          },
+          headerShadowVisible: false,
         }}
       />
       <Stack.Screen
