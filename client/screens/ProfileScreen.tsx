@@ -25,6 +25,7 @@ export default function ProfileScreen() {
   const [scansUsed, setScansUsed] = useState(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [aboutExpanded, setAboutExpanded] = useState(false);
 
   useEffect(() => {
     getScansUsed().then(setScansUsed);
@@ -265,12 +266,12 @@ export default function ProfileScreen() {
                   setShowDeleteConfirm(true);
                 }}
                 style={({ pressed }) => [
-                  styles.heroOutlineBtn,
-                  { borderColor: "rgba(239,68,68,0.5)", opacity: pressed ? 0.7 : 1 },
+                  styles.deleteBtn,
+                  { opacity: pressed ? 0.7 : 1 },
                 ]}
               >
-                <Feather name="trash-2" size={16} color="#F87171" />
-                <Text style={[styles.heroOutlineBtnText, { color: "#F87171" }]}>Delete Local Data</Text>
+                <Feather name="trash-2" size={18} color="#FCA5A5" />
+                <Text style={styles.deleteBtnText}>Delete Local Data</Text>
               </Pressable>
             )}
           </View>
@@ -278,46 +279,60 @@ export default function ProfileScreen() {
 
         <View style={styles.lightSection}>
           <View style={styles.aboutCard}>
-            <View style={styles.aboutHeader}>
-              <Feather name="info" size={18} color={theme.colors.primary} />
-              <Text style={styles.aboutTitle}>About</Text>
-            </View>
+            <Pressable
+              onPress={() => setAboutExpanded(!aboutExpanded)}
+              style={styles.aboutHeaderBtn}
+            >
+              <View style={styles.aboutHeaderLeft}>
+                <Feather name="info" size={18} color={theme.colors.primary} />
+                <Text style={styles.aboutTitle}>About</Text>
+              </View>
+              <Feather
+                name={aboutExpanded ? "chevron-up" : "chevron-down"}
+                size={20}
+                color="#9CA3AF"
+              />
+            </Pressable>
 
-            <MenuItem
-              label="Privacy Policy"
-              onPress={handleOpenPrivacyPolicy}
-              showChevron
-            />
-            <MenuItem
-              label="Terms of Service"
-              onPress={handleOpenTermsOfService}
-              showChevron
-            />
-            <MenuItem
-              label="Website"
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                WebBrowser.openBrowserAsync("https://pocket-pricer.com");
-              }}
-              showChevron
-            />
-            <MenuItem
-              label="Email Support"
-              rightText="pricerpocket@gmail.com"
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                Linking.openURL("mailto:pricerpocket@gmail.com");
-              }}
-            />
-            <MenuItem
-              label="Replay Tutorial"
-              onPress={async () => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                await resetOnboarding();
-                triggerOnboardingReplay();
-              }}
-              showChevron
-            />
+            {aboutExpanded ? (
+              <View style={styles.aboutContent}>
+                <MenuItem
+                  label="Privacy Policy"
+                  onPress={handleOpenPrivacyPolicy}
+                  showChevron
+                />
+                <MenuItem
+                  label="Terms of Service"
+                  onPress={handleOpenTermsOfService}
+                  showChevron
+                />
+                <MenuItem
+                  label="Website"
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    WebBrowser.openBrowserAsync("https://pocket-pricer.com");
+                  }}
+                  showChevron
+                />
+                <MenuItem
+                  label="Email Support"
+                  rightText="pricerpocket@gmail.com"
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    Linking.openURL("mailto:pricerpocket@gmail.com");
+                  }}
+                />
+                <MenuItem
+                  label="Replay Tutorial"
+                  onPress={async () => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    await resetOnboarding();
+                    triggerOnboardingReplay();
+                  }}
+                  showChevron
+                />
+              </View>
+            ) : null}
           </View>
 
           <Text style={styles.versionText}>Version 1.4.0</Text>
@@ -495,6 +510,22 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     color: "rgba(255,255,255,0.45)",
   },
+  deleteBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 2.5,
+    borderColor: "rgba(248,113,113,0.7)",
+    backgroundColor: "rgba(239,68,68,0.12)",
+    gap: 10,
+  },
+  deleteBtnText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#FCA5A5",
+  },
   deleteConfirmBox: {
     backgroundColor: "rgba(239,68,68,0.1)",
     borderRadius: 12,
@@ -549,11 +580,19 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 18,
   },
-  aboutHeader: {
+  aboutHeaderBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 4,
+  },
+  aboutHeaderLeft: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    marginBottom: 8,
+  },
+  aboutContent: {
+    marginTop: 4,
   },
   aboutTitle: {
     fontSize: 16,
