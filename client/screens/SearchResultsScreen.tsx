@@ -99,9 +99,9 @@ export default function SearchResultsScreen() {
     outputRange: ["#FFFFFF", "#FFFFFF", "#111827"],
     extrapolate: "clamp",
   });
-  const headerArrowColor = scrollY.interpolate({
+  const headerBgOpacity = scrollY.interpolate({
     inputRange: [0, HERO_THRESHOLD * 0.85, HERO_THRESHOLD],
-    outputRange: ["#FFFFFF", "#FFFFFF", "#111827"],
+    outputRange: ["rgba(255,255,255,0.18)", "rgba(255,255,255,0.18)", "rgba(0,0,0,0)"],
     extrapolate: "clamp",
   });
 
@@ -132,13 +132,20 @@ export default function SearchResultsScreen() {
           }}
           pressOpacity={0.7}
         >
-          <RNAnimated.Text>
-            <Feather name="arrow-left" size={24} color="#FFFFFF" />
-          </RNAnimated.Text>
+          <RNAnimated.View style={{
+            width: 36,
+            height: 36,
+            borderRadius: 18,
+            backgroundColor: headerBgOpacity,
+            alignItems: "center",
+            justifyContent: "center",
+          }}>
+            <Feather name="arrow-left" size={22} color="#111827" />
+          </RNAnimated.View>
         </HeaderButton>
       ),
     });
-  }, [navigation, headerBgColor, headerTextColor, headerArrowColor]);
+  }, [navigation, headerBgColor, headerTextColor, headerBgOpacity]);
 
   const suggestedPrice = results.avgListPrice;
   const EBAY_FEE_RATE = 0.13;
@@ -441,7 +448,7 @@ export default function SearchResultsScreen() {
         style={styles.list}
         contentContainerStyle={[
           styles.listContent,
-          { paddingTop: headerHeight, paddingBottom: 100 }
+          { paddingTop: 0, paddingBottom: 100 }
         ]}
         scrollIndicatorInsets={{ bottom: insets.bottom }}
         keyboardDismissMode="on-drag"
@@ -460,7 +467,7 @@ export default function SearchResultsScreen() {
               locations={[0, 0.05, 0.5, 1]}
               start={{ x: 0, y: 0 }}
               end={{ x: 0, y: 1 }}
-              style={styles.heroSection}
+              style={[styles.heroSection, { paddingTop: headerHeight + 8 }]}
             >
               {scannedImageUri ? (
                 <View style={styles.productCard}>
