@@ -545,7 +545,7 @@ export default function ScanScreen() {
                       <Text style={styles.proUpsellBadgeText}>PRO</Text>
                     </LinearGradient>
                     <Text style={styles.proUpsellTitle}>Unlimited scans, sales prices & Buy Score</Text>
-                    <Text style={styles.proUpsellSub}>3-day free trial · $8.99/mo after</Text>
+                    <Text style={styles.proUpsellSub}>3-day free trial · As low as $4.99/mo</Text>
                   </View>
                   <Feather name="chevron-right" size={18} color="rgba(255,255,255,0.4)" />
                 </Pressable>
