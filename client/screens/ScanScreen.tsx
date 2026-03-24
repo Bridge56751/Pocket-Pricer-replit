@@ -520,6 +520,39 @@ export default function ScanScreen() {
               </View>
             </View>
 
+            {__DEV__ ? (
+              <Pressable
+                onPress={async () => {
+                  try {
+                    const deviceId = await getDeviceId();
+                    await fetch(
+                      new URL("/api/dev-test-scan", getApiUrl()).toString(),
+                      {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ deviceId }),
+                      }
+                    );
+                    queryClient.invalidateQueries({ queryKey: ["/api/device-stats"] });
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                  } catch {}
+                }}
+                style={({ pressed }) => [{
+                  backgroundColor: "rgba(255,255,255,0.15)",
+                  borderRadius: 8,
+                  paddingVertical: 8,
+                  paddingHorizontal: 16,
+                  alignSelf: "center",
+                  marginBottom: 8,
+                  opacity: pressed ? 0.6 : 1,
+                }]}
+              >
+                <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 12, fontWeight: "600" }}>
+                  + Dev Test Scan
+                </Text>
+              </Pressable>
+            ) : null}
+
             <Pressable
               onPress={handleScanProduct}
               style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}
