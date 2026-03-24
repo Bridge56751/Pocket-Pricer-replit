@@ -51,7 +51,7 @@ const progressStyles = StyleSheet.create({
 function ProblemStep() {
   return (
     <View style={pageStyles.container}>
-      <Animated.View entering={FadeInUp.delay(200).duration(600)} style={pageStyles.iconWrap}>
+      <Animated.View entering={FadeInUp.delay(100).duration(450)} style={pageStyles.iconWrap}>
         <View style={pageStyles.iconSquare}>
           <View style={pageStyles.alertCircle}>
             <Feather name="alert-circle" size={28} color="#F97316" />
@@ -59,17 +59,17 @@ function ProblemStep() {
         </View>
       </Animated.View>
 
-      <Animated.Text entering={FadeInUp.delay(450).duration(500)} style={pageStyles.label}>
+      <Animated.Text entering={FadeInUp.delay(280).duration(400)} style={pageStyles.label}>
         THE PROBLEM
       </Animated.Text>
 
-      <Animated.View entering={FadeInUp.delay(650).duration(600)}>
+      <Animated.View entering={FadeInUp.delay(420).duration(450)}>
         <Text style={pageStyles.title}>
           Listing prices{"\n"}are <Text style={pageStyles.titleCoral}>misleading</Text>
         </Text>
       </Animated.View>
 
-      <Animated.Text entering={FadeInUp.delay(900).duration(600)} style={pageStyles.subtitle}>
+      <Animated.Text entering={FadeInUp.delay(600).duration(450)} style={pageStyles.subtitle}>
         Most prices you see are what sellers ask — not what buyers actually pay.
       </Animated.Text>
     </View>
@@ -79,23 +79,23 @@ function ProblemStep() {
 function SolutionStepContent() {
   return (
     <View style={pageStyles.container}>
-      <Animated.View entering={FadeInUp.delay(200).duration(600)} style={pageStyles.iconWrap}>
+      <Animated.View entering={FadeInUp.delay(100).duration(450)} style={pageStyles.iconWrap}>
         <View style={pageStyles.iconSquare}>
           <Feather name="camera" size={30} color="#047857" />
         </View>
       </Animated.View>
 
-      <Animated.Text entering={FadeInUp.delay(450).duration(500)} style={pageStyles.label}>
+      <Animated.Text entering={FadeInUp.delay(280).duration(400)} style={pageStyles.label}>
         THE SOLUTION
       </Animated.Text>
 
-      <Animated.View entering={FadeInUp.delay(650).duration(600)}>
+      <Animated.View entering={FadeInUp.delay(420).duration(450)}>
         <Text style={pageStyles.title}>
           Scan any item.{"\n"}<Text style={pageStyles.titleGreen}>Know its value.</Text>
         </Text>
       </Animated.View>
 
-      <Animated.Text entering={FadeInUp.delay(900).duration(600)} style={pageStyles.subtitle}>
+      <Animated.Text entering={FadeInUp.delay(600).duration(450)} style={pageStyles.subtitle}>
         Point your camera and get real sold prices from actual eBay transactions.
       </Animated.Text>
     </View>
@@ -105,7 +105,7 @@ function SolutionStepContent() {
 function TrialStep() {
   return (
     <View style={trialStyles.container}>
-      <Animated.View entering={FadeInUp.delay(200).duration(600)} style={trialStyles.iconWrap}>
+      <Animated.View entering={FadeInUp.delay(100).duration(450)} style={trialStyles.iconWrap}>
         <LinearGradient
           colors={["#F5D87A", "#D4A926", "#E8C84A", "#D4A926"]}
           start={{ x: 0, y: 0 }}
@@ -116,7 +116,7 @@ function TrialStep() {
         </LinearGradient>
       </Animated.View>
 
-      <Animated.View entering={FadeInUp.delay(450).duration(500)}>
+      <Animated.View entering={FadeInUp.delay(280).duration(400)}>
         <LinearGradient
           colors={["#F5D87A", "#D4A926", "#E8C84A", "#D4A926"]}
           start={{ x: 0, y: 0 }}
@@ -128,17 +128,17 @@ function TrialStep() {
         </LinearGradient>
       </Animated.View>
 
-      <Animated.View entering={FadeInUp.delay(650).duration(600)}>
+      <Animated.View entering={FadeInUp.delay(420).duration(450)}>
         <Text style={trialStyles.title}>
           You're ready.{"\n"}<Text style={trialStyles.titleGreen}>Let's flip smarter.</Text>
         </Text>
       </Animated.View>
 
-      <Animated.Text entering={FadeInUp.delay(900).duration(600)} style={trialStyles.subtitle}>
+      <Animated.Text entering={FadeInUp.delay(600).duration(450)} style={trialStyles.subtitle}>
         Try free for 3 days,{"\n"}no charge until day 4
       </Animated.Text>
 
-      <Animated.View entering={FadeInUp.delay(1100).duration(500)} style={trialStyles.featureList}>
+      <Animated.View entering={FadeInUp.delay(750).duration(400)} style={trialStyles.featureList}>
         <View style={trialStyles.featureRow}>
           <View style={trialStyles.checkCircle}>
             <Feather name="check" size={14} color="#047857" />
@@ -369,7 +369,7 @@ export default function OnboardingScreen({ onComplete, onStartTrial }: Onboardin
       </View>
 
       <Animated.View
-        entering={FadeInDown.delay(500).duration(600)}
+        entering={FadeInDown.delay(300).duration(450)}
         style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}
       >
         {isLastStep ? (
