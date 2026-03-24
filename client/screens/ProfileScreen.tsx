@@ -322,22 +322,6 @@ export default function ProfileScreen() {
             ) : null}
           </View>
 
-          <Pressable
-            onPress={async () => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              try {
-                if (await StoreReview.hasAction()) {
-                  await StoreReview.requestReview();
-                }
-              } catch {}
-            }}
-            style={({ pressed }) => [styles.rateCard, { opacity: pressed ? 0.7 : 1 }]}
-          >
-            <Feather name="star" size={18} color="#D4A926" />
-            <Text style={styles.rateText}>Rate & Review</Text>
-            <Feather name="chevron-right" size={18} color="#9CA3AF" />
-          </Pressable>
-
           <View style={styles.aboutCard}>
             <Pressable
               onPress={() => setAboutExpanded(!aboutExpanded)}
@@ -377,6 +361,22 @@ export default function ProfileScreen() {
               </View>
             ) : null}
           </View>
+
+          <Pressable
+            onPress={async () => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              try {
+                if (await StoreReview.hasAction()) {
+                  await StoreReview.requestReview();
+                }
+              } catch {}
+            }}
+            style={({ pressed }) => [styles.rateCard, { opacity: pressed ? 0.7 : 1 }]}
+          >
+            <Feather name="star" size={18} color="#D4A926" />
+            <Text style={styles.rateText}>Rate & Review</Text>
+            <Feather name="chevron-right" size={18} color="#9CA3AF" />
+          </Pressable>
 
           <Text style={styles.versionText}>Version 1.4.0</Text>
         </View>
