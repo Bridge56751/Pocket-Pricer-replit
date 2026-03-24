@@ -2034,7 +2034,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     backgroundColor: "#FFFFFF",
     marginBottom: 12,
-    borderWidth: 1.5,
+    borderWidth: 2,
     borderColor: "#047857",
   },
   salesIntelCard: {
