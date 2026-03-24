@@ -961,27 +961,31 @@ export default function SearchResultsScreen() {
 
             {broadSoldData && showEbaySold && !broadSoldData.noResults ? (
               <View style={styles.advancedSearchContainer}>
-                {ebaySoldData && ebaySoldData.noResults ? (
-                  <View style={[styles.ebaySoldSummary, { backgroundColor: theme.colors.card, marginBottom: 12 }]}>
-                    <View style={styles.ebaySoldSummaryHeader}>
-                      <Feather name="info" size={18} color={theme.colors.mutedForeground} />
-                      <Text style={[styles.ebaySoldSummaryTitle, { color: theme.colors.mutedForeground, fontSize: 15 }]}>
-                        No exact matches found
-                      </Text>
-                    </View>
+                <View style={styles.salesIntelHeader}>
+                  <View style={styles.salesIntelLeft}>
+                    <Text style={styles.salesIntelLabel}>PRO FEATURE</Text>
+                    <Text style={styles.salesIntelTitle}>Sales Intelligence</Text>
                   </View>
-                ) : null}
-                <View style={[styles.ebaySoldSummary, { backgroundColor: theme.colors.card }]}>
-                  <View style={styles.ebaySoldSummaryHeader}>
-                    <Feather name="bar-chart-2" size={18} color="#F59E0B" />
-                    <Text style={[styles.ebaySoldSummaryTitle, { color: theme.colors.foreground }]}>
-                      Similar Items on eBay
-                    </Text>
-                  </View>
-                  <Text style={[styles.ebaySoldSummarySubtitle, { color: "#F59E0B" }]}>
-                    Showing similar items — prices may vary from exact product
+                  <LinearGradient
+                    colors={["#F5D87A", "#D4A926", "#E8C84A"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.salesIntelBadge}
+                  >
+                    <Feather name="star" size={10} color="#3D2E00" />
+                    <Text style={styles.salesIntelBadgeText}>PRO</Text>
+                  </LinearGradient>
+                </View>
+
+                <View style={styles.broadDisclaimerRow}>
+                  <Feather name="info" size={14} color={theme.colors.mutedForeground} />
+                  <Text style={[styles.broadDisclaimerText, { color: theme.colors.mutedForeground }]}>
+                    Based on similar items — prices may vary from exact product
                   </Text>
-                  <Text style={[styles.ebaySoldSummarySubtitle, { color: theme.colors.mutedForeground }]}>
+                </View>
+
+                <View style={[styles.ebaySoldSummary, { backgroundColor: theme.colors.card }]}>
+                  <Text style={[styles.ebaySoldSummarySubtitle, { color: theme.colors.mutedForeground, marginBottom: 12 }]}>
                     {(broadSoldData.totalSold || 0).toLocaleString()} similar sold {broadSoldData.totalSold === 1 ? "listing" : "listings"} found
                   </Text>
 
@@ -1852,6 +1856,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "800",
     letterSpacing: 0.5,
+  },
+  broadDisclaimerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 12,
+    paddingHorizontal: 4,
+  },
+  broadDisclaimerText: {
+    fontSize: 13,
+    fontWeight: "500",
+    flex: 1,
   },
   advancedSectionTitle: {
     fontSize: 18,
