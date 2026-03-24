@@ -555,6 +555,13 @@ export default function SearchResultsScreen() {
                   <Text style={styles.calcFeesValue}>-${ebayFees.toFixed(2)}</Text>
                 </View>
 
+                <View style={styles.calcDividerThin} />
+
+                <View style={styles.calculatorRow}>
+                  <Text style={styles.calcLabel}>Buy Cost</Text>
+                  <Text style={{ fontSize: 16, fontWeight: "700", color: "#EF4444" }}>-${purchase.toFixed(2)}</Text>
+                </View>
+
                 <View style={[styles.profitRow, { backgroundColor: profit > 0 ? "#ECFDF5" : "#FEF2F2" }]}>
                   <View>
                     <Text style={[styles.profitLabel, { color: profit > 0 ? "#047857" : "#EF4444" }]}>
