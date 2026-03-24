@@ -1969,7 +1969,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: "#3665F3",
+    backgroundColor: "#047857",
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 12,
