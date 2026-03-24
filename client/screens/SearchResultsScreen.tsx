@@ -73,7 +73,7 @@ export default function SearchResultsScreen() {
     return resultsAny.scannedImageUri;
   }, [results.scannedImageId, results]);
 
-  const { getDeviceId } = useAuth();
+  const { getDeviceId, getScansUsed } = useAuth();
   const { isPro, isReady: rcReady } = useRevenueCat();
   const [purchasePrice, setPurchasePrice] = useState("");
   const [sellingPrice, setSellingPrice] = useState("");
@@ -247,9 +247,16 @@ export default function SearchResultsScreen() {
     }
   }, [allListings, sortOption]);
 
-  const handleNewSearch = () => {
+  const handleNewSearch = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    navigation.goBack();
+    if (rcReady && !isPro) {
+      const scansUsed = await getScansUsed();
+      if (scansUsed >= 3) {
+        navigation.navigate("Paywall");
+        return;
+      }
+    }
+    navigation.navigate("CameraScan");
   };
 
   const handleEbaySoldSearch = async (broad = false) => {
