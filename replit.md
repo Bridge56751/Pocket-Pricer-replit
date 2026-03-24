@@ -69,6 +69,14 @@ The application is built with a client-server architecture. The frontend is an E
 
 ## Recent Changes
 
+- **Mar 2026**: AI-powered eBay search query cleaning
+  - Gemini 2.5 Flash AI cleans product names before eBay sold search for more accurate results
+  - New `server/gemini.ts` helper uses Replit AI Integrations (no API key needed)
+  - AI extracts core brand + model + product type, strips colors/sizes/conditions/marketing fluff
+  - Silent fallback to regex-only cleaning if AI fails (timeout, error, etc.)
+  - Broad search ("Search Similar Items") still uses regex-only cleaning
+  - Camera scan / Google Lens flow completely untouched
+  - Navigation stack reset on "New Search" to prevent screen stacking
 - **Mar 2026**: Paywall & onboarding flow redesign
   - Free scan limit reduced from 5 to 1
   - New full-screen non-dismissible PaywallScreen (`client/screens/PaywallScreen.tsx`) with "Start 3-Day Free Trial" CTA

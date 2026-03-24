@@ -2,6 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "node:http";
 import { getGuestScanCount, incrementGuestScan } from "./db";
 import { logScanEvent, logEbaySearchEvent, supabase, initScanImagesBucket, getDeviceStats } from "./supabase";
+import { cleanQueryWithAI } from "./gemini";
 
 const FREE_LIFETIME_SEARCHES = 3;
 const RATE_LIMIT_MAX = 20;
@@ -399,7 +400,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: "Search API key not configured" });
       }
 
-      let cleanQuery = searchQuery
+      const aiCleaned = broadSearch ? null : await cleanQueryWithAI(searchQuery);
+      const queryForRegex = aiCleaned || searchQuery;
+
+      let cleanQuery = queryForRegex
         .split(/[|·•–—]/).at(0)
         .replace(/free shipping.*/i, "")
         .replace(/\(.*?\)/g, "")
