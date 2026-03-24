@@ -121,10 +121,17 @@ export async function getDeviceStats(deviceId: string, tzOffsetMinutes: number =
   const fallback = { memberDays: 0, scansToday: 0, streak: 0 };
   if (!supabase) return fallback;
 
-  function toLocalDate(utcDate: Date): Date {
-    const localMs = utcDate.getTime() - tzOffsetMinutes * 60 * 1000;
-    const shifted = new Date(localMs);
-    return new Date(shifted.getUTCFullYear(), shifted.getUTCMonth(), shifted.getUTCDate());
+  const offsetMs = tzOffsetMinutes * 60 * 1000;
+
+  function toLocalDayKey(utcDate: Date): string {
+    const shifted = new Date(utcDate.getTime() - offsetMs);
+    return `${shifted.getUTCFullYear()}-${shifted.getUTCMonth()}-${shifted.getUTCDate()}`;
+  }
+
+  function getLocalMidnightUtc(): Date {
+    const shifted = new Date(Date.now() - offsetMs);
+    const midnightUtc = Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth(), shifted.getUTCDate());
+    return new Date(midnightUtc + offsetMs);
   }
 
   try {
@@ -136,13 +143,14 @@ export async function getDeviceStats(deviceId: string, tzOffsetMinutes: number =
 
     let memberDays = 0;
     if (device?.first_seen) {
-      const firstDay = toLocalDate(new Date(device.first_seen));
-      const today = toLocalDate(new Date());
-      memberDays = Math.max(1, Math.round((today.getTime() - firstDay.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+      const firstShifted = new Date(new Date(device.first_seen).getTime() - offsetMs);
+      const nowShifted = new Date(Date.now() - offsetMs);
+      const firstDayUtc = Date.UTC(firstShifted.getUTCFullYear(), firstShifted.getUTCMonth(), firstShifted.getUTCDate());
+      const todayUtc = Date.UTC(nowShifted.getUTCFullYear(), nowShifted.getUTCMonth(), nowShifted.getUTCDate());
+      memberDays = Math.max(1, Math.round((todayUtc - firstDayUtc) / (1000 * 60 * 60 * 24)) + 1);
     }
 
-    const todayLocalStart = toLocalDate(new Date());
-    const todayStartUtc = new Date(todayLocalStart.getTime() + tzOffsetMinutes * 60 * 1000);
+    const todayStartUtc = getLocalMidnightUtc();
 
     const { count: scansToday } = await supabase
       .from("scan_events")
@@ -161,22 +169,22 @@ export async function getDeviceStats(deviceId: string, tzOffsetMinutes: number =
     if (scanDays && scanDays.length > 0) {
       const uniqueDays = new Set<string>();
       for (const row of scanDays) {
-        const d = toLocalDate(new Date(row.created_at));
-        uniqueDays.add(`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`);
+        uniqueDays.add(toLocalDayKey(new Date(row.created_at)));
       }
 
-      const checkDate = toLocalDate(new Date());
-      const todayKey = `${checkDate.getFullYear()}-${checkDate.getMonth()}-${checkDate.getDate()}`;
+      const nowShifted = new Date(Date.now() - offsetMs);
+      const checkDate = new Date(Date.UTC(nowShifted.getUTCFullYear(), nowShifted.getUTCMonth(), nowShifted.getUTCDate()));
+      const todayKey = `${checkDate.getUTCFullYear()}-${checkDate.getUTCMonth()}-${checkDate.getUTCDate()}`;
 
       if (!uniqueDays.has(todayKey)) {
-        checkDate.setDate(checkDate.getDate() - 1);
+        checkDate.setUTCDate(checkDate.getUTCDate() - 1);
       }
 
       while (true) {
-        const key = `${checkDate.getFullYear()}-${checkDate.getMonth()}-${checkDate.getDate()}`;
+        const key = `${checkDate.getUTCFullYear()}-${checkDate.getUTCMonth()}-${checkDate.getUTCDate()}`;
         if (uniqueDays.has(key)) {
           streak++;
-          checkDate.setDate(checkDate.getDate() - 1);
+          checkDate.setUTCDate(checkDate.getUTCDate() - 1);
         } else {
           break;
         }
