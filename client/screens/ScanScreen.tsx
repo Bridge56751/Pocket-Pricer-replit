@@ -485,8 +485,22 @@ export default function ScanScreen() {
               <View style={styles.metricCard}>
                 <Text style={styles.metricLabel}>MEMBER</Text>
                 <View style={styles.metricValueRow}>
-                  <Text style={styles.metricValue}>{deviceStats?.memberDays ?? 0}</Text>
-                  <Text style={styles.metricUnit}>d</Text>
+                  <Text style={styles.metricValue}>
+                    {(() => {
+                      const days = deviceStats?.memberDays ?? 0;
+                      if (days < 30) return days;
+                      if (days < 365) return Math.floor(days / 30);
+                      return (days / 365).toFixed(1).replace(/\.0$/, "");
+                    })()}
+                  </Text>
+                  <Text style={styles.metricUnit}>
+                    {(() => {
+                      const days = deviceStats?.memberDays ?? 0;
+                      if (days < 30) return "d";
+                      if (days < 365) return days < 60 ? "mo" : "mo";
+                      return days < 730 ? "yr" : "yr";
+                    })()}
+                  </Text>
                 </View>
                 <Text style={styles.metricSub}>since joined</Text>
               </View>
