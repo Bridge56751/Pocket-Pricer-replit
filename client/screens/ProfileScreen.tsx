@@ -28,6 +28,7 @@ export default function ProfileScreen() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [aboutExpanded, setAboutExpanded] = useState(false);
   const [supportExpanded, setSupportExpanded] = useState(false);
+  const [rateExpanded, setRateExpanded] = useState(false);
 
   useEffect(() => {
     getScansUsed().then(setScansUsed);
@@ -362,21 +363,39 @@ export default function ProfileScreen() {
             ) : null}
           </View>
 
-          <Pressable
-            onPress={async () => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              try {
-                if (await StoreReview.hasAction()) {
-                  await StoreReview.requestReview();
-                }
-              } catch {}
-            }}
-            style={({ pressed }) => [styles.rateCard, { opacity: pressed ? 0.7 : 1 }]}
-          >
-            <Feather name="star" size={18} color="#D4A926" />
-            <Text style={styles.rateText}>Rate & Review</Text>
-            <Feather name="chevron-right" size={18} color="#9CA3AF" />
-          </Pressable>
+          <View style={styles.aboutCard}>
+            <Pressable
+              onPress={() => setRateExpanded(!rateExpanded)}
+              style={styles.aboutHeaderBtn}
+            >
+              <View style={styles.aboutHeaderLeft}>
+                <Feather name="star" size={18} color="#D4A926" />
+                <Text style={styles.aboutTitle}>Rate & Review</Text>
+              </View>
+              <Feather
+                name={rateExpanded ? "chevron-up" : "chevron-down"}
+                size={20}
+                color="#9CA3AF"
+              />
+            </Pressable>
+
+            {rateExpanded ? (
+              <View style={styles.aboutContent}>
+                <MenuItem
+                  label="Leave a Review"
+                  onPress={async () => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    try {
+                      if (await StoreReview.hasAction()) {
+                        await StoreReview.requestReview();
+                      }
+                    } catch {}
+                  }}
+                  showChevron
+                />
+              </View>
+            ) : null}
+          </View>
 
           <Text style={styles.versionText}>Version 1.4.0</Text>
         </View>
@@ -617,21 +636,6 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     flexGrow: 1,
     paddingBottom: 40,
-  },
-  rateCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 18,
-    marginBottom: 16,
-    gap: 12,
-  },
-  rateText: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#111827",
   },
   aboutCard: {
     backgroundColor: "#FFFFFF",
