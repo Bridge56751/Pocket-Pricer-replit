@@ -842,17 +842,17 @@ export default function SearchResultsScreen() {
                         eBay Sales Summary
                       </Text>
                     </View>
-                    <Text style={[styles.ebaySoldMatchCount, { color: theme.colors.mutedForeground }]}>
-                      {(ebaySoldData.totalSold || 0).toLocaleString()} sold {ebaySoldData.totalSold === 1 ? "match" : "matches"}
-                    </Text>
                   </View>
+                  <Text style={[styles.ebaySoldMatchCount, { color: theme.colors.mutedForeground }]}>
+                    {(ebaySoldData.totalSold || 0).toLocaleString()} sold {ebaySoldData.totalSold === 1 ? "match" : "matches"}
+                  </Text>
 
                   <View style={styles.ebaySoldStatsRow}>
                     <View style={styles.ebaySoldStat}>
                       <Text style={[styles.ebaySoldStatLabel, { color: theme.colors.mutedForeground }]}>
                         AVG SOLD
                       </Text>
-                      <Text style={[styles.ebaySoldStatValue, { color: theme.colors.foreground }]}>
+                      <Text style={[styles.ebaySoldStatValue, { color: theme.colors.foreground }]} numberOfLines={1} adjustsFontSizeToFit>
                         ${(ebaySoldData.avgSoldPrice || 0).toFixed(0)}
                       </Text>
                       <Text style={[styles.ebaySoldStatSub, { color: theme.colors.mutedForeground }]}>
@@ -864,7 +864,7 @@ export default function SearchResultsScreen() {
                       <Text style={[styles.ebaySoldStatLabel, { color: theme.colors.mutedForeground }]}>
                         MEDIAN
                       </Text>
-                      <Text style={[styles.ebaySoldStatValue, { color: theme.colors.foreground }]}>
+                      <Text style={[styles.ebaySoldStatValue, { color: theme.colors.foreground }]} numberOfLines={1} adjustsFontSizeToFit>
                         ${(ebaySoldData.medianSoldPrice || 0).toFixed(0)}
                       </Text>
                       <Text style={[styles.ebaySoldStatSub, { color: theme.colors.mutedForeground }]}>
@@ -876,7 +876,7 @@ export default function SearchResultsScreen() {
                       <Text style={[styles.ebaySoldStatLabel, { color: theme.colors.mutedForeground }]}>
                         RANGE
                       </Text>
-                      <Text style={[styles.ebaySoldStatValue, { color: theme.colors.foreground }]}>
+                      <Text style={[styles.ebaySoldStatValue, { color: theme.colors.foreground }]} numberOfLines={1} adjustsFontSizeToFit>
                         ${(ebaySoldData.lowPrice || 0).toFixed(0)}-${(ebaySoldData.highPrice || 0).toFixed(0)}
                       </Text>
                       <Text style={[styles.ebaySoldStatSub, { color: theme.colors.mutedForeground }]}>
@@ -992,28 +992,37 @@ export default function SearchResultsScreen() {
                   <View style={styles.ebaySoldStatsRow}>
                     <View style={styles.ebaySoldStat}>
                       <Text style={[styles.ebaySoldStatLabel, { color: theme.colors.mutedForeground }]}>
-                        Avg Sold
+                        AVG SOLD
                       </Text>
-                      <Text style={[styles.ebaySoldStatValue, { color: theme.colors.foreground }]}>
+                      <Text style={[styles.ebaySoldStatValue, { color: theme.colors.foreground }]} numberOfLines={1} adjustsFontSizeToFit>
                         ${(broadSoldData.avgSoldPrice || 0).toFixed(0)}
                       </Text>
+                      <Text style={[styles.ebaySoldStatSub, { color: theme.colors.mutedForeground }]}>
+                        mean price
+                      </Text>
                     </View>
                     <View style={[styles.ebaySoldStatDivider, { backgroundColor: theme.colors.border }]} />
                     <View style={styles.ebaySoldStat}>
                       <Text style={[styles.ebaySoldStatLabel, { color: theme.colors.mutedForeground }]}>
-                        Median
+                        MEDIAN
                       </Text>
-                      <Text style={[styles.ebaySoldStatValue, { color: theme.colors.foreground }]}>
+                      <Text style={[styles.ebaySoldStatValue, { color: theme.colors.foreground }]} numberOfLines={1} adjustsFontSizeToFit>
                         ${(broadSoldData.medianSoldPrice || 0).toFixed(0)}
                       </Text>
+                      <Text style={[styles.ebaySoldStatSub, { color: theme.colors.mutedForeground }]}>
+                        midpoint
+                      </Text>
                     </View>
                     <View style={[styles.ebaySoldStatDivider, { backgroundColor: theme.colors.border }]} />
                     <View style={styles.ebaySoldStat}>
                       <Text style={[styles.ebaySoldStatLabel, { color: theme.colors.mutedForeground }]}>
-                        Range
+                        RANGE
                       </Text>
-                      <Text style={[styles.ebaySoldStatValue, { color: theme.colors.foreground }]}>
-                        ${(broadSoldData.lowPrice || 0).toFixed(0)} - ${(broadSoldData.highPrice || 0).toFixed(0)}
+                      <Text style={[styles.ebaySoldStatValue, { color: theme.colors.foreground }]} numberOfLines={1} adjustsFontSizeToFit>
+                        ${(broadSoldData.lowPrice || 0).toFixed(0)}-${(broadSoldData.highPrice || 0).toFixed(0)}
+                      </Text>
+                      <Text style={[styles.ebaySoldStatSub, { color: theme.colors.mutedForeground }]}>
+                        low to high
                       </Text>
                     </View>
                   </View>
@@ -1951,17 +1960,15 @@ const styles = StyleSheet.create({
   },
   ebaySoldSummary: {
     borderRadius: 16,
-    padding: 16,
+    padding: 20,
     marginBottom: 20,
   },
   ebaySoldSummaryHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(0,0,0,0.06)",
+    marginBottom: 4,
+    paddingBottom: 8,
   },
   ebaySoldSummaryHeaderLeft: {
     flexDirection: "row",
@@ -1969,12 +1976,16 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   ebaySoldSummaryTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: "700",
   },
   ebaySoldMatchCount: {
     fontSize: 13,
     fontWeight: "500",
+    marginBottom: 16,
+    paddingBottom: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(0,0,0,0.06)",
   },
   ebaySoldSummarySubtitle: {
     fontSize: 13,
@@ -1998,27 +2009,30 @@ const styles = StyleSheet.create({
   },
   ebaySoldStatsRow: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
+    paddingVertical: 4,
   },
   ebaySoldStat: {
     flex: 1,
     alignItems: "center",
+    paddingHorizontal: 4,
   },
   ebaySoldStatDivider: {
     width: 1,
-    height: 36,
+    height: 44,
+    marginTop: 4,
   },
   ebaySoldStatLabel: {
-    fontSize: 11,
-    fontWeight: "600",
-    letterSpacing: 0.5,
-    marginBottom: 4,
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 1,
+    marginBottom: 6,
     textTransform: "uppercase",
   },
   ebaySoldStatValue: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: "700",
-    marginBottom: 2,
+    marginBottom: 3,
   },
   ebaySoldStatSub: {
     fontSize: 11,
@@ -2028,8 +2042,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    marginTop: 16,
-    paddingTop: 14,
+    marginTop: 20,
+    paddingTop: 16,
   },
   avgPerMonthLabel: {
     fontSize: 14,
