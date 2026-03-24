@@ -612,7 +612,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!deviceId) {
         return res.status(400).json({ error: "Missing deviceId" });
       }
-      const stats = await getDeviceStats(deviceId);
+      const tzOffsetStr = req.headers["x-timezone-offset"] as string | undefined;
+      const tzOffsetMinutes = tzOffsetStr ? parseInt(tzOffsetStr, 10) : 0;
+      const stats = await getDeviceStats(deviceId, isNaN(tzOffsetMinutes) ? 0 : tzOffsetMinutes);
       res.json(stats);
     } catch (error) {
       console.error("Device stats error:", error);

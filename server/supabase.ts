@@ -113,13 +113,19 @@ export function logEbaySearchEvent(
   }
 }
 
-export async function getDeviceStats(deviceId: string): Promise<{
+export async function getDeviceStats(deviceId: string, tzOffsetMinutes: number = 0): Promise<{
   memberDays: number;
   scansToday: number;
   streak: number;
 }> {
   const fallback = { memberDays: 0, scansToday: 0, streak: 0 };
   if (!supabase) return fallback;
+
+  function toLocalDate(utcDate: Date): Date {
+    const localMs = utcDate.getTime() - tzOffsetMinutes * 60 * 1000;
+    const shifted = new Date(localMs);
+    return new Date(shifted.getUTCFullYear(), shifted.getUTCMonth(), shifted.getUTCDate());
+  }
 
   try {
     const { data: device } = await supabase
@@ -130,21 +136,19 @@ export async function getDeviceStats(deviceId: string): Promise<{
 
     let memberDays = 0;
     if (device?.first_seen) {
-      const firstSeen = new Date(device.first_seen);
-      const now = new Date();
-      const firstDay = new Date(firstSeen.getFullYear(), firstSeen.getMonth(), firstSeen.getDate());
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const firstDay = toLocalDate(new Date(device.first_seen));
+      const today = toLocalDate(new Date());
       memberDays = Math.max(1, Math.round((today.getTime() - firstDay.getTime()) / (1000 * 60 * 60 * 24)) + 1);
     }
 
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
+    const todayLocalStart = toLocalDate(new Date());
+    const todayStartUtc = new Date(todayLocalStart.getTime() + tzOffsetMinutes * 60 * 1000);
 
     const { count: scansToday } = await supabase
       .from("scan_events")
       .select("*", { count: "exact", head: true })
       .eq("device_id", deviceId)
-      .gte("created_at", todayStart.toISOString());
+      .gte("created_at", todayStartUtc.toISOString());
 
     const { data: scanDays } = await supabase
       .from("scan_events")
@@ -157,12 +161,11 @@ export async function getDeviceStats(deviceId: string): Promise<{
     if (scanDays && scanDays.length > 0) {
       const uniqueDays = new Set<string>();
       for (const row of scanDays) {
-        const d = new Date(row.created_at);
+        const d = toLocalDate(new Date(row.created_at));
         uniqueDays.add(`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`);
       }
 
-      const today = new Date();
-      const checkDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const checkDate = toLocalDate(new Date());
       const todayKey = `${checkDate.getFullYear()}-${checkDate.getMonth()}-${checkDate.getDate()}`;
 
       if (!uniqueDays.has(todayKey)) {

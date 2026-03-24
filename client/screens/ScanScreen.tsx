@@ -189,8 +189,10 @@ export default function ScanScreen() {
     queryKey: ["/api/device-stats", cachedDeviceId],
     queryFn: async () => {
       if (!cachedDeviceId) return null;
+      const tzOffset = new Date().getTimezoneOffset();
       const res = await fetch(
-        new URL(`/api/device-stats/${cachedDeviceId}`, getApiUrl()).toString()
+        new URL(`/api/device-stats/${cachedDeviceId}`, getApiUrl()).toString(),
+        { headers: { "X-Timezone-Offset": String(tzOffset) } }
       );
       if (!res.ok) return null;
       return res.json() as Promise<{ memberDays: number; scansToday: number; streak: number }>;
