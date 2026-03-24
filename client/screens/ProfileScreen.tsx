@@ -5,6 +5,7 @@ import { useNavigation } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as WebBrowser from "expo-web-browser";
+import * as StoreReview from "expo-store-review";
 import { LinearGradient } from "expo-linear-gradient";
 
 import { useDesignTokens } from "@/hooks/useDesignTokens";
@@ -321,6 +322,22 @@ export default function ProfileScreen() {
             ) : null}
           </View>
 
+          <Pressable
+            onPress={async () => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              try {
+                if (await StoreReview.hasAction()) {
+                  await StoreReview.requestReview();
+                }
+              } catch {}
+            }}
+            style={({ pressed }) => [styles.rateCard, { opacity: pressed ? 0.7 : 1 }]}
+          >
+            <Feather name="star" size={18} color="#D4A926" />
+            <Text style={styles.rateText}>Rate & Review</Text>
+            <Feather name="chevron-right" size={18} color="#9CA3AF" />
+          </Pressable>
+
           <View style={styles.aboutCard}>
             <Pressable
               onPress={() => setAboutExpanded(!aboutExpanded)}
@@ -600,6 +617,21 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     flexGrow: 1,
     paddingBottom: 40,
+  },
+  rateCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 16,
+    gap: 12,
+  },
+  rateText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#111827",
   },
   aboutCard: {
     backgroundColor: "#FFFFFF",
