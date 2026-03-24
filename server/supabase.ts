@@ -180,7 +180,7 @@ export async function getDeviceStats(deviceId: string, tzOffsetMinutes: number =
         checkDate.setUTCDate(checkDate.getUTCDate() - 1);
       }
 
-      while (true) {
+      while (streak < 500) {
         const key = `${checkDate.getUTCFullYear()}-${checkDate.getUTCMonth()}-${checkDate.getUTCDate()}`;
         if (uniqueDays.has(key)) {
           streak++;

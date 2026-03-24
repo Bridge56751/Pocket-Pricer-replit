@@ -190,15 +190,24 @@ export default function ScanScreen() {
     queryFn: async () => {
       if (!cachedDeviceId) return null;
       const tzOffset = new Date().getTimezoneOffset();
-      const res = await fetch(
-        new URL(`/api/device-stats/${cachedDeviceId}`, getApiUrl()).toString(),
-        { headers: { "X-Timezone-Offset": String(tzOffset) } }
-      );
-      if (!res.ok) return null;
-      return res.json() as Promise<{ memberDays: number; scansToday: number; streak: number }>;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+      try {
+        const res = await fetch(
+          new URL(`/api/device-stats/${cachedDeviceId}`, getApiUrl()).toString(),
+          { headers: { "X-Timezone-Offset": String(tzOffset) }, signal: controller.signal }
+        );
+        if (!res.ok) return null;
+        return res.json() as Promise<{ memberDays: number; scansToday: number; streak: number }>;
+      } catch {
+        return null;
+      } finally {
+        clearTimeout(timeout);
+      }
     },
     enabled: !!cachedDeviceId,
     staleTime: 30000,
+    retry: 1,
   });
 
   const processPhotos = useCallback(async (photos: CapturedPhoto[]) => {
@@ -477,7 +486,7 @@ export default function ScanScreen() {
                   <Text style={styles.metricUnit}>d</Text>
                 </View>
                 <View style={styles.streakDots}>
-                  {Array.from({ length: Math.min(deviceStats?.streak ?? 0, 7) }).map((_, i) => (
+                  {Array.from({ length: Math.min(Math.max(deviceStats?.streak ?? 0, 0), 7) }).map((_, i) => (
                     <View key={i} style={styles.streakDot} />
                   ))}
                 </View>
@@ -497,8 +506,8 @@ export default function ScanScreen() {
                     {(() => {
                       const days = deviceStats?.memberDays ?? 0;
                       if (days < 30) return "d";
-                      if (days < 365) return days < 60 ? "mo" : "mo";
-                      return days < 730 ? "yr" : "yr";
+                      if (days < 365) return "mo";
+                      return "yr";
                     })()}
                   </Text>
                 </View>
