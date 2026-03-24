@@ -482,40 +482,40 @@ export default function ScanScreen() {
               <View style={styles.metricCard}>
                 <Text style={styles.metricLabel}>STREAK</Text>
                 <View style={styles.metricValueRow}>
-                  <Text style={styles.metricValue}>{deviceStats?.streak ?? 0}</Text>
-                  <Text style={styles.metricUnit}>d</Text>
+                  <Text style={styles.metricValue}>{deviceStats ? deviceStats.streak : "--"}</Text>
+                  <Text style={styles.metricUnit}>{deviceStats ? "d" : ""}</Text>
                 </View>
                 <View style={styles.streakDots}>
-                  {Array.from({ length: Math.min(Math.max(deviceStats?.streak ?? 0, 0), 7) }).map((_, i) => (
+                  {deviceStats ? Array.from({ length: Math.min(Math.max(deviceStats.streak, 0), 7) }).map((_, i) => (
                     <View key={i} style={styles.streakDot} />
-                  ))}
+                  )) : null}
                 </View>
               </View>
               <View style={styles.metricCard}>
                 <Text style={styles.metricLabel}>MEMBER</Text>
                 <View style={styles.metricValueRow}>
                   <Text style={styles.metricValue}>
-                    {(() => {
-                      const days = deviceStats?.memberDays ?? 0;
+                    {deviceStats ? (() => {
+                      const days = deviceStats.memberDays;
                       if (days < 30) return days;
                       if (days < 365) return Math.floor(days / 30);
                       return (days / 365).toFixed(1).replace(/\.0$/, "");
-                    })()}
+                    })() : "--"}
                   </Text>
                   <Text style={styles.metricUnit}>
-                    {(() => {
-                      const days = deviceStats?.memberDays ?? 0;
+                    {deviceStats ? (() => {
+                      const days = deviceStats.memberDays;
                       if (days < 30) return "d";
                       if (days < 365) return "mo";
                       return "yr";
-                    })()}
+                    })() : ""}
                   </Text>
                 </View>
                 <Text style={styles.metricSub}>since joined</Text>
               </View>
               <View style={styles.metricCard}>
                 <Text style={styles.metricLabel}>TODAY</Text>
-                <Text style={styles.metricValue}>{deviceStats?.scansToday ?? 0}</Text>
+                <Text style={styles.metricValue}>{deviceStats ? deviceStats.scansToday : "--"}</Text>
                 <Text style={styles.metricSub}>scans</Text>
               </View>
             </View>
