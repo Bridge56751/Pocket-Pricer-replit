@@ -28,7 +28,7 @@ function ProgressBar({ current, total }: { current: number; total: number }) {
           key={i}
           style={[
             progressStyles.segment,
-            { backgroundColor: i <= current ? "#10B981" : "rgba(255,255,255,0.2)" },
+            { backgroundColor: i <= current ? "#047857" : "rgba(255,255,255,0.2)" },
           ]}
         />
       ))}
@@ -51,7 +51,7 @@ const progressStyles = StyleSheet.create({
 function ProblemStep() {
   return (
     <View style={pageStyles.container}>
-      <Animated.View entering={FadeInUp.delay(100).duration(500)} style={pageStyles.iconWrap}>
+      <Animated.View entering={FadeInUp.delay(50).duration(350)} style={pageStyles.iconWrap}>
         <View style={pageStyles.iconSquare}>
           <View style={pageStyles.alertCircle}>
             <Feather name="alert-circle" size={28} color="#F97316" />
@@ -59,17 +59,17 @@ function ProblemStep() {
         </View>
       </Animated.View>
 
-      <Animated.Text entering={FadeInUp.delay(250).duration(400)} style={pageStyles.label}>
+      <Animated.Text entering={FadeInUp.delay(120).duration(300)} style={pageStyles.label}>
         THE PROBLEM
       </Animated.Text>
 
-      <Animated.View entering={FadeInUp.delay(350).duration(500)}>
+      <Animated.View entering={FadeInUp.delay(180).duration(350)}>
         <Text style={pageStyles.title}>
           Listing prices{"\n"}are <Text style={pageStyles.titleCoral}>misleading</Text>
         </Text>
       </Animated.View>
 
-      <Animated.Text entering={FadeInUp.delay(500).duration(500)} style={pageStyles.subtitle}>
+      <Animated.Text entering={FadeInUp.delay(260).duration(350)} style={pageStyles.subtitle}>
         Most prices you see are what sellers ask — not what buyers actually pay.
       </Animated.Text>
     </View>
@@ -79,23 +79,23 @@ function ProblemStep() {
 function SolutionStepContent() {
   return (
     <View style={pageStyles.container}>
-      <Animated.View entering={FadeInUp.delay(100).duration(500)} style={pageStyles.iconWrap}>
+      <Animated.View entering={FadeInUp.delay(50).duration(350)} style={pageStyles.iconWrap}>
         <View style={pageStyles.iconSquare}>
-          <Feather name="camera" size={30} color="#10B981" />
+          <Feather name="camera" size={30} color="#047857" />
         </View>
       </Animated.View>
 
-      <Animated.Text entering={FadeInUp.delay(250).duration(400)} style={pageStyles.label}>
+      <Animated.Text entering={FadeInUp.delay(120).duration(300)} style={pageStyles.label}>
         THE SOLUTION
       </Animated.Text>
 
-      <Animated.View entering={FadeInUp.delay(350).duration(500)}>
+      <Animated.View entering={FadeInUp.delay(180).duration(350)}>
         <Text style={pageStyles.title}>
           Scan any item.{"\n"}<Text style={pageStyles.titleGreen}>Know its value.</Text>
         </Text>
       </Animated.View>
 
-      <Animated.Text entering={FadeInUp.delay(500).duration(500)} style={pageStyles.subtitle}>
+      <Animated.Text entering={FadeInUp.delay(260).duration(350)} style={pageStyles.subtitle}>
         Point your camera and get real sold prices from actual eBay transactions.
       </Animated.Text>
     </View>
@@ -105,7 +105,7 @@ function SolutionStepContent() {
 function TrialStep() {
   return (
     <View style={trialStyles.container}>
-      <Animated.View entering={FadeInUp.delay(100).duration(500)} style={trialStyles.iconWrap}>
+      <Animated.View entering={FadeInUp.delay(50).duration(350)} style={trialStyles.iconWrap}>
         <LinearGradient
           colors={["#F5D87A", "#D4A926", "#E8C84A", "#D4A926"]}
           start={{ x: 0, y: 0 }}
@@ -116,7 +116,7 @@ function TrialStep() {
         </LinearGradient>
       </Animated.View>
 
-      <Animated.View entering={FadeInUp.delay(200).duration(400)}>
+      <Animated.View entering={FadeInUp.delay(120).duration(300)}>
         <LinearGradient
           colors={["#F5D87A", "#D4A926", "#E8C84A", "#D4A926"]}
           start={{ x: 0, y: 0 }}
@@ -128,32 +128,32 @@ function TrialStep() {
         </LinearGradient>
       </Animated.View>
 
-      <Animated.View entering={FadeInUp.delay(300).duration(500)}>
+      <Animated.View entering={FadeInUp.delay(180).duration(350)}>
         <Text style={trialStyles.title}>
           You're ready.{"\n"}<Text style={trialStyles.titleGreen}>Let's flip smarter.</Text>
         </Text>
       </Animated.View>
 
-      <Animated.Text entering={FadeInUp.delay(420).duration(400)} style={trialStyles.subtitle}>
+      <Animated.Text entering={FadeInUp.delay(260).duration(300)} style={trialStyles.subtitle}>
         Try free for 3 days,{"\n"}no charge until day 4
       </Animated.Text>
 
-      <Animated.View entering={FadeInUp.delay(540).duration(400)} style={trialStyles.featureList}>
+      <Animated.View entering={FadeInUp.delay(320).duration(300)} style={trialStyles.featureList}>
         <View style={trialStyles.featureRow}>
           <View style={trialStyles.checkCircle}>
-            <Feather name="check" size={14} color="#10B981" />
+            <Feather name="check" size={14} color="#047857" />
           </View>
           <Text style={trialStyles.featureText}>Unlimited scans</Text>
         </View>
         <View style={trialStyles.featureRow}>
           <View style={trialStyles.checkCircle}>
-            <Feather name="check" size={14} color="#10B981" />
+            <Feather name="check" size={14} color="#047857" />
           </View>
           <Text style={trialStyles.featureText}>Real sold prices</Text>
         </View>
         <View style={trialStyles.featureRow}>
           <View style={trialStyles.checkCircle}>
-            <Feather name="check" size={14} color="#10B981" />
+            <Feather name="check" size={14} color="#047857" />
           </View>
           <Text style={trialStyles.featureText}>Buy Score + Profit calc</Text>
         </View>
@@ -203,7 +203,7 @@ const trialStyles = StyleSheet.create({
     marginBottom: 10,
   },
   titleGreen: {
-    color: "#34D399",
+    color: "#10B981",
   },
   subtitle: {
     fontSize: 16,
@@ -227,7 +227,7 @@ const trialStyles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: "rgba(16,185,129,0.15)",
+    backgroundColor: "rgba(4,120,87,0.2)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -284,7 +284,7 @@ const pageStyles = StyleSheet.create({
     color: "#F87171",
   },
   titleGreen: {
-    color: "#34D399",
+    color: "#10B981",
   },
   subtitle: {
     fontSize: 17,
@@ -369,7 +369,7 @@ export default function OnboardingScreen({ onComplete, onStartTrial }: Onboardin
       </View>
 
       <Animated.View
-        entering={FadeInDown.delay(300).duration(400)}
+        entering={FadeInDown.delay(150).duration(300)}
         style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}
       >
         {isLastStep ? (
@@ -503,7 +503,7 @@ const styles = StyleSheet.create({
   legalNote: {
     fontSize: 13,
     fontWeight: "500",
-    color: "#10B981",
+    color: "#047857",
     marginTop: 14,
   },
 });
