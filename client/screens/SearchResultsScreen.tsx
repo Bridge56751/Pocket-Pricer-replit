@@ -645,12 +645,21 @@ export default function SearchResultsScreen() {
                   </View>
                 </View>
               ) : (
-                <>
-                  <Feather name="trending-up" size={16} color="#F0D264" />
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", flex: 1, gap: 10 }}>
+                  <Feather name="trending-up" size={18} color="#F0D264" />
                   <Text style={styles.ebaySoldButtonTextPro}>
                     {ebaySoldData ? (showEbaySold ? "Hide Sales Data" : "Show Sales Data") : "See eBay Sales Data"}
                   </Text>
-                </>
+                  <LinearGradient
+                    colors={["#F5D87A", "#D4A926", "#E8C84A"]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={{ flexDirection: "row", alignItems: "center", gap: 3, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}
+                  >
+                    <Feather name="star" size={10} color="#3D2E00" />
+                    <Text style={{ fontSize: 10, fontWeight: "800", color: "#3D2E00" }}>PRO</Text>
+                  </LinearGradient>
+                </View>
               )}
             </Pressable>
 
@@ -1848,9 +1857,10 @@ const styles = StyleSheet.create({
   ebaySoldButtonPro: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     backgroundColor: "#14532D",
-    paddingVertical: 14,
-    paddingHorizontal: 14,
+    paddingVertical: 18,
+    paddingHorizontal: 20,
     borderRadius: 14,
     marginBottom: 16,
     gap: 12,
@@ -1864,7 +1874,7 @@ const styles = StyleSheet.create({
   },
   ebaySoldButtonTextPro: {
     color: "#F0D264",
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: "700",
   },
   ebaySoldIconCircle: {
