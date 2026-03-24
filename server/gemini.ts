@@ -1,3 +1,27 @@
+interface GeminiPart {
+  text: string;
+}
+
+interface GeminiContent {
+  role: string;
+  parts: GeminiPart[];
+}
+
+interface GeminiCandidate {
+  content: GeminiContent;
+  finishReason: string;
+}
+
+interface GeminiResponse {
+  candidates?: GeminiCandidate[];
+  usageMetadata?: {
+    promptTokenCount: number;
+    candidatesTokenCount: number;
+    totalTokenCount: number;
+  };
+  modelVersion?: string;
+}
+
 const EBAY_QUERY_PROMPT = `You are a product search query optimizer for eBay. Given a raw product name or description, extract ONLY the core product identity that would find this exact item on eBay.
 
 Rules:
@@ -60,8 +84,8 @@ export async function cleanQueryWithAI(rawQuery: string): Promise<string | null>
       return null;
     }
 
-    const data = await response.json() as any;
-    const cleaned = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    const data: GeminiResponse = await response.json();
+    const cleaned = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
 
     if (!cleaned || cleaned.length < 3 || cleaned.length > 100) {
       console.log(`AI query cleaning returned unusable result: "${cleaned}"`);
@@ -70,8 +94,9 @@ export async function cleanQueryWithAI(rawQuery: string): Promise<string | null>
 
     console.log(`AI query cleaning: "${rawQuery.slice(0, 60)}" → "${cleaned}"`);
     return cleaned;
-  } catch (error: any) {
-    console.log(`AI query cleaning failed (falling back to regex): ${error.message || error}`);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.log(`AI query cleaning failed (falling back to regex): ${message}`);
     return null;
   }
 }

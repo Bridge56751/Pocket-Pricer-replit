@@ -480,7 +480,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       cleanQuery = words.join(" ").slice(0, 80) || searchQuery.trim().slice(0, 80);
 
-      console.log(`eBay sold search for: "${cleanQuery}" (original: "${searchQuery.slice(0, 50)}...")`);
+      console.log(`eBay sold search — original: "${searchQuery.slice(0, 60)}" | AI-cleaned: "${aiCleaned ?? "(skipped)"}" | final: "${cleanQuery}"`);
 
       const params = new URLSearchParams({
         engine: "ebay_search",
