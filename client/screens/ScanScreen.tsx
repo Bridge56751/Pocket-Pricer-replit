@@ -522,20 +522,31 @@ export default function ScanScreen() {
 
             {__DEV__ ? (
               <Pressable
-                onPress={async () => {
-                  try {
-                    const deviceId = await getDeviceId();
-                    await fetch(
-                      new URL("/api/dev-test-scan", getApiUrl()).toString(),
-                      {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ deviceId }),
-                      }
-                    );
-                    queryClient.invalidateQueries({ queryKey: ["/api/device-stats"] });
-                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                  } catch {}
+                onPress={() => {
+                  const mockResults = {
+                    query: "Sony WH-1000XM5 Wireless Headphones",
+                    totalListings: 8,
+                    avgListPrice: 279.99,
+                    avgSalePrice: 248.50,
+                    soldCount: 42,
+                    bestBuyNow: 249.99,
+                    topSalePrice: 349.99,
+                    usedLens: true,
+                    productInfo: {
+                      name: "Sony WH-1000XM5 Wireless Noise Canceling Headphones",
+                      brand: "Sony",
+                      category: "Electronics",
+                      description: "Industry-leading noise cancellation with Auto NC Optimizer",
+                    },
+                    listings: [
+                      { id: "1", title: "Sony WH-1000XM5 Wireless Noise Canceling Headphones - Black", imageUrl: "https://m.media-amazon.com/images/I/51aXvjzcukL._AC_SL1500_.jpg", currentPrice: 279.99, originalPrice: 399.99, condition: "New", shipping: 0, link: "https://amazon.com", seller: "Amazon", platform: "Amazon", rating: 4.7, reviews: 12843 },
+                      { id: "2", title: "Sony WH-1000XM5 - Silver", imageUrl: "https://m.media-amazon.com/images/I/51aXvjzcukL._AC_SL1500_.jpg", currentPrice: 249.99, condition: "New", shipping: 0, link: "https://walmart.com", seller: "Walmart", platform: "Walmart", rating: 4.6, reviews: 3201 },
+                      { id: "3", title: "Sony WH1000XM5 Noise Cancelling Headphones", imageUrl: "https://m.media-amazon.com/images/I/51aXvjzcukL._AC_SL1500_.jpg", currentPrice: 259.99, originalPrice: 329.99, condition: "New", shipping: 5.99, link: "https://target.com", seller: "Target", platform: "Target", rating: 4.8, reviews: 892 },
+                      { id: "4", title: "Sony WH-1000XM5/B Over-Ear Headphones", imageUrl: "https://m.media-amazon.com/images/I/51aXvjzcukL._AC_SL1500_.jpg", currentPrice: 234.99, condition: "Refurbished", shipping: 0, link: "https://ebay.com", seller: "tech_deals_usa", platform: "eBay", rating: 4.5, reviews: 156 },
+                    ],
+                  };
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  navigation.navigate("SearchResults", { results: mockResults });
                 }}
                 style={({ pressed }) => [{
                   backgroundColor: "rgba(255,255,255,0.15)",
@@ -548,7 +559,7 @@ export default function ScanScreen() {
                 }]}
               >
                 <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 12, fontWeight: "600" }}>
-                  + Dev Test Scan
+                  Dev Test Scan
                 </Text>
               </Pressable>
             ) : null}

@@ -606,19 +606,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  if (process.env.NODE_ENV !== "production") {
-    app.post("/api/dev-test-scan", async (req: Request, res: Response) => {
-      try {
-        const { deviceId } = req.body;
-        if (!deviceId) return res.status(400).json({ error: "Missing deviceId" });
-        logScanEvent(deviceId, true, "Dev Test Scan", 5, 3);
-        res.json({ ok: true });
-      } catch (error) {
-        res.status(500).json({ error: "Failed to log test scan" });
-      }
-    });
-  }
-
   app.get("/api/device-stats/:deviceId", async (req: Request, res: Response) => {
     try {
       const { deviceId } = req.params;
