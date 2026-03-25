@@ -73,8 +73,10 @@ The application is built with a client-server architecture. The frontend is an E
   - Gemini 2.5 Flash AI cleans product names before eBay sold search for more accurate results
   - New `server/gemini.ts` helper uses Replit AI Integrations (no API key needed)
   - AI extracts core brand + model + product type, strips colors/sizes/conditions/marketing fluff
-  - Silent fallback to regex-only cleaning if AI fails (timeout, error, etc.)
+  - When AI succeeds, its output is used directly (no regex chain) — only whitespace collapse, 8-word cap, and 80-char limit applied
+  - When AI fails/times out, regex chain runs as full fallback (unchanged)
   - Broad search ("Search Similar Items") still uses regex-only cleaning
+  - AI prompt optimized for eBay search queries: preserves model numbers and hyphenated names
   - Camera scan / Google Lens flow completely untouched
   - Navigation stack reset on "New Search" to prevent screen stacking
 - **Mar 2026**: Paywall & onboarding flow redesign

@@ -22,16 +22,18 @@ interface GeminiResponse {
   modelVersion?: string;
 }
 
-const EBAY_QUERY_PROMPT = `You are a product search query optimizer for eBay. Given a raw product name or description, extract ONLY the core product identity that would find this exact item on eBay.
+const EBAY_QUERY_PROMPT = `You are an eBay search query optimizer. Your output will be used directly as an eBay sold listings search query. Given a raw product name or description, produce the best possible eBay search query to find this exact item's sold listings.
 
 Rules:
 - Keep: brand name, model name/number, product type/category
-- Remove: colors, sizes, conditions (NWT, NWOT, etc.), retailer names, marketing words (premium, authentic, genuine, exclusive), measurements, quantities, "free shipping", URLs, social handles
+- Keep model numbers and hyphenated names exactly as they appear (e.g. "WH-1000XM5", "Air Max 90", "High-Rise")
+- Remove: colors, sizes, conditions (NWT, NWOT, etc.), retailer names (Amazon, Walmart, Target), marketing words (premium, authentic, genuine, exclusive), measurements, quantities, "free shipping", URLs, social handles
 - If there's a clear brand + model (e.g. "Nike Air Max 90", "Sony WH-1000XM5"), return just that with the product type
 - If there's no clear model number, keep brand + the most specific product descriptor
-- Return ONLY the cleaned product name, nothing else. No quotes, no explanation.
+- Return ONLY the search query, nothing else. No quotes, no explanation, no commentary.
 - Keep it under 8 words
 - Do NOT add words that weren't in the original query
+- Think about what an eBay seller would title this listing as
 
 Examples:
 Input: "Nike Air Max 90 Men's Running Shoes Size 10.5 Black/White - Brand New NWT Free Shipping"
@@ -47,7 +49,10 @@ Input: "Vintage Pyrex 404 Large Mixing Bowl Yellow 4 Quart"
 Output: Vintage Pyrex 404 Mixing Bowl
 
 Input: "Stanley 40oz Adventure Quencher Travel Tumbler - Pool Blue"
-Output: Stanley Adventure Quencher Tumbler`;
+Output: Stanley Adventure Quencher Tumbler
+
+Input: "Crocs Classic Clog - White - Men's Size 10"
+Output: Crocs Classic Clog`;
 
 export async function cleanQueryWithAI(rawQuery: string): Promise<string | null> {
   const baseUrl = process.env.AI_INTEGRATIONS_GEMINI_BASE_URL;

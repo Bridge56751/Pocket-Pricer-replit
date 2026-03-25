@@ -401,35 +401,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const aiCleaned = broadSearch ? null : await cleanQueryWithAI(searchQuery);
-      const queryForRegex = aiCleaned || searchQuery;
-
-      let cleanQuery = queryForRegex
-        .split(/[|·•–—]/).at(0)
-        .replace(/free shipping.*/i, "")
-        .replace(/\(.*?\)/g, "")
-        .replace(/@\w+/g, "")
-        .replace(/https?:\/\/\S+/g, "")
-        .replace(/\b(Size|Sz)\s*\d+[\w.]*/gi, "")
-        .replace(/\s*-\s*[\w\s]*\/[\w\s/]*$/i, "")
-        .replace(/\s*-\s*(?:Peacoat|Navy|Gold|Silver|Ivory|Coral|Teal|Maroon|Burgundy|Olive|Charcoal|Beige|Tan|Cream)[\w\s/]*$/i, "")
-        .replace(/\b(Adjustable|Premium|Official|Authentic|Genuine|Brand New|NWT|NWOT|NWB|NIB|NWOB|BNIB|BNWT|BNWOT|MIB|Exclusive)\b/gi, "")
-        .replace(/\b(RARE|HTF|MINT|EUC|GUC|VGC|OBO)\b/gi, "")
-        .replace(/\b(Fit|Style|Collection|Pack|Bundle|Lot)\b/gi, "")
-        .replace(/\b(Ultra-Lightweight|Lightweight|Ultra-Light|Super Light|Ergonomic|High-Performance|High Performance|Advanced|Professional|Next-Gen|Next Gen)\b/gi, "")
-        .replace(/\b(with|and|for|the|in|of|by|to|on|at|from|into)\b/gi, "")
-        .replace(/\b\d+(?:\.\d+)?\s*(?:CPI|DPI|Hz|MHz|GHz|mm|cm|oz|fl|Fl|ML|ml|mg|g|GB|TB|MB|mAh|W|HP|RPM|PSI|FPS|MP|inch|inches|ft|lb|lbs|kg|ct|pk|pc)\b/gi, "")
-        .replace(/\b\d+(?:\.\d+)?(?:g|oz)\b/gi, "")
-        .replace(/\b\d+\s*(?:inch|inches|ft|cm|mm|oz|fl|ml|lb|lbs|kg)\b/gi, "")
-        .replace(/\b(Sipbox|Boxed)\b/gi, "")
-        .replace(/\b(Walmart|Amazon|Target|Nordstrom|Mercari|Poshmark|eBay|Costco|Sam's|Kohls|Macy's|JCPenney|Marshalls|TJ\s*Maxx|HomeGoods|Ross)\b/gi, "")
-        .replace(/\b(New|Tags|Size|Sz|Step)\b/gi, "")
-        .replace(/\b(Jumbo)\b/gi, "")
-        .replace(/[\/,&]+/g, " ")
-        .replace(/-+\s*$/g, "")
-        .replace(/\s+/g, " ")
-        .trim();
-
-      let words = cleanQuery.split(" ").filter(w => w.length > 0);
 
       const productCategories = new Set([
         "sunglasses","glasses","eyeglasses","goggles",
@@ -446,39 +417,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "vacuum","iron","blender","mixer","toaster","microwave","grill",
       ]);
 
-      if (broadSearch) {
-        words = words
-          .filter(w => !/^\d+(\.\d+)?$/.test(w))
-          .filter(w => !/^(Men's|Women's|Mens|Womens|Men|Women|Unisex|Boy's|Girl's|Kids|Youth|Adult|Adults|Toddler|Baby|Infant)$/i.test(w))
-          .filter(w => !/^(Black|White|Red|Blue|Green|Navy|Gold|Silver|Gray|Grey|Pink|Purple|Orange|Brown|Beige|Tan|Cream|Ivory|Coral|Teal|Maroon|Burgundy|Olive|Charcoal|Yellow|Camo|Matte|Powder)$/i.test(w))
-          .filter(w => !/^(Large|Small|Medium|XL|XXL|XS|XXXL|Long|Short|Tall|Full|Half|Mini|Micro|Mega|Giant|Big|Tiny|Jumbo)$/i.test(w))
-          .filter(w => !/^(Wireless|Wired|Optical|Mechanical|Programmable|Buttons?|Sensor|Lighting|RGB|LED)$/i.test(w))
-          .filter(w => !/^(Nutrition|Plan|Power|Elite|Core|Basic|Classic|Original|Standard|Limited|Edition|Special|Deluxe)$/i.test(w))
-          .filter(w => !/^(Glossy|Shiny|Clear|Frosted|Tinted)$/i.test(w));
+      let cleanQuery: string;
 
-        const BROAD_CAP = 5;
-        if (words.length > BROAD_CAP) {
+      if (aiCleaned) {
+        let words = aiCleaned.replace(/\s+/g, " ").trim().split(" ").filter(w => w.length > 0);
+        if (words.length > 8) {
           const categoryIdx = words.findIndex(w => productCategories.has(w.toLowerCase()));
-          if (categoryIdx >= BROAD_CAP) {
-            const capped = words.slice(0, BROAD_CAP - 1);
+          if (categoryIdx >= 8) {
+            const capped = words.slice(0, 7);
             capped.push(words[categoryIdx]);
             words = capped;
           } else {
-            words = words.slice(0, BROAD_CAP);
+            words = words.slice(0, 8);
           }
         }
-      } else if (words.length > 8) {
-        const categoryIdx = words.findIndex(w => productCategories.has(w.toLowerCase()));
-        if (categoryIdx >= 8) {
-          const capped = words.slice(0, 7);
-          capped.push(words[categoryIdx]);
-          words = capped;
-        } else {
-          words = words.slice(0, 8);
-        }
-      }
+        cleanQuery = words.join(" ").slice(0, 80) || searchQuery.trim().slice(0, 80);
+      } else {
+        cleanQuery = searchQuery
+          .split(/[|·•–—]/).at(0)
+          .replace(/free shipping.*/i, "")
+          .replace(/\(.*?\)/g, "")
+          .replace(/@\w+/g, "")
+          .replace(/https?:\/\/\S+/g, "")
+          .replace(/\b(Size|Sz)\s*\d+[\w.]*/gi, "")
+          .replace(/\s*-\s*[\w\s]*\/[\w\s/]*$/i, "")
+          .replace(/\s*-\s*(?:Peacoat|Navy|Gold|Silver|Ivory|Coral|Teal|Maroon|Burgundy|Olive|Charcoal|Beige|Tan|Cream)[\w\s/]*$/i, "")
+          .replace(/\b(Adjustable|Premium|Official|Authentic|Genuine|Brand New|NWT|NWOT|NWB|NIB|NWOB|BNIB|BNWT|BNWOT|MIB|Exclusive)\b/gi, "")
+          .replace(/\b(RARE|HTF|MINT|EUC|GUC|VGC|OBO)\b/gi, "")
+          .replace(/\b(Fit|Style|Collection|Pack|Bundle|Lot)\b/gi, "")
+          .replace(/\b(Ultra-Lightweight|Lightweight|Ultra-Light|Super Light|Ergonomic|High-Performance|High Performance|Advanced|Professional|Next-Gen|Next Gen)\b/gi, "")
+          .replace(/\b(with|and|for|the|in|of|by|to|on|at|from|into)\b/gi, "")
+          .replace(/\b\d+(?:\.\d+)?\s*(?:CPI|DPI|Hz|MHz|GHz|mm|cm|oz|fl|Fl|ML|ml|mg|g|GB|TB|MB|mAh|W|HP|RPM|PSI|FPS|MP|inch|inches|ft|lb|lbs|kg|ct|pk|pc)\b/gi, "")
+          .replace(/\b\d+(?:\.\d+)?(?:g|oz)\b/gi, "")
+          .replace(/\b\d+\s*(?:inch|inches|ft|cm|mm|oz|fl|ml|lb|lbs|kg)\b/gi, "")
+          .replace(/\b(Sipbox|Boxed)\b/gi, "")
+          .replace(/\b(Walmart|Amazon|Target|Nordstrom|Mercari|Poshmark|eBay|Costco|Sam's|Kohls|Macy's|JCPenney|Marshalls|TJ\s*Maxx|HomeGoods|Ross)\b/gi, "")
+          .replace(/\b(New|Tags|Size|Sz|Step)\b/gi, "")
+          .replace(/\b(Jumbo)\b/gi, "")
+          .replace(/[\/,&]+/g, " ")
+          .replace(/-+\s*$/g, "")
+          .replace(/\s+/g, " ")
+          .trim();
 
-      cleanQuery = words.join(" ").slice(0, 80) || searchQuery.trim().slice(0, 80);
+        let words = cleanQuery.split(" ").filter(w => w.length > 0);
+
+        if (broadSearch) {
+          words = words
+            .filter(w => !/^\d+(\.\d+)?$/.test(w))
+            .filter(w => !/^(Men's|Women's|Mens|Womens|Men|Women|Unisex|Boy's|Girl's|Kids|Youth|Adult|Adults|Toddler|Baby|Infant)$/i.test(w))
+            .filter(w => !/^(Black|White|Red|Blue|Green|Navy|Gold|Silver|Gray|Grey|Pink|Purple|Orange|Brown|Beige|Tan|Cream|Ivory|Coral|Teal|Maroon|Burgundy|Olive|Charcoal|Yellow|Camo|Matte|Powder)$/i.test(w))
+            .filter(w => !/^(Large|Small|Medium|XL|XXL|XS|XXXL|Long|Short|Tall|Full|Half|Mini|Micro|Mega|Giant|Big|Tiny|Jumbo)$/i.test(w))
+            .filter(w => !/^(Wireless|Wired|Optical|Mechanical|Programmable|Buttons?|Sensor|Lighting|RGB|LED)$/i.test(w))
+            .filter(w => !/^(Nutrition|Plan|Power|Elite|Core|Basic|Classic|Original|Standard|Limited|Edition|Special|Deluxe)$/i.test(w))
+            .filter(w => !/^(Glossy|Shiny|Clear|Frosted|Tinted)$/i.test(w));
+
+          const BROAD_CAP = 5;
+          if (words.length > BROAD_CAP) {
+            const categoryIdx = words.findIndex(w => productCategories.has(w.toLowerCase()));
+            if (categoryIdx >= BROAD_CAP) {
+              const capped = words.slice(0, BROAD_CAP - 1);
+              capped.push(words[categoryIdx]);
+              words = capped;
+            } else {
+              words = words.slice(0, BROAD_CAP);
+            }
+          }
+        } else if (words.length > 8) {
+          const categoryIdx = words.findIndex(w => productCategories.has(w.toLowerCase()));
+          if (categoryIdx >= 8) {
+            const capped = words.slice(0, 7);
+            capped.push(words[categoryIdx]);
+            words = capped;
+          } else {
+            words = words.slice(0, 8);
+          }
+        }
+
+        cleanQuery = words.join(" ").slice(0, 80) || searchQuery.trim().slice(0, 80);
+      }
 
       console.log(`eBay sold search — original: "${searchQuery.slice(0, 60)}" | AI-cleaned: "${aiCleaned ?? "(skipped)"}" | final: "${cleanQuery}"`);
 
