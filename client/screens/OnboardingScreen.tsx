@@ -5,6 +5,7 @@ import { Feather } from "@expo/vector-icons";
 import Animated, {
   FadeInUp,
   FadeInDown,
+  Easing,
 } from "react-native-reanimated";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
@@ -55,19 +56,19 @@ const progressStyles = StyleSheet.create({
 function HeroStep() {
   return (
     <View style={heroStyles.container}>
-      <Animated.View entering={FadeInUp.delay(100).duration(450)} style={heroStyles.iconWrap}>
+      <Animated.View entering={FadeInUp.delay(150).duration(700).springify().damping(18)} style={heroStyles.iconWrap}>
         <View style={heroStyles.iconSquare}>
           <Feather name="tag" size={32} color="#10B981" style={{ transform: [{ scaleX: -1 }] }} />
         </View>
       </Animated.View>
 
-      <Animated.View entering={FadeInUp.delay(350).duration(450)}>
+      <Animated.View entering={FadeInUp.delay(400).duration(700).springify().damping(18)}>
         <Text style={heroStyles.title}>
           Stop guessing.{"\n"}<Text style={heroStyles.titleGreen}>Start knowing.</Text>
         </Text>
       </Animated.View>
 
-      <Animated.Text entering={FadeInUp.delay(550).duration(450)} style={heroStyles.subtitle}>
+      <Animated.Text entering={FadeInUp.delay(600).duration(700).springify().damping(20)} style={heroStyles.subtitle}>
         The smarter way to find profitable items — before you buy them.
       </Animated.Text>
     </View>
@@ -150,21 +151,21 @@ interface QuestionStepProps {
 function QuestionStep({ selectedCategories, onToggle }: QuestionStepProps) {
   return (
     <View style={questionStyles.container}>
-      <Animated.Text entering={FadeInUp.delay(100).duration(400)} style={questionStyles.label}>
+      <Animated.Text entering={FadeInUp.delay(150).duration(700).springify().damping(20)} style={questionStyles.label}>
         QUICK QUESTION
       </Animated.Text>
 
-      <Animated.View entering={FadeInUp.delay(250).duration(450)}>
+      <Animated.View entering={FadeInUp.delay(350).duration(700).springify().damping(18)}>
         <Text style={questionStyles.title}>
           What do you{"\n"}mainly resell?
         </Text>
       </Animated.View>
 
-      <Animated.Text entering={FadeInUp.delay(400).duration(400)} style={questionStyles.subtitle}>
+      <Animated.Text entering={FadeInUp.delay(500).duration(700).springify().damping(20)} style={questionStyles.subtitle}>
         We'll tailor your experience
       </Animated.Text>
 
-      <Animated.View entering={FadeInUp.delay(500).duration(450)} style={questionStyles.cardList}>
+      <Animated.View entering={FadeInUp.delay(650).duration(700).springify().damping(16)} style={questionStyles.cardList}>
         {CATEGORIES.map((cat) => {
           const isSelected = selectedCategories.includes(cat.id);
           return (
@@ -306,7 +307,7 @@ function ProTrialStep() {
       contentContainerStyle={proStyles.container}
       showsVerticalScrollIndicator={false}
     >
-      <Animated.View entering={FadeInUp.delay(100).duration(450)} style={proStyles.iconWrap}>
+      <Animated.View entering={FadeInUp.delay(150).duration(700).springify().damping(18)} style={proStyles.iconWrap}>
         <LinearGradient
           colors={["#F5D87A", "#D4A926", "#E8C84A", "#D4A926"]}
           start={{ x: 0, y: 0 }}
@@ -317,7 +318,7 @@ function ProTrialStep() {
         </LinearGradient>
       </Animated.View>
 
-      <Animated.View entering={FadeInUp.delay(250).duration(400)}>
+      <Animated.View entering={FadeInUp.delay(350).duration(700).springify().damping(18)}>
         <LinearGradient
           colors={["#F5D87A", "#D4A926", "#E8C84A", "#D4A926"]}
           start={{ x: 0, y: 0 }}
@@ -329,17 +330,17 @@ function ProTrialStep() {
         </LinearGradient>
       </Animated.View>
 
-      <Animated.View entering={FadeInUp.delay(400).duration(450)}>
+      <Animated.View entering={FadeInUp.delay(550).duration(700).springify().damping(18)}>
         <Text style={proStyles.title}>
           You're ready.{"\n"}<Text style={proStyles.titleGreen}>Let's flip smarter.</Text>
         </Text>
       </Animated.View>
 
-      <Animated.Text entering={FadeInUp.delay(550).duration(400)} style={proStyles.subtitle}>
+      <Animated.Text entering={FadeInUp.delay(700).duration(700).springify().damping(20)} style={proStyles.subtitle}>
         Unlock everything you need to find profitable items with confidence.
       </Animated.Text>
 
-      <Animated.View entering={FadeInUp.delay(650).duration(450)} style={proStyles.featureList}>
+      <Animated.View entering={FadeInUp.delay(850).duration(700).springify().damping(16)} style={proStyles.featureList}>
         {PRO_FEATURES.map((feat) => (
           <View key={feat.title} style={proStyles.featureCard}>
             <View style={proStyles.featureIconWrap}>
@@ -356,7 +357,7 @@ function ProTrialStep() {
         ))}
       </Animated.View>
 
-      <Animated.View entering={FadeInUp.delay(800).duration(400)} style={proStyles.trialInfo}>
+      <Animated.View entering={FadeInUp.delay(1000).duration(700).springify().damping(18)} style={proStyles.trialInfo}>
         <Feather name="lock" size={16} color="#10B981" />
         <View>
           <Text style={proStyles.trialTitle}>Try free for 3 days</Text>
@@ -583,7 +584,7 @@ export default function OnboardingScreen({ onComplete, onStartTrial }: Onboardin
       </View>
 
       <Animated.View
-        entering={FadeInDown.delay(300).duration(450)}
+        entering={FadeInDown.delay(400).duration(700).springify().damping(18)}
         style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}
       >
         {isLastStep ? (
