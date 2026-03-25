@@ -80,7 +80,7 @@ export async function cleanQueryWithAI(rawQuery: string): Promise<string | null>
           temperature: 0,
         },
       }),
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(10000),
     });
 
     if (!response.ok) {
