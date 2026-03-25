@@ -129,14 +129,7 @@ export default function RootStackNavigator() {
         name="SearchResults"
         component={SearchResultsScreen}
         options={{
-          headerTitle: "",
-          headerBackVisible: false,
-          headerTransparent: true,
-          headerBlurEffect: undefined,
-          headerShadowVisible: false,
-          headerStyle: {
-            backgroundColor: "transparent",
-          },
+          headerShown: false,
         }}
       />
       <Stack.Screen
