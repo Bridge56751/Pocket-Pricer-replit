@@ -7,7 +7,6 @@ import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
-import { BlurView } from "expo-blur";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
 import { useDesignTokens } from "@/hooks/useDesignTokens";
@@ -441,21 +440,10 @@ export default function SearchResultsScreen() {
           gap: 12,
         }}
       >
-        <Pressable onPress={handleGoBack} hitSlop={8}>
-          <BlurView
-            intensity={40}
-            tint="light"
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: 18,
-              alignItems: "center",
-              justifyContent: "center",
-              overflow: "hidden",
-            }}
-          >
-            <Feather name="arrow-left" size={22} color="#FFFFFF" />
-          </BlurView>
+        <Pressable onPress={handleGoBack} hitSlop={12} style={{ padding: 4 }}>
+          <RNAnimated.Text style={{ color: headerTextColor }}>
+            <Feather name="arrow-left" size={24} />
+          </RNAnimated.Text>
         </Pressable>
         <RNAnimated.Text
           style={{
