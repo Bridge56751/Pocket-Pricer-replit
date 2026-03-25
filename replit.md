@@ -2,16 +2,14 @@
 
 ## Overview
 
-Pocket Pricer is an Expo React Native mobile application designed for resellers. It facilitates product value discovery by allowing users to scan items using Google Lens for visual matching and then search for prices across multiple e-commerce platforms like Amazon, Walmart, Target, and eBay. The app aims to streamline the reselling process by providing real-time pricing data, profit calculation tools, and historical tracking without requiring user accounts.
+Pocket Pricer is an Expo React Native mobile application for resellers that identifies products via Google Lens scans and compares prices across major e-commerce platforms (Amazon, Walmart, Target, eBay). It provides real-time pricing, profit calculation, and historical tracking without requiring user accounts. The app aims to enhance reseller efficiency and profitability by delivering immediate, comprehensive market data.
 
 **Key Capabilities:**
-- **Product Identification:** Utilizes Google Lens for exact product identification via camera scans.
-- **Multi-Platform Price Comparison:** Gathers current prices from major online retailers.
-- **Profit Calculation:** Estimates profit margins based on user-input costs and automatically calculated selling fees (~13%).
-- **Historical Tracking:** Saves favorite products and maintains a search/scan history locally.
-- **No Account Required:** Operates without user registration, with subscriptions managed via Apple ID / Google Play accounts.
-
-The business vision is to empower resellers with immediate, comprehensive market data, enhancing their efficiency and profitability.
+- **Product Identification:** Google Lens-powered scanning for product matching.
+- **Multi-Platform Price Comparison:** Gathers prices from Amazon, Walmart, Target, and eBay.
+- **Profit Calculation:** Estimates profit margins based on user input and automated selling fee calculation.
+- **Historical Tracking:** Stores favorite products and search history locally.
+- **No Account Required:** Operates without user registration, with subscriptions managed via platform app stores.
 
 ## User Preferences
 
@@ -24,129 +22,42 @@ The business vision is to empower resellers with immediate, comprehensive market
 
 ## System Architecture
 
-The application is built with a client-server architecture. The frontend is an Expo React Native application using TypeScript, while the backend is an Express.js server also written in TypeScript. Supabase PostgreSQL serves as the primary database for guest scan tracking and analytics.
+The application employs a client-server architecture. The frontend is an Expo React Native application using TypeScript, while the backend is an Express.js server, also in TypeScript. Supabase PostgreSQL serves as the primary database for guest scan tracking and analytics.
 
 **UI/UX Decisions:**
-- **Design System:** A custom design tokens system (`client/constants/design-tokens.ts`) is implemented for consistent styling, including colors (primary emerald green), typography, spacing, border radii, and component styles. The app is locked to a light theme only (dark mode removed).
-- **User Flow:** Features an onboarding screen for first-time users. The main navigation uses bottom tabs and native stacks.
-- **Subscription UI:** A dismissible paywall screen appears after the 3rd free scan, offering a 3-day free trial for the Pro subscription.
-- **Loading States:** Polished scan loading overlay with multi-step progress indicators ("Uploading image...", "Matching product...", "Finding best prices...") and animations.
+- **Design System:** Custom design tokens ensure consistent styling with an emerald green primary color scheme, locked to a light theme.
+- **User Flow:** Includes an onboarding process for new users and bottom tab navigation with native stacks.
+- **Subscription UI:** A dismissible paywall appears after a limited number of free scans, offering a 3-day free trial for the Pro subscription, with weekly and monthly plan options.
+- **Loading States:** Features a multi-step progress overlay with animations during product scanning.
 
 **Technical Implementations & Feature Specifications:**
-- **State Management:** TanStack React Query handles data fetching and caching.
-- **Local Storage:** AsyncStorage is used for storing history, favorites, scan counts, and device IDs client-side.
-- **Navigation:** React Navigation is used for managing app navigation.
-- **Product Scanning:**
-    - The `POST /api/scan-with-lens` endpoint processes base64 encoded images to identify products using Google Lens via SearchAPI.io.
-    - Free users are limited to 3 lifetime scans, tracked by device ID in the `guest_scans` table.
-- **eBay Sold Search:**
-    - The `POST /api/ebay-sold-search` endpoint fetches eBay sold item data using SearchAPI.io, providing average, median, high, and low sold prices, total sold count, and individual listing details.
-    - Includes a "Buy Score" (0-100) based on profit potential and demand (avgSoldPerMonth).
-    - Features advanced query cleaning and broad search fallbacks if initial specific searches yield no results.
-- **Rate Limiting:** Per-device rate limiting (20 requests/minute) is implemented on API endpoints using an in-memory sliding window.
-- **Subscription Model:** Supports a Free Tier (3 scans) and Pro Tier with two plan options: Weekly ($2.99/week) and Monthly ($8.99/month), both with a 3-day free trial. Weekly is pre-selected by default. Monthly shows a "Best Value" badge. Both PaywallScreen and UpgradeModal display a plan selector when multiple packages are available from RevenueCat; falls back to single plan display when only one package exists. Subscriptions are managed via RevenueCat, linking directly to Apple ID / Google Play accounts.
-- **Analytics:** Server-side analytics are logged to an external Supabase database, tracking device activity, scan events, and eBay search events.
-- **Monetization:** Uses RevenueCat for in-app purchases.
-- **App Store Review Prompt:** Triggers after the 5th successful scan using `expo-store-review`.
+- **State Management:** TanStack React Query manages data fetching and caching.
+- **Local Storage:** AsyncStorage stores history, favorites, scan counts, and device IDs.
+- **Navigation:** React Navigation handles in-app navigation.
+- **Product Scanning:** `POST /api/scan-with-lens` uses SearchAPI.io for Google Lens product identification from base64 images. Free users are limited to 3 lifetime scans.
+- **eBay Sold Search:** `POST /api/ebay-sold-search` retrieves eBay sold item data via SearchAPI.io, providing price statistics and a "Buy Score." AI-powered query cleaning (using Gemini 2.5 Flash via Replit AI Integrations) enhances search accuracy.
+- **Rate Limiting:** In-memory sliding window rate limiting (20 requests/minute per device) is implemented on API endpoints.
+- **Subscription Model:** Supports Free (3 scans) and Pro tiers (Weekly/Monthly with 3-day free trial), managed by RevenueCat.
+- **Analytics:** Server-side analytics (device activity, scan events, eBay search) are logged to Supabase.
+- **Monetization:** In-app purchases are handled by RevenueCat.
+- **App Store Review:** Prompts users for reviews after the 5th successful scan.
 
 ## External Dependencies
 
 - **Product Identification & Data:**
-    - **SearchAPI.io:** Used for Google Lens visual matching and multi-platform product data retrieval (Amazon, Walmart, Target, eBay), including eBay sold item data.
+    - **SearchAPI.io:** Google Lens visual matching, multi-platform product data (Amazon, Walmart, Target, eBay), and eBay sold item data.
 - **Database:**
-    - **Supabase (PostgreSQL):** Utilized for guest scan tracking (`guest_scans` table) and server-side analytics (tables like `devices`, `scan_events`, `ebay_search_events`).
+    - **Supabase (PostgreSQL):** Used for guest scan tracking and server-side analytics.
 - **Payments & Subscriptions:**
     - **RevenueCat:** Manages iOS/Android in-app purchases and subscription logic.
 - **Analytics & Tracking:**
-    - **Firebase Analytics:** Integrated for app usage tracking (e.g., `app_open` events).
-    - **Facebook SDK (react-native-fbsdk-next):** For Meta Ads tracking, including App Tracking Transparency prompt.
+    - **Firebase Analytics:** App usage tracking.
+    - **Facebook SDK (react-native-fbsdk-next):** Meta Ads tracking and App Tracking Transparency.
+    - **AppsFlyer:** Mobile Measurement Partner (MMP) for attribution tracking.
 - **Image Hosting:**
-    - **freeimage.host / imgbb:** Used for temporary image storage during the scanning process (API keys configured via environment variables).
+    - **freeimage.host / imgbb:** Temporary image storage for scan processing.
 - **Other:**
-    - **Expo:** The underlying framework for the React Native application.
-    - **TanStack React Query:** For data fetching and state management.
-    - **React Navigation:** For routing and navigation within the app.
-
-## Recent Changes
-
-- **Mar 2026**: AI-powered eBay search query cleaning
-  - Gemini 2.5 Flash AI cleans product names before eBay sold search for more accurate results
-  - New `server/gemini.ts` helper uses Replit AI Integrations (no API key needed)
-  - AI extracts core brand + model + product type, strips colors/sizes/conditions/marketing fluff
-  - When AI succeeds, its output is used directly (no regex chain) — only whitespace collapse, 8-word cap, and 80-char limit applied
-  - When AI fails/times out, regex chain runs as full fallback (unchanged)
-  - Broad search ("Search Similar Items") still uses regex-only cleaning
-  - AI prompt optimized for eBay search queries: preserves model numbers and hyphenated names
-  - Camera scan / Google Lens flow completely untouched
-  - Navigation stack reset on "New Search" to prevent screen stacking
-- **Mar 2026**: Paywall & onboarding flow redesign
-  - Free scan limit reduced from 5 to 1
-  - New full-screen non-dismissible PaywallScreen (`client/screens/PaywallScreen.tsx`) with "Start 3-Day Free Trial" CTA
-  - Camera auto-opens for first-time users (0 scans) after onboarding
-  - After first scan, PaywallScreen blocks further use until subscription
-  - Onboarding badge changed from "5 free scans to start" to "Try free for 3 days"
-  - UpgradeModal removed from ScanScreen (kept for ProfileScreen)
-  - PaywallScreen added to RootStackNavigator with `gestureEnabled: false`
-  - Server-side scan limit NOT changed (still 5) — frontend enforces 1-scan limit
-- **Mar 2026**: Weekly plan option added
-  - PaywallScreen and UpgradeModal now support two plan options: Weekly ($2.99/week) and Monthly ($8.99/month)
-  - Weekly plan pre-selected by default; Monthly shows "Best Value" badge
-  - Plan selector with radio-style selection UI; legal disclosure and CTA dynamically reflect selected plan
-  - Graceful fallback: shows single plan card when only one RevenueCat package exists
-  - Requires weekly product to be created in App Store Connect, Google Play Console, and RevenueCat dashboard
-- **Mar 2026**: TikTok SDK fully removed; backend hardening
-  - `react-native-tiktok-business-sdk` uninstalled; all TikTok imports/calls removed from `App.tsx`, `ScanScreen.tsx`, `RevenueCatContext.tsx`, and `client/lib/tiktok.ts` deleted
-  - `server/tiktok.ts` and all server-side TikTok call sites fully deleted (was previously left as no-op stubs)
-  - TikTok ProGuard rules removed from `app.json`; `expo-build-properties` reverted to bare string
-  - TikTok SKAdNetwork ID `mj797d8u6f.skadnetwork` kept in `app.json` (needed for future AppsFlyer/MMP attribution)
-  - Conservative request timeouts added to all outbound server `fetch()` calls: 20s image uploads, 35s Google Lens, 30s eBay search
-- **Mar 2026**: AppsFlyer MMP re-integrated; build bumped to 57
-  - `react-native-appsflyer@6.17.8` installed; `app.json` plugin added as correct array format `["react-native-appsflyer", {"shouldUseStrictMode": false}]` (previous failure was bare string)
-  - AppsFlyer SKAdNetwork ID `v9wttpbfk9.skadnetwork` added to `app.json`
-  - SDK initializes in `App.tsx` on app start (skipped in Expo Go + web); dev key `mfkZfMQWNe9nEc6NB23KJD`, iOS App ID `6758423765`
-  - `af_search` event fires after every successful scan in `ScanScreen.tsx`
-  - RevenueCat → AppsFlyer dashboard integration configured (subscription events flow server-to-server)
-  - TikTok → AppsFlyer dashboard integration configured (SRN mode)
-  - Build number bumped from 56 → 57
-- **Mar 2026**: Dark mode removed, light theme locked
-  - App locked to single light theme: light gray background (#F9FAFB), white cards (#FFFFFF), dark text (#111827)
-  - ThemeContext simplified — no longer reads/writes theme preference to AsyncStorage
-  - Appearance section (Light/Dark/System toggle) removed from ProfileScreen
-  - All `isDarkMode` ternaries replaced with light-mode values in PaywallScreen, UpgradeModal, ScanScreen, AppContent
-  - StatusBar locked to `dark` content style globally
-  - `useColorScheme` hook no longer used in App.tsx
-  - Design tokens `Colors.dark` and `colors.dark` now mirror their light counterparts
-- **Mar 2026**: Darker green redesign & dark hero section
-  - Primary green changed from #10B981 (emerald-500) to #047857 (emerald-700) across all design tokens, screens, and components
-  - ScanScreen hero card restyled: dark green gradient background (#065F46→#047857→#059669), white title/description text, "MARKET INTELLIGENCE" label in lighter green
-  - Scan Product button inverted to white background with dark green text (was green gradient with white text)
-  - PRO upsell card added inside hero: dark semi-transparent background, gold PRO badge, "Unlock sold prices & Buy Score" text
-  - PaywallScreen and UpgradeModal updated with deeper green accents (CTA gradients, icon circles, feature checkmarks, plan card borders)
-  - All hardcoded #10B981 and #34D399 references replaced across OnboardingScreen, FavoritesScreen, SearchResultsScreen, emailClient.ts
-  - Gradient palette standardized: #059669→#047857→#065F46 for buttons/CTAs
-- **Mar 2026**: PaywallScreen premium redesign
-  - Dark green gradient hero (#0A3622→#14532D→#1A6B3C) goes edge-to-edge and to the top, matching ScanScreen hero
-  - Gold gradient star icon (#F5D87A→#D4A926→#E8C84A) centered in hero, with "POCKET PRICER PRO" gold gradient badge
-  - White title "Know exactly what to buy & sell" + muted subtitle on dark green
-  - Close (X) button in top-right of dark section with semi-transparent white circle
-  - Feature list redesigned: 4 rows with icon circles, title + description, green checkmark circles
-  - Features: "Unlimited scans", "Real sold prices", "Buy Score", "Profit calculator" with subtitle descriptions
-  - Plan selector changed to side-by-side cards (Monthly left, Weekly right with dark green bg)
-  - "SAVE 44%" red badge on weekly plan card
-  - CTA: dark green gradient "Start 3-Day Free Trial →"
-  - Apple compliance preserved: dismissible (gestureEnabled), legal auto-renewal text, Restore Purchase/Terms/Privacy links
-- **Mar 2026**: ScanScreen metric cards added
-  - Three metric cards (Streak, Total Scans, Today) displayed on the hero section between description and scan button
-  - New `GET /api/device-stats/:deviceId` endpoint queries Supabase `scan_events` and `devices` tables
-  - Streak counts consecutive days with at least one scan; Today counts scans since midnight; Total from `devices.total_scans`
-  - Stats fetched via React Query on screen load, invalidated after each scan for real-time updates
-  - Dark semi-transparent card backgrounds with green (#4ADE80) numbers, matching hero gradient aesthetic
-  - Streak card shows green dots (up to 7) for visual indicator
-- **Mar 2026**: Codebase cleanup
-  - Removed dead server files: `emailClient.ts`, `githubClient.ts`, `storage.ts` (none were imported)
-  - Removed unused `server/replit_integrations/` directory (chat/image/batch scaffolding never wired in)
-  - Removed orphaned client component `UpgradeModal.tsx` (no longer imported after paywall redesign)
-  - Removed dead client components: `ProductCard`, `ProfitBreakdown`, `ProfitBadge`, `Card`, `Button`, `SearchBar`, `Spacer`, `KeyboardAwareScrollViewCompat` (none imported by any live screen)
-  - Removed unused navigator files: `MainTabNavigator`, `ScanStackNavigator`, `CameraScanStackNavigator`, `ProfileStackNavigator`, `FavoritesStackNavigator`, `HistoryStackNavigator` (app uses flat RootStackNavigator)
-  - Added `X-Device-Id` and `X-Is-Pro` to CORS allowed headers
-  - Known benign warning: require cycle AppContent → RootStackNavigator → ProfileScreen → AppContent (from `triggerOnboardingReplay` import)
+    - **Expo:** React Native development framework.
+    - **TanStack React Query:** Data fetching and state management.
+    - **React Navigation:** In-app routing.
+    - **Replit AI Integrations (Gemini 2.5 Flash):** For AI-powered eBay search query cleaning.
