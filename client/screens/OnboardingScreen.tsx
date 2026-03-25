@@ -539,7 +539,7 @@ export default function OnboardingScreen({ onComplete, onStartTrial }: Onboardin
 
   return (
     <LinearGradient
-      colors={["#064E3B", "#065F46", "#047857", "#065F46"]}
+      colors={["#022C22", "#033A2B", "#064E3B", "#033A2B"]}
       style={styles.container}
     >
       {content}
