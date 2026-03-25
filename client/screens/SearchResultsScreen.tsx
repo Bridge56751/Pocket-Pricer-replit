@@ -445,10 +445,19 @@ export default function SearchResultsScreen() {
           zIndex: 2,
         }}
       >
-        <Pressable onPress={handleGoBack} hitSlop={8} style={{ padding: 4 }}>
-          <RNAnimated.Text style={{ color: headerTextColor }}>
-            <Feather name="arrow-left" size={24} />
-          </RNAnimated.Text>
+        <Pressable
+          onPress={handleGoBack}
+          hitSlop={8}
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 18,
+            backgroundColor: "rgba(0,0,0,0.25)",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Feather name="arrow-left" size={22} color="#FFFFFF" />
         </Pressable>
         <RNAnimated.Text
           style={{
