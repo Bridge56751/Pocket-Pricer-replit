@@ -76,7 +76,7 @@ export async function cleanQueryWithAI(rawQuery: string): Promise<string | null>
         system_instruction: { parts: [{ text: EBAY_QUERY_PROMPT }] },
         contents: [{ role: "user", parts: [{ text: rawQuery }] }],
         generationConfig: {
-          maxOutputTokens: 50,
+          maxOutputTokens: 256,
           temperature: 0,
         },
       }),
@@ -94,6 +94,12 @@ export async function cleanQueryWithAI(rawQuery: string): Promise<string | null>
 
     if (!cleaned || cleaned.length < 3 || cleaned.length > 100) {
       console.log(`AI query cleaning returned unusable result: "${cleaned}"`);
+      return null;
+    }
+
+    const wordCount = cleaned.split(/\s+/).length;
+    if (wordCount < 2) {
+      console.log(`AI query cleaning too broad (single word): "${cleaned}" — falling back to regex`);
       return null;
     }
 
