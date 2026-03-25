@@ -105,6 +105,7 @@ export default function SearchResultsScreen() {
     navigation.setOptions({
       headerTransparent: true,
       headerShadowVisible: false,
+      headerBlurEffect: undefined,
       headerStyle: { backgroundColor: "transparent" },
       headerTitle: () => (
         <RNAnimated.Text style={{ fontSize: 17, fontWeight: "700", color: headerTextColor, opacity: headerTitleOpacity }}>
