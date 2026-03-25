@@ -702,30 +702,32 @@ export default function SearchResultsScreen() {
                   </LinearGradient>
                 </View>
                 <View style={[styles.ebaySoldSummary, { backgroundColor: theme.colors.card }]}>
-                  <View style={styles.ebaySoldSummaryHeader}>
-                    <Feather name="info" size={18} color="#047857" />
-                    <Text style={[styles.ebaySoldSummaryTitle, { color: theme.colors.foreground }]}>
-                      No eBay Sales Found
+                  <View style={styles.noResultsEmptyState}>
+                    <View style={styles.noResultsIconCircle}>
+                      <Feather name="package" size={28} color="#047857" />
+                    </View>
+                    <Text style={[styles.noResultsTitle, { color: theme.colors.foreground }]}>
+                      No Exact Matches Yet
                     </Text>
+                    <Text style={[styles.noResultsDescription, { color: theme.colors.mutedForeground }]}>
+                      We didn't find recent sold listings for this exact product. Try broadening your search to discover similar items.
+                    </Text>
+                    <Pressable
+                      testID="button-broad-ebay-search"
+                      style={styles.broadSearchButton}
+                      onPress={() => handleEbaySoldSearch(true)}
+                      disabled={ebaySoldLoading}
+                    >
+                      {ebaySoldLoading ? (
+                        <ActivityIndicator size="small" color="#FFFFFF" />
+                      ) : (
+                        <>
+                          <Feather name="search" size={16} color="#FFFFFF" />
+                          <Text style={styles.broadSearchButtonText}>Search Similar Items</Text>
+                        </>
+                      )}
+                    </Pressable>
                   </View>
-                  <Text style={[styles.ebaySoldSummarySubtitle, { color: theme.colors.mutedForeground }]}>
-                    No recent sold listings were found for this exact product. Try a broader search to find similar items.
-                  </Text>
-                  <Pressable
-                    testID="button-broad-ebay-search"
-                    style={styles.broadSearchButton}
-                    onPress={() => handleEbaySoldSearch(true)}
-                    disabled={ebaySoldLoading}
-                  >
-                    {ebaySoldLoading ? (
-                      <ActivityIndicator size="small" color="#FFFFFF" />
-                    ) : (
-                      <>
-                        <Feather name="search" size={16} color="#FFFFFF" />
-                        <Text style={styles.broadSearchButtonText}>Search Similar Items</Text>
-                      </>
-                    )}
-                  </Pressable>
                 </View>
               </View>
             ) : null}
@@ -1957,6 +1959,32 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: "center",
     marginBottom: 16,
+  },
+  noResultsEmptyState: {
+    alignItems: "center",
+    paddingVertical: 8,
+  },
+  noResultsIconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "rgba(4, 120, 87, 0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+  noResultsTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  noResultsDescription: {
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: "center",
+    marginBottom: 20,
+    paddingHorizontal: 8,
   },
   ebaySoldSummary: {
     borderRadius: 16,
