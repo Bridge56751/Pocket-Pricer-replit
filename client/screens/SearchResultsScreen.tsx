@@ -100,12 +100,6 @@ export default function SearchResultsScreen() {
     extrapolate: "clamp",
   });
 
-  const headerBgOpacity = scrollY.interpolate({
-    inputRange: [HERO_THRESHOLD - 30, HERO_THRESHOLD],
-    outputRange: [0, 1],
-    extrapolate: "clamp",
-  });
-
   const handleGoBack = useCallback(() => {
     if (require("react-native").Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -437,20 +431,6 @@ export default function SearchResultsScreen() {
   return (
     <View style={[styles.container]}>
       <View style={styles.topOverscrollBg} />
-
-      <RNAnimated.View
-        pointerEvents="none"
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: insets.top + CUSTOM_HEADER_HEIGHT,
-          backgroundColor: "#FFFFFF",
-          opacity: headerBgOpacity,
-          zIndex: 1,
-        }}
-      />
 
       <View
         style={{
