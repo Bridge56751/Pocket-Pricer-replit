@@ -107,6 +107,9 @@ export default function SearchResultsScreen() {
       headerBlurEffect: "none" as any,
       headerShadowVisible: false,
       headerStyle: { backgroundColor: "transparent" },
+      headerBackground: () => (
+        <View style={{ flex: 1, backgroundColor: "transparent" }} />
+      ),
       headerTitle: () => (
         <RNAnimated.Text style={{ fontSize: 17, fontWeight: "700", color: headerTextColor, opacity: headerTitleOpacity }}>
           Scan Result
