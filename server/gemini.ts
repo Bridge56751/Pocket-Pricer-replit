@@ -76,7 +76,7 @@ export async function cleanQueryWithAI(rawQuery: string): Promise<string | null>
         system_instruction: { parts: [{ text: EBAY_QUERY_PROMPT }] },
         contents: [{ role: "user", parts: [{ text: rawQuery }] }],
         generationConfig: {
-          maxOutputTokens: 1024,
+          maxOutputTokens: 50,
           temperature: 0,
         },
       }),
