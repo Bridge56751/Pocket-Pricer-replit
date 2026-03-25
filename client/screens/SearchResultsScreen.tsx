@@ -231,10 +231,15 @@ export default function SearchResultsScreen() {
 
   const allListings = results.listings;
 
-  const sortOptions = ["Best Match", "Price: Low to High", "Price: High to Low"];
+  const sortOptions = ["Best Match", "eBay Listings", "Price: Low to High", "Price: High to Low"];
 
   const sortedListings = useMemo(() => {
     if (sortOption === "Best Match") return [...allListings];
+    if (sortOption === "eBay Listings") {
+      return allListings.filter(item =>
+        (item.platform || "").toLowerCase().includes("ebay")
+      );
+    }
     const priced = allListings.filter(item => item.currentPrice > 0);
     const noPrice = allListings.filter(item => item.currentPrice <= 0);
     switch (sortOption) {
