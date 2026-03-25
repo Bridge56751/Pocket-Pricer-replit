@@ -632,6 +632,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!deviceId) {
         return res.status(400).json({ error: "Missing deviceId" });
       }
+      if (isRateLimited(deviceId)) {
+        return res.status(429).json({ error: "Too many requests. Please wait a moment and try again." });
+      }
       const tzOffsetStr = req.headers["x-timezone-offset"] as string | undefined;
       const tzOffsetMinutes = tzOffsetStr ? parseInt(tzOffsetStr, 10) : 0;
       const stats = await getDeviceStats(deviceId, isNaN(tzOffsetMinutes) ? 0 : tzOffsetMinutes);
