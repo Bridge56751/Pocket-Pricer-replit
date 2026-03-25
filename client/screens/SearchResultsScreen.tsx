@@ -104,6 +104,7 @@ export default function SearchResultsScreen() {
   React.useEffect(() => {
     navigation.setOptions({
       headerTransparent: true,
+      headerBlurEffect: undefined,
       headerShadowVisible: false,
       headerStyle: { backgroundColor: "transparent" },
       headerTitle: () => (
