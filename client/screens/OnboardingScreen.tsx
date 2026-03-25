@@ -143,11 +143,11 @@ const CATEGORIES = [
 ];
 
 interface QuestionStepProps {
-  selectedCategory: string | null;
-  onSelect: (id: string) => void;
+  selectedCategories: string[];
+  onToggle: (id: string) => void;
 }
 
-function QuestionStep({ selectedCategory, onSelect }: QuestionStepProps) {
+function QuestionStep({ selectedCategories, onToggle }: QuestionStepProps) {
   return (
     <View style={questionStyles.container}>
       <Animated.Text entering={FadeInUp.delay(100).duration(400)} style={questionStyles.label}>
@@ -166,11 +166,11 @@ function QuestionStep({ selectedCategory, onSelect }: QuestionStepProps) {
 
       <Animated.View entering={FadeInUp.delay(500).duration(450)} style={questionStyles.cardList}>
         {CATEGORIES.map((cat) => {
-          const isSelected = selectedCategory === cat.id;
+          const isSelected = selectedCategories.includes(cat.id);
           return (
             <Pressable
               key={cat.id}
-              onPress={() => onSelect(cat.id)}
+              onPress={() => onToggle(cat.id)}
               style={[
                 questionStyles.card,
                 isSelected ? questionStyles.cardSelected : null,
@@ -496,7 +496,7 @@ export default function OnboardingScreen({ onComplete, onStartTrial }: Onboardin
   const insets = useSafeAreaInsets();
   const [stepIndex, setStepIndex] = useState(0);
   const [transitioning, setTransitioning] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
   const currentStep = STEPS[stepIndex];
   const isLastStep = stepIndex === STEPS.length - 1;
@@ -542,7 +542,13 @@ export default function OnboardingScreen({ onComplete, onStartTrial }: Onboardin
     ? "Get Started"
     : "Continue";
 
-  const isButtonDisabled = currentStep === "question" && selectedCategory === null;
+  const isButtonDisabled = currentStep === "question" && selectedCategories.length === 0;
+
+  const toggleCategory = (id: string) => {
+    setSelectedCategories((prev) =>
+      prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
+    );
+  };
 
   const content = (
     <>
@@ -570,7 +576,7 @@ export default function OnboardingScreen({ onComplete, onStartTrial }: Onboardin
         {currentStep === "hero" ? (
           <HeroStep />
         ) : currentStep === "question" ? (
-          <QuestionStep selectedCategory={selectedCategory} onSelect={setSelectedCategory} />
+          <QuestionStep selectedCategories={selectedCategories} onToggle={toggleCategory} />
         ) : (
           <ProTrialStep />
         )}
