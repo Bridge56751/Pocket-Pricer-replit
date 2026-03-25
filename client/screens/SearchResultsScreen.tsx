@@ -95,35 +95,13 @@ export default function SearchResultsScreen() {
     extrapolate: "clamp",
   });
 
-  const headerTitleOpacity = scrollY.interpolate({
-    inputRange: [300, 500],
-    outputRange: [1, 0],
-    extrapolate: "clamp",
-  });
-
-  const [headerBgColor, setHeaderBgColor] = useState("transparent");
-  const scrollListenerId = useRef<string | null>(null);
-
-  React.useEffect(() => {
-    scrollListenerId.current = scrollY.addListener(({ value }) => {
-      const newBg = value > HERO_THRESHOLD ? "#FFFFFF" : "transparent";
-      setHeaderBgColor(prev => prev !== newBg ? newBg : prev);
-    });
-    return () => {
-      if (scrollListenerId.current) {
-        scrollY.removeListener(scrollListenerId.current);
-      }
-    };
-  }, [scrollY]);
-
   React.useEffect(() => {
     navigation.setOptions({
       headerTransparent: true,
       headerShadowVisible: false,
-      headerBlurEffect: undefined,
-      headerStyle: { backgroundColor: headerBgColor },
+      headerStyle: { backgroundColor: "transparent" },
       headerTitle: () => (
-        <RNAnimated.Text style={{ fontSize: 17, fontWeight: "700", color: headerTextColor, opacity: headerTitleOpacity }}>
+        <RNAnimated.Text style={{ fontSize: 17, fontWeight: "700", color: headerTextColor }}>
           Scan Result
         </RNAnimated.Text>
       ),
@@ -147,7 +125,7 @@ export default function SearchResultsScreen() {
         </HeaderButton>
       ),
     });
-  }, [navigation, headerTextColor, headerTitleOpacity, headerBgColor]);
+  }, [navigation, headerTextColor]);
 
   const suggestedPrice = results.avgListPrice;
   const EBAY_FEE_RATE = 0.13;
