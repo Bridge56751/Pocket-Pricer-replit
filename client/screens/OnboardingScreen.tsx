@@ -162,7 +162,7 @@ function QuestionStep({ selectedCategories, onToggle }: QuestionStepProps) {
       </Animated.View>
 
       <Animated.Text entering={FadeInUp.delay(450).duration(600).easing(Easing.out(Easing.quad))} style={questionStyles.subtitle}>
-        We'll tailor your experience
+        Select all that apply
       </Animated.Text>
 
       <Animated.View entering={FadeInUp.delay(600).duration(600).easing(Easing.out(Easing.quad))} style={questionStyles.cardList}>
