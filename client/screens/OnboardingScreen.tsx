@@ -281,135 +281,214 @@ const questionStyles = StyleSheet.create({
   },
 });
 
-const HOW_IT_WORKS_STEPS = [
+const PRO_FEATURES = [
   {
-    number: "1",
-    title: "Point & scan",
-    description: "Aim your camera at any product — barcode, label, or just the item itself",
+    icon: "camera" as const,
+    title: "Unlimited scans",
+    description: "No daily cap — scan everything you find",
   },
   {
-    number: "2",
-    title: "See real sold prices",
-    description: "Instantly see what buyers actually paid on eBay — not just asking prices",
+    icon: "trending-up" as const,
+    title: "Real sold prices",
+    description: "What buyers actually paid, not just listings",
   },
   {
-    number: "3",
-    title: "Know your profit",
-    description: "Get Buy Score, demand rating, and estimated profit after fees in seconds",
+    icon: "bar-chart-2" as const,
+    title: "Buy Score + Profit calc",
+    description: "Know instantly if it's worth buying",
   },
 ];
 
-function HowItWorksStep() {
+function ProTrialStep() {
   return (
     <ScrollView
-      style={howStyles.scroll}
-      contentContainerStyle={howStyles.container}
+      style={proStyles.scroll}
+      contentContainerStyle={proStyles.container}
       showsVerticalScrollIndicator={false}
     >
-      <Animated.Text entering={FadeInUp.delay(100).duration(400)} style={howStyles.label}>
-        HOW IT WORKS
-      </Animated.Text>
+      <Animated.View entering={FadeInUp.delay(100).duration(450)} style={proStyles.iconWrap}>
+        <LinearGradient
+          colors={["#F5D87A", "#D4A926", "#E8C84A", "#D4A926"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={proStyles.iconCircle}
+        >
+          <Feather name="tag" size={30} color="#3D2E00" style={{ transform: [{ scaleX: -1 }] }} />
+        </LinearGradient>
+      </Animated.View>
 
-      <Animated.View entering={FadeInUp.delay(250).duration(450)}>
-        <Text style={howStyles.title}>
-          Three seconds to{"\n"}<Text style={howStyles.titleGreen}>know the profit</Text>
+      <Animated.View entering={FadeInUp.delay(250).duration(400)}>
+        <LinearGradient
+          colors={["#F5D87A", "#D4A926", "#E8C84A", "#D4A926"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={proStyles.proBadge}
+        >
+          <Feather name="star" size={13} color="#3D2E00" />
+          <Text style={proStyles.proBadgeText}>POCKET PRICER PRO</Text>
+        </LinearGradient>
+      </Animated.View>
+
+      <Animated.View entering={FadeInUp.delay(400).duration(450)}>
+        <Text style={proStyles.title}>
+          You're ready.{"\n"}<Text style={proStyles.titleGreen}>Let's flip smarter.</Text>
         </Text>
       </Animated.View>
 
-      <Animated.Text entering={FadeInUp.delay(400).duration(400)} style={howStyles.subtitle}>
-        No guessing. No research. Just scan and go.
+      <Animated.Text entering={FadeInUp.delay(550).duration(400)} style={proStyles.subtitle}>
+        Unlock everything you need to find profitable items with confidence.
       </Animated.Text>
 
-      <Animated.View entering={FadeInUp.delay(550).duration(450)} style={howStyles.stepList}>
-        {HOW_IT_WORKS_STEPS.map((step) => (
-          <View key={step.number} style={howStyles.stepCard}>
-            <View style={howStyles.stepNumberCircle}>
-              <Text style={howStyles.stepNumberText}>{step.number}</Text>
+      <Animated.View entering={FadeInUp.delay(650).duration(450)} style={proStyles.featureList}>
+        {PRO_FEATURES.map((feat) => (
+          <View key={feat.title} style={proStyles.featureCard}>
+            <View style={proStyles.featureIconWrap}>
+              <Feather name={feat.icon} size={20} color="#047857" />
             </View>
-            <View style={howStyles.stepTextWrap}>
-              <Text style={howStyles.stepTitle}>{step.title}</Text>
-              <Text style={howStyles.stepDescription}>{step.description}</Text>
+            <View style={proStyles.featureTextWrap}>
+              <Text style={proStyles.featureTitle}>{feat.title}</Text>
+              <Text style={proStyles.featureDescription}>{feat.description}</Text>
+            </View>
+            <View style={proStyles.featureCheck}>
+              <Feather name="check" size={14} color="#FFFFFF" />
             </View>
           </View>
         ))}
+      </Animated.View>
+
+      <Animated.View entering={FadeInUp.delay(800).duration(400)} style={proStyles.trialInfo}>
+        <Feather name="lock" size={16} color="#10B981" />
+        <View>
+          <Text style={proStyles.trialTitle}>Try free for 3 days</Text>
+          <Text style={proStyles.trialSubtitle}>No charge until day 4 · Cancel anytime</Text>
+        </View>
       </Animated.View>
     </ScrollView>
   );
 }
 
-const howStyles = StyleSheet.create({
+const proStyles = StyleSheet.create({
   scroll: {
     flex: 1,
   },
   container: {
+    alignItems: "center",
     paddingHorizontal: 24,
-    paddingTop: 16,
+    paddingTop: 8,
     paddingBottom: 8,
   },
-  label: {
-    fontSize: 13,
-    fontWeight: "700",
-    letterSpacing: 2,
-    color: "#10B981",
-    marginBottom: 12,
+  iconWrap: {
+    marginBottom: 14,
+  },
+  iconCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  proBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 7,
+    borderRadius: 20,
+    marginBottom: 14,
+  },
+  proBadgeText: {
+    fontSize: 12,
+    fontWeight: "800",
+    letterSpacing: 1.5,
+    color: "#3D2E00",
   },
   title: {
-    fontSize: 30,
+    fontSize: 28,
     fontWeight: "800",
     color: "#FFFFFF",
-    lineHeight: 38,
-    marginBottom: 10,
+    textAlign: "center",
+    lineHeight: 36,
+    marginBottom: 8,
   },
   titleGreen: {
     color: "#10B981",
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "400",
     color: "rgba(255,255,255,0.5)",
-    marginBottom: 28,
+    textAlign: "center",
+    lineHeight: 22,
+    marginBottom: 24,
+    paddingHorizontal: 8,
   },
-  stepList: {
-    gap: 14,
+  featureList: {
+    alignSelf: "stretch",
+    gap: 10,
+    marginBottom: 16,
   },
-  stepCard: {
+  featureCard: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     backgroundColor: "rgba(255,255,255,0.06)",
-    borderRadius: 16,
-    padding: 18,
+    borderRadius: 14,
+    padding: 16,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.08)",
   },
-  stepNumberCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#047857",
+  featureIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: "rgba(4,120,87,0.15)",
     alignItems: "center",
     justifyContent: "center",
     marginRight: 14,
-    marginTop: 2,
   },
-  stepNumberText: {
-    fontSize: 16,
-    fontWeight: "800",
-    color: "#FFFFFF",
-  },
-  stepTextWrap: {
+  featureTextWrap: {
     flex: 1,
   },
-  stepTitle: {
-    fontSize: 17,
+  featureTitle: {
+    fontSize: 16,
     fontWeight: "700",
     color: "#FFFFFF",
-    marginBottom: 4,
+    marginBottom: 2,
   },
-  stepDescription: {
-    fontSize: 14,
+  featureDescription: {
+    fontSize: 13,
     fontWeight: "400",
-    color: "rgba(255,255,255,0.6)",
-    lineHeight: 20,
+    color: "rgba(255,255,255,0.55)",
+  },
+  featureCheck: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: "#047857",
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: 10,
+  },
+  trialInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    alignSelf: "stretch",
+    backgroundColor: "rgba(16,185,129,0.08)",
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "rgba(16,185,129,0.15)",
+  },
+  trialTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#10B981",
+    marginBottom: 2,
+  },
+  trialSubtitle: {
+    fontSize: 12,
+    fontWeight: "400",
+    color: "rgba(255,255,255,0.45)",
   },
 });
 
@@ -461,9 +540,7 @@ export default function OnboardingScreen({ onComplete, onStartTrial }: Onboardin
 
   const buttonLabel = currentStep === "hero"
     ? "Get Started"
-    : currentStep === "question"
-    ? "Continue"
-    : "Makes sense";
+    : "Continue";
 
   const isButtonDisabled = currentStep === "question" && selectedCategory === null;
 
@@ -495,7 +572,7 @@ export default function OnboardingScreen({ onComplete, onStartTrial }: Onboardin
         ) : currentStep === "question" ? (
           <QuestionStep selectedCategory={selectedCategory} onSelect={setSelectedCategory} />
         ) : (
-          <HowItWorksStep />
+          <ProTrialStep />
         )}
       </View>
 
@@ -503,28 +580,61 @@ export default function OnboardingScreen({ onComplete, onStartTrial }: Onboardin
         entering={FadeInDown.delay(300).duration(450)}
         style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}
       >
-        <Pressable
-          onPress={goNext}
-          disabled={isButtonDisabled}
-          style={({ pressed }) => [
-            styles.ctaButton,
-            { opacity: isButtonDisabled ? 0.4 : pressed ? 0.85 : 1 },
-          ]}
-        >
-          <View style={[
-            styles.ctaOutline,
-            isQuestionStep ? styles.ctaOutlineLight : null,
-          ]}>
-            <Text style={[styles.ctaText, isQuestionStep ? styles.ctaTextLight : null]}>
-              {buttonLabel}
-            </Text>
-            <Feather
-              name="arrow-right"
-              size={20}
-              color={isQuestionStep ? "#111827" : "#fff"}
-            />
-          </View>
-        </Pressable>
+        {isLastStep ? (
+          <>
+            <Pressable
+              onPress={handleFinishOnboarding}
+              style={({ pressed }) => [
+                styles.ctaButton,
+                { opacity: pressed ? 0.85 : 1 },
+              ]}
+            >
+              <LinearGradient
+                colors={["#F5D87A", "#D4A926", "#E8C84A", "#D4A926"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.ctaGold}
+              >
+                <Feather name="star" size={16} color="#3D2E00" />
+                <Text style={styles.ctaGoldText}>Start Free Trial</Text>
+                <Feather name="arrow-right" size={18} color="#3D2E00" />
+              </LinearGradient>
+            </Pressable>
+            <Pressable
+              onPress={handleComplete}
+              hitSlop={12}
+              style={({ pressed }) => [
+                styles.skipTrialBtn,
+                { opacity: pressed ? 0.6 : 1 },
+              ]}
+            >
+              <Text style={styles.skipTrialText}>Start without Pro</Text>
+            </Pressable>
+          </>
+        ) : (
+          <Pressable
+            onPress={goNext}
+            disabled={isButtonDisabled}
+            style={({ pressed }) => [
+              styles.ctaButton,
+              { opacity: isButtonDisabled ? 0.4 : pressed ? 0.85 : 1 },
+            ]}
+          >
+            <View style={[
+              styles.ctaOutline,
+              isQuestionStep ? styles.ctaOutlineLight : null,
+            ]}>
+              <Text style={[styles.ctaText, isQuestionStep ? styles.ctaTextLight : null]}>
+                {buttonLabel}
+              </Text>
+              <Feather
+                name="arrow-right"
+                size={20}
+                color={isQuestionStep ? "#111827" : "#fff"}
+              />
+            </View>
+          </Pressable>
+        )}
       </Animated.View>
     </>
   );
@@ -639,5 +749,27 @@ const styles = StyleSheet.create({
   },
   ctaTextLight: {
     color: "#111827",
+  },
+  ctaGold: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 18,
+    gap: 8,
+    borderRadius: 16,
+  },
+  ctaGoldText: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#3D2E00",
+  },
+  skipTrialBtn: {
+    marginTop: 14,
+    paddingVertical: 8,
+  },
+  skipTrialText: {
+    fontSize: 15,
+    fontWeight: "500",
+    color: "rgba(255,255,255,0.35)",
   },
 });
