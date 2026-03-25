@@ -641,6 +641,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderRadius: 16,
     padding: 18,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "rgba(4,120,87,0.15)",
   },
   aboutHeaderBtn: {
     flexDirection: "row",
