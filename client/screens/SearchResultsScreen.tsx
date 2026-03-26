@@ -96,7 +96,7 @@ export default function SearchResultsScreen() {
   });
 
   const headerTitleOpacity = scrollY.interpolate({
-    inputRange: [HERO_THRESHOLD, HERO_THRESHOLD + 60],
+    inputRange: [300, 500],
     outputRange: [1, 0],
     extrapolate: "clamp",
   });
