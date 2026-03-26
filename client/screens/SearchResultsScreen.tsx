@@ -95,23 +95,13 @@ export default function SearchResultsScreen() {
     extrapolate: "clamp",
   });
 
-  const headerTitleOpacity = scrollY.interpolate({
-    inputRange: [HERO_THRESHOLD, HERO_THRESHOLD + 40],
-    outputRange: [1, 0],
-    extrapolate: "clamp",
-  });
-
   React.useEffect(() => {
     navigation.setOptions({
       headerTransparent: true,
       headerBlurEffect: undefined,
       headerShadowVisible: false,
       headerStyle: { backgroundColor: "transparent" },
-      headerTitle: () => (
-        <RNAnimated.Text style={{ fontSize: 17, fontWeight: "700", color: headerTextColor, opacity: headerTitleOpacity }}>
-          Scan Result
-        </RNAnimated.Text>
-      ),
+      headerTitle: "",
       headerLeft: () => (
         <HeaderButton
           onPress={() => {
