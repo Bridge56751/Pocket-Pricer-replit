@@ -90,7 +90,7 @@ export default function SearchResultsScreen() {
   const HERO_THRESHOLD = 250;
 
   const headerTextColor = scrollY.interpolate({
-    inputRange: [0, HERO_THRESHOLD * 0.85, HERO_THRESHOLD],
+    inputRange: [0, 100, 180],
     outputRange: ["#FFFFFF", "#FFFFFF", "#111827"],
     extrapolate: "clamp",
   });
