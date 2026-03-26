@@ -468,7 +468,7 @@ export default function SearchResultsScreen() {
                 justifyContent: "center",
               }}
             >
-              <Feather name="arrow-left" size={22} color="rgba(0,0,0,0.9)" />
+              <Feather name="arrow-left" size={26} color="#000000" style={{ fontWeight: "900" }} />
             </BlurView>
           </View>
         </Pressable>
