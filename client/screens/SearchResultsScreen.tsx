@@ -448,9 +448,9 @@ export default function SearchResultsScreen() {
       >
         <Pressable onPress={handleGoBack} hitSlop={8}>
           <View style={{
-            width: 42,
-            height: 42,
-            borderRadius: 21,
+            width: 50,
+            height: 44,
+            borderRadius: 22,
             borderWidth: 1,
             borderColor: "rgba(255,255,255,0.6)",
             shadowColor: "#000",
