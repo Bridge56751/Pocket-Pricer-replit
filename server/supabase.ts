@@ -116,17 +116,12 @@ export function logEbaySearchEvent(
 export async function getDeviceStats(deviceId: string, tzOffsetMinutes: number = 0): Promise<{
   memberDays: number;
   scansToday: number;
-  streak: number;
+  totalScans: number;
 }> {
-  const fallback = { memberDays: 0, scansToday: 0, streak: 0 };
+  const fallback = { memberDays: 0, scansToday: 0, totalScans: 0 };
   if (!supabase) return fallback;
 
   const offsetMs = tzOffsetMinutes * 60 * 1000;
-
-  function toLocalDayKey(utcDate: Date): string {
-    const shifted = new Date(utcDate.getTime() - offsetMs);
-    return `${shifted.getUTCFullYear()}-${shifted.getUTCMonth()}-${shifted.getUTCDate()}`;
-  }
 
   function getLocalMidnightUtc(): Date {
     const shifted = new Date(Date.now() - offsetMs);
@@ -158,40 +153,7 @@ export async function getDeviceStats(deviceId: string, tzOffsetMinutes: number =
       .eq("device_id", deviceId)
       .gte("created_at", todayStartUtc.toISOString());
 
-    const { data: scanDays } = await supabase
-      .from("scan_events")
-      .select("created_at")
-      .eq("device_id", deviceId)
-      .order("created_at", { ascending: false })
-      .limit(500);
-
-    let streak = 0;
-    if (scanDays && scanDays.length > 0) {
-      const uniqueDays = new Set<string>();
-      for (const row of scanDays) {
-        uniqueDays.add(toLocalDayKey(new Date(row.created_at)));
-      }
-
-      const nowShifted = new Date(Date.now() - offsetMs);
-      const checkDate = new Date(Date.UTC(nowShifted.getUTCFullYear(), nowShifted.getUTCMonth(), nowShifted.getUTCDate()));
-      const todayKey = `${checkDate.getUTCFullYear()}-${checkDate.getUTCMonth()}-${checkDate.getUTCDate()}`;
-
-      if (!uniqueDays.has(todayKey)) {
-        checkDate.setUTCDate(checkDate.getUTCDate() - 1);
-      }
-
-      while (streak < 500) {
-        const key = `${checkDate.getUTCFullYear()}-${checkDate.getUTCMonth()}-${checkDate.getUTCDate()}`;
-        if (uniqueDays.has(key)) {
-          streak++;
-          checkDate.setUTCDate(checkDate.getUTCDate() - 1);
-        } else {
-          break;
-        }
-      }
-    }
-
-    return { memberDays, scansToday: scansToday || 0, streak };
+    return { memberDays, scansToday: scansToday || 0, totalScans: device?.total_scans || 0 };
   } catch (err: any) {
     console.error("getDeviceStats error:", err?.message);
     return fallback;

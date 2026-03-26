@@ -198,7 +198,7 @@ export default function ScanScreen() {
           { headers: { "X-Timezone-Offset": String(tzOffset) }, signal: controller.signal }
         );
         if (!res.ok) return null;
-        return res.json() as Promise<{ memberDays: number; scansToday: number; streak: number }>;
+        return res.json() as Promise<{ memberDays: number; scansToday: number; totalScans: number }>;
       } catch {
         return null;
       } finally {
@@ -496,16 +496,22 @@ export default function ScanScreen() {
 
             <View style={styles.metricsRow}>
               <View style={styles.metricCard}>
-                <Text style={styles.metricLabel}>STREAK</Text>
+                <Text style={styles.metricLabel}>TOTAL SCANS</Text>
                 <View style={styles.metricValueRow}>
-                  <Text style={styles.metricValue}>{deviceStats ? deviceStats.streak : "--"}</Text>
-                  <Text style={styles.metricUnit}>{deviceStats ? "d" : ""}</Text>
+                  <Text style={styles.metricValue}>
+                    {deviceStats ? deviceStats.totalScans.toLocaleString() : "--"}
+                  </Text>
                 </View>
-                <View style={styles.streakDots}>
-                  {deviceStats ? Array.from({ length: Math.min(Math.max(deviceStats.streak, 0), 7) }).map((_, i) => (
-                    <View key={i} style={styles.streakDot} />
-                  )) : null}
+                <Text style={styles.metricSub}>lifetime</Text>
+              </View>
+              <View style={styles.metricCard}>
+                <Text style={styles.metricLabel}>TODAY</Text>
+                <View style={styles.metricValueRow}>
+                  <Text style={styles.metricValue}>
+                    {deviceStats ? deviceStats.scansToday : "--"}
+                  </Text>
                 </View>
+                <Text style={styles.metricSub}>scans</Text>
               </View>
               <View style={styles.metricCard}>
                 <Text style={styles.metricLabel}>MEMBER</Text>
@@ -528,11 +534,6 @@ export default function ScanScreen() {
                   </Text>
                 </View>
                 <Text style={styles.metricSub}>since joined</Text>
-              </View>
-              <View style={styles.metricCard}>
-                <Text style={styles.metricLabel}>TODAY</Text>
-                <Text style={styles.metricValue}>{deviceStats ? deviceStats.scansToday : "--"}</Text>
-                <Text style={styles.metricSub}>scans</Text>
               </View>
             </View>
 
@@ -877,17 +878,6 @@ const styles = StyleSheet.create({
     fontWeight: "500" as const,
     color: "rgba(255,255,255,0.45)",
     marginTop: 2,
-  },
-  streakDots: {
-    flexDirection: "row" as const,
-    gap: 4,
-    marginTop: 4,
-  },
-  streakDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: "#4ADE80",
   },
   scanButton: {
     flexDirection: "row" as const,
