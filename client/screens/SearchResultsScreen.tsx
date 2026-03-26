@@ -96,8 +96,8 @@ export default function SearchResultsScreen() {
   });
 
   const headerTitleOpacity = scrollY.interpolate({
-    inputRange: [300, 500],
-    outputRange: [1, 0],
+    inputRange: [0, 1],
+    outputRange: [0, 0],
     extrapolate: "clamp",
   });
 
