@@ -451,9 +451,9 @@ export default function SearchResultsScreen() {
             intensity={60}
             tint="systemChromeMaterialLight"
             style={{
-              width: 40,
-              height: 40,
-              borderRadius: 20,
+              width: 46,
+              height: 46,
+              borderRadius: 23,
               alignItems: "center",
               justifyContent: "center",
               overflow: "hidden",
