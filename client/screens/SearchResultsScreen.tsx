@@ -459,7 +459,7 @@ export default function SearchResultsScreen() {
               overflow: "hidden",
             }}
           >
-            <Feather name="arrow-left" size={24} color="rgba(0,0,0,0.55)" />
+            <Feather name="arrow-left" size={26} color="rgba(0,0,0,0.85)" />
           </BlurView>
         </Pressable>
         <RNAnimated.Text
