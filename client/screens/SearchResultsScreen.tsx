@@ -468,7 +468,17 @@ export default function SearchResultsScreen() {
                 justifyContent: "center",
               }}
             >
-              <Feather name="arrow-left" size={26} color="#000000" style={{ fontWeight: "900" }} />
+              <View style={{ width: 28, height: 28, alignItems: "center", justifyContent: "center" }}>
+                <View style={{
+                  width: 16,
+                  height: 16,
+                  borderLeftWidth: 3.5,
+                  borderBottomWidth: 3.5,
+                  borderColor: "#000000",
+                  transform: [{ rotate: "45deg" }],
+                  marginLeft: 4,
+                }} />
+              </View>
             </BlurView>
           </View>
         </Pressable>
