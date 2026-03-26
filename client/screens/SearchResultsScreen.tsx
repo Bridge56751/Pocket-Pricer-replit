@@ -451,15 +451,15 @@ export default function SearchResultsScreen() {
             intensity={60}
             tint="systemChromeMaterialLight"
             style={{
-              width: 32,
-              height: 32,
-              borderRadius: 16,
+              width: 40,
+              height: 40,
+              borderRadius: 20,
               alignItems: "center",
               justifyContent: "center",
               overflow: "hidden",
             }}
           >
-            <Feather name="chevron-left" size={20} color="rgba(0,0,0,0.55)" style={{ marginLeft: -1 }} />
+            <Feather name="arrow-left" size={24} color="rgba(0,0,0,0.55)" />
           </BlurView>
         </Pressable>
         <RNAnimated.Text
