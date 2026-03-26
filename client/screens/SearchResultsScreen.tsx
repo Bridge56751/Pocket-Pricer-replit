@@ -468,7 +468,9 @@ export default function SearchResultsScreen() {
                 justifyContent: "center",
               }}
             >
-              <Feather name="arrow-left" size={28} color="#000000" />
+              <RNAnimated.Text style={{ color: headerTextColor }}>
+                <Feather name="arrow-left" size={28} />
+              </RNAnimated.Text>
             </BlurView>
           </View>
         </Pressable>
