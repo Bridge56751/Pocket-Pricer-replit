@@ -23,7 +23,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { SkeletonLoader } from "@/components/SkeletonLoader";
 import { getSearchHistory, addSearchHistory } from "@/lib/storage";
-import { apiRequest, getApiUrl } from "@/lib/query-client";
+import { getApiUrl } from "@/lib/query-client";
 import { storeImage } from "@/lib/image-store";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRevenueCat } from "@/contexts/RevenueCatContext";
@@ -508,7 +508,7 @@ export default function ScanScreen() {
                 <Text style={styles.metricLabel}>TODAY</Text>
                 <View style={styles.metricValueRow}>
                   <Text style={styles.metricValue}>
-                    {deviceStats ? deviceStats.scansToday : "--"}
+                    {deviceStats ? (deviceStats.scansToday || 0) : "--"}
                   </Text>
                 </View>
                 <Text style={styles.metricSub}>scans</Text>
@@ -518,7 +518,7 @@ export default function ScanScreen() {
                 <View style={styles.metricValueRow}>
                   <Text style={styles.metricValue}>
                     {deviceStats ? (() => {
-                      const days = deviceStats.memberDays;
+                      const days = deviceStats.memberDays || 0;
                       if (days < 30) return days;
                       if (days < 365) return Math.floor(days / 30);
                       return (days / 365).toFixed(1).replace(/\.0$/, "");
@@ -526,7 +526,7 @@ export default function ScanScreen() {
                   </Text>
                   <Text style={styles.metricUnit}>
                     {deviceStats ? (() => {
-                      const days = deviceStats.memberDays;
+                      const days = deviceStats.memberDays || 0;
                       if (days < 30) return "d";
                       if (days < 365) return "mo";
                       return "yr";
