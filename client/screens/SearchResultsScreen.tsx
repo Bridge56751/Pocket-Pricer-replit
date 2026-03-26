@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useRef } from "react";
-import { View, StyleSheet, FlatList, Pressable, Text, Linking, TextInput, ActivityIndicator, ScrollView, Keyboard, Animated as RNAnimated } from "react-native";
+import { View, StyleSheet, FlatList, Pressable, Text, Linking, TextInput, ActivityIndicator, ScrollView, Keyboard, Animated as RNAnimated, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useRoute, RouteProp, useNavigation, CommonActions } from "@react-navigation/native";
@@ -87,11 +87,16 @@ export default function SearchResultsScreen() {
   const [calcExpanded, setCalcExpanded] = useState(true);
 
   const scrollY = useRef(new RNAnimated.Value(0)).current;
-  const HERO_THRESHOLD = 250;
 
-  const headerTextColor = scrollY.interpolate({
+  const headerWhiteOpacity = scrollY.interpolate({
     inputRange: [0, 100, 180],
-    outputRange: ["#FFFFFF", "#FFFFFF", "#111827"],
+    outputRange: [1, 1, 0],
+    extrapolate: "clamp",
+  });
+
+  const headerDarkOpacity = scrollY.interpolate({
+    inputRange: [0, 100, 180],
+    outputRange: [0, 0, 1],
     extrapolate: "clamp",
   });
 
@@ -102,7 +107,7 @@ export default function SearchResultsScreen() {
   });
 
   const handleGoBack = useCallback(() => {
-    if (require("react-native").Platform.OS !== "web") {
+    if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
     if (navigation.canGoBack()) {
@@ -377,7 +382,7 @@ export default function SearchResultsScreen() {
 
   const renderListing = ({ item, index }: { item: ListingItem; index: number }) => (
     <Animated.View 
-      entering={FadeInDown.delay(index * 50).duration(300)}
+      entering={FadeInDown.delay(Math.min(index, 6) * 50).duration(300)}
       style={[styles.listingCard, { backgroundColor: theme.colors.card }]}
     >
       <Image
@@ -468,25 +473,42 @@ export default function SearchResultsScreen() {
                 justifyContent: "center",
               }}
             >
-              <RNAnimated.Text style={{ color: headerTextColor }}>
-                <Feather name="arrow-left" size={28} />
-              </RNAnimated.Text>
+              <View style={{ width: 28, height: 28 }}>
+                <RNAnimated.View style={{ position: "absolute", opacity: headerWhiteOpacity }}>
+                  <Feather name="arrow-left" size={28} color="#FFFFFF" />
+                </RNAnimated.View>
+                <RNAnimated.View style={{ position: "absolute", opacity: headerDarkOpacity }}>
+                  <Feather name="arrow-left" size={28} color="#111827" />
+                </RNAnimated.View>
+              </View>
             </BlurView>
           </View>
         </Pressable>
-        <RNAnimated.Text
-          style={{
-            flex: 1,
-            textAlign: "center",
-            fontSize: 17,
-            fontWeight: "700",
-            color: headerTextColor,
-            opacity: headerTitleOpacity,
-            marginRight: 32,
-          }}
-        >
-          Scan Result
-        </RNAnimated.Text>
+        <View style={{ flex: 1, marginRight: 32 }}>
+          <RNAnimated.Text
+            style={{
+              textAlign: "center",
+              fontSize: 17,
+              fontWeight: "700",
+              color: "#FFFFFF",
+              opacity: RNAnimated.multiply(headerTitleOpacity, headerWhiteOpacity),
+            }}
+          >
+            Scan Result
+          </RNAnimated.Text>
+          <RNAnimated.Text
+            style={{
+              position: "absolute",
+              alignSelf: "center",
+              fontSize: 17,
+              fontWeight: "700",
+              color: "#111827",
+              opacity: RNAnimated.multiply(headerTitleOpacity, headerDarkOpacity),
+            }}
+          >
+            Scan Result
+          </RNAnimated.Text>
+        </View>
       </View>
 
       <RNAnimated.FlatList
@@ -500,7 +522,7 @@ export default function SearchResultsScreen() {
         keyboardShouldPersistTaps="handled"
         onScroll={RNAnimated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: false }
+          { useNativeDriver: true }
         )}
         scrollEventThrottle={16}
         data={sortedListings}
@@ -961,7 +983,7 @@ export default function SearchResultsScreen() {
                 {ebaySoldData.items.slice(0, 20).map((item, index) => (
                   <Animated.View
                     key={item.id}
-                    entering={FadeInDown.delay(index * 40).duration(250)}
+                    entering={FadeInDown.delay(Math.min(index, 5) * 40).duration(250)}
                     style={[styles.listingCard, { backgroundColor: theme.colors.card }]}
                   >
                     {renderSoldImage(item)}
@@ -1086,7 +1108,7 @@ export default function SearchResultsScreen() {
                 {broadSoldData.items.slice(0, 15).map((item, index) => (
                   <Animated.View
                     key={`broad-${item.id}`}
-                    entering={FadeInDown.delay(index * 40).duration(250)}
+                    entering={FadeInDown.delay(Math.min(index, 5) * 40).duration(250)}
                     style={[styles.listingCard, { backgroundColor: theme.colors.card }]}
                   >
                     {renderSoldImage(item)}
