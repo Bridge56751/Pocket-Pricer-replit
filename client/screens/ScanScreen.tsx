@@ -499,7 +499,7 @@ export default function ScanScreen() {
                 <Text style={styles.metricLabel}>TOTAL SCANS</Text>
                 <View style={styles.metricValueRow}>
                   <Text style={styles.metricValue}>
-                    {deviceStats ? deviceStats.totalScans.toLocaleString() : "--"}
+                    {deviceStats ? (deviceStats.totalScans || 0).toLocaleString() : "--"}
                   </Text>
                 </View>
                 <Text style={styles.metricSub}>lifetime</Text>
