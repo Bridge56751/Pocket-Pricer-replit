@@ -2,7 +2,7 @@ import React, { useState, useCallback } from "react";
 import { View, StyleSheet, FlatList, Pressable, Text } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
-import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation, CommonActions } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
@@ -67,7 +67,15 @@ export default function HistoryScreen() {
     // Navigate directly to results if available
     if (item.results) {
       const { scannedImageUri, scannedImageId, ...cleanResults } = item.results as any;
-      navigation.navigate("SearchResults", { results: cleanResults });
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 1,
+          routes: [
+            { name: "Home" },
+            { name: "SearchResults", params: { results: cleanResults } },
+          ],
+        })
+      );
     } else {
       // Fallback: navigate to home with query pre-filled
       navigation.navigate("Home", { prefillQuery: item.query });

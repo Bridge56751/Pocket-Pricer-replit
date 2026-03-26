@@ -3,7 +3,7 @@ import { View, StyleSheet, Pressable, Text, ScrollView, Image, Platform } from "
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as StoreReview from "expo-store-review";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useNavigation, useFocusEffect, useRoute, RouteProp } from "@react-navigation/native";
+import { useNavigation, useFocusEffect, useRoute, RouteProp, CommonActions } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -329,7 +329,15 @@ export default function ScanScreen() {
       }
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      navigation.navigate("SearchResults", { results: enrichedResults });
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 1,
+          routes: [
+            { name: "Home" },
+            { name: "SearchResults", params: { results: enrichedResults } },
+          ],
+        })
+      );
 
       addSearchHistory(historyItem).catch(() => {});
       loadRecentScans();
@@ -433,7 +441,15 @@ export default function ScanScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
     if (scan.results) {
-      navigation.navigate("SearchResults", { results: scan.results });
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 1,
+          routes: [
+            { name: "Home" },
+            { name: "SearchResults", params: { results: scan.results } },
+          ],
+        })
+      );
     }
   };
 
