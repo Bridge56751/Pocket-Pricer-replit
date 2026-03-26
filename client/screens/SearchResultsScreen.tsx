@@ -448,8 +448,8 @@ export default function SearchResultsScreen() {
       >
         <Pressable onPress={handleGoBack} hitSlop={8}>
           <BlurView
-            intensity={60}
-            tint="systemChromeMaterialLight"
+            intensity={80}
+            tint="prominent"
             style={{
               width: 46,
               height: 46,
