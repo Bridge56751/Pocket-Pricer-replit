@@ -447,22 +447,20 @@ export default function SearchResultsScreen() {
         }}
       >
         <Pressable onPress={handleGoBack} hitSlop={8}>
-          <View
+          <BlurView
+            intensity={50}
+            tint="light"
             style={{
               width: 36,
               height: 36,
               borderRadius: 18,
               alignItems: "center",
               justifyContent: "center",
-              backgroundColor: "rgba(255,255,255,0.85)",
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 1 },
-              shadowOpacity: 0.12,
-              shadowRadius: 4,
+              overflow: "hidden",
             }}
           >
-            <Feather name="arrow-left" size={22} color="rgba(0,0,0,0.7)" />
-          </View>
+            <Feather name="arrow-left" size={22} color="rgba(0,0,0,0.75)" />
+          </BlurView>
         </Pressable>
         <RNAnimated.Text
           style={{
