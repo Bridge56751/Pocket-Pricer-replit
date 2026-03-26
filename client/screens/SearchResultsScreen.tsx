@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useRef } from "react";
-import { View, StyleSheet, FlatList, Pressable, Text, Linking, TextInput, ActivityIndicator, ScrollView, Keyboard, Animated as RNAnimated, Platform } from "react-native";
+import { View, StyleSheet, Pressable, Text, Linking, TextInput, ActivityIndicator, ScrollView, Keyboard, Animated as RNAnimated, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useRoute, RouteProp, useNavigation, CommonActions } from "@react-navigation/native";
@@ -12,7 +12,6 @@ import { BlurView } from "expo-blur";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
 import { useDesignTokens } from "@/hooks/useDesignTokens";
-import { SkeletonLoader } from "@/components/SkeletonLoader";
 import { getImage } from "@/lib/image-store";
 import { getApiUrl } from "@/lib/query-client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -63,7 +62,16 @@ export default function SearchResultsScreen() {
   const route = useRoute<SearchResultsRouteProp>();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
-  const { results } = route.params;
+  const results = route.params?.results ?? {
+    query: "",
+    totalListings: 0,
+    avgListPrice: 0,
+    avgSalePrice: null,
+    soldCount: 0,
+    bestBuyNow: 0,
+    topSalePrice: null,
+    listings: [],
+  } as SearchResultsData;
   
   const scannedImageUri = useMemo(() => {
     if (results.scannedImageId) {
@@ -119,7 +127,7 @@ export default function SearchResultsScreen() {
 
   const CUSTOM_HEADER_HEIGHT = 44;
 
-  const suggestedPrice = results.avgListPrice;
+  const suggestedPrice = Number(results.avgListPrice) || 0;
   const EBAY_FEE_RATE = 0.13;
   
   const calculateProfit = () => {
@@ -221,7 +229,7 @@ export default function SearchResultsScreen() {
     }
   };
 
-  const allListings = results.listings;
+  const allListings = Array.isArray(results.listings) ? results.listings : [];
 
   const sortOptions = ["Best Match", "eBay Listings", "Price: Low to High", "Price: High to Low"];
 
@@ -305,7 +313,22 @@ export default function SearchResultsScreen() {
         }
         throw new Error(errData.error || "Search failed");
       }
-      const data: EbaySoldData = await res.json();
+      const raw = await res.json();
+      const data: EbaySoldData = {
+        avgSoldPrice: Number(raw.avgSoldPrice) || 0,
+        medianSoldPrice: Number(raw.medianSoldPrice) || 0,
+        lowPrice: Number(raw.lowPrice) || 0,
+        highPrice: Number(raw.highPrice) || 0,
+        totalSold: Number(raw.totalSold) || 0,
+        avgSoldPerMonth: Number(raw.avgSoldPerMonth) || 0,
+        items: Array.isArray(raw.items) ? raw.items.map((item: any) => ({
+          ...item,
+          price: Number(item.price) || 0,
+          id: item.id || String(Math.random()),
+        })) : [],
+        noResults: !!raw.noResults,
+        isBroadSearch: !!raw.isBroadSearch,
+      };
       if (broad) {
         data.isBroadSearch = true;
         setBroadSoldData(data);
@@ -404,11 +427,11 @@ export default function SearchResultsScreen() {
           {item.currentPrice > 0 ? (
             <>
               <Text style={[styles.currentPrice, { color: theme.colors.foreground }]}>
-                ${item.currentPrice.toFixed(2)}
+                ${(Number(item.currentPrice) || 0).toFixed(2)}
               </Text>
               {item.originalPrice ? (
                 <Text style={[styles.originalPrice, { color: theme.colors.mutedForeground }]}>
-                  ${item.originalPrice.toFixed(2)}
+                  ${(Number(item.originalPrice) || 0).toFixed(2)}
                 </Text>
               ) : null}
             </>
@@ -549,12 +572,12 @@ export default function SearchResultsScreen() {
               <View style={styles.suggestedPriceRow}>
                 <View>
                   <Text style={styles.suggestedPriceLabelUpper}>SUGGESTED LISTING PRICE</Text>
-                  <Text style={styles.suggestedPriceBig}>${results.avgListPrice.toFixed(0)}</Text>
+                  <Text style={styles.suggestedPriceBig}>${(Number(results.avgListPrice) || 0).toFixed(0)}</Text>
                 </View>
               </View>
 
               <Text style={[styles.calculatorNote, { color: "rgba(255,255,255,0.5)", marginTop: 4, marginBottom: 8 }]}>
-                Based on {results.totalListings} active listings
+                Based on {results.totalListings || 0} active listings
               </Text>
 
             </LinearGradient>
@@ -967,8 +990,8 @@ export default function SearchResultsScreen() {
                     <Text style={[styles.avgPerMonthLabel, { color: theme.colors.mutedForeground }]}>
                       Avg sold per month
                     </Text>
-                    <Text style={[styles.avgPerMonthValue, { color: ebaySoldData.avgSoldPerMonth >= 30 ? "#22C55E" : ebaySoldData.avgSoldPerMonth >= 10 ? "#F59E0B" : "#047857" }]}>
-                      ~{ebaySoldData.avgSoldPerMonth > 0 ? ebaySoldData.avgSoldPerMonth.toLocaleString() : "0"}
+                    <Text style={[styles.avgPerMonthValue, { color: (ebaySoldData.avgSoldPerMonth || 0) >= 30 ? "#22C55E" : (ebaySoldData.avgSoldPerMonth || 0) >= 10 ? "#F59E0B" : "#047857" }]}>
+                      ~{(ebaySoldData.avgSoldPerMonth || 0) > 0 ? (ebaySoldData.avgSoldPerMonth || 0).toLocaleString() : "0"}
                     </Text>
                     <Text style={[styles.avgPerMonthUnit, { color: theme.colors.mutedForeground }]}>
                       / mo
@@ -977,10 +1000,10 @@ export default function SearchResultsScreen() {
                 </View>
 
                 <Text style={[styles.advancedSectionTitle, { color: "#111827" }]}>
-                  Recent eBay Sales ({ebaySoldData.items.length})
+                  Recent eBay Sales ({(ebaySoldData.items || []).length})
                 </Text>
 
-                {ebaySoldData.items.slice(0, 20).map((item, index) => (
+                {(ebaySoldData.items || []).slice(0, 20).map((item, index) => (
                   <Animated.View
                     key={item.id}
                     entering={FadeInDown.delay(Math.min(index, 5) * 40).duration(250)}
@@ -999,7 +1022,7 @@ export default function SearchResultsScreen() {
                       </Text>
                       <View style={styles.priceRow}>
                         <Text style={[styles.currentPrice, { color: theme.colors.foreground }]}>
-                          ${item.price.toFixed(2)}
+                          ${(Number(item.price) || 0).toFixed(2)}
                         </Text>
                         {item.condition ? (
                           <Text style={[styles.ebaySoldCondition, { color: theme.colors.mutedForeground }]}>
@@ -1102,10 +1125,10 @@ export default function SearchResultsScreen() {
                 </View>
 
                 <Text style={[styles.advancedSectionTitle, { color: "#111827" }]}>
-                  Similar Sales ({broadSoldData.items.length})
+                  Similar Sales ({(broadSoldData.items || []).length})
                 </Text>
 
-                {broadSoldData.items.slice(0, 15).map((item, index) => (
+                {(broadSoldData.items || []).slice(0, 15).map((item, index) => (
                   <Animated.View
                     key={`broad-${item.id}`}
                     entering={FadeInDown.delay(Math.min(index, 5) * 40).duration(250)}
@@ -1124,7 +1147,7 @@ export default function SearchResultsScreen() {
                       </Text>
                       <View style={styles.priceRow}>
                         <Text style={[styles.currentPrice, { color: theme.colors.foreground }]}>
-                          ${item.price.toFixed(2)}
+                          ${(Number(item.price) || 0).toFixed(2)}
                         </Text>
                         {item.condition ? (
                           <Text style={[styles.ebaySoldCondition, { color: theme.colors.mutedForeground }]}>

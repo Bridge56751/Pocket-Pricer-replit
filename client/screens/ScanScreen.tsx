@@ -649,7 +649,7 @@ export default function ScanScreen() {
                     </Text>
                     <View style={styles.scanMeta}>
                       <Text style={[styles.scanPrice, { color: theme.colors.primary }]}>
-                        ${(scan.avgPrice || scan.results?.avgListPrice)?.toFixed(0) || "0"}
+                        ${(Number(scan.avgPrice || scan.results?.avgListPrice) || 0).toFixed(0)}
                       </Text>
                       <View style={styles.scanTime}>
                         <Feather name="clock" size={12} color={theme.colors.mutedForeground} />
