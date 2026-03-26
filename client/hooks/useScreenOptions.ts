@@ -16,7 +16,7 @@ export function useScreenOptions({
   return {
     headerTitleAlign: "center",
     headerTransparent: transparent,
-    headerBlurEffect: undefined,
+    headerBlurEffect: "light",
     headerTintColor: designTheme.colors.foreground,
     headerStyle: {
       backgroundColor: Platform.select({

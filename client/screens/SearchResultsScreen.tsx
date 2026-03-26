@@ -96,14 +96,8 @@ export default function SearchResultsScreen() {
   });
 
   const headerTitleOpacity = scrollY.interpolate({
-    inputRange: [100, 160],
+    inputRange: [HERO_THRESHOLD, HERO_THRESHOLD + 60],
     outputRange: [1, 0],
-    extrapolate: "clamp",
-  });
-
-  const headerBgOpacity = scrollY.interpolate({
-    inputRange: [HERO_THRESHOLD - 50, HERO_THRESHOLD],
-    outputRange: [0, 1],
     extrapolate: "clamp",
   });
 
@@ -112,15 +106,6 @@ export default function SearchResultsScreen() {
       headerTransparent: true,
       headerShadowVisible: false,
       headerStyle: { backgroundColor: "transparent" },
-      headerBackground: () => (
-        <RNAnimated.View
-          style={{
-            flex: 1,
-            backgroundColor: "#FFFFFF",
-            opacity: headerBgOpacity,
-          }}
-        />
-      ),
       headerTitle: () => (
         <RNAnimated.Text style={{ fontSize: 17, fontWeight: "700", color: headerTextColor, opacity: headerTitleOpacity }}>
           Scan Result
@@ -146,7 +131,7 @@ export default function SearchResultsScreen() {
         </HeaderButton>
       ),
     });
-  }, [navigation, headerTextColor, headerTitleOpacity, headerBgOpacity]);
+  }, [navigation, headerTextColor, headerTitleOpacity]);
 
   const suggestedPrice = results.avgListPrice;
   const EBAY_FEE_RATE = 0.13;
