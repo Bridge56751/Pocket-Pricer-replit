@@ -96,7 +96,7 @@ export default function SearchResultsScreen() {
   });
 
   const headerTitleOpacity = scrollY.interpolate({
-    inputRange: [300, 500],
+    inputRange: [HERO_THRESHOLD, HERO_THRESHOLD + 40],
     outputRange: [1, 0],
     extrapolate: "clamp",
   });
@@ -104,6 +104,7 @@ export default function SearchResultsScreen() {
   React.useEffect(() => {
     navigation.setOptions({
       headerTransparent: true,
+      headerBlurEffect: undefined,
       headerShadowVisible: false,
       headerStyle: { backgroundColor: "transparent" },
       headerTitle: () => (
