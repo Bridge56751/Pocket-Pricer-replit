@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback, useRef } from "react";
-import { View, StyleSheet, FlatList, Pressable, Text, Linking, TextInput, ActivityIndicator, ScrollView, Keyboard, Animated as RNAnimated, Platform } from "react-native";
+import { View, StyleSheet, FlatList, Pressable, Text, Linking, TextInput, ActivityIndicator, ScrollView, Keyboard, Animated as RNAnimated } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useHeaderHeight, HeaderButton } from "@react-navigation/elements";
 import { useRoute, RouteProp, useNavigation, CommonActions } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Image } from "expo-image";
@@ -57,6 +58,7 @@ interface SearchResultsData {
 
 export default function SearchResultsScreen() {
   const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
   const { theme, colors } = useDesignTokens();
   const route = useRoute<SearchResultsRouteProp>();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -94,21 +96,42 @@ export default function SearchResultsScreen() {
   });
 
   const headerTitleOpacity = scrollY.interpolate({
-    inputRange: [300, 500],
+    inputRange: [100, 160],
     outputRange: [1, 0],
     extrapolate: "clamp",
   });
 
-  const handleGoBack = useCallback(() => {
-    if (Platform.OS !== "web") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
-    if (navigation.canGoBack()) {
-      navigation.goBack();
-    } else {
-      navigation.navigate("Home" as never);
-    }
-  }, [navigation]);
+  React.useEffect(() => {
+    navigation.setOptions({
+      headerTransparent: true,
+      headerShadowVisible: false,
+      headerStyle: { backgroundColor: "transparent" },
+      headerTitle: () => (
+        <RNAnimated.Text style={{ fontSize: 17, fontWeight: "700", color: headerTextColor, opacity: headerTitleOpacity }}>
+          Scan Result
+        </RNAnimated.Text>
+      ),
+      headerLeft: () => (
+        <HeaderButton
+          onPress={() => {
+            if (require("react-native").Platform.OS !== "web") {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }
+            if (navigation.canGoBack()) {
+              navigation.goBack();
+            } else {
+              navigation.navigate("Home" as never);
+            }
+          }}
+          pressOpacity={0.7}
+        >
+          <RNAnimated.Text style={{ color: headerTextColor }}>
+            <Feather name="arrow-left" size={24} />
+          </RNAnimated.Text>
+        </HeaderButton>
+      ),
+    });
+  }, [navigation, headerTextColor, headerTitleOpacity]);
 
   const suggestedPrice = results.avgListPrice;
   const EBAY_FEE_RATE = 0.13;
@@ -428,45 +451,6 @@ export default function SearchResultsScreen() {
   return (
     <View style={[styles.container]}>
       <View style={styles.topOverscrollBg} />
-
-      <View
-        style={{
-          position: "absolute",
-          top: insets.top + 8,
-          left: 8,
-          zIndex: 2,
-          flexDirection: "row",
-          alignItems: "center",
-        }}
-      >
-        <Pressable
-          onPress={handleGoBack}
-          hitSlop={12}
-          style={({ pressed }) => ({
-            opacity: pressed ? 0.5 : 1,
-            paddingHorizontal: 8,
-            paddingVertical: 4,
-          })}
-        >
-          <RNAnimated.View style={{ flexDirection: "row", alignItems: "center" }}>
-            <RNAnimated.Text style={{ color: headerTextColor }}>
-              <Feather name="chevron-left" size={28} />
-            </RNAnimated.Text>
-          </RNAnimated.View>
-        </Pressable>
-        <RNAnimated.Text
-          style={{
-            fontSize: 17,
-            fontWeight: "600",
-            color: headerTextColor,
-            opacity: headerTitleOpacity,
-            marginLeft: 4,
-          }}
-        >
-          Scan Result
-        </RNAnimated.Text>
-      </View>
-
       <RNAnimated.FlatList
         style={styles.list}
         contentContainerStyle={[
@@ -490,7 +474,7 @@ export default function SearchResultsScreen() {
               locations={[0, 0.05, 0.5, 1]}
               start={{ x: 0, y: 0 }}
               end={{ x: 0, y: 1 }}
-              style={[styles.heroSection, { paddingTop: insets.top + 52 }]}
+              style={[styles.heroSection, { paddingTop: headerHeight + 8 }]}
             >
               {scannedImageUri ? (
                 <View style={styles.productCard}>
