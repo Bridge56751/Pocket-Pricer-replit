@@ -6,7 +6,9 @@ import Purchases, {
   LOG_LEVEL 
 } from "react-native-purchases";
 
-const REVENUECAT_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY || "";
+const IOS_REVENUECAT_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY || "";
+const ANDROID_REVENUECAT_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY || "";
+const REVENUECAT_API_KEY = Platform.OS === "android" ? ANDROID_REVENUECAT_API_KEY : IOS_REVENUECAT_API_KEY;
 
 interface RevenueCatContextType {
   isReady: boolean;

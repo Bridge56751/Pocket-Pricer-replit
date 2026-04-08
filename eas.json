@@ -8,20 +8,23 @@
       "distribution": "internal",
       "env": {
         "EXPO_PUBLIC_DOMAIN": "pocket-pricer.replit.app",
-        "EXPO_PUBLIC_REVENUECAT_API_KEY": "appl_HofCsoaVBOUStbnRzQxJWHOmdii"
+        "EXPO_PUBLIC_REVENUECAT_API_KEY": "appl_HofCsoaVBOUStbnRzQxJWHOmdii",
+        "EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY": "REPLACE_WITH_ANDROID_KEY"
       }
     },
     "preview": {
       "distribution": "internal",
       "env": {
         "EXPO_PUBLIC_DOMAIN": "pocketpricerapp.com",
-        "EXPO_PUBLIC_REVENUECAT_API_KEY": "appl_HofCsoaVBOUStbnRzQxJWHOmdii"
+        "EXPO_PUBLIC_REVENUECAT_API_KEY": "appl_HofCsoaVBOUStbnRzQxJWHOmdii",
+        "EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY": "REPLACE_WITH_ANDROID_KEY"
       }
     },
     "production": {
       "env": {
         "EXPO_PUBLIC_DOMAIN": "pocketpricerapp.com",
-        "EXPO_PUBLIC_REVENUECAT_API_KEY": "appl_HofCsoaVBOUStbnRzQxJWHOmdii"
+        "EXPO_PUBLIC_REVENUECAT_API_KEY": "appl_HofCsoaVBOUStbnRzQxJWHOmdii",
+        "EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY": "REPLACE_WITH_ANDROID_KEY"
       }
     }
   },
