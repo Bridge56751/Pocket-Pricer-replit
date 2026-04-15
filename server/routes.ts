@@ -151,19 +151,23 @@ interface SearchApiLensResponse {
   error?: string;
 }
 
+interface ScrapingDogLensItem {
+  position?: number;
+  title?: string;
+  link?: string;
+  source?: string;
+  source_favicon?: string;
+  price?: string;
+  extracted_price?: number;
+  currency?: string;
+  thumbnail?: string;
+  rating?: number;
+  reviews?: number;
+}
+
 interface ScrapingDogLensResponse {
-  visual_matches?: {
-    position?: number;
-    title?: string;
-    link?: string;
-    source?: string;
-    price?: string;
-    extracted_price?: number;
-    currency?: string;
-    thumbnail?: string;
-    rating?: number;
-    reviews?: number;
-  }[];
+  lens_results?: ScrapingDogLensItem[];
+  visual_matches?: ScrapingDogLensItem[];
   knowledge_graph?: {
     title?: string;
     description?: string;
@@ -179,6 +183,7 @@ type LensResult = {
   productName?: string;
   provider: string;
   error?: string;
+  pricedCount?: number;
 };
 
 function parsePrice(priceStr?: string): { value?: number; currency?: string } {
@@ -207,7 +212,6 @@ async function searchWithScrapingDog(imageUrl: string): Promise<LensResult> {
       country: "us",
       language: "en",
       visual_matches: "true",
-      product: "true",
     });
 
     const response = await fetch(`https://api.scrapingdog.com/google_lens?${params.toString()}`, {
@@ -227,7 +231,20 @@ async function searchWithScrapingDog(imageUrl: string): Promise<LensResult> {
       return { products: [], provider: "scrapingdog", error: data.error };
     }
 
-    const products: GoogleLensProduct[] = (data.visual_matches || []).map((item, index) => {
+    const lensItems = data.lens_results || [];
+    const visualItems = data.visual_matches || [];
+    const seen = new Set<string>();
+    const allItems: ScrapingDogLensItem[] = [];
+    for (const item of [...visualItems, ...lensItems]) {
+      const key = item.link || item.title || "";
+      if (key && seen.has(key)) continue;
+      if (key) seen.add(key);
+      allItems.push(item);
+    }
+
+    console.log(`[ScrapingDog] Raw: ${lensItems.length} lens_results, ${visualItems.length} visual_matches → ${allItems.length} unique (${elapsed}ms)`);
+
+    const products: GoogleLensProduct[] = allItems.map((item, index) => {
       const extractedPrice = item.extracted_price;
       const parsed = !extractedPrice ? parsePrice(item.price) : {};
       const priceValue = extractedPrice ?? parsed.value;
@@ -250,9 +267,10 @@ async function searchWithScrapingDog(imageUrl: string): Promise<LensResult> {
     });
 
     const productName = data.knowledge_graph?.[0]?.title;
+    const pricedCount = products.filter(p => p.price?.value && p.price.value > 0).length;
 
-    console.log(`[ScrapingDog] Found ${products.length} visual matches in ${elapsed}ms`);
-    return { products, productName, provider: "scrapingdog" };
+    console.log(`[ScrapingDog] ${products.length} products, ${pricedCount} with prices (${elapsed}ms)`);
+    return { products, productName, provider: "scrapingdog", pricedCount };
   } catch (error) {
     console.error("[ScrapingDog] Request failed:", error);
     return { products: [], provider: "scrapingdog", error: "ScrapingDog request failed" };
@@ -322,19 +340,33 @@ async function searchWithGoogleLens(imageUrl: string): Promise<{
   productName?: string;
   error?: string;
 }> {
+  const MIN_PRICED_THRESHOLD = 3;
+
   try {
     const sdResult = await searchWithScrapingDog(imageUrl);
-    if (!sdResult.error && sdResult.products.length > 0) {
-      console.log(`[Lens] Using ScrapingDog result (${sdResult.products.length} products)`);
+    const sdPriced = sdResult.pricedCount ?? 0;
+
+    if (!sdResult.error && sdResult.products.length > 0 && sdPriced >= MIN_PRICED_THRESHOLD) {
+      console.log(`[Lens] Using ScrapingDog result (${sdResult.products.length} products, ${sdPriced} priced)`);
       return { products: sdResult.products, productName: sdResult.productName };
     }
 
-    console.log(`[Lens] ScrapingDog ${sdResult.error ? "failed: " + sdResult.error : "returned 0 products"}, falling back to SearchAPI`);
+    const sdReason = sdResult.error
+      ? `failed: ${sdResult.error}`
+      : sdResult.products.length === 0
+        ? "returned 0 products"
+        : `only ${sdPriced} priced (need ${MIN_PRICED_THRESHOLD})`;
+    console.log(`[Lens] ScrapingDog ${sdReason}, falling back to SearchAPI`);
 
     const saResult = await searchWithSearchApi(imageUrl);
     if (!saResult.error && saResult.products.length > 0) {
       console.log(`[Lens] Using SearchAPI fallback (${saResult.products.length} products)`);
       return { products: saResult.products, productName: saResult.productName };
+    }
+
+    if (!sdResult.error && sdResult.products.length > 0) {
+      console.log(`[Lens] SearchAPI also failed, using ScrapingDog results anyway (${sdResult.products.length} products, ${sdPriced} priced)`);
+      return { products: sdResult.products, productName: sdResult.productName };
     }
 
     const errorMsg = saResult.error || sdResult.error || "No products found";
