@@ -205,6 +205,8 @@ async function searchWithScrapingDog(imageUrl: string): Promise<LensResult> {
       url: imageUrl,
       country: "us",
       language: "en",
+      visual_matches: "true",
+      products: "true",
     });
 
     const response = await fetch(`https://api.scrapingdog.com/google_lens?${params.toString()}`, {
