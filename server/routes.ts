@@ -210,7 +210,7 @@ async function searchWithScrapingDog(imageUrl: string): Promise<LensResult> {
     });
 
     const response = await fetch(`https://api.scrapingdog.com/google_lens?${params.toString()}`, {
-      signal: AbortSignal.timeout(30000),
+      signal: AbortSignal.timeout(12000),
     });
     const elapsed = Date.now() - startTime;
 
