@@ -340,37 +340,23 @@ async function searchWithGoogleLens(imageUrl: string): Promise<{
   productName?: string;
   error?: string;
 }> {
-  const MIN_PRICED_THRESHOLD = 3;
-
   try {
-    const sdResult = await searchWithScrapingDog(imageUrl);
-    const sdPriced = sdResult.pricedCount ?? 0;
-
-    if (!sdResult.error && sdResult.products.length > 0 && sdPriced >= MIN_PRICED_THRESHOLD) {
-      console.log(`[Lens] Using ScrapingDog result (${sdResult.products.length} products, ${sdPriced} priced)`);
-      return { products: sdResult.products, productName: sdResult.productName };
-    }
-
-    const sdReason = sdResult.error
-      ? `failed: ${sdResult.error}`
-      : sdResult.products.length === 0
-        ? "returned 0 products"
-        : `only ${sdPriced} priced (need ${MIN_PRICED_THRESHOLD})`;
-    console.log(`[Lens] ScrapingDog ${sdReason}, falling back to SearchAPI`);
-
     const saResult = await searchWithSearchApi(imageUrl);
     if (!saResult.error && saResult.products.length > 0) {
-      console.log(`[Lens] Using SearchAPI fallback (${saResult.products.length} products)`);
+      console.log(`[Lens] Using SearchAPI result (${saResult.products.length} products)`);
       return { products: saResult.products, productName: saResult.productName };
     }
 
+    console.log(`[Lens] SearchAPI ${saResult.error ? "failed: " + saResult.error : "returned 0 products"}, falling back to ScrapingDog`);
+
+    const sdResult = await searchWithScrapingDog(imageUrl);
     if (!sdResult.error && sdResult.products.length > 0) {
-      console.log(`[Lens] SearchAPI also failed, using ScrapingDog results anyway (${sdResult.products.length} products, ${sdPriced} priced)`);
+      console.log(`[Lens] Using ScrapingDog fallback (${sdResult.products.length} products)`);
       return { products: sdResult.products, productName: sdResult.productName };
     }
 
-    const errorMsg = saResult.error || sdResult.error || "No products found";
-    console.error(`[Lens] Both providers failed. SD: ${sdResult.error || "0 products"}, SA: ${saResult.error || "0 products"}`);
+    const errorMsg = sdResult.error || saResult.error || "No products found";
+    console.error(`[Lens] Both providers failed. SA: ${saResult.error || "0 products"}, SD: ${sdResult.error || "0 products"}`);
     return { products: [], error: errorMsg };
   } catch (error) {
     console.error("[Lens] Unexpected error:", error);
