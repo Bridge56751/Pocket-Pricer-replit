@@ -200,13 +200,14 @@ async function searchWithScrapingDog(imageUrl: string): Promise<LensResult> {
 
   try {
     const startTime = Date.now();
+    const lensUrl = `https://lens.google.com/uploadbyurl?url=${encodeURIComponent(imageUrl)}`;
     const params = new URLSearchParams({
       api_key: apiKey,
-      url: imageUrl,
+      url: lensUrl,
       country: "us",
       language: "en",
       visual_matches: "true",
-      products: "true",
+      product: "true",
     });
 
     const response = await fetch(`https://api.scrapingdog.com/google_lens?${params.toString()}`, {
