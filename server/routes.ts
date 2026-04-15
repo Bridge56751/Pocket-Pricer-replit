@@ -151,17 +151,119 @@ interface SearchApiLensResponse {
   error?: string;
 }
 
-async function searchWithGoogleLens(imageUrl: string): Promise<{
+interface ScrapingDogLensResponse {
+  visual_matches?: {
+    position?: number;
+    title?: string;
+    link?: string;
+    source?: string;
+    price?: string;
+    extracted_price?: number;
+    currency?: string;
+    thumbnail?: string;
+    rating?: number;
+    reviews?: number;
+  }[];
+  knowledge_graph?: {
+    title?: string;
+    description?: string;
+  }[];
+  search_information?: {
+    status?: string;
+  };
+  error?: string;
+}
+
+type LensResult = {
   products: GoogleLensProduct[];
   productName?: string;
+  provider: string;
   error?: string;
-}> {
+};
+
+function parsePrice(priceStr?: string): { value?: number; currency?: string } {
+  if (!priceStr) return {};
+  const match = priceStr.match(/([£€$]?)\s*([\d,]+\.?\d*)/);
+  if (!match) return {};
+  const currencyMap: Record<string, string> = { "$": "USD", "£": "GBP", "€": "EUR" };
+  return {
+    value: parseFloat(match[2].replace(/,/g, "")),
+    currency: currencyMap[match[1]] || "USD",
+  };
+}
+
+async function searchWithScrapingDog(imageUrl: string): Promise<LensResult> {
+  const apiKey = process.env.SCRAPINGDOG_API_KEY;
+  if (!apiKey) {
+    return { products: [], provider: "scrapingdog", error: "ScrapingDog key not configured" };
+  }
+
   try {
-    const apiKey = process.env.SEARCHAPI_API_KEY;
-    if (!apiKey) {
-      return { products: [], error: "SearchAPI key not configured" };
+    const startTime = Date.now();
+    const params = new URLSearchParams({
+      api_key: apiKey,
+      url: imageUrl,
+      country: "us",
+      language: "en",
+    });
+
+    const response = await fetch(`https://api.scrapingdog.com/google_lens?${params.toString()}`, {
+      signal: AbortSignal.timeout(30000),
+    });
+    const elapsed = Date.now() - startTime;
+
+    if (!response.ok) {
+      console.error(`[ScrapingDog] HTTP ${response.status} (${elapsed}ms)`);
+      return { products: [], provider: "scrapingdog", error: `HTTP ${response.status}` };
     }
 
+    const data = await response.json() as ScrapingDogLensResponse;
+
+    if (data.error) {
+      console.error(`[ScrapingDog] Error (${elapsed}ms):`, data.error);
+      return { products: [], provider: "scrapingdog", error: data.error };
+    }
+
+    const products: GoogleLensProduct[] = (data.visual_matches || []).map((item, index) => {
+      const extractedPrice = item.extracted_price;
+      const parsed = !extractedPrice ? parsePrice(item.price) : {};
+      const priceValue = extractedPrice ?? parsed.value;
+      const currency = item.currency ?? parsed.currency ?? "USD";
+
+      return {
+        position: item.position ?? index + 1,
+        title: item.title,
+        link: item.link,
+        source: item.source,
+        price: {
+          value: priceValue,
+          extracted_value: priceValue,
+          currency,
+        },
+        thumbnail: item.thumbnail,
+        rating: item.rating,
+        reviews: item.reviews,
+      };
+    });
+
+    const productName = data.knowledge_graph?.[0]?.title;
+
+    console.log(`[ScrapingDog] Found ${products.length} visual matches in ${elapsed}ms`);
+    return { products, productName, provider: "scrapingdog" };
+  } catch (error) {
+    console.error("[ScrapingDog] Request failed:", error);
+    return { products: [], provider: "scrapingdog", error: "ScrapingDog request failed" };
+  }
+}
+
+async function searchWithSearchApi(imageUrl: string): Promise<LensResult> {
+  const apiKey = process.env.SEARCHAPI_API_KEY;
+  if (!apiKey) {
+    return { products: [], provider: "searchapi", error: "SearchAPI key not configured" };
+  }
+
+  try {
+    const startTime = Date.now();
     const params = new URLSearchParams({
       engine: "google_lens",
       url: imageUrl,
@@ -173,11 +275,18 @@ async function searchWithGoogleLens(imageUrl: string): Promise<{
     const response = await fetch(`https://www.searchapi.io/api/v1/search?${params.toString()}`, {
       signal: AbortSignal.timeout(35000),
     });
+    const elapsed = Date.now() - startTime;
+
+    if (!response.ok) {
+      console.error(`[SearchAPI] HTTP ${response.status} (${elapsed}ms)`);
+      return { products: [], provider: "searchapi", error: `HTTP ${response.status}` };
+    }
+
     const data = await response.json() as SearchApiLensResponse;
 
     if (data.error) {
-      console.error("Google Lens error:", data.error);
-      return { products: [], error: data.error };
+      console.error(`[SearchAPI] Error (${elapsed}ms):`, data.error);
+      return { products: [], provider: "searchapi", error: data.error };
     }
 
     const products: GoogleLensProduct[] = (data.visual_matches || []).map(item => ({
@@ -196,12 +305,40 @@ async function searchWithGoogleLens(imageUrl: string): Promise<{
     }));
 
     const productName = data.knowledge_graph?.[0]?.title;
-    
-    console.log(`Google Lens found ${products.length} visual matches`);
 
-    return { products, productName };
+    console.log(`[SearchAPI] Found ${products.length} visual matches in ${elapsed}ms`);
+    return { products, productName, provider: "searchapi" };
   } catch (error) {
-    console.error("Google Lens search error:", error);
+    console.error("[SearchAPI] Request failed:", error);
+    return { products: [], provider: "searchapi", error: "SearchAPI request failed" };
+  }
+}
+
+async function searchWithGoogleLens(imageUrl: string): Promise<{
+  products: GoogleLensProduct[];
+  productName?: string;
+  error?: string;
+}> {
+  try {
+    const sdResult = await searchWithScrapingDog(imageUrl);
+    if (!sdResult.error && sdResult.products.length > 0) {
+      console.log(`[Lens] Using ScrapingDog result (${sdResult.products.length} products)`);
+      return { products: sdResult.products, productName: sdResult.productName };
+    }
+
+    console.log(`[Lens] ScrapingDog ${sdResult.error ? "failed: " + sdResult.error : "returned 0 products"}, falling back to SearchAPI`);
+
+    const saResult = await searchWithSearchApi(imageUrl);
+    if (!saResult.error && saResult.products.length > 0) {
+      console.log(`[Lens] Using SearchAPI fallback (${saResult.products.length} products)`);
+      return { products: saResult.products, productName: saResult.productName };
+    }
+
+    const errorMsg = saResult.error || sdResult.error || "No products found";
+    console.error(`[Lens] Both providers failed. SD: ${sdResult.error || "0 products"}, SA: ${saResult.error || "0 products"}`);
+    return { products: [], error: errorMsg };
+  } catch (error) {
+    console.error("[Lens] Unexpected error:", error);
     return { products: [], error: "Search failed" };
   }
 }

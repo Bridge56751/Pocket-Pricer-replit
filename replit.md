@@ -34,7 +34,7 @@ The application employs a client-server architecture. The frontend is an Expo Re
 - **State Management:** TanStack React Query manages data fetching and caching.
 - **Local Storage:** AsyncStorage stores history, favorites, scan counts, and device IDs.
 - **Navigation:** React Navigation handles in-app navigation.
-- **Product Scanning:** `POST /api/scan-with-lens` uses SearchAPI.io for Google Lens product identification from base64 images. Free users are limited to 3 lifetime scans.
+- **Product Scanning:** `POST /api/scan-with-lens` uses ScrapingDog (primary) with SearchAPI.io (fallback) for Google Lens product identification from base64 images. Free users are limited to 3 lifetime scans.
 - **eBay Sold Search:** `POST /api/ebay-sold-search` retrieves eBay sold item data via SearchAPI.io, providing price statistics and a "Buy Score." AI-powered query cleaning (using Gemini 2.5 Flash via Replit AI Integrations) enhances search accuracy.
 - **Rate Limiting:** In-memory sliding window rate limiting (20 requests/minute per device) is implemented on API endpoints.
 - **Subscription Model:** Supports Free (3 scans) and Pro tiers (Weekly/Monthly with 3-day free trial), managed by RevenueCat.
@@ -45,7 +45,8 @@ The application employs a client-server architecture. The frontend is an Expo Re
 ## External Dependencies
 
 - **Product Identification & Data:**
-    - **SearchAPI.io:** Google Lens visual matching, multi-platform product data (Amazon, Walmart, Target, eBay), and eBay sold item data.
+    - **ScrapingDog:** Primary Google Lens visual matching provider (faster, cheaper). Falls back to SearchAPI.io on failure.
+    - **SearchAPI.io:** Fallback for Google Lens visual matching, multi-platform product data (Amazon, Walmart, Target, eBay), and eBay sold item data.
 - **Database:**
     - **Supabase (PostgreSQL):** Used for guest scan tracking and server-side analytics.
 - **Payments & Subscriptions:**
