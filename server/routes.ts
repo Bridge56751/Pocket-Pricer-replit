@@ -168,6 +168,7 @@ interface ScrapingDogLensItem {
 interface ScrapingDogLensResponse {
   lens_results?: ScrapingDogLensItem[];
   visual_matches?: ScrapingDogLensItem[];
+  product_results?: ScrapingDogLensItem[];
   knowledge_graph?: {
     title?: string;
     description?: string;
@@ -212,6 +213,7 @@ async function searchWithScrapingDog(imageUrl: string): Promise<LensResult> {
       country: "us",
       language: "en",
       visual_matches: "true",
+      product_results: "true",
     });
 
     const response = await fetch(`https://api.scrapingdog.com/google_lens?${params.toString()}`, {
@@ -233,16 +235,17 @@ async function searchWithScrapingDog(imageUrl: string): Promise<LensResult> {
 
     const lensItems = data.lens_results || [];
     const visualItems = data.visual_matches || [];
+    const productItems = data.product_results || [];
     const seen = new Set<string>();
     const allItems: ScrapingDogLensItem[] = [];
-    for (const item of [...visualItems, ...lensItems]) {
+    for (const item of [...productItems, ...visualItems, ...lensItems]) {
       const key = item.link || item.title || "";
       if (key && seen.has(key)) continue;
       if (key) seen.add(key);
       allItems.push(item);
     }
 
-    console.log(`[ScrapingDog] Raw: ${lensItems.length} lens_results, ${visualItems.length} visual_matches → ${allItems.length} unique (${elapsed}ms)`);
+    console.log(`[ScrapingDog] Raw: ${lensItems.length} lens_results, ${visualItems.length} visual_matches, ${productItems.length} product_results → ${allItems.length} unique (${elapsed}ms)`);
 
     const products: GoogleLensProduct[] = allItems.map((item, index) => {
       const extractedPrice = item.extracted_price;
