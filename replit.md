@@ -34,7 +34,7 @@ The application employs a client-server architecture. The frontend is an Expo Re
 - **State Management:** TanStack React Query manages data fetching and caching.
 - **Local Storage:** AsyncStorage stores history, favorites, scan counts, and device IDs.
 - **Navigation:** React Navigation handles in-app navigation.
-- **Product Scanning:** `POST /api/scan-with-lens` uses Bright Data SERP API (primary) with SearchAPI.io (fallback) for Google Lens product identification from base64 images. A quality threshold (≥3 priced products) determines whether Bright Data results are accepted or fallback is triggered. Free users are limited to 3 lifetime scans.
+- **Product Scanning:** `POST /api/scan-with-lens` uses SearchAPI.io (primary) with ScrapingDog (fallback) for Google Lens product identification from base64 images. Free users are limited to 3 lifetime scans.
 - **eBay Sold Search:** `POST /api/ebay-sold-search` retrieves eBay sold item data via SearchAPI.io, providing price statistics and a "Buy Score." AI-powered query cleaning (using Gemini 2.5 Flash via Replit AI Integrations) enhances search accuracy.
 - **Rate Limiting:** In-memory sliding window rate limiting (20 requests/minute per device) is implemented on API endpoints.
 - **Subscription Model:** Supports Free (3 scans) and Pro tiers (Weekly/Monthly with 3-day free trial), managed by RevenueCat.
@@ -45,8 +45,8 @@ The application employs a client-server architecture. The frontend is an Expo Re
 ## External Dependencies
 
 - **Product Identification & Data:**
-    - **Bright Data SERP API:** Primary Google Lens provider (zone `pocket_pricer_lens`, uses `brd_lens=products&brd_json=1` for structured product results with pricing). Significantly cheaper than SearchAPI at scale.
-    - **SearchAPI.io:** Fallback Google Lens provider. Also handles multi-platform product data (Amazon, Walmart, Target, eBay), and eBay sold item data.
+    - **SearchAPI.io:** Primary Google Lens visual matching provider (includes pricing data). Also handles multi-platform product data (Amazon, Walmart, Target, eBay), and eBay sold item data.
+    - **ScrapingDog:** Fallback Google Lens provider (product identification without pricing). Used when SearchAPI.io is unavailable.
 - **Database:**
     - **Supabase (PostgreSQL):** Used for guest scan tracking and server-side analytics.
 - **Payments & Subscriptions:**

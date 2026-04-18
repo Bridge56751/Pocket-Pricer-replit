@@ -151,32 +151,31 @@ interface SearchApiLensResponse {
   error?: string;
 }
 
-interface BrightDataLensItem {
+interface ScrapingDogLensItem {
   position?: number;
   title?: string;
   link?: string;
-  url?: string;
   source?: string;
   source_favicon?: string;
-  price?: string | number;
+  price?: string;
   extracted_price?: number;
   currency?: string;
   thumbnail?: string;
-  image?: string;
   rating?: number;
   reviews?: number;
-  in_stock?: boolean;
 }
 
-interface BrightDataLensResponse {
-  visual_matches?: BrightDataLensItem[];
-  products?: BrightDataLensItem[];
-  product_results?: BrightDataLensItem[];
-  exact_matches?: BrightDataLensItem[];
+interface ScrapingDogLensResponse {
+  lens_results?: ScrapingDogLensItem[];
+  visual_matches?: ScrapingDogLensItem[];
+  product_results?: ScrapingDogLensItem[];
   knowledge_graph?: {
     title?: string;
     description?: string;
-  } | { title?: string; description?: string }[];
+  }[];
+  search_information?: {
+    status?: string;
+  };
   error?: string;
 }
 
@@ -199,100 +198,85 @@ function parsePrice(priceStr?: string): { value?: number; currency?: string } {
   };
 }
 
-async function searchWithBrightData(imageUrl: string): Promise<LensResult> {
-  const apiKey = process.env.BRIGHTDATA_API_KEY;
+async function searchWithScrapingDog(imageUrl: string): Promise<LensResult> {
+  const apiKey = process.env.SCRAPINGDOG_API_KEY;
   if (!apiKey) {
-    return { products: [], provider: "brightdata", error: "Bright Data key not configured" };
+    return { products: [], provider: "scrapingdog", error: "ScrapingDog key not configured" };
   }
-
-  const zone = process.env.BRIGHTDATA_ZONE || "pocket_pricer_lens";
 
   try {
     const startTime = Date.now();
-    const lensUrl = `https://lens.google.com/uploadbyurl?url=${encodeURIComponent(imageUrl)}&brd_lens=products&brd_json=1`;
+    const lensUrl = `https://lens.google.com/uploadbyurl?url=${encodeURIComponent(imageUrl)}`;
+    const params = new URLSearchParams({
+      api_key: apiKey,
+      url: lensUrl,
+      country: "us",
+      language: "en",
+      visual_matches: "true",
+      product_results: "true",
+    });
 
-    const response = await fetch("https://api.brightdata.com/request", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        zone,
-        url: lensUrl,
-        format: "raw",
-      }),
-      signal: AbortSignal.timeout(20000),
+    const response = await fetch(`https://api.scrapingdog.com/google_lens?${params.toString()}`, {
+      signal: AbortSignal.timeout(12000),
     });
     const elapsed = Date.now() - startTime;
 
     if (!response.ok) {
-      const errorText = await response.text().catch(() => "");
-      console.error(`[BrightData] HTTP ${response.status} (${elapsed}ms): ${errorText.substring(0, 200)}`);
-      return { products: [], provider: "brightdata", error: `HTTP ${response.status}` };
+      console.error(`[ScrapingDog] HTTP ${response.status} (${elapsed}ms)`);
+      return { products: [], provider: "scrapingdog", error: `HTTP ${response.status}` };
     }
 
-    const text = await response.text();
-    let data: BrightDataLensResponse;
-    try {
-      data = JSON.parse(text);
-    } catch {
-      console.error(`[BrightData] Non-JSON response (${elapsed}ms):`, text.substring(0, 300));
-      return { products: [], provider: "brightdata", error: "Invalid JSON response" };
-    }
+    const data = await response.json() as ScrapingDogLensResponse;
 
     if (data.error) {
-      console.error(`[BrightData] Error (${elapsed}ms):`, data.error);
-      return { products: [], provider: "brightdata", error: data.error };
+      console.error(`[ScrapingDog] Error (${elapsed}ms):`, data.error);
+      return { products: [], provider: "scrapingdog", error: data.error };
     }
 
-    const productItems = data.products || data.product_results || [];
+    const lensItems = data.lens_results || [];
     const visualItems = data.visual_matches || [];
-    const exactItems = data.exact_matches || [];
-
+    const productItems = data.product_results || [];
     const seen = new Set<string>();
-    const allItems: BrightDataLensItem[] = [];
-    for (const item of [...productItems, ...visualItems, ...exactItems]) {
-      const key = item.link || item.url || item.title || "";
+    const allItems: ScrapingDogLensItem[] = [];
+    for (const item of [...productItems, ...visualItems, ...lensItems]) {
+      const key = item.link || item.title || "";
       if (key && seen.has(key)) continue;
       if (key) seen.add(key);
       allItems.push(item);
     }
 
+    console.log(`[ScrapingDog] Raw: ${lensItems.length} lens_results, ${visualItems.length} visual_matches, ${productItems.length} product_results → ${allItems.length} unique (${elapsed}ms)`);
+
     const products: GoogleLensProduct[] = allItems.map((item, index) => {
-      const rawPrice = item.price;
-      const extractedPrice = item.extracted_price ??
-        (typeof rawPrice === "number" ? rawPrice : undefined);
-      const parsed = (!extractedPrice && typeof rawPrice === "string") ? parsePrice(rawPrice) : {};
+      const extractedPrice = item.extracted_price;
+      const parsed = !extractedPrice ? parsePrice(item.price) : {};
       const priceValue = extractedPrice ?? parsed.value;
       const currency = item.currency ?? parsed.currency ?? "USD";
 
       return {
         position: item.position ?? index + 1,
         title: item.title,
-        link: item.link || item.url,
+        link: item.link,
         source: item.source,
         price: {
           value: priceValue,
           extracted_value: priceValue,
           currency,
         },
-        thumbnail: item.thumbnail || item.image,
+        thumbnail: item.thumbnail,
         rating: item.rating,
         reviews: item.reviews,
       };
     });
 
-    const kg = data.knowledge_graph;
-    const productName = Array.isArray(kg) ? kg[0]?.title : kg?.title;
+    const productName = data.knowledge_graph?.[0]?.title;
     const pricedCount = products.filter(p => p.price?.value && p.price.value > 0).length;
 
-    console.log(`[BrightData] Raw: ${productItems.length} products, ${visualItems.length} visual_matches, ${exactItems.length} exact_matches → ${products.length} unique (${pricedCount} priced) in ${elapsed}ms`);
-    return { products, productName, provider: "brightdata", pricedCount };
+    console.log(`[ScrapingDog] ${products.length} products, ${pricedCount} with prices (${elapsed}ms)`);
+    return { products, productName, provider: "scrapingdog", pricedCount };
   } catch (error) {
-    const msg = error instanceof Error ? error.message : "Unknown";
-    console.error("[BrightData] Request failed:", msg);
-    return { products: [], provider: "brightdata", error: `Bright Data request failed: ${msg}` };
+    console.error("[ScrapingDog] Request failed:", error);
+    return { products: [], provider: "scrapingdog", error: "ScrapingDog request failed" };
   }
 }
 
@@ -359,38 +343,24 @@ async function searchWithGoogleLens(imageUrl: string): Promise<{
   productName?: string;
   error?: string;
 }> {
-  // NOTE: Bright Data SERP API on zone `pocket_pricer_lens` does not return
-  // parsed Google Lens product results — only an empty page shell with
-  // {general, tabs}. Confirmed via Bright Data's own playground 2026-04-17.
-  // Awaiting Bright Data support response on correct setup. Until then,
-  // SearchAPI is primary and BrightData is a no-op last-resort fallback.
-  const USE_BRIGHTDATA = process.env.BRIGHTDATA_PRIMARY === "1";
-
   try {
-    if (USE_BRIGHTDATA) {
-      const MIN_PRICED_THRESHOLD = 3;
-      const bdResult = await searchWithBrightData(imageUrl);
-      const bdPriced = bdResult.pricedCount ?? 0;
-      if (!bdResult.error && bdResult.products.length > 0 && bdPriced >= MIN_PRICED_THRESHOLD) {
-        console.log(`[Lens] Using BrightData result (${bdResult.products.length} products, ${bdPriced} priced)`);
-        return { products: bdResult.products, productName: bdResult.productName };
-      }
-      const bdReason = bdResult.error
-        ? `failed: ${bdResult.error}`
-        : bdResult.products.length === 0
-          ? "returned 0 products"
-          : `only ${bdPriced} priced (need ${MIN_PRICED_THRESHOLD})`;
-      console.log(`[Lens] BrightData ${bdReason}, falling back to SearchAPI`);
-    }
-
     const saResult = await searchWithSearchApi(imageUrl);
     if (!saResult.error && saResult.products.length > 0) {
       console.log(`[Lens] Using SearchAPI result (${saResult.products.length} products)`);
       return { products: saResult.products, productName: saResult.productName };
     }
 
-    console.error(`[Lens] SearchAPI failed: ${saResult.error || "0 products"}`);
-    return { products: [], error: saResult.error || "No products found" };
+    console.log(`[Lens] SearchAPI ${saResult.error ? "failed: " + saResult.error : "returned 0 products"}, falling back to ScrapingDog`);
+
+    const sdResult = await searchWithScrapingDog(imageUrl);
+    if (!sdResult.error && sdResult.products.length > 0) {
+      console.log(`[Lens] Using ScrapingDog fallback (${sdResult.products.length} products)`);
+      return { products: sdResult.products, productName: sdResult.productName };
+    }
+
+    const errorMsg = sdResult.error || saResult.error || "No products found";
+    console.error(`[Lens] Both providers failed. SA: ${saResult.error || "0 products"}, SD: ${sdResult.error || "0 products"}`);
+    return { products: [], error: errorMsg };
   } catch (error) {
     console.error("[Lens] Unexpected error:", error);
     return { products: [], error: "Search failed" };
