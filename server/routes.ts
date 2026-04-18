@@ -359,38 +359,38 @@ async function searchWithGoogleLens(imageUrl: string): Promise<{
   productName?: string;
   error?: string;
 }> {
-  const MIN_PRICED_THRESHOLD = 3;
+  // NOTE: Bright Data SERP API on zone `pocket_pricer_lens` does not return
+  // parsed Google Lens product results — only an empty page shell with
+  // {general, tabs}. Confirmed via Bright Data's own playground 2026-04-17.
+  // Awaiting Bright Data support response on correct setup. Until then,
+  // SearchAPI is primary and BrightData is a no-op last-resort fallback.
+  const USE_BRIGHTDATA = process.env.BRIGHTDATA_PRIMARY === "1";
 
   try {
-    const bdResult = await searchWithBrightData(imageUrl);
-    const bdPriced = bdResult.pricedCount ?? 0;
-
-    if (!bdResult.error && bdResult.products.length > 0 && bdPriced >= MIN_PRICED_THRESHOLD) {
-      console.log(`[Lens] Using BrightData result (${bdResult.products.length} products, ${bdPriced} priced)`);
-      return { products: bdResult.products, productName: bdResult.productName };
+    if (USE_BRIGHTDATA) {
+      const MIN_PRICED_THRESHOLD = 3;
+      const bdResult = await searchWithBrightData(imageUrl);
+      const bdPriced = bdResult.pricedCount ?? 0;
+      if (!bdResult.error && bdResult.products.length > 0 && bdPriced >= MIN_PRICED_THRESHOLD) {
+        console.log(`[Lens] Using BrightData result (${bdResult.products.length} products, ${bdPriced} priced)`);
+        return { products: bdResult.products, productName: bdResult.productName };
+      }
+      const bdReason = bdResult.error
+        ? `failed: ${bdResult.error}`
+        : bdResult.products.length === 0
+          ? "returned 0 products"
+          : `only ${bdPriced} priced (need ${MIN_PRICED_THRESHOLD})`;
+      console.log(`[Lens] BrightData ${bdReason}, falling back to SearchAPI`);
     }
-
-    const bdReason = bdResult.error
-      ? `failed: ${bdResult.error}`
-      : bdResult.products.length === 0
-        ? "returned 0 products"
-        : `only ${bdPriced} priced (need ${MIN_PRICED_THRESHOLD})`;
-    console.log(`[Lens] BrightData ${bdReason}, falling back to SearchAPI`);
 
     const saResult = await searchWithSearchApi(imageUrl);
     if (!saResult.error && saResult.products.length > 0) {
-      console.log(`[Lens] Using SearchAPI fallback (${saResult.products.length} products)`);
+      console.log(`[Lens] Using SearchAPI result (${saResult.products.length} products)`);
       return { products: saResult.products, productName: saResult.productName };
     }
 
-    if (!bdResult.error && bdResult.products.length > 0) {
-      console.log(`[Lens] SearchAPI also failed, using BrightData results anyway (${bdResult.products.length} products, ${bdPriced} priced)`);
-      return { products: bdResult.products, productName: bdResult.productName };
-    }
-
-    const errorMsg = saResult.error || bdResult.error || "No products found";
-    console.error(`[Lens] Both providers failed. BD: ${bdResult.error || "0 products"}, SA: ${saResult.error || "0 products"}`);
-    return { products: [], error: errorMsg };
+    console.error(`[Lens] SearchAPI failed: ${saResult.error || "0 products"}`);
+    return { products: [], error: saResult.error || "No products found" };
   } catch (error) {
     console.error("[Lens] Unexpected error:", error);
     return { products: [], error: "Search failed" };
