@@ -78,7 +78,7 @@ export default function HistoryScreen() {
       );
     } else {
       // Fallback: navigate to home with query pre-filled
-      navigation.navigate("MainTabs", { screen: "Scan", params: { prefillQuery: item.query } });
+      navigation.navigate("MainTabs", { screen: "Home", params: { prefillQuery: item.query } });
     }
   };
 

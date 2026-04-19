@@ -12,44 +12,52 @@ import { useDesignTokens } from "@/hooks/useDesignTokens";
 import type { CapturedPhoto } from "@/navigation/RootStackNavigator";
 
 export type MainTabParamList = {
+  Home: { photosToProcess?: CapturedPhoto[]; prefillQuery?: string } | undefined;
   Inventory: undefined;
-  Scan: { photosToProcess?: CapturedPhoto[]; prefillQuery?: string } | undefined;
+  Camera: undefined;
   Settings: undefined;
 };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
-function ScanTabButton({ children, onPress, accessibilityState }: any) {
-  const focused = accessibilityState?.selected;
+function CameraTabPlaceholder() {
+  return <View />;
+}
+
+function CameraTabButton({ onCameraPress }: { onCameraPress: () => void }) {
   return (
     <Pressable
-      onPress={(e) => {
+      onPress={() => {
         if (Platform.OS !== "web") {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         }
-        onPress?.(e);
+        onCameraPress();
       }}
-      style={styles.scanTabButton}
-      testID="tab-scan"
+      style={styles.cameraTabButton}
+      testID="tab-camera"
     >
       <LinearGradient
-        colors={focused ? ["#0E7C4A", "#047857", "#065F46"] : ["#0E7C4A", "#047857", "#065F46"]}
+        colors={["#0E7C4A", "#047857", "#065F46"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={styles.scanTabCircle}
+        style={styles.cameraTabCircle}
       >
-        {children}
+        <Feather name="camera" size={26} color="#FFFFFF" />
       </LinearGradient>
     </Pressable>
   );
 }
 
-export default function MainTabNavigator() {
+export default function MainTabNavigator({ navigation }: any) {
   const { theme } = useDesignTokens();
+
+  const openCamera = () => {
+    navigation.navigate("CameraScan", { source: "camera" });
+  };
 
   return (
     <Tab.Navigator
-      initialRouteName="Scan"
+      initialRouteName="Home"
       screenOptions={{
         headerShown: false,
         tabBarShowLabel: true,
@@ -70,6 +78,15 @@ export default function MainTabNavigator() {
       }}
     >
       <Tab.Screen
+        name="Home"
+        component={ScanScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Feather name="home" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
         name="Inventory"
         component={FavoritesScreen}
         options={{
@@ -79,14 +96,19 @@ export default function MainTabNavigator() {
         }}
       />
       <Tab.Screen
-        name="Scan"
-        component={ScanScreen}
+        name="Camera"
+        component={CameraTabPlaceholder}
         options={{
           tabBarLabel: "",
-          tabBarIcon: () => <Feather name="camera" size={26} color="#FFFFFF" />,
-          tabBarButton: (props) => <ScanTabButton {...props} />,
+          tabBarButton: () => <CameraTabButton onCameraPress={openCamera} />,
           tabBarItemStyle: {
             height: 70,
+          },
+        }}
+        listeners={{
+          tabPress: (e) => {
+            e.preventDefault();
+            openCamera();
           },
         }}
       />
@@ -104,13 +126,13 @@ export default function MainTabNavigator() {
 }
 
 const styles = StyleSheet.create({
-  scanTabButton: {
+  cameraTabButton: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
     top: -16,
   },
-  scanTabCircle: {
+  cameraTabCircle: {
     width: 60,
     height: 60,
     borderRadius: 30,

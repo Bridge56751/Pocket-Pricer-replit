@@ -93,7 +93,7 @@ export default function CameraScanScreen() {
         setState("processing");
         const resized = await resizeImage(result.assets[0].uri);
         if (resized) {
-          navigation.navigate("MainTabs", { screen: "Scan", params: { photosToProcess: [resized] } });
+          navigation.navigate("MainTabs", { screen: "Home", params: { photosToProcess: [resized] } });
           return;
         }
       }

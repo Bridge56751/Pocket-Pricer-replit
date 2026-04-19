@@ -31,7 +31,7 @@ import type { SearchHistoryItem } from "@/types/product";
 import type { RootStackParamList, CapturedPhoto } from "@/navigation/RootStackNavigator";
 import type { MainTabParamList } from "@/navigation/MainTabNavigator";
 
-type ScanScreenRouteProp = RouteProp<MainTabParamList, "Scan">;
+type ScanScreenRouteProp = RouteProp<MainTabParamList, "Home">;
 
 const SCAN_STEPS = [
   { label: "Uploading image...", icon: "upload" as const },
