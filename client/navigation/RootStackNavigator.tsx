@@ -53,11 +53,9 @@ export interface CapturedPhoto {
   base64: string;
 }
 
-export type PhotoSource = "camera" | "library";
-
 export type RootStackParamList = {
-  Home: { photosToProcess?: CapturedPhoto[]; photoSource?: PhotoSource; prefillQuery?: string } | undefined;
-  CameraScan: { source?: PhotoSource } | undefined;
+  Home: { photosToProcess?: CapturedPhoto[]; prefillQuery?: string } | undefined;
+  CameraScan: undefined;
   Paywall: { context?: "ebay" } | undefined;
   History: undefined;
   Favorites: undefined;

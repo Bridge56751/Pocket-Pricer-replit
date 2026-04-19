@@ -394,17 +394,13 @@ export default function ScanScreen() {
     }
   }, [loadRecentScans, navigation, rcReady, isPro, getScansUsed, persistScansUsed, incrementScans, getDeviceId]);
 
-  const [lastPhotoSource, setLastPhotoSource] = useState<"camera" | "library">("camera");
-
   useEffect(() => {
     const photosToProcess = route.params?.photosToProcess;
     if (photosToProcess && photosToProcess.length > 0) {
-      const incomingSource = route.params?.photoSource ?? "camera";
-      setLastPhotoSource(incomingSource);
-      navigation.setParams({ photosToProcess: undefined, photoSource: undefined });
+      navigation.setParams({ photosToProcess: undefined });
       processPhotos(photosToProcess);
     }
-  }, [route.params?.photosToProcess, route.params?.photoSource, processPhotos, navigation]);
+  }, [route.params?.photosToProcess, processPhotos, navigation]);
 
   const checkAndNavigate = useCallback(async () => {
     if (!rcReady) return;
@@ -438,8 +434,7 @@ export default function ScanScreen() {
       }
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setLastPhotoSource("camera");
-    navigation.navigate("CameraScan", { source: "camera" });
+    navigation.navigate("CameraScan");
   };
 
   const handleViewScan = (scan: SearchHistoryItem) => {
@@ -727,7 +722,7 @@ export default function ScanScreen() {
                 onPress={() => {
                   setErrorMessage(null);
                   setScannedPhotoUri(null);
-                  navigation.navigate("CameraScan", { source: lastPhotoSource });
+                  navigation.navigate("CameraScan");
                 }}
                 style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1, width: "100%" }]}
               >
@@ -737,7 +732,7 @@ export default function ScanScreen() {
                   end={{ x: 1, y: 1 }}
                   style={styles.scanErrorRetryButton}
                 >
-                  <Feather name={lastPhotoSource === "library" ? "image" : "camera"} size={18} color="#fff" />
+                  <Feather name="camera" size={18} color="#fff" />
                   <Text style={styles.scanErrorRetryText}>Try again</Text>
                 </LinearGradient>
               </Pressable>
@@ -759,7 +754,6 @@ export default function ScanScreen() {
           </View>
         </View>
       ) : null}
-
     </View>
   );
 }
