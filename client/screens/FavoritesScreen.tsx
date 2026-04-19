@@ -1,7 +1,6 @@
 import React, { useState, useCallback } from "react";
 import { View, StyleSheet, FlatList, Pressable, Text, Linking } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useHeaderHeight } from "@react-navigation/elements";
 import { useFocusEffect } from "@react-navigation/native";
 import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
@@ -16,7 +15,6 @@ import type { FavoriteItem } from "@/types/product";
 
 export default function FavoritesScreen() {
   const insets = useSafeAreaInsets();
-  const headerHeight = useHeaderHeight();
   const { theme } = useDesignTokens();
 
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
@@ -113,7 +111,7 @@ export default function FavoritesScreen() {
         contentContainerStyle={[
           styles.listContent,
           {
-            paddingTop: headerHeight + 16,
+            paddingTop: insets.top + 16,
             paddingBottom: insets.bottom + 16,
           },
           favorites.length === 0 && !isLoading && styles.emptyContent,

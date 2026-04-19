@@ -2,13 +2,12 @@ import React from "react";
 import { Platform } from "react-native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { HeaderButton } from "@react-navigation/elements";
+import { NavigatorScreenParams } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import ScanScreen from "@/screens/ScanScreen";
+import MainTabNavigator, { MainTabParamList } from "@/navigation/MainTabNavigator";
 import CameraScanScreen from "@/screens/CameraScanScreen";
 import HistoryScreen from "@/screens/HistoryScreen";
-import FavoritesScreen from "@/screens/FavoritesScreen";
-import ProfileScreen from "@/screens/ProfileScreen";
 import SearchResultsScreen from "@/screens/SearchResultsScreen";
 import PaywallScreen from "@/screens/PaywallScreen";
 import { useScreenOptions } from "@/hooks/useScreenOptions";
@@ -54,12 +53,10 @@ export interface CapturedPhoto {
 }
 
 export type RootStackParamList = {
-  Home: { photosToProcess?: CapturedPhoto[]; prefillQuery?: string } | undefined;
+  MainTabs: NavigatorScreenParams<MainTabParamList> | undefined;
   CameraScan: { source?: "camera" | "library" } | undefined;
   Paywall: { context?: "ebay" } | undefined;
   History: undefined;
-  Favorites: undefined;
-  Settings: undefined;
   SearchResults: { results: SearchResultsData };
 };
 
@@ -79,7 +76,7 @@ export default function RootStackNavigator() {
         if (navigation.canGoBack()) {
           navigation.goBack();
         } else {
-          navigation.navigate("Home");
+          navigation.navigate("MainTabs");
         }
       }}
       pressOpacity={0.7}
@@ -91,8 +88,8 @@ export default function RootStackNavigator() {
   return (
     <Stack.Navigator screenOptions={screenOptions}>
       <Stack.Screen
-        name="Home"
-        component={ScanScreen}
+        name="MainTabs"
+        component={MainTabNavigator}
         options={{ headerShown: false }}
       />
       <Stack.Screen
@@ -109,21 +106,6 @@ export default function RootStackNavigator() {
           headerTitle: "History",
           headerLeft: () => renderBackButton(navigation),
         })}
-      />
-      <Stack.Screen
-        name="Favorites"
-        component={FavoritesScreen}
-        options={({ navigation }) => ({
-          headerTitle: "Favorites",
-          headerLeft: () => renderBackButton(navigation),
-        })}
-      />
-      <Stack.Screen
-        name="Settings"
-        component={ProfileScreen}
-        options={{
-          headerShown: false,
-        }}
       />
       <Stack.Screen
         name="SearchResults"

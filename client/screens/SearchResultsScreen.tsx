@@ -121,7 +121,7 @@ export default function SearchResultsScreen() {
     if (navigation.canGoBack()) {
       navigation.goBack();
     } else {
-      navigation.navigate("Home" as never);
+      navigation.navigate("MainTabs" as never);
     }
   }, [navigation]);
 

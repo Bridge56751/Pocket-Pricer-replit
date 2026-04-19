@@ -29,8 +29,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRevenueCat } from "@/contexts/RevenueCatContext";
 import type { SearchHistoryItem } from "@/types/product";
 import type { RootStackParamList, CapturedPhoto } from "@/navigation/RootStackNavigator";
+import type { MainTabParamList } from "@/navigation/MainTabNavigator";
 
-type ScanScreenRouteProp = RouteProp<RootStackParamList, "Home">;
+type ScanScreenRouteProp = RouteProp<MainTabParamList, "Scan">;
 
 const SCAN_STEPS = [
   { label: "Uploading image...", icon: "upload" as const },
@@ -334,7 +335,7 @@ export default function ScanScreen() {
         CommonActions.reset({
           index: 1,
           routes: [
-            { name: "Home" },
+            { name: "MainTabs" },
             { name: "SearchResults", params: { results: enrichedResults } },
           ],
         })
@@ -447,7 +448,7 @@ export default function ScanScreen() {
         CommonActions.reset({
           index: 1,
           routes: [
-            { name: "Home" },
+            { name: "MainTabs" },
             { name: "SearchResults", params: { results: scan.results } },
           ],
         })
@@ -483,7 +484,7 @@ export default function ScanScreen() {
             </View>
             <Pressable 
               style={styles.headerIcon}
-              onPress={() => navigation.navigate("Settings")}
+              onPress={() => navigation.navigate("MainTabs", { screen: "Settings" })}
             >
               <Feather name="settings" size={22} color="rgba(255,255,255,0.6)" />
             </Pressable>

@@ -26,7 +26,7 @@ The application employs a client-server architecture. The frontend is an Expo Re
 
 **UI/UX Decisions:**
 - **Design System:** Custom design tokens ensure consistent styling with an emerald green primary color scheme, locked to a light theme.
-- **User Flow:** Includes an onboarding process for new users and bottom tab navigation with native stacks.
+- **User Flow:** Includes an onboarding process for new users and bottom tab navigation (Inventory / Scan / Settings) with the Scan tab as a prominent emerald circular button in the middle. Tabs live inside a root native stack that also pushes CameraScan, SearchResults, History, and Paywall.
 - **Subscription UI:** A dismissible paywall appears after a limited number of free scans, offering a 3-day free trial for the Pro subscription, with weekly and monthly plan options.
 - **Loading States:** Features a multi-step progress overlay with animations during product scanning.
 

@@ -71,14 +71,14 @@ export default function HistoryScreen() {
         CommonActions.reset({
           index: 1,
           routes: [
-            { name: "Home" },
+            { name: "MainTabs" },
             { name: "SearchResults", params: { results: cleanResults } },
           ],
         })
       );
     } else {
       // Fallback: navigate to home with query pre-filled
-      navigation.navigate("Home", { prefillQuery: item.query });
+      navigation.navigate("MainTabs", { screen: "Scan", params: { prefillQuery: item.query } });
     }
   };
 
