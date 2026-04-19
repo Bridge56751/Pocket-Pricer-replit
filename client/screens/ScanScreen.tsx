@@ -167,6 +167,7 @@ export default function ScanScreen() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [scannedPhotoUri, setScannedPhotoUri] = useState<string | null>(null);
   const processingRef = useRef(false);
+  const lastScanSourceRef = useRef<"camera" | "library">("camera");
 
   const loadRecentScans = useCallback(async () => {
     setIsLoading(true);
@@ -425,7 +426,7 @@ export default function ScanScreen() {
     }
   }, [rcReady, checkAndNavigate]);
 
-  const handleScanProduct = async () => {
+  const handleScanProduct = async (source: "camera" | "library" = "camera") => {
     if (rcReady && !isPro) {
       const scansUsed = await getScansUsed();
       if (scansUsed >= FREE_SCAN_LIMIT) {
@@ -434,7 +435,8 @@ export default function ScanScreen() {
       }
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    navigation.navigate("CameraScan");
+    lastScanSourceRef.current = source;
+    navigation.navigate("CameraScan", { source });
   };
 
   const handleViewScan = (scan: SearchHistoryItem) => {
@@ -537,34 +539,46 @@ export default function ScanScreen() {
               </View>
             </View>
 
-            <Pressable
-              onPress={handleScanProduct}
-              style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}
-            >
-              <View style={[styles.scanButton, isPro ? { borderColor: "rgba(212,169,38,0.4)" } : undefined]}>
-                <View style={styles.scanButtonLeft}>
-                  <Feather name="camera" size={20} color={isPro ? "#D4A926" : "#14532D"} />
-                  <Text style={[styles.scanButtonText, isPro ? { color: "#B8941F" } : undefined]}>Scan Product</Text>
+            <View style={styles.scanButtonRow}>
+              <Pressable
+                onPress={() => handleScanProduct("camera")}
+                style={({ pressed }) => [styles.scanButtonPressable, { opacity: pressed ? 0.9 : 1 }]}
+              >
+                <View style={[styles.scanButton, isPro ? { borderColor: "rgba(212,169,38,0.4)" } : undefined]}>
+                  <View style={styles.scanButtonLeft}>
+                    <Feather name="camera" size={20} color={isPro ? "#D4A926" : "#14532D"} />
+                    <Text style={[styles.scanButtonText, isPro ? { color: "#B8941F" } : undefined]}>Scan Product</Text>
+                  </View>
+                  {isPro ? (
+                    <LinearGradient
+                      colors={["#F5D87A", "#D4A926", "#E8C84A"]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.scanButtonBadge}
+                    >
+                      <Feather name="star" size={11} color="#3D2E00" />
+                      <Text style={[styles.scanButtonBadgeText, { color: "#3D2E00" }]}>PRO</Text>
+                    </LinearGradient>
+                  ) : (
+                    <Text style={styles.scanButtonCount}>
+                      {scansUsed >= FREE_SCAN_LIMIT
+                        ? "0 scans left"
+                        : `${FREE_SCAN_LIMIT - scansUsed} scan${FREE_SCAN_LIMIT - scansUsed === 1 ? "" : "s"} left`}
+                    </Text>
+                  )}
                 </View>
-                {isPro ? (
-                  <LinearGradient
-                    colors={["#F5D87A", "#D4A926", "#E8C84A"]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.scanButtonBadge}
-                  >
-                    <Feather name="star" size={11} color="#3D2E00" />
-                    <Text style={[styles.scanButtonBadgeText, { color: "#3D2E00" }]}>PRO</Text>
-                  </LinearGradient>
-                ) : (
-                  <Text style={styles.scanButtonCount}>
-                    {scansUsed >= FREE_SCAN_LIMIT
-                      ? "0 scans left"
-                      : `${FREE_SCAN_LIMIT - scansUsed} scan${FREE_SCAN_LIMIT - scansUsed === 1 ? "" : "s"} left`}
-                  </Text>
-                )}
-              </View>
-            </Pressable>
+              </Pressable>
+              <Pressable
+                onPress={() => handleScanProduct("library")}
+                accessibilityLabel="Choose photo from library"
+                style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}
+                testID="button-scan-from-library"
+              >
+                <View style={[styles.libraryTile, isPro ? { borderColor: "rgba(212,169,38,0.4)" } : undefined]}>
+                  <Feather name="image" size={22} color={isPro ? "#D4A926" : "#14532D"} />
+                </View>
+              </Pressable>
+            </View>
 
             {isPro ? null : (
               <Pressable
@@ -722,7 +736,7 @@ export default function ScanScreen() {
                 onPress={() => {
                   setErrorMessage(null);
                   setScannedPhotoUri(null);
-                  navigation.navigate("CameraScan");
+                  navigation.navigate("CameraScan", { source: lastScanSourceRef.current });
                 }}
                 style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1, width: "100%" }]}
               >
@@ -879,6 +893,14 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.45)",
     marginTop: 2,
   },
+  scanButtonRow: {
+    flexDirection: "row" as const,
+    alignItems: "stretch" as const,
+    gap: 10,
+  },
+  scanButtonPressable: {
+    flex: 1,
+  },
   scanButton: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
@@ -889,6 +911,17 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderWidth: 1.5,
     borderColor: "rgba(20, 83, 45, 0.3)",
+  },
+  libraryTile: {
+    width: 60,
+    height: "100%" as const,
+    minHeight: 60,
+    borderRadius: 16,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1.5,
+    borderColor: "rgba(20, 83, 45, 0.3)",
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
   },
   scanButtonLeft: {
     flexDirection: "row" as const,

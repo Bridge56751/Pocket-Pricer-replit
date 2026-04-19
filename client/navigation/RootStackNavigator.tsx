@@ -55,7 +55,7 @@ export interface CapturedPhoto {
 
 export type RootStackParamList = {
   Home: { photosToProcess?: CapturedPhoto[]; prefillQuery?: string } | undefined;
-  CameraScan: undefined;
+  CameraScan: { source?: "camera" | "library" } | undefined;
   Paywall: { context?: "ebay" } | undefined;
   History: undefined;
   Favorites: undefined;
