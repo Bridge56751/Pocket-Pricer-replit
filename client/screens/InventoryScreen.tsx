@@ -25,8 +25,9 @@ import {
   addInventoryItem,
   updateInventoryItem,
   removeInventoryItem,
+  getSearchHistory,
 } from "@/lib/storage";
-import type { InventoryItem } from "@/types/product";
+import type { InventoryItem, SearchHistoryItem } from "@/types/product";
 
 type FilterMode = "stock" | "sold";
 
@@ -352,6 +353,23 @@ function InventoryCard({
   );
 }
 
+function getScanTitle(scan: SearchHistoryItem): string {
+  return (
+    scan.results?.productInfo?.name ||
+    (typeof scan.query === "string" && scan.query) ||
+    scan.product?.title ||
+    "Product"
+  );
+}
+
+function getScanThumbnail(scan: SearchHistoryItem): string | undefined {
+  return scan.thumbnailUrl || scan.product?.imageUrl || scan.results?.listings?.[0]?.imageUrl;
+}
+
+function getScanSuggestedPrice(scan: SearchHistoryItem): number | undefined {
+  return scan.bestPrice ?? scan.results?.bestBuyNow ?? scan.avgPrice ?? scan.results?.avgListPrice;
+}
+
 function AddItemModal({
   visible,
   onClose,
@@ -361,102 +379,261 @@ function AddItemModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const insets = useSafeAreaInsets();
   const { theme } = useDesignTokens();
-  const [name, setName] = useState("");
+  const [scans, setScans] = useState<SearchHistoryItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [selected, setSelected] = useState<SearchHistoryItem | null>(null);
   const [price, setPrice] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const reset = () => {
-    setName("");
+  React.useEffect(() => {
+    if (!visible) return;
+    let cancelled = false;
+    setLoading(true);
+    setSelected(null);
     setPrice("");
     setSaving(false);
+    getSearchHistory()
+      .then((data) => {
+        if (!cancelled) setScans(data);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [visible]);
+
+  const handleSelect = (scan: SearchHistoryItem) => {
+    if (Platform.OS !== "web") {
+      Haptics.selectionAsync();
+    }
+    setSelected(scan);
+    const suggested = getScanSuggestedPrice(scan);
+    setPrice(suggested && suggested > 0 ? suggested.toFixed(2) : "");
   };
 
   const handleSave = async () => {
-    const trimmedName = name.trim();
+    if (!selected) return;
     const parsedPrice = parseFloat(price);
-    if (!trimmedName || isNaN(parsedPrice) || parsedPrice < 0) return;
+    if (isNaN(parsedPrice) || parsedPrice < 0) return;
     setSaving(true);
     await addInventoryItem({
       id: generateId(),
-      productName: trimmedName,
+      productName: getScanTitle(selected),
+      imageUrl: getScanThumbnail(selected),
       purchasePrice: parsedPrice,
       purchasedAt: new Date().toISOString(),
+      sourceProductId: selected.id,
     });
-    reset();
+    if (Platform.OS !== "web") {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
     onSaved();
   };
 
+  const handleClose = () => {
+    setSelected(null);
+    setPrice("");
+    onClose();
+  };
+
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
       <KeyboardAvoidingView
-        style={styles.modalBackdrop}
+        style={styles.sheetBackdrop}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-        <View style={[styles.modalCard, { backgroundColor: theme.colors.background }]}>
-          <Text style={[styles.modalTitle, { color: theme.colors.foreground }]}>Add Item</Text>
-          <Text style={[styles.modalSub, { color: theme.colors.mutedForeground }]}>
-            Log a purchase you want to track.
-          </Text>
-
-          <Text style={[styles.modalLabel, { color: theme.colors.foreground }]}>Product name</Text>
-          <TextInput
-            value={name}
-            onChangeText={setName}
-            placeholder="e.g. Nike Air Max 90"
-            placeholderTextColor={theme.colors.mutedForeground}
-            style={[
-              styles.modalInput,
-              { color: theme.colors.foreground, borderColor: "#E5E7EB" },
-            ]}
-            testID="input-product-name"
-          />
-
-          <Text style={[styles.modalLabel, { color: theme.colors.foreground }]}>Purchase price</Text>
-          <TextInput
-            value={price}
-            onChangeText={setPrice}
-            placeholder="0.00"
-            placeholderTextColor={theme.colors.mutedForeground}
-            keyboardType="decimal-pad"
-            style={[
-              styles.modalInput,
-              { color: theme.colors.foreground, borderColor: "#E5E7EB" },
-            ]}
-            testID="input-purchase-price"
-          />
-
-          <View style={styles.modalActions}>
-            <Pressable
-              onPress={() => {
-                reset();
-                onClose();
-              }}
-              style={({ pressed }) => [
-                styles.modalCancelButton,
-                { opacity: pressed ? 0.7 : 1, borderColor: "#E5E7EB" },
-              ]}
-            >
-              <Text style={[styles.modalCancelText, { color: theme.colors.foreground }]}>
-                Cancel
+        <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} />
+        <View
+          style={[
+            styles.sheetCard,
+            {
+              backgroundColor: theme.colors.background,
+              paddingBottom: Math.max(insets.bottom, 16) + 16,
+            },
+          ]}
+        >
+          <View style={styles.sheetHandle} />
+          <View style={styles.sheetHeader}>
+            {selected ? (
+              <Pressable
+                onPress={() => {
+                  setSelected(null);
+                  setPrice("");
+                }}
+                hitSlop={10}
+                style={styles.sheetBackButton}
+                testID="button-back-to-scans"
+              >
+                <Feather name="chevron-left" size={20} color={theme.colors.foreground} />
+              </Pressable>
+            ) : null}
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.modalTitle, { color: theme.colors.foreground }]}>
+                {selected ? "Set Purchase Price" : "Add from Recent Scans"}
               </Text>
-            </Pressable>
-            <Pressable
-              onPress={handleSave}
-              disabled={saving || !name.trim() || !price.trim()}
-              style={({ pressed }) => [
-                styles.modalSaveButton,
-                {
-                  backgroundColor: theme.colors.primary,
-                  opacity: saving || !name.trim() || !price.trim() ? 0.5 : pressed ? 0.85 : 1,
-                },
-              ]}
-              testID="button-save-inventory"
-            >
-              <Text style={styles.modalSaveText}>Save</Text>
-            </Pressable>
+              <Text style={[styles.modalSub, { color: theme.colors.mutedForeground }]}>
+                {selected
+                  ? "Enter what you actually paid for this item."
+                  : "Pick a recent scan to add to your inventory."}
+              </Text>
+            </View>
           </View>
+
+          {selected ? (
+            <View>
+              <View style={[styles.selectedScanRow, { borderColor: "#E5E7EB" }]}>
+                {getScanThumbnail(selected) ? (
+                  <Image
+                    source={{ uri: getScanThumbnail(selected) }}
+                    style={styles.selectedScanImage}
+                    contentFit="cover"
+                  />
+                ) : (
+                  <View style={[styles.selectedScanImage, styles.cardImageFallback]}>
+                    <Feather name="package" size={20} color="#9CA3AF" />
+                  </View>
+                )}
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={[styles.selectedScanTitle, { color: theme.colors.foreground }]}
+                    numberOfLines={2}
+                  >
+                    {getScanTitle(selected)}
+                  </Text>
+                  {getScanSuggestedPrice(selected) ? (
+                    <Text
+                      style={[styles.selectedScanHint, { color: theme.colors.mutedForeground }]}
+                    >
+                      Market avg: {formatCurrency(getScanSuggestedPrice(selected) || 0)}
+                    </Text>
+                  ) : null}
+                </View>
+              </View>
+
+              <Text style={[styles.modalLabel, { color: theme.colors.foreground }]}>
+                Purchase price
+              </Text>
+              <TextInput
+                value={price}
+                onChangeText={setPrice}
+                placeholder="0.00"
+                placeholderTextColor={theme.colors.mutedForeground}
+                keyboardType="decimal-pad"
+                autoFocus
+                style={[
+                  styles.modalInput,
+                  { color: theme.colors.foreground, borderColor: "#E5E7EB" },
+                ]}
+                testID="input-purchase-price"
+              />
+
+              <View style={styles.modalActions}>
+                <Pressable
+                  onPress={handleClose}
+                  style={({ pressed }) => [
+                    styles.modalCancelButton,
+                    { opacity: pressed ? 0.7 : 1, borderColor: "#E5E7EB" },
+                  ]}
+                >
+                  <Text style={[styles.modalCancelText, { color: theme.colors.foreground }]}>
+                    Cancel
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={handleSave}
+                  disabled={saving || !price.trim()}
+                  style={({ pressed }) => [
+                    styles.modalSaveButton,
+                    {
+                      backgroundColor: theme.colors.primary,
+                      opacity: saving || !price.trim() ? 0.5 : pressed ? 0.85 : 1,
+                    },
+                  ]}
+                  testID="button-save-inventory"
+                >
+                  <Text style={styles.modalSaveText}>Add to Inventory</Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : (
+            <ScrollView
+              style={styles.scanList}
+              contentContainerStyle={styles.scanListContent}
+              showsVerticalScrollIndicator={false}
+            >
+              {loading ? (
+                <View style={styles.scanEmpty}>
+                  <Text style={[styles.scanEmptyText, { color: theme.colors.mutedForeground }]}>
+                    Loading recent scans…
+                  </Text>
+                </View>
+              ) : scans.length === 0 ? (
+                <View style={styles.scanEmpty}>
+                  <View style={styles.emptyIconCircle}>
+                    <Feather name="camera" size={24} color={theme.colors.primary} />
+                  </View>
+                  <Text style={[styles.emptyTitle, { color: theme.colors.foreground }]}>
+                    No scans yet
+                  </Text>
+                  <Text style={[styles.emptySub, { color: theme.colors.mutedForeground }]}>
+                    Scan a product first, then come back here to add it to inventory.
+                  </Text>
+                </View>
+              ) : (
+                scans.map((scan) => {
+                  const title = getScanTitle(scan);
+                  const thumb = getScanThumbnail(scan);
+                  const suggested = getScanSuggestedPrice(scan);
+                  return (
+                    <Pressable
+                      key={scan.id}
+                      onPress={() => handleSelect(scan)}
+                      style={({ pressed }) => [
+                        styles.scanRow,
+                        { borderColor: "#E5E7EB", opacity: pressed ? 0.7 : 1 },
+                      ]}
+                      testID={`scan-row-${scan.id}`}
+                    >
+                      {thumb ? (
+                        <Image
+                          source={{ uri: thumb }}
+                          style={styles.scanRowImage}
+                          contentFit="cover"
+                        />
+                      ) : (
+                        <View style={[styles.scanRowImage, styles.cardImageFallback]}>
+                          <Feather name="package" size={18} color="#9CA3AF" />
+                        </View>
+                      )}
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={[styles.scanRowTitle, { color: theme.colors.foreground }]}
+                          numberOfLines={2}
+                        >
+                          {title}
+                        </Text>
+                        {suggested ? (
+                          <Text
+                            style={[
+                              styles.scanRowHint,
+                              { color: theme.colors.mutedForeground },
+                            ]}
+                          >
+                            Market avg {formatCurrency(suggested)}
+                          </Text>
+                        ) : null}
+                      </View>
+                      <Feather name="chevron-right" size={18} color="#9CA3AF" />
+                    </Pressable>
+                  );
+                })
+              )}
+            </ScrollView>
+          )}
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -888,5 +1065,100 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "700",
     color: "#FFFFFF",
+  },
+  sheetBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "flex-end",
+  },
+  sheetCard: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 22,
+    paddingTop: 10,
+    maxHeight: "85%",
+  },
+  sheetHandle: {
+    alignSelf: "center",
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#D1D5DB",
+    marginBottom: 14,
+  },
+  sheetHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    marginBottom: 14,
+  },
+  sheetBackButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F3F4F6",
+    marginTop: 2,
+  },
+  scanList: {
+    maxHeight: 420,
+  },
+  scanListContent: {
+    gap: 10,
+    paddingBottom: 8,
+  },
+  scanRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  scanRowImage: {
+    width: 56,
+    height: 56,
+    borderRadius: 10,
+  },
+  scanRowTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    lineHeight: 19,
+  },
+  scanRowHint: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  scanEmpty: {
+    alignItems: "center",
+    paddingVertical: 36,
+    paddingHorizontal: 16,
+  },
+  scanEmptyText: {
+    fontSize: 13,
+  },
+  selectedScanRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginBottom: 16,
+  },
+  selectedScanImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 12,
+  },
+  selectedScanTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    lineHeight: 20,
+  },
+  selectedScanHint: {
+    fontSize: 12,
+    marginTop: 4,
   },
 });
