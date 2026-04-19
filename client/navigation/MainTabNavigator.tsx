@@ -43,7 +43,9 @@ function CameraTabButton({ onCameraPress }: { onCameraPress: () => void }) {
         end={{ x: 1, y: 1 }}
         style={styles.cameraTabCircle}
       >
-        <Feather name="camera" size={26} color="#FFFFFF" />
+        <View style={styles.cameraIconWrap}>
+          <Feather name="camera" size={30} color="#FFFFFF" />
+        </View>
       </LinearGradient>
     </Pressable>
   );
@@ -146,12 +148,12 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    top: -16,
+    top: -20,
   },
   cameraTabCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 68,
+    height: 68,
+    borderRadius: 34,
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#047857",
@@ -161,5 +163,11 @@ const styles = StyleSheet.create({
     elevation: 8,
     borderWidth: 4,
     borderColor: "#FFFFFF",
+  },
+  cameraIconWrap: {
+    width: 30,
+    height: 30,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
