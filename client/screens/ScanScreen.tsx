@@ -914,7 +914,7 @@ const styles = StyleSheet.create({
   },
   libraryTile: {
     width: 60,
-    alignSelf: "stretch" as const,
+    height: 60,
     borderRadius: 16,
     backgroundColor: "#FFFFFF",
     borderWidth: 1.5,
