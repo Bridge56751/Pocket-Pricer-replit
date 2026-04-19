@@ -12,9 +12,10 @@ import { useDesignTokens } from "@/hooks/useDesignTokens";
 import type { CapturedPhoto } from "@/navigation/RootStackNavigator";
 
 export type MainTabParamList = {
+  Batch: undefined;
   Home: { photosToProcess?: CapturedPhoto[]; prefillQuery?: string } | undefined;
-  Inventory: undefined;
   Camera: undefined;
+  Inventory: undefined;
   Settings: undefined;
 };
 
@@ -78,20 +79,26 @@ export default function MainTabNavigator({ navigation }: any) {
       }}
     >
       <Tab.Screen
+        name="Batch"
+        component={CameraTabPlaceholder}
+        options={{
+          tabBarLabel: "Batch",
+          tabBarIcon: ({ color, size }) => (
+            <Feather name="layers" size={size} color={color} />
+          ),
+        }}
+        listeners={{
+          tabPress: (e) => {
+            e.preventDefault();
+          },
+        }}
+      />
+      <Tab.Screen
         name="Home"
         component={ScanScreen}
         options={{
           tabBarIcon: ({ color, size }) => (
             <Feather name="home" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Inventory"
-        component={FavoritesScreen}
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <Feather name="package" size={size} color={color} />
           ),
         }}
       />
@@ -110,6 +117,15 @@ export default function MainTabNavigator({ navigation }: any) {
             e.preventDefault();
             openCamera();
           },
+        }}
+      />
+      <Tab.Screen
+        name="Inventory"
+        component={FavoritesScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Feather name="package" size={size} color={color} />
+          ),
         }}
       />
       <Tab.Screen
