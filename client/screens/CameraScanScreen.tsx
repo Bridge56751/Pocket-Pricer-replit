@@ -9,7 +9,7 @@ import {
   Linking,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
@@ -17,7 +17,7 @@ import * as ImageManipulator from "expo-image-manipulator";
 import { Feather } from "@expo/vector-icons";
 
 import { useDesignTokens } from "@/hooks/useDesignTokens";
-import type { RootStackParamList, CapturedPhoto } from "@/navigation/RootStackNavigator";
+import type { RootStackParamList, PhotoSource } from "@/navigation/RootStackNavigator";
 
 const MAX_IMAGE_SIZE = 750;
 const IMAGE_QUALITY = 0.6;
@@ -38,10 +38,16 @@ const resizeImage = async (uri: string): Promise<{ uri: string; base64: string }
   }
 };
 
+type Route = RouteProp<RootStackParamList, "CameraScan">;
+
 export default function CameraScanScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useDesignTokens();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const route = useRoute<Route>();
+  const source: PhotoSource = route.params?.source ?? "camera";
+  const isLibrary = source === "library";
+
   const hasLaunched = useRef(false);
   const [state, setState] = useState<ScreenState>("checking");
 
@@ -54,11 +60,13 @@ export default function CameraScanScreen() {
 
   const checkAndLaunch = async () => {
     try {
-      const { status, canAskAgain } = await ImagePicker.requestCameraPermissionsAsync();
+      const { status, canAskAgain } = isLibrary
+        ? await ImagePicker.requestMediaLibraryPermissionsAsync()
+        : await ImagePicker.requestCameraPermissionsAsync();
 
       if (status === "granted") {
         setState("launching");
-        await openCamera();
+        await openPicker();
       } else if (canAskAgain) {
         setState("denied");
       } else {
@@ -70,24 +78,30 @@ export default function CameraScanScreen() {
     }
   };
 
-  const openCamera = async () => {
+  const openPicker = async () => {
     try {
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ["images"],
-        quality: IMAGE_QUALITY,
-      });
+      const result = isLibrary
+        ? await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ["images"],
+            quality: IMAGE_QUALITY,
+            selectionLimit: 1,
+          })
+        : await ImagePicker.launchCameraAsync({
+            mediaTypes: ["images"],
+            quality: IMAGE_QUALITY,
+          });
 
       if (!result.canceled && result.assets?.[0]?.uri) {
         setState("processing");
         const resized = await resizeImage(result.assets[0].uri);
         if (resized) {
-          navigation.navigate("Home", { photosToProcess: [resized] });
+          navigation.navigate("Home", { photosToProcess: [resized], photoSource: source });
           return;
         }
       }
       navigation.goBack();
     } catch (error) {
-      console.error("Camera launch error:", error);
+      console.error("Picker launch error:", error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       navigation.goBack();
     }
@@ -99,22 +113,33 @@ export default function CameraScanScreen() {
     await checkAndLaunch();
   };
 
-  const handleOpenSettings = () => {
+  const handleOpenSettings = async () => {
     if (Platform.OS !== "web") {
       try {
-        Linking.openSettings();
+        await Linking.openSettings();
       } catch {
         navigation.goBack();
       }
     }
   };
 
+  const launchingLabel = isLibrary ? "Opening photos..." : "Opening camera...";
+  const permissionTitle = isLibrary ? "Photo Access Needed" : "Camera Access Needed";
+  const permissionBody = isLibrary
+    ? "Pocket Pricer accesses your photo library so you can select product images to scan. For example, choose a saved photo of an item to instantly see what it sells for online."
+    : "Pocket Pricer uses your camera to take photos of products so it can identify them and show you current prices across stores like Amazon, Walmart, and Target. For example, you can photograph a pair of shoes to instantly see what they sell for online.";
+  const blockedNote = isLibrary
+    ? "Photo access was denied. To enable it, go to Settings → Pocket Pricer → Photos and turn it on."
+    : "Camera access was denied. To enable it, go to Settings → Pocket Pricer → Camera and turn it on.";
+  const allowButtonLabel = isLibrary ? "Allow Photo Access" : "Allow Camera Access";
+  const iconName: React.ComponentProps<typeof Feather>["name"] = isLibrary ? "image" : "camera";
+
   if (state === "checking" || state === "launching" || state === "processing") {
     return (
       <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
         <Text style={[styles.statusText, { color: theme.colors.mutedForeground }]}>
-          {state === "processing" ? "Preparing image..." : "Opening camera..."}
+          {state === "processing" ? "Preparing image..." : launchingLabel}
         </Text>
       </View>
     );
@@ -142,25 +167,22 @@ export default function CameraScanScreen() {
       <View style={styles.permissionContent}>
         <View style={[styles.iconCircle, { backgroundColor: theme.colors.primary + "18" }]}>
           <View style={[styles.iconCircleInner, { backgroundColor: theme.colors.primary + "28" }]}>
-            <Feather name="camera" size={40} color={theme.colors.primary} />
+            <Feather name={iconName} size={40} color={theme.colors.primary} />
           </View>
         </View>
 
         <Text style={[styles.permissionTitle, { color: theme.colors.foreground }]}>
-          Camera Access Needed
+          {permissionTitle}
         </Text>
 
         <Text style={[styles.permissionBody, { color: theme.colors.mutedForeground }]}>
-          Pocket Pricer uses your camera to take photos of products so it can identify them and
-          show you current prices across stores like Amazon, Walmart, and Target. For example, you
-          can photograph a pair of shoes to instantly see what they sell for online.
+          {permissionBody}
         </Text>
 
         {state === "blocked" ? (
           <>
             <Text style={[styles.blockedNote, { color: theme.colors.mutedForeground }]}>
-              Camera access was denied. To enable it, go to Settings → Pocket Pricer → Camera and
-              turn it on.
+              {blockedNote}
             </Text>
             <Pressable
               style={[styles.primaryButton, { backgroundColor: theme.colors.primary }]}
@@ -175,8 +197,8 @@ export default function CameraScanScreen() {
             style={[styles.primaryButton, { backgroundColor: theme.colors.primary }]}
             onPress={handleRequestPermission}
           >
-            <Feather name="camera" size={18} color="#fff" />
-            <Text style={styles.primaryButtonText}>Allow Camera Access</Text>
+            <Feather name={iconName} size={18} color="#fff" />
+            <Text style={styles.primaryButtonText}>{allowButtonLabel}</Text>
           </Pressable>
         )}
 

@@ -394,13 +394,18 @@ export default function ScanScreen() {
     }
   }, [loadRecentScans, navigation, rcReady, isPro, getScansUsed, persistScansUsed, incrementScans, getDeviceId]);
 
+  const [showSourcePicker, setShowSourcePicker] = useState(false);
+  const [lastPhotoSource, setLastPhotoSource] = useState<"camera" | "library">("camera");
+
   useEffect(() => {
     const photosToProcess = route.params?.photosToProcess;
     if (photosToProcess && photosToProcess.length > 0) {
-      navigation.setParams({ photosToProcess: undefined });
+      const incomingSource = route.params?.photoSource ?? "camera";
+      setLastPhotoSource(incomingSource);
+      navigation.setParams({ photosToProcess: undefined, photoSource: undefined });
       processPhotos(photosToProcess);
     }
-  }, [route.params?.photosToProcess, processPhotos, navigation]);
+  }, [route.params?.photosToProcess, route.params?.photoSource, processPhotos, navigation]);
 
   const checkAndNavigate = useCallback(async () => {
     if (!rcReady) return;
@@ -434,7 +439,16 @@ export default function ScanScreen() {
       }
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    navigation.navigate("CameraScan");
+    setShowSourcePicker(true);
+  };
+
+  const handlePickSource = (source: "camera" | "library") => {
+    setShowSourcePicker(false);
+    setLastPhotoSource(source);
+    if (Platform.OS !== "web") {
+      Haptics.selectionAsync();
+    }
+    navigation.navigate("CameraScan", { source });
   };
 
   const handleViewScan = (scan: SearchHistoryItem) => {
@@ -722,7 +736,7 @@ export default function ScanScreen() {
                 onPress={() => {
                   setErrorMessage(null);
                   setScannedPhotoUri(null);
-                  navigation.navigate("CameraScan");
+                  navigation.navigate("CameraScan", { source: lastPhotoSource });
                 }}
                 style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1, width: "100%" }]}
               >
@@ -732,7 +746,7 @@ export default function ScanScreen() {
                   end={{ x: 1, y: 1 }}
                   style={styles.scanErrorRetryButton}
                 >
-                  <Feather name="camera" size={18} color="#fff" />
+                  <Feather name={lastPhotoSource === "library" ? "image" : "camera"} size={18} color="#fff" />
                   <Text style={styles.scanErrorRetryText}>Try again</Text>
                 </LinearGradient>
               </Pressable>
@@ -753,6 +767,97 @@ export default function ScanScreen() {
             </View>
           </View>
         </View>
+      ) : null}
+
+      {showSourcePicker ? (
+        <Pressable
+          style={styles.sourcePickerBackdrop}
+          onPress={() => setShowSourcePicker(false)}
+          accessibilityLabel="Dismiss photo source picker"
+          accessibilityRole="button"
+        >
+          <Pressable
+            style={[
+              styles.sourcePickerSheet,
+              {
+                backgroundColor: theme.colors.background,
+                paddingBottom: insets.bottom + 16,
+              },
+            ]}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.sourcePickerHandle} />
+            <Text style={[styles.sourcePickerTitle, { color: theme.colors.foreground }]}>
+              Add a Photo
+            </Text>
+            <Text style={[styles.sourcePickerSubtitle, { color: theme.colors.mutedForeground }]}>
+              Snap a new photo or pick one from your library
+            </Text>
+
+            <Pressable
+              onPress={() => handlePickSource("camera")}
+              accessibilityRole="button"
+              accessibilityLabel="Take Photo with camera"
+              testID="scan-source-camera"
+              style={({ pressed }) => [
+                styles.sourceOption,
+                {
+                  backgroundColor: theme.colors.muted,
+                  opacity: pressed ? 0.85 : 1,
+                },
+              ]}
+            >
+              <View style={[styles.sourceOptionIcon, { backgroundColor: theme.colors.primary + "1F" }]}>
+                <Feather name="camera" size={22} color={theme.colors.primary} />
+              </View>
+              <View style={styles.sourceOptionTextWrap}>
+                <Text style={[styles.sourceOptionTitle, { color: theme.colors.foreground }]}>
+                  Take Photo
+                </Text>
+                <Text style={[styles.sourceOptionSub, { color: theme.colors.mutedForeground }]}>
+                  Use your camera to snap the item
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={18} color={theme.colors.mutedForeground} />
+            </Pressable>
+
+            <Pressable
+              onPress={() => handlePickSource("library")}
+              accessibilityRole="button"
+              accessibilityLabel="Choose photo from library"
+              testID="scan-source-library"
+              style={({ pressed }) => [
+                styles.sourceOption,
+                {
+                  backgroundColor: theme.colors.muted,
+                  opacity: pressed ? 0.85 : 1,
+                },
+              ]}
+            >
+              <View style={[styles.sourceOptionIcon, { backgroundColor: theme.colors.primary + "1F" }]}>
+                <Feather name="image" size={22} color={theme.colors.primary} />
+              </View>
+              <View style={styles.sourceOptionTextWrap}>
+                <Text style={[styles.sourceOptionTitle, { color: theme.colors.foreground }]}>
+                  Choose from Library
+                </Text>
+                <Text style={[styles.sourceOptionSub, { color: theme.colors.mutedForeground }]}>
+                  Pick a saved photo to scan
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={18} color={theme.colors.mutedForeground} />
+            </Pressable>
+
+            <Pressable
+              onPress={() => setShowSourcePicker(false)}
+              style={({ pressed }) => [styles.sourcePickerCancel, { opacity: pressed ? 0.6 : 1 }]}
+            >
+              <Text style={[styles.sourcePickerCancelText, { color: theme.colors.mutedForeground }]}>
+                Cancel
+              </Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
       ) : null}
     </View>
   );
@@ -1050,6 +1155,75 @@ const styles = StyleSheet.create({
   },
   scanErrorBackText: {
     fontSize: 17,
+    fontWeight: "600",
+  },
+  sourcePickerBackdrop: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "flex-end",
+    zIndex: 100,
+  },
+  sourcePickerSheet: {
+    paddingTop: 12,
+    paddingHorizontal: 20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    gap: 12,
+  },
+  sourcePickerHandle: {
+    alignSelf: "center",
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "rgba(0,0,0,0.15)",
+    marginBottom: 12,
+  },
+  sourcePickerTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  sourcePickerSubtitle: {
+    fontSize: 14,
+    textAlign: "center",
+    marginBottom: 4,
+  },
+  sourceOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    padding: 16,
+    borderRadius: 16,
+  },
+  sourceOptionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sourceOptionTextWrap: {
+    flex: 1,
+    gap: 2,
+  },
+  sourceOptionTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  sourceOptionSub: {
+    fontSize: 13,
+  },
+  sourcePickerCancel: {
+    paddingVertical: 14,
+    alignItems: "center",
+    marginTop: 4,
+  },
+  sourcePickerCancelText: {
+    fontSize: 16,
     fontWeight: "600",
   },
   sectionHeader: {
