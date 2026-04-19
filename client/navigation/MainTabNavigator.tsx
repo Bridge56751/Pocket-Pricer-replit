@@ -76,8 +76,8 @@ export default function MainTabNavigator({ navigation }: any) {
         },
         tabBarStyle: {
           backgroundColor: theme.colors.background,
-          borderTopColor: "rgba(0,0,0,0.06)",
-          borderTopWidth: StyleSheet.hairlineWidth,
+          borderTopColor: "#047857",
+          borderTopWidth: 2,
           height: Platform.select({ ios: 88, android: 64, default: 64 }),
           paddingTop: 6,
         },
