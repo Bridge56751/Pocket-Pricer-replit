@@ -6,7 +6,7 @@ import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 
 import ScanScreen from "@/screens/ScanScreen";
-import FavoritesScreen from "@/screens/FavoritesScreen";
+import InventoryScreen from "@/screens/InventoryScreen";
 import ProfileScreen from "@/screens/ProfileScreen";
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import type { CapturedPhoto } from "@/navigation/RootStackNavigator";
@@ -126,7 +126,7 @@ export default function MainTabNavigator({ navigation }: any) {
       />
       <Tab.Screen
         name="Inventory"
-        component={FavoritesScreen}
+        component={InventoryScreen}
         options={{
           tabBarIcon: ({ color, size }) => (
             <Feather name="package" size={size} color={color} />

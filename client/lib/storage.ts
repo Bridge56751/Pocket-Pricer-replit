@@ -1,9 +1,10 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import type { SearchHistoryItem, FavoriteItem, UserSettings } from "@/types/product";
+import type { SearchHistoryItem, FavoriteItem, InventoryItem, UserSettings } from "@/types/product";
 
 const STORAGE_KEYS = {
   SEARCH_HISTORY: "@ebay_profit/search_history",
   FAVORITES: "@ebay_profit/favorites",
+  INVENTORY: "@ebay_profit/inventory",
   USER_SETTINGS: "@ebay_profit/user_settings",
 };
 
@@ -114,6 +115,45 @@ export async function isFavorite(productId: string): Promise<boolean> {
     return favorites.some(f => f.product.id === productId);
   } catch {
     return false;
+  }
+}
+
+export async function getInventory(): Promise<InventoryItem[]> {
+  try {
+    const data = await AsyncStorage.getItem(STORAGE_KEYS.INVENTORY);
+    return data ? JSON.parse(data) : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function addInventoryItem(item: InventoryItem): Promise<void> {
+  try {
+    const inventory = await getInventory();
+    const newInventory = [item, ...inventory.filter(i => i.id !== item.id)];
+    await AsyncStorage.setItem(STORAGE_KEYS.INVENTORY, JSON.stringify(newInventory));
+  } catch (error) {
+    console.error("Failed to add inventory item:", error);
+  }
+}
+
+export async function updateInventoryItem(id: string, updates: Partial<InventoryItem>): Promise<void> {
+  try {
+    const inventory = await getInventory();
+    const newInventory = inventory.map(i => i.id === id ? { ...i, ...updates } : i);
+    await AsyncStorage.setItem(STORAGE_KEYS.INVENTORY, JSON.stringify(newInventory));
+  } catch (error) {
+    console.error("Failed to update inventory item:", error);
+  }
+}
+
+export async function removeInventoryItem(id: string): Promise<void> {
+  try {
+    const inventory = await getInventory();
+    const newInventory = inventory.filter(i => i.id !== id);
+    await AsyncStorage.setItem(STORAGE_KEYS.INVENTORY, JSON.stringify(newInventory));
+  } catch (error) {
+    console.error("Failed to remove inventory item:", error);
   }
 }
 

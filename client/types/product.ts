@@ -35,6 +35,18 @@ export interface FavoriteItem {
   notes?: string;
 }
 
+export interface InventoryItem {
+  id: string;
+  productName: string;
+  imageUrl?: string;
+  purchasePrice: number;
+  purchasedAt: string;
+  notes?: string;
+  soldPrice?: number;
+  soldAt?: string;
+  sourceProductId?: string;
+}
+
 export interface UserSettings {
   defaultCost: number;
   defaultShippingCost: number;

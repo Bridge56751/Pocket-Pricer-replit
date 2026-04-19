@@ -8,7 +8,8 @@ Pocket Pricer is an Expo React Native mobile application for resellers that iden
 - **Product Identification:** Google Lens-powered scanning for product matching.
 - **Multi-Platform Price Comparison:** Gathers prices from Amazon, Walmart, Target, and eBay.
 - **Profit Calculation:** Estimates profit margins based on user input and automated selling fee calculation.
-- **Historical Tracking:** Stores favorite products and search history locally.
+- **Historical Tracking:** Stores inventory items, search history, and scan history locally.
+- **Inventory Tracking:** Manual flip tracking with purchase price, mark-sold flow, and live profit metrics (Spent / Sold / Profit).
 - **No Account Required:** Operates without user registration, with subscriptions managed via platform app stores.
 
 ## User Preferences
