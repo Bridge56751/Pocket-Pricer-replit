@@ -34,6 +34,7 @@ The application employs a client-server architecture. The frontend is an Expo Re
 **Technical Implementations & Feature Specifications:**
 - **State Management:** TanStack React Query manages data fetching and caching.
 - **Local Storage:** AsyncStorage stores history, favorites, scan counts, and device IDs.
+- **Inventory Persistence:** Inventory items are stored in Supabase (`inventory_items` table), keyed by anonymous device ID, so flips survive app reinstalls. CRUD via `/api/inventory/:deviceId` (GET/POST) and `/api/inventory/:deviceId/:itemId` (PATCH/DELETE). A one-time client migration pushes any pre-existing local AsyncStorage inventory to the cloud on first launch (`@ebay_profit/inventory_migrated_v1` flag); server-side `upsert` keeps the migration safe to retry on partial failure.
 - **Navigation:** React Navigation handles in-app navigation.
 - **Product Scanning:** `POST /api/scan-with-lens` uses SearchAPI.io (primary) with ScrapingDog (fallback) for Google Lens product identification from base64 images. Free users are limited to 3 lifetime scans.
 - **eBay Sold Search:** `POST /api/ebay-sold-search` retrieves eBay sold item data via SearchAPI.io, providing price statistics and a "Buy Score." AI-powered query cleaning (using Gemini 2.5 Flash via Replit AI Integrations) enhances search accuracy.

@@ -160,6 +160,148 @@ export async function getDeviceStats(deviceId: string, tzOffsetMinutes: number =
   }
 }
 
+export interface InventoryRow {
+  id: string;
+  device_id: string;
+  product_name: string;
+  image_url: string | null;
+  purchase_price: number;
+  purchased_at: string;
+  notes: string | null;
+  sold_price: number | null;
+  sold_at: string | null;
+  source_scan_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function listInventory(deviceId: string): Promise<InventoryRow[]> {
+  if (!supabase) return [];
+  try {
+    const { data, error } = await supabase
+      .from("inventory_items")
+      .select("*")
+      .eq("device_id", deviceId)
+      .order("purchased_at", { ascending: false });
+    if (error) {
+      console.error("Supabase listInventory error:", error.message);
+      return [];
+    }
+    return (data as unknown as InventoryRow[]) || [];
+  } catch (err: any) {
+    console.error("listInventory error:", err?.message);
+    return [];
+  }
+}
+
+export async function createInventoryItem(
+  deviceId: string,
+  payload: {
+    id: string;
+    productName: string;
+    imageUrl?: string | null;
+    purchasePrice: number;
+    purchasedAt?: string;
+    notes?: string | null;
+    soldPrice?: number | null;
+    soldAt?: string | null;
+    sourceScanId?: string | null;
+  }
+): Promise<InventoryRow | null> {
+  if (!supabase) return null;
+  try {
+    const now = new Date().toISOString();
+    const { data, error } = await supabase
+      .from("inventory_items")
+      .upsert(
+        {
+          id: payload.id,
+          device_id: deviceId,
+          product_name: payload.productName,
+          image_url: payload.imageUrl ?? null,
+          purchase_price: payload.purchasePrice,
+          purchased_at: payload.purchasedAt ?? now,
+          notes: payload.notes ?? null,
+          sold_price: payload.soldPrice ?? null,
+          sold_at: payload.soldAt ?? null,
+          source_scan_id: payload.sourceScanId ?? null,
+          created_at: now,
+          updated_at: now,
+        },
+        { onConflict: "id" }
+      )
+      .select()
+      .single();
+    if (error) {
+      console.error("Supabase createInventoryItem error:", error.message);
+      return null;
+    }
+    return (data as unknown as InventoryRow) || null;
+  } catch (err: any) {
+    console.error("createInventoryItem error:", err?.message);
+    return null;
+  }
+}
+
+export async function updateInventoryItemRow(
+  deviceId: string,
+  itemId: string,
+  updates: {
+    productName?: string;
+    imageUrl?: string | null;
+    purchasePrice?: number;
+    notes?: string | null;
+    soldPrice?: number | null;
+    soldAt?: string | null;
+  }
+): Promise<InventoryRow | null> {
+  if (!supabase) return null;
+  try {
+    const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (updates.productName !== undefined) patch.product_name = updates.productName;
+    if (updates.imageUrl !== undefined) patch.image_url = updates.imageUrl;
+    if (updates.purchasePrice !== undefined) patch.purchase_price = updates.purchasePrice;
+    if (updates.notes !== undefined) patch.notes = updates.notes;
+    if (updates.soldPrice !== undefined) patch.sold_price = updates.soldPrice;
+    if (updates.soldAt !== undefined) patch.sold_at = updates.soldAt;
+
+    const { data, error } = await supabase
+      .from("inventory_items")
+      .update(patch)
+      .eq("device_id", deviceId)
+      .eq("id", itemId)
+      .select()
+      .single();
+    if (error) {
+      console.error("Supabase updateInventoryItem error:", error.message);
+      return null;
+    }
+    return (data as unknown as InventoryRow) || null;
+  } catch (err: any) {
+    console.error("updateInventoryItem error:", err?.message);
+    return null;
+  }
+}
+
+export async function deleteInventoryItem(deviceId: string, itemId: string): Promise<boolean> {
+  if (!supabase) return false;
+  try {
+    const { error } = await supabase
+      .from("inventory_items")
+      .delete()
+      .eq("device_id", deviceId)
+      .eq("id", itemId);
+    if (error) {
+      console.error("Supabase deleteInventoryItem error:", error.message);
+      return false;
+    }
+    return true;
+  } catch (err: any) {
+    console.error("deleteInventoryItem error:", err?.message);
+    return false;
+  }
+}
+
 function upsertDevice(deviceId: string, isPro: boolean, eventType: "scan" | "ebay") {
   if (!supabase) return;
 

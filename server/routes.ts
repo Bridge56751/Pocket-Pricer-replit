@@ -1,7 +1,17 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "node:http";
 import { getGuestScanCount, incrementGuestScan } from "./db";
-import { logScanEvent, logEbaySearchEvent, supabase, initScanImagesBucket, getDeviceStats } from "./supabase";
+import {
+  logScanEvent,
+  logEbaySearchEvent,
+  supabase,
+  initScanImagesBucket,
+  getDeviceStats,
+  listInventory,
+  createInventoryItem,
+  updateInventoryItemRow,
+  deleteInventoryItem,
+} from "./supabase";
 import { cleanQueryWithAI } from "./gemini";
 
 const FREE_LIFETIME_SEARCHES = 3;
@@ -803,6 +813,126 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Device stats error:", error);
       res.status(500).json({ error: "Failed to fetch device stats" });
+    }
+  });
+
+  const isValidDeviceId = (id: unknown): id is string =>
+    typeof id === "string" && /^[A-Za-z0-9_-]{8,128}$/.test(id);
+
+  app.get("/api/inventory/:deviceId", async (req: Request, res: Response) => {
+    try {
+      const { deviceId } = req.params;
+      if (!isValidDeviceId(deviceId)) return res.status(400).json({ error: "Invalid deviceId" });
+      if (isRateLimited(deviceId)) {
+        return res.status(429).json({ error: "Too many requests. Please wait a moment and try again." });
+      }
+      const items = await listInventory(deviceId);
+      res.json({ items });
+    } catch (error) {
+      console.error("List inventory error:", error);
+      res.status(500).json({ error: "Failed to load inventory" });
+    }
+  });
+
+  app.post("/api/inventory/:deviceId", async (req: Request, res: Response) => {
+    try {
+      const { deviceId } = req.params;
+      if (!isValidDeviceId(deviceId)) return res.status(400).json({ error: "Invalid deviceId" });
+      if (isRateLimited(deviceId)) {
+        return res.status(429).json({ error: "Too many requests. Please wait a moment and try again." });
+      }
+      const {
+        id,
+        productName,
+        imageUrl,
+        purchasePrice,
+        purchasedAt,
+        notes,
+        soldPrice,
+        soldAt,
+        sourceScanId,
+      } = req.body || {};
+      if (!id || typeof id !== "string") {
+        return res.status(400).json({ error: "Missing item id" });
+      }
+      if (!productName || typeof productName !== "string") {
+        return res.status(400).json({ error: "Missing productName" });
+      }
+      const price = Number(purchasePrice);
+      if (!isFinite(price) || price < 0) {
+        return res.status(400).json({ error: "Invalid purchasePrice" });
+      }
+      const created = await createInventoryItem(deviceId, {
+        id,
+        productName,
+        imageUrl: typeof imageUrl === "string" ? imageUrl : null,
+        purchasePrice: price,
+        purchasedAt: typeof purchasedAt === "string" ? purchasedAt : undefined,
+        notes: typeof notes === "string" ? notes : null,
+        soldPrice: typeof soldPrice === "number" ? soldPrice : null,
+        soldAt: typeof soldAt === "string" ? soldAt : null,
+        sourceScanId: typeof sourceScanId === "string" ? sourceScanId : null,
+      });
+      if (!created) return res.status(500).json({ error: "Failed to create item" });
+      res.json({ item: created });
+    } catch (error) {
+      console.error("Create inventory error:", error);
+      res.status(500).json({ error: "Failed to create inventory item" });
+    }
+  });
+
+  app.patch("/api/inventory/:deviceId/:itemId", async (req: Request, res: Response) => {
+    try {
+      const { deviceId, itemId } = req.params;
+      if (!isValidDeviceId(deviceId) || !itemId) return res.status(400).json({ error: "Invalid identifiers" });
+      if (isRateLimited(deviceId)) {
+        return res.status(429).json({ error: "Too many requests. Please wait a moment and try again." });
+      }
+      const { productName, imageUrl, purchasePrice, notes, soldPrice, soldAt } = req.body || {};
+      const updates: Parameters<typeof updateInventoryItemRow>[2] = {};
+      if (productName !== undefined) updates.productName = String(productName);
+      if (imageUrl !== undefined) updates.imageUrl = imageUrl === null ? null : String(imageUrl);
+      if (purchasePrice !== undefined) {
+        const p = Number(purchasePrice);
+        if (!isFinite(p) || p < 0) return res.status(400).json({ error: "Invalid purchasePrice" });
+        updates.purchasePrice = p;
+      }
+      if (notes !== undefined) updates.notes = notes === null ? null : String(notes);
+      if (soldPrice !== undefined) {
+        if (soldPrice === null) {
+          updates.soldPrice = null;
+          updates.soldAt = null;
+        } else {
+          const p = Number(soldPrice);
+          if (!isFinite(p) || p < 0) return res.status(400).json({ error: "Invalid soldPrice" });
+          updates.soldPrice = p;
+          updates.soldAt = typeof soldAt === "string" ? soldAt : new Date().toISOString();
+        }
+      } else if (soldAt !== undefined) {
+        updates.soldAt = soldAt === null ? null : String(soldAt);
+      }
+      const updated = await updateInventoryItemRow(deviceId, itemId, updates);
+      if (!updated) return res.status(404).json({ error: "Item not found" });
+      res.json({ item: updated });
+    } catch (error) {
+      console.error("Update inventory error:", error);
+      res.status(500).json({ error: "Failed to update inventory item" });
+    }
+  });
+
+  app.delete("/api/inventory/:deviceId/:itemId", async (req: Request, res: Response) => {
+    try {
+      const { deviceId, itemId } = req.params;
+      if (!isValidDeviceId(deviceId) || !itemId) return res.status(400).json({ error: "Invalid identifiers" });
+      if (isRateLimited(deviceId)) {
+        return res.status(429).json({ error: "Too many requests. Please wait a moment and try again." });
+      }
+      const ok = await deleteInventoryItem(deviceId, itemId);
+      if (!ok) return res.status(500).json({ error: "Failed to delete inventory item" });
+      res.json({ ok: true });
+    } catch (error) {
+      console.error("Delete inventory error:", error);
+      res.status(500).json({ error: "Failed to delete inventory item" });
     }
   });
 

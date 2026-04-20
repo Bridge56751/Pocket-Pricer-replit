@@ -20,12 +20,14 @@ import * as Haptics from "expo-haptics";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
 import { useDesignTokens } from "@/hooks/useDesignTokens";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   getInventory,
   addInventoryItem,
   updateInventoryItem,
   removeInventoryItem,
   getSearchHistory,
+  migrateLocalInventoryToCloud,
 } from "@/lib/storage";
 import type { InventoryItem, SearchHistoryItem } from "@/types/product";
 
@@ -48,21 +50,47 @@ function generateId(): string {
 export default function InventoryScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useDesignTokens();
+  const { getDeviceId } = useAuth();
 
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [filter, setFilter] = useState<FilterMode>("stock");
   const [addOpen, setAddOpen] = useState(false);
   const [soldOpen, setSoldOpen] = useState<InventoryItem | null>(null);
+  const [deviceId, setDeviceId] = useState<string | null>(null);
+  const [loadingItems, setLoadingItems] = useState(true);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const id = await getDeviceId();
+        if (cancelled) return;
+        setDeviceId(id);
+        await migrateLocalInventoryToCloud(id);
+      } catch (err) {
+        console.error("Failed to init inventory device id:", err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [getDeviceId]);
 
   const loadItems = useCallback(async () => {
-    const data = await getInventory();
-    setItems(data);
-  }, []);
+    if (!deviceId) return;
+    setLoadingItems(true);
+    try {
+      const data = await getInventory(deviceId);
+      setItems(data);
+    } finally {
+      setLoadingItems(false);
+    }
+  }, [deviceId]);
 
   useFocusEffect(
     useCallback(() => {
-      loadItems();
-    }, [loadItems])
+      if (deviceId) loadItems();
+    }, [deviceId, loadItems])
   );
 
   const metrics = useMemo(() => {
@@ -90,11 +118,16 @@ export default function InventoryScreen() {
           text: "Remove",
           style: "destructive",
           onPress: async () => {
+            if (!deviceId) return;
             if (Platform.OS !== "web") {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
             }
-            await removeInventoryItem(item.id);
-            await loadItems();
+            setItems(prev => prev.filter(i => i.id !== item.id));
+            const ok = await removeInventoryItem(deviceId, item.id);
+            if (!ok) {
+              Alert.alert("Couldn't remove item", "Please check your connection and try again.");
+              await loadItems();
+            }
           },
         },
       ]
@@ -237,6 +270,7 @@ export default function InventoryScreen() {
 
       <AddItemModal
         visible={addOpen}
+        deviceId={deviceId}
         onClose={() => setAddOpen(false)}
         onSaved={async () => {
           setAddOpen(false);
@@ -245,6 +279,7 @@ export default function InventoryScreen() {
       />
       <MarkSoldModal
         item={soldOpen}
+        deviceId={deviceId}
         onClose={() => setSoldOpen(null)}
         onSaved={async () => {
           setSoldOpen(null);
@@ -372,10 +407,12 @@ function getScanSuggestedPrice(scan: SearchHistoryItem): number | undefined {
 
 function AddItemModal({
   visible,
+  deviceId,
   onClose,
   onSaved,
 }: {
   visible: boolean;
+  deviceId: string | null;
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -416,11 +453,11 @@ function AddItemModal({
   };
 
   const handleSave = async () => {
-    if (!selected) return;
+    if (!selected || !deviceId) return;
     const parsedPrice = parseFloat(price);
     if (isNaN(parsedPrice) || parsedPrice < 0) return;
     setSaving(true);
-    await addInventoryItem({
+    const created = await addInventoryItem(deviceId, {
       id: generateId(),
       productName: getScanTitle(selected),
       imageUrl: getScanThumbnail(selected),
@@ -428,6 +465,11 @@ function AddItemModal({
       purchasedAt: new Date().toISOString(),
       sourceProductId: selected.id,
     });
+    setSaving(false);
+    if (!created) {
+      Alert.alert("Couldn't save item", "Please check your connection and try again.");
+      return;
+    }
     if (Platform.OS !== "web") {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
@@ -642,10 +684,12 @@ function AddItemModal({
 
 function MarkSoldModal({
   item,
+  deviceId,
   onClose,
   onSaved,
 }: {
   item: InventoryItem | null;
+  deviceId: string | null;
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -658,15 +702,19 @@ function MarkSoldModal({
   }, [item]);
 
   const handleSave = async () => {
-    if (!item) return;
+    if (!item || !deviceId) return;
     const parsedPrice = parseFloat(price);
     if (isNaN(parsedPrice) || parsedPrice < 0) return;
     setSaving(true);
-    await updateInventoryItem(item.id, {
+    const updated = await updateInventoryItem(deviceId, item.id, {
       soldPrice: parsedPrice,
       soldAt: new Date().toISOString(),
     });
     setSaving(false);
+    if (!updated) {
+      Alert.alert("Couldn't mark sold", "Please check your connection and try again.");
+      return;
+    }
     setPrice("");
     if (Platform.OS !== "web") {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

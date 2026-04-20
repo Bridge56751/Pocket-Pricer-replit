@@ -1,12 +1,46 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { SearchHistoryItem, FavoriteItem, InventoryItem, UserSettings } from "@/types/product";
+import { apiRequest } from "@/lib/query-client";
 
 const STORAGE_KEYS = {
   SEARCH_HISTORY: "@ebay_profit/search_history",
   FAVORITES: "@ebay_profit/favorites",
   INVENTORY: "@ebay_profit/inventory",
+  INVENTORY_MIGRATED: "@ebay_profit/inventory_migrated_v1",
   USER_SETTINGS: "@ebay_profit/user_settings",
 };
+
+interface InventoryRowResponse {
+  id: string;
+  device_id: string;
+  product_name: string;
+  image_url: string | null;
+  purchase_price: number | string;
+  purchased_at: string;
+  notes: string | null;
+  sold_price: number | string | null;
+  sold_at: string | null;
+  source_scan_id: string | null;
+}
+
+function rowToItem(row: InventoryRowResponse): InventoryItem {
+  return {
+    id: row.id,
+    productName: row.product_name,
+    imageUrl: row.image_url ?? undefined,
+    purchasePrice: typeof row.purchase_price === "string" ? parseFloat(row.purchase_price) : row.purchase_price,
+    purchasedAt: row.purchased_at,
+    notes: row.notes ?? undefined,
+    soldPrice:
+      row.sold_price === null || row.sold_price === undefined
+        ? undefined
+        : typeof row.sold_price === "string"
+        ? parseFloat(row.sold_price)
+        : row.sold_price,
+    soldAt: row.sold_at ?? undefined,
+    sourceProductId: row.source_scan_id ?? undefined,
+  };
+}
 
 const DEFAULT_SETTINGS: UserSettings = {
   defaultCost: 0,
@@ -118,42 +152,125 @@ export async function isFavorite(productId: string): Promise<boolean> {
   }
 }
 
-export async function getInventory(): Promise<InventoryItem[]> {
+export async function getInventory(deviceId: string): Promise<InventoryItem[]> {
   try {
-    const data = await AsyncStorage.getItem(STORAGE_KEYS.INVENTORY);
-    return data ? JSON.parse(data) : [];
-  } catch {
+    const res = await apiRequest("GET", `/api/inventory/${encodeURIComponent(deviceId)}`);
+    if (!res.ok) {
+      console.error("getInventory http error", res.status);
+      return [];
+    }
+    const json = await res.json();
+    const rows: InventoryRowResponse[] = json?.items || [];
+    return rows.map(rowToItem);
+  } catch (error) {
+    console.error("Failed to load inventory:", error);
     return [];
   }
 }
 
-export async function addInventoryItem(item: InventoryItem): Promise<void> {
+export async function addInventoryItem(deviceId: string, item: InventoryItem): Promise<InventoryItem | null> {
   try {
-    const inventory = await getInventory();
-    const newInventory = [item, ...inventory.filter(i => i.id !== item.id)];
-    await AsyncStorage.setItem(STORAGE_KEYS.INVENTORY, JSON.stringify(newInventory));
+    const res = await apiRequest("POST", `/api/inventory/${encodeURIComponent(deviceId)}`, {
+      id: item.id,
+      productName: item.productName,
+      imageUrl: item.imageUrl ?? null,
+      purchasePrice: item.purchasePrice,
+      purchasedAt: item.purchasedAt,
+      notes: item.notes ?? null,
+      soldPrice: item.soldPrice ?? null,
+      soldAt: item.soldAt ?? null,
+      sourceScanId: item.sourceProductId ?? null,
+    });
+    if (!res.ok) {
+      console.error("addInventoryItem http error", res.status);
+      return null;
+    }
+    const json = await res.json();
+    return json?.item ? rowToItem(json.item) : null;
   } catch (error) {
     console.error("Failed to add inventory item:", error);
+    return null;
   }
 }
 
-export async function updateInventoryItem(id: string, updates: Partial<InventoryItem>): Promise<void> {
+export async function updateInventoryItem(
+  deviceId: string,
+  id: string,
+  updates: Partial<InventoryItem>
+): Promise<InventoryItem | null> {
   try {
-    const inventory = await getInventory();
-    const newInventory = inventory.map(i => i.id === id ? { ...i, ...updates } : i);
-    await AsyncStorage.setItem(STORAGE_KEYS.INVENTORY, JSON.stringify(newInventory));
+    const body: Record<string, unknown> = {};
+    if (updates.productName !== undefined) body.productName = updates.productName;
+    if (updates.imageUrl !== undefined) body.imageUrl = updates.imageUrl ?? null;
+    if (updates.purchasePrice !== undefined) body.purchasePrice = updates.purchasePrice;
+    if (updates.notes !== undefined) body.notes = updates.notes ?? null;
+    if (updates.soldPrice !== undefined) body.soldPrice = updates.soldPrice ?? null;
+    if (updates.soldAt !== undefined) body.soldAt = updates.soldAt ?? null;
+
+    const res = await apiRequest(
+      "PATCH",
+      `/api/inventory/${encodeURIComponent(deviceId)}/${encodeURIComponent(id)}`,
+      body
+    );
+    if (!res.ok) {
+      console.error("updateInventoryItem http error", res.status);
+      return null;
+    }
+    const json = await res.json();
+    return json?.item ? rowToItem(json.item) : null;
   } catch (error) {
     console.error("Failed to update inventory item:", error);
+    return null;
   }
 }
 
-export async function removeInventoryItem(id: string): Promise<void> {
+export async function removeInventoryItem(deviceId: string, id: string): Promise<boolean> {
   try {
-    const inventory = await getInventory();
-    const newInventory = inventory.filter(i => i.id !== id);
-    await AsyncStorage.setItem(STORAGE_KEYS.INVENTORY, JSON.stringify(newInventory));
+    const res = await apiRequest(
+      "DELETE",
+      `/api/inventory/${encodeURIComponent(deviceId)}/${encodeURIComponent(id)}`
+    );
+    return res.ok;
   } catch (error) {
     console.error("Failed to remove inventory item:", error);
+    return false;
+  }
+}
+
+export async function migrateLocalInventoryToCloud(deviceId: string): Promise<void> {
+  try {
+    const flag = await AsyncStorage.getItem(STORAGE_KEYS.INVENTORY_MIGRATED);
+    if (flag === "1") return;
+
+    const data = await AsyncStorage.getItem(STORAGE_KEYS.INVENTORY);
+    const local: InventoryItem[] = data ? JSON.parse(data) : [];
+
+    if (local.length === 0) {
+      await AsyncStorage.setItem(STORAGE_KEYS.INVENTORY_MIGRATED, "1");
+      return;
+    }
+
+    let allOk = true;
+    const remaining: InventoryItem[] = [];
+    for (const item of local) {
+      const created = await addInventoryItem(deviceId, item);
+      if (!created) {
+        allOk = false;
+        remaining.push(item);
+      }
+    }
+
+    if (allOk) {
+      await AsyncStorage.setItem(STORAGE_KEYS.INVENTORY_MIGRATED, "1");
+      await AsyncStorage.removeItem(STORAGE_KEYS.INVENTORY);
+    } else {
+      // Keep only items that haven't migrated yet so the next launch retries.
+      // Server-side upsert (onConflict=id) makes re-running this safe for items
+      // that did succeed but we haven't pruned here.
+      await AsyncStorage.setItem(STORAGE_KEYS.INVENTORY, JSON.stringify(remaining));
+    }
+  } catch (error) {
+    console.error("Inventory migration failed:", error);
   }
 }
 
