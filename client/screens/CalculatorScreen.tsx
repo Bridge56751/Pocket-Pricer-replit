@@ -13,8 +13,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
+import Animated from "react-native-reanimated";
 
 import { useDesignTokens } from "@/hooks/useDesignTokens";
+import { useTabBarFadeOnScroll } from "@/hooks/useTabBarFadeOnScroll";
 
 type FeeBreakdown = {
   platformFee: number;

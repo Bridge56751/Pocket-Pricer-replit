@@ -20,6 +20,7 @@ import * as Haptics from "expo-haptics";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
 import { useDesignTokens } from "@/hooks/useDesignTokens";
+import { useTabBarFadeOnScroll } from "@/hooks/useTabBarFadeOnScroll";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRevenueCat } from "@/contexts/RevenueCatContext";
 import {
@@ -56,6 +57,7 @@ export default function InventoryScreen() {
   const { getDeviceId } = useAuth();
   const { isPro, isReady: rcReady } = useRevenueCat();
   const navigation = useNavigation<any>();
+  const tabBarFadeHandler = useTabBarFadeOnScroll();
 
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [filter, setFilter] = useState<FilterMode>("stock");
