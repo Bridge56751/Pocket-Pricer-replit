@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useRef } from "react";
+import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { View, StyleSheet, Pressable, Text, Linking, TextInput, ActivityIndicator, ScrollView, Keyboard, Animated as RNAnimated, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -90,7 +90,31 @@ export default function SearchResultsScreen() {
   const { getDeviceId, getScansUsed } = useAuth();
   const { isPro, isReady: rcReady } = useRevenueCat();
   const addToInventoryMode = route.params?.addToInventory ?? false;
+
+  const resolvedName = useMemo(() => {
+    return (
+      (results.productInfo && results.productInfo.name) ||
+      results.query ||
+      "Unidentified item"
+    );
+  }, [results]);
+
+  const brandLine = useMemo(() => {
+    const brand = results.productInfo?.brand?.trim();
+    if (!brand) return "";
+    if (resolvedName.toLowerCase().includes(brand.toLowerCase())) return "";
+    return brand;
+  }, [results, resolvedName]);
+
   const [savingToInventory, setSavingToInventory] = useState(false);
+  const [displayName, setDisplayName] = useState(resolvedName);
+  const [isEditingName, setIsEditingName] = useState(false);
+
+  useEffect(() => {
+    if (!isEditingName) {
+      setDisplayName(resolvedName);
+    }
+  }, [resolvedName]);
   const [purchasePrice, setPurchasePrice] = useState("");
   const [sellingPrice, setSellingPrice] = useState("");
   const [sortOption, setSortOption] = useState<string>("Best Match");
@@ -154,10 +178,11 @@ export default function SearchResultsScreen() {
       !isNaN(parsed) && parsed >= 0
         ? parsed
         : Number(results.avgListPrice) || 0;
-    const productName =
-      (results.productInfo && results.productInfo.name) ||
-      results.query ||
-      "Untitled item";
+    const productName = displayName.trim();
+    if (!productName) {
+      Alert.alert("Name required", "Please enter a name for this item before saving.");
+      return;
+    }
     const imageUrl =
       scannedImageUri ||
       results.listings?.[0]?.imageUrl ||
@@ -199,6 +224,8 @@ export default function SearchResultsScreen() {
     results,
     scannedImageUri,
     navigation,
+    displayName,
+    resolvedName,
   ]);
 
   const CUSTOM_HEADER_HEIGHT = 44;
@@ -644,6 +671,61 @@ export default function SearchResultsScreen() {
                   />
                 </View>
               ) : null}
+
+              <View style={styles.nameBlock}>
+                {brandLine ? (
+                  <Text style={styles.heroBrandText} numberOfLines={1}>
+                    {brandLine.toUpperCase()}
+                  </Text>
+                ) : null}
+                {addToInventoryMode && isEditingName ? (
+                  <View style={styles.nameInputRow}>
+                    <TextInput
+                      value={displayName}
+                      onChangeText={setDisplayName}
+                      onBlur={() => setIsEditingName(false)}
+                      onSubmitEditing={() => {
+                        setIsEditingName(false);
+                        Keyboard.dismiss();
+                      }}
+                      autoFocus
+                      multiline
+                      maxLength={120}
+                      placeholder="Name this item"
+                      placeholderTextColor="rgba(255,255,255,0.5)"
+                      returnKeyType="done"
+                      blurOnSubmit
+                      style={styles.heroNameInput}
+                      testID="input-product-name"
+                    />
+                  </View>
+                ) : (
+                  <Pressable
+                    onPress={() => {
+                      if (!addToInventoryMode) return;
+                      if (Platform.OS !== "web") {
+                        Haptics.selectionAsync();
+                      }
+                      setIsEditingName(true);
+                    }}
+                    style={styles.nameRow}
+                    disabled={!addToInventoryMode}
+                    testID="button-edit-product-name"
+                  >
+                    <Text style={styles.heroNameText} numberOfLines={2}>
+                      {displayName.trim() || "Name this item"}
+                    </Text>
+                    {addToInventoryMode ? (
+                      <Feather
+                        name="edit-2"
+                        size={14}
+                        color="rgba(255,255,255,0.7)"
+                        style={{ marginLeft: 8, marginTop: 6 }}
+                      />
+                    ) : null}
+                  </Pressable>
+                )}
+              </View>
 
               <View style={styles.suggestedPriceRow}>
                 <View>
@@ -1318,13 +1400,18 @@ export default function SearchResultsScreen() {
       {addToInventoryMode ? (
         <Pressable
           onPress={handleAddToInventory}
-          disabled={savingToInventory}
+          disabled={savingToInventory || !displayName.trim()}
           style={({ pressed }) => [
             styles.newSearchButton,
             {
               backgroundColor: theme.colors.primary,
               bottom: insets.bottom + 16,
-              opacity: savingToInventory ? 0.6 : pressed ? 0.85 : 1,
+              opacity:
+                savingToInventory || !displayName.trim()
+                  ? 0.5
+                  : pressed
+                  ? 0.85
+                  : 1,
             },
           ]}
           testID="button-add-to-inventory"
@@ -1411,6 +1498,46 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
+  },
+  nameBlock: {
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  nameRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+  },
+  heroBrandText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "rgba(74,222,128,0.9)",
+    letterSpacing: 1.2,
+    marginBottom: 4,
+  },
+  heroNameText: {
+    flex: 1,
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    lineHeight: 28,
+  },
+  nameInputRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+  },
+  heroNameInput: {
+    flex: 1,
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    lineHeight: 28,
+    padding: 0,
+    margin: 0,
+    minHeight: 28,
+    maxHeight: 60,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.4)",
+    paddingBottom: 4,
   },
   suggestedPriceRow: {
     flexDirection: "row",
