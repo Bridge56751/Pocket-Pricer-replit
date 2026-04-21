@@ -659,7 +659,7 @@ function MoneyInput({
   return (
     <View style={styles.inputBlock}>
       <Text style={[styles.inputLabel, { color: theme.colors.foreground }]}>{label}</Text>
-      <View style={[styles.inputWrap, { borderColor: "#E5E7EB" }]}>
+      <View style={[styles.inputWrap, { borderColor: "#6EE7B7" }]}>
         <Text style={[styles.dollarPrefix, { color: theme.colors.mutedForeground }]}>$</Text>
         <TextInput
           value={value}
@@ -767,6 +767,8 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingVertical: 12,
     paddingHorizontal: 14,
+    borderWidth: 1.5,
+    borderColor: "#A7F3D0",
   },
   marketplaceSelectLabel: {
     fontSize: 11,
@@ -810,6 +812,8 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 16,
     padding: 16,
+    borderWidth: 1.5,
+    borderColor: "#A7F3D0",
   },
   cardHeaderRow: {
     flexDirection: "row",
