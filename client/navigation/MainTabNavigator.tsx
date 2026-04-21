@@ -29,6 +29,24 @@ function CameraTabPlaceholder() {
   return <View />;
 }
 
+function TabIcon({
+  name,
+  color,
+  size,
+  focused,
+}: {
+  name: React.ComponentProps<typeof Feather>["name"];
+  color: string;
+  size: number;
+  focused: boolean;
+}) {
+  return (
+    <View style={[styles.tabIconWrap, focused && styles.tabIconWrapFocused]}>
+      <Feather name={name} size={focused ? size + 2 : size} color={color} />
+    </View>
+  );
+}
+
 function CameraTabButton({ onCameraPress }: { onCameraPress: () => void }) {
   return (
     <Pressable
@@ -93,8 +111,8 @@ export default function MainTabNavigator({ navigation }: any) {
         name="Home"
         component={ScanScreen}
         options={{
-          tabBarIcon: ({ color, size }) => (
-            <Feather name="home" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <TabIcon name="home" color={color} size={size} focused={focused} />
           ),
         }}
       />
@@ -103,8 +121,8 @@ export default function MainTabNavigator({ navigation }: any) {
         component={CameraTabPlaceholder}
         options={{
           tabBarLabel: "Calculator",
-          tabBarIcon: ({ color, size }) => (
-            <Feather name="percent" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <TabIcon name="percent" color={color} size={size} focused={focused} />
           ),
         }}
         listeners={{
@@ -134,8 +152,8 @@ export default function MainTabNavigator({ navigation }: any) {
         name="Inventory"
         component={InventoryScreen}
         options={{
-          tabBarIcon: ({ color, size }) => (
-            <Feather name="package" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <TabIcon name="package" color={color} size={size} focused={focused} />
           ),
         }}
       />
@@ -143,8 +161,8 @@ export default function MainTabNavigator({ navigation }: any) {
         name="Settings"
         component={ProfileScreen}
         options={{
-          tabBarIcon: ({ color, size }) => (
-            <Feather name="settings" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <TabIcon name="settings" color={color} size={size} focused={focused} />
           ),
         }}
       />
@@ -158,6 +176,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     top: -20,
+  },
+  tabIconWrap: {
+    alignItems: "center",
+    justifyContent: "center",
+    transform: [{ translateY: 0 }],
+  },
+  tabIconWrapFocused: {
+    transform: [{ translateY: -6 }],
   },
   cameraTabRing: {
     width: 76,
