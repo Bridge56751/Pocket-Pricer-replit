@@ -217,6 +217,7 @@ function parseMoney(input: string): number {
 export default function CalculatorScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useDesignTokens();
+  const tabBarFadeHandler = useTabBarFadeOnScroll();
 
   const [marketplaceId, setMarketplaceId] = useState<string>("ebay");
   const [salePrice, setSalePrice] = useState("");
