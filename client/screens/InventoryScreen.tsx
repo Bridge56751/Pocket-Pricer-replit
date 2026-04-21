@@ -62,6 +62,7 @@ export default function InventoryScreen() {
   const [addOpen, setAddOpen] = useState(false);
   const [soldOpen, setSoldOpen] = useState<InventoryItem | null>(null);
   const [editNameOpen, setEditNameOpen] = useState<InventoryItem | null>(null);
+  const [profitInfoOpen, setProfitInfoOpen] = useState(false);
   const [deviceId, setDeviceId] = useState<string | null>(null);
   const [loadingItems, setLoadingItems] = useState(true);
 
@@ -170,15 +171,25 @@ export default function InventoryScreen() {
             <View style={styles.metricCard}>
               <Text style={styles.metricLabel}>SPENT</Text>
               <Text style={styles.metricValue}>{formatCurrency(metrics.spent)}</Text>
-              <Text style={styles.metricSub}>{items.length} items</Text>
+              <Text style={styles.metricSub}>All inventory cost</Text>
             </View>
             <View style={styles.metricCard}>
               <Text style={styles.metricLabel}>SOLD</Text>
               <Text style={styles.metricValue}>{formatCurrency(metrics.soldRevenue)}</Text>
-              <Text style={styles.metricSub}>{metrics.soldCount} sold</Text>
+              <Text style={styles.metricSub}>Revenue from sold</Text>
             </View>
             <View style={styles.metricCard}>
-              <Text style={styles.metricLabel}>PROFIT</Text>
+              <View style={styles.metricLabelRow}>
+                <Text style={styles.metricLabel}>PROFIT</Text>
+                <Pressable
+                  onPress={() => setProfitInfoOpen(true)}
+                  hitSlop={8}
+                  style={styles.metricInfoButton}
+                  testID="button-profit-info"
+                >
+                  <Feather name="info" size={12} color="rgba(255,255,255,0.7)" />
+                </Pressable>
+              </View>
               <Text
                 style={[
                   styles.metricValue,
@@ -187,7 +198,7 @@ export default function InventoryScreen() {
               >
                 {formatCurrency(metrics.profit)}
               </Text>
-              <Text style={styles.metricSub}>net realized</Text>
+              <Text style={styles.metricSub}>On items sold</Text>
             </View>
           </View>
 
@@ -303,6 +314,40 @@ export default function InventoryScreen() {
           await loadItems();
         }}
       />
+      <Modal
+        visible={profitInfoOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setProfitInfoOpen(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setProfitInfoOpen(false)} />
+          <View style={[styles.modalCard, { backgroundColor: theme.colors.background }]}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 }}>
+              <Feather name="info" size={18} color={theme.colors.primary} />
+              <Text style={[styles.modalTitle, { color: theme.colors.foreground, marginBottom: 0 }]}>
+                How profit works
+              </Text>
+            </View>
+            <Text style={[styles.modalSub, { color: theme.colors.mutedForeground, marginBottom: 16 }]}>
+              Profit only counts items you've already sold. Unsold inventory isn't a loss — it's stock you haven't moved yet.
+            </Text>
+            <Text style={[styles.modalSub, { color: theme.colors.mutedForeground, marginBottom: 16 }]}>
+              Example: buy 10 items at $10 each ($100 spent), sell 3 at $20 each. Profit shows +$30, not -$40.
+            </Text>
+            <Pressable
+              onPress={() => setProfitInfoOpen(false)}
+              style={({ pressed }) => [
+                styles.modalSaveButton,
+                { backgroundColor: theme.colors.primary, opacity: pressed ? 0.85 : 1 },
+              ]}
+              testID="button-close-profit-info"
+            >
+              <Text style={styles.modalSaveText}>Got it</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
       <EditNameModal
         item={editNameOpen}
         deviceId={deviceId}
@@ -1137,6 +1182,16 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "rgba(255,255,255,0.5)",
     letterSpacing: 0.8,
+    marginBottom: 4,
+  },
+  metricLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginBottom: 4,
+  },
+  metricInfoButton: {
+    padding: 2,
     marginBottom: 4,
   },
   metricValue: {
