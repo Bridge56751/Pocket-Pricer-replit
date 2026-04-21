@@ -4,6 +4,7 @@ import { useTabBarFadeOnScroll } from "@/hooks/useTabBarFadeOnScroll";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as StoreReview from "expo-store-review";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useNavigation, useFocusEffect, useRoute, RouteProp, CommonActions } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
@@ -150,6 +151,7 @@ const FREE_SCAN_LIMIT = 3;
 
 export default function ScanScreen() {
   const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
   const { theme, colors } = useDesignTokens();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<ScanScreenRouteProp>();
@@ -480,7 +482,7 @@ export default function ScanScreen() {
         style={styles.scrollView}
         contentContainerStyle={[
           styles.content,
-          { paddingBottom: insets.bottom + 100 },
+          { paddingBottom: tabBarHeight + 24 },
         ]}
         showsVerticalScrollIndicator={false}
         onScroll={tabBarFadeHandler}

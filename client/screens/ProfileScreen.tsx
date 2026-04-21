@@ -128,7 +128,7 @@ export default function ProfileScreen() {
       <Animated.ScrollView
         ref={scrollRef}
         style={styles.scrollView}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+        contentContainerStyle={{ paddingBottom: tabBarHeight + 24 }}
         showsVerticalScrollIndicator={false}
         onScroll={tabBarFadeHandler}
         scrollEventThrottle={16}
@@ -455,7 +455,7 @@ function MenuItem({
 const styles = StyleSheet.create({
   outerContainer: {
     flex: 1,
-    backgroundColor: "#F9FAFB",
+    backgroundColor: "#F3F4F6",
   },
   topOverscrollFill: {
     height: 800,

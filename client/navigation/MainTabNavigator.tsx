@@ -131,11 +131,16 @@ export default function MainTabNavigator({ navigation }: any) {
           marginTop: 2,
         },
         tabBarStyle: {
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
           backgroundColor: theme.colors.background,
           borderTopColor: "#047857",
           borderTopWidth: 2,
           height: Platform.select({ ios: 88, android: 64, default: 64 }),
           paddingTop: 6,
+          elevation: 0,
         },
       }}
     >

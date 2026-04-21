@@ -12,6 +12,7 @@ import {
   Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
@@ -53,6 +54,7 @@ function generateId(): string {
 
 export default function InventoryScreen() {
   const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
   const { theme } = useDesignTokens();
   const { getDeviceId } = useAuth();
   const { isPro, isReady: rcReady } = useRevenueCat();
@@ -159,7 +161,7 @@ export default function InventoryScreen() {
       <Animated.ScrollView
         ref={scrollRef}
         style={styles.scroll}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 120 }}
+        contentContainerStyle={{ paddingBottom: tabBarHeight + 32 }}
         showsVerticalScrollIndicator={false}
         onScroll={tabBarFadeHandler}
         scrollEventThrottle={16}
