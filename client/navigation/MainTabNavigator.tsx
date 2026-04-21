@@ -12,7 +12,11 @@ import ProfileScreen from "@/screens/ProfileScreen";
 import CalculatorScreen from "@/screens/CalculatorScreen";
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { useTabBarVisibility } from "@/contexts/TabBarVisibilityContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRevenueCat } from "@/contexts/RevenueCatContext";
 import type { CapturedPhoto } from "@/navigation/RootStackNavigator";
+
+const FREE_SCAN_LIMIT = 3;
 
 export type MainTabParamList = {
   Home: {
@@ -97,8 +101,17 @@ function CameraTabButton({ onCameraPress }: { onCameraPress: () => void }) {
 
 export default function MainTabNavigator({ navigation }: any) {
   const { theme } = useDesignTokens();
+  const { isPro, isReady: rcReady } = useRevenueCat();
+  const { getScansUsed } = useAuth();
 
-  const openCamera = () => {
+  const openCamera = async () => {
+    if (rcReady && !isPro) {
+      const scansUsed = await getScansUsed();
+      if (scansUsed >= FREE_SCAN_LIMIT) {
+        navigation.navigate("Paywall");
+        return;
+      }
+    }
     navigation.navigate("MainTabs", { screen: "Home" });
     navigation.navigate("CameraScan", { source: "camera" });
   };
