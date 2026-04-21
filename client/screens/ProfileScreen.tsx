@@ -455,7 +455,7 @@ function MenuItem({
 const styles = StyleSheet.create({
   outerContainer: {
     flex: 1,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: "#F9FAFB",
   },
   topOverscrollFill: {
     height: 800,
