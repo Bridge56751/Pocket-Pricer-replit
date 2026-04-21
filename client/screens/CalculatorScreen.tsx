@@ -286,7 +286,7 @@ export default function CalculatorScreen() {
       <View style={[styles.heroTopFill, { height: insets.top + 200 }]} />
       <Animated.ScrollView
         style={styles.scroll}
-        contentContainerStyle={{ paddingBottom: tabBarHeight + 24 }}
+        contentContainerStyle={{ flexGrow: 1 }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         onScroll={tabBarFadeHandler}
@@ -327,7 +327,7 @@ export default function CalculatorScreen() {
           </Pressable>
         </LinearGradient>
 
-        <View style={styles.belowHero}>
+        <View style={[styles.belowHero, { paddingBottom: tabBarHeight + 24 }]}>
           <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
             <View style={styles.cardHeaderRow}>
               <Text style={[styles.cardTitle, { color: theme.colors.foreground }]}>
@@ -791,10 +791,10 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   belowHero: {
+    flex: 1,
     paddingHorizontal: 16,
     paddingTop: 16,
     backgroundColor: "#F3F4F6",
-    minHeight: "100%",
   },
   card: {
     borderRadius: 16,
