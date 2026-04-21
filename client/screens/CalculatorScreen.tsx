@@ -366,47 +366,54 @@ export default function CalculatorScreen() {
             <Text style={[styles.sectionLabel, { color: theme.colors.mutedForeground }]}>
               SALE
             </Text>
-            <MoneyInput
-              label="Sale price"
-              value={salePrice}
-              onChangeText={setSalePrice}
-              placeholder="0.00"
-              theme={theme}
-              testID="input-sale-price"
-              autoFocus={false}
-            />
-            <MoneyInput
-              label="Shipping charged to buyer"
-              value={shippingCharged}
-              onChangeText={setShippingCharged}
-              placeholder="0.00"
-              theme={theme}
-              testID="input-shipping-charged"
-              hint="Leave 0 if buyer pays the carrier directly."
-            />
+            <View style={styles.inputsRow}>
+              <View style={styles.inputCell}>
+                <MoneyInput
+                  label="Sale price"
+                  value={salePrice}
+                  onChangeText={setSalePrice}
+                  placeholder="0.00"
+                  theme={theme}
+                  testID="input-sale-price"
+                />
+              </View>
+              <View style={styles.inputCell}>
+                <MoneyInput
+                  label="Shipping charged"
+                  value={shippingCharged}
+                  onChangeText={setShippingCharged}
+                  placeholder="0.00"
+                  theme={theme}
+                  testID="input-shipping-charged"
+                />
+              </View>
+            </View>
 
-            <View style={styles.divider} />
-
-            <Text style={[styles.sectionLabel, { color: theme.colors.mutedForeground, marginTop: 12 }]}>
+            <Text style={[styles.sectionLabel, { color: theme.colors.mutedForeground, marginTop: 8 }]}>
               YOUR COSTS
             </Text>
-            <MoneyInput
-              label="Item cost"
-              value={itemCost}
-              onChangeText={setItemCost}
-              placeholder="0.00"
-              theme={theme}
-              testID="input-item-cost"
-            />
-            <MoneyInput
-              label="Shipping you pay"
-              value={shippingCost}
-              onChangeText={setShippingCost}
-              placeholder="0.00"
-              theme={theme}
-              testID="input-shipping-cost"
-              hint="Label, packaging, etc."
-            />
+            <View style={styles.inputsRow}>
+              <View style={styles.inputCell}>
+                <MoneyInput
+                  label="Item cost"
+                  value={itemCost}
+                  onChangeText={setItemCost}
+                  placeholder="0.00"
+                  theme={theme}
+                  testID="input-item-cost"
+                />
+              </View>
+              <View style={styles.inputCell}>
+                <MoneyInput
+                  label="Shipping you pay"
+                  value={shippingCost}
+                  onChangeText={setShippingCost}
+                  placeholder="0.00"
+                  theme={theme}
+                  testID="input-shipping-cost"
+                />
+              </View>
+            </View>
 
             <Pressable
               onPress={handleReset}
@@ -750,6 +757,14 @@ const styles = StyleSheet.create({
   },
   inputBlock: {
     marginBottom: 12,
+  },
+  inputsRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  inputCell: {
+    flex: 1,
+    minWidth: 0,
   },
   inputLabel: {
     fontSize: 13,
