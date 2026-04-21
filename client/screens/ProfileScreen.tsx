@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { View, StyleSheet, Pressable, Text, Alert, Platform, ActivityIndicator, Linking } from "react-native";
 import Animated from "react-native-reanimated";
 import { useFocusEffect } from "@react-navigation/native";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useTabBarFadeOnScroll } from "@/hooks/useTabBarFadeOnScroll";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
@@ -20,6 +21,7 @@ import { clearSearchHistory, clearFavorites } from "@/lib/storage";
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
   const navigation = useNavigation<any>();
   const tabBarFadeHandler = useTabBarFadeOnScroll();
   const scrollRef = useRef<any>(null);
@@ -126,7 +128,7 @@ export default function ProfileScreen() {
       <Animated.ScrollView
         ref={scrollRef}
         style={styles.scrollView}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 120 }}
+        contentContainerStyle={{ paddingBottom: tabBarHeight + insets.bottom + 32 }}
         showsVerticalScrollIndicator={false}
         onScroll={tabBarFadeHandler}
         scrollEventThrottle={16}
