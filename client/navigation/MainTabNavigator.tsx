@@ -34,12 +34,13 @@ function CameraTabPlaceholder() {
 
 function AnimatedTabBar(props: BottomTabBarProps) {
   const { opacity } = useTabBarVisibility();
+  const tabBarHeight = Platform.select({ ios: 88, android: 64, default: 64 }) ?? 64;
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
-    transform: [{ translateY: (1 - opacity.value) * 24 }],
+    transform: [{ translateY: (1 - opacity.value) * (tabBarHeight + 40) }],
   }));
   return (
-    <Animated.View style={animatedStyle}>
+    <Animated.View style={animatedStyle} pointerEvents="box-none">
       <BottomTabBar {...props} />
     </Animated.View>
   );
