@@ -41,19 +41,21 @@ function CameraTabButton({ onCameraPress }: { onCameraPress: () => void }) {
       style={styles.cameraTabButton}
       testID="tab-camera"
     >
-      <LinearGradient
-        colors={["#0E7C4A", "#047857", "#065F46"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.cameraTabCircle}
-      >
-        <Feather
-          name="camera"
-          size={30}
-          color="#FFFFFF"
-          style={styles.cameraIcon}
-        />
-      </LinearGradient>
+      <View style={styles.cameraTabRing}>
+        <LinearGradient
+          colors={["#0E7C4A", "#047857", "#065F46"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.cameraTabCircle}
+        >
+          <Feather
+            name="camera"
+            size={30}
+            color="#FFFFFF"
+            style={styles.cameraIcon}
+          />
+        </LinearGradient>
+      </View>
     </Pressable>
   );
 }
@@ -157,17 +159,25 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     top: -20,
   },
+  cameraTabRing: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#047857",
+    shadowColor: "#047857",
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 8,
+  },
   cameraTabCircle: {
     width: 68,
     height: 68,
     borderRadius: 34,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#047857",
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 8,
     borderWidth: 4,
     borderColor: "#FFFFFF",
   },
