@@ -55,7 +55,7 @@ export interface CapturedPhoto {
 export type RootStackParamList = {
   MainTabs: NavigatorScreenParams<MainTabParamList> | undefined;
   CameraScan: { source?: "camera" | "library"; addToInventory?: boolean } | undefined;
-  Paywall: { context?: "ebay" } | undefined;
+  Paywall: { context?: "ebay" | "inventory" } | undefined;
   History: undefined;
   SearchResults: { results: SearchResultsData; addToInventory?: boolean };
 };

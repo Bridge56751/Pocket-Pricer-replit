@@ -21,6 +21,7 @@ import Animated, { FadeInDown } from "react-native-reanimated";
 
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRevenueCat } from "@/contexts/RevenueCatContext";
 import {
   getInventory,
   addInventoryItem,
@@ -51,6 +52,8 @@ export default function InventoryScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useDesignTokens();
   const { getDeviceId } = useAuth();
+  const { isPro, isReady: rcReady } = useRevenueCat();
+  const navigation = useNavigation<any>();
 
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [filter, setFilter] = useState<FilterMode>("stock");
@@ -190,13 +193,23 @@ export default function InventoryScreen() {
               if (Platform.OS !== "web") {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               }
+              if (rcReady && !isPro) {
+                navigation.navigate("Paywall", { context: "inventory" });
+                return;
+              }
               setAddOpen(true);
             }}
             style={({ pressed }) => [styles.addButton, { opacity: pressed ? 0.9 : 1 }]}
             testID="button-add-inventory"
           >
-            <Feather name="plus" size={18} color="#14532D" />
-            <Text style={styles.addButtonText}>Add Item</Text>
+            <Feather
+              name={rcReady && !isPro ? "lock" : "plus"}
+              size={18}
+              color="#14532D"
+            />
+            <Text style={styles.addButtonText}>
+              {rcReady && !isPro ? "Unlock Inventory" : "Add Item"}
+            </Text>
           </Pressable>
         </LinearGradient>
 
