@@ -240,6 +240,10 @@ export default function PaywallScreen() {
               <Text style={styles.heroTitle}>
                 See what items{"\n"}actually sell for
               </Text>
+            ) : context === "inventory" ? (
+              <Text style={styles.heroTitle}>
+                Track every flip{"\n"}from buy to sold
+              </Text>
             ) : (
               <Text style={styles.heroTitle}>
                 Know exactly what{"\n"}to buy & sell
@@ -247,7 +251,11 @@ export default function PaywallScreen() {
             )}
 
             <Text style={styles.heroSubtitle}>
-              {isPro ? "Select a new plan below to switch." : "Real sold prices, unlimited scans,\nand instant profit data."}
+              {isPro
+                ? "Select a new plan below to switch."
+                : context === "inventory"
+                ? "Log purchases, mark items sold,\nand watch your profit grow."
+                : "Real sold prices, unlimited scans,\nand instant profit data."}
             </Text>
           </Animated.View>
         </LinearGradient>
