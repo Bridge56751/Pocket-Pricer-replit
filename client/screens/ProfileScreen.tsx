@@ -1,5 +1,8 @@
-import React, { useState, useEffect } from "react";
-import { View, StyleSheet, Pressable, Text, Alert, Platform, ActivityIndicator, Linking, ScrollView } from "react-native";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { View, StyleSheet, Pressable, Text, Alert, Platform, ActivityIndicator, Linking } from "react-native";
+import Animated from "react-native-reanimated";
+import { useFocusEffect } from "@react-navigation/native";
+import { useTabBarFadeOnScroll } from "@/hooks/useTabBarFadeOnScroll";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
@@ -18,6 +21,17 @@ import { clearSearchHistory, clearFavorites } from "@/lib/storage";
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
+  const tabBarFadeHandler = useTabBarFadeOnScroll();
+  const scrollRef = useRef<any>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      const id = requestAnimationFrame(() => {
+        scrollRef.current?.scrollTo?.({ y: 0, animated: false });
+      });
+      return () => cancelAnimationFrame(id);
+    }, []),
+  );
   const { theme } = useDesignTokens();
   const { getScansUsed } = useAuth();
   const { isPro, restorePurchases } = useRevenueCat();
@@ -109,10 +123,13 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.outerContainer}>
-      <ScrollView
+      <Animated.ScrollView
+        ref={scrollRef}
         style={styles.scrollView}
         contentContainerStyle={{ paddingBottom: insets.bottom + 32, flexGrow: 1 }}
         showsVerticalScrollIndicator={false}
+        onScroll={tabBarFadeHandler}
+        scrollEventThrottle={16}
       >
         <View style={styles.topOverscrollFill} />
         <LinearGradient
@@ -399,7 +416,7 @@ export default function ProfileScreen() {
 
           <Text style={styles.versionText}>Version 1.4.0</Text>
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
     </View>
   );
 }
