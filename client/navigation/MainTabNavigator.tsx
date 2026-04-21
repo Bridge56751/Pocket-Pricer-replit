@@ -12,7 +12,11 @@ import { useDesignTokens } from "@/hooks/useDesignTokens";
 import type { CapturedPhoto } from "@/navigation/RootStackNavigator";
 
 export type MainTabParamList = {
-  Home: { photosToProcess?: CapturedPhoto[]; prefillQuery?: string } | undefined;
+  Home: {
+    photosToProcess?: CapturedPhoto[];
+    prefillQuery?: string;
+    addToInventory?: boolean;
+  } | undefined;
   Calculator: undefined;
   Camera: undefined;
   Inventory: undefined;

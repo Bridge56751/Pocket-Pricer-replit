@@ -12,7 +12,7 @@ import {
   Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -405,6 +405,8 @@ function getScanSuggestedPrice(scan: SearchHistoryItem): number | undefined {
   return scan.bestPrice ?? scan.results?.bestBuyNow ?? scan.avgPrice ?? scan.results?.avgListPrice;
 }
 
+type AddMode = "chooser" | "recent";
+
 function AddItemModal({
   visible,
   deviceId,
@@ -418,6 +420,8 @@ function AddItemModal({
 }) {
   const insets = useSafeAreaInsets();
   const { theme } = useDesignTokens();
+  const navigation = useNavigation<any>();
+  const [mode, setMode] = useState<AddMode>("chooser");
   const [scans, setScans] = useState<SearchHistoryItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<SearchHistoryItem | null>(null);
@@ -426,11 +430,16 @@ function AddItemModal({
 
   React.useEffect(() => {
     if (!visible) return;
-    let cancelled = false;
-    setLoading(true);
+    setMode("chooser");
     setSelected(null);
     setPrice("");
     setSaving(false);
+  }, [visible]);
+
+  React.useEffect(() => {
+    if (!visible || mode !== "recent") return;
+    let cancelled = false;
+    setLoading(true);
     getSearchHistory()
       .then((data) => {
         if (!cancelled) setScans(data);
@@ -441,7 +450,18 @@ function AddItemModal({
     return () => {
       cancelled = true;
     };
-  }, [visible]);
+  }, [visible, mode]);
+
+  const launchScanFlow = (source: "camera" | "library") => {
+    if (Platform.OS !== "web") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    onClose();
+    // Defer the navigation so the modal close animation can start cleanly.
+    setTimeout(() => {
+      navigation.navigate("CameraScan", { source, addToInventory: true });
+    }, 50);
+  };
 
   const handleSelect = (scan: SearchHistoryItem) => {
     if (Platform.OS !== "web") {
@@ -500,11 +520,15 @@ function AddItemModal({
         >
           <View style={styles.sheetHandle} />
           <View style={styles.sheetHeader}>
-            {selected ? (
+            {(mode === "recent" || selected) ? (
               <Pressable
                 onPress={() => {
-                  setSelected(null);
-                  setPrice("");
+                  if (selected) {
+                    setSelected(null);
+                    setPrice("");
+                  } else {
+                    setMode("chooser");
+                  }
                 }}
                 hitSlop={10}
                 style={styles.sheetBackButton}
@@ -515,17 +539,96 @@ function AddItemModal({
             ) : null}
             <View style={{ flex: 1 }}>
               <Text style={[styles.modalTitle, { color: theme.colors.foreground }]}>
-                {selected ? "Set Purchase Price" : "Add from Recent Scans"}
+                {selected
+                  ? "Set Purchase Price"
+                  : mode === "recent"
+                  ? "Add from Recent Scans"
+                  : "Add Item"}
               </Text>
               <Text style={[styles.modalSub, { color: theme.colors.mutedForeground }]}>
                 {selected
                   ? "Enter what you actually paid for this item."
-                  : "Pick a recent scan to add to your inventory."}
+                  : mode === "recent"
+                  ? "Pick a recent scan to add to your inventory."
+                  : "How do you want to add this flip?"}
               </Text>
             </View>
           </View>
 
-          {selected ? (
+          {mode === "chooser" && !selected ? (
+            <View style={styles.chooserList}>
+              <Pressable
+                onPress={() => launchScanFlow("camera")}
+                style={({ pressed }) => [
+                  styles.chooserRow,
+                  { borderColor: "#E5E7EB", opacity: pressed ? 0.7 : 1 },
+                ]}
+                testID="chooser-take-photo"
+              >
+                <View style={[styles.chooserIcon, { backgroundColor: "#ECFDF5" }]}>
+                  <Feather name="camera" size={22} color={theme.colors.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.chooserTitle, { color: theme.colors.foreground }]}>
+                    Take Photo
+                  </Text>
+                  <Text style={[styles.chooserSub, { color: theme.colors.mutedForeground }]}>
+                    Snap a picture and identify the product.
+                  </Text>
+                </View>
+                <Feather name="chevron-right" size={20} color="#9CA3AF" />
+              </Pressable>
+
+              <Pressable
+                onPress={() => launchScanFlow("library")}
+                style={({ pressed }) => [
+                  styles.chooserRow,
+                  { borderColor: "#E5E7EB", opacity: pressed ? 0.7 : 1 },
+                ]}
+                testID="chooser-choose-library"
+              >
+                <View style={[styles.chooserIcon, { backgroundColor: "#ECFDF5" }]}>
+                  <Feather name="image" size={22} color={theme.colors.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.chooserTitle, { color: theme.colors.foreground }]}>
+                    Choose from Library
+                  </Text>
+                  <Text style={[styles.chooserSub, { color: theme.colors.mutedForeground }]}>
+                    Pick a photo you already took.
+                  </Text>
+                </View>
+                <Feather name="chevron-right" size={20} color="#9CA3AF" />
+              </Pressable>
+
+              <Pressable
+                onPress={() => {
+                  if (Platform.OS !== "web") {
+                    Haptics.selectionAsync();
+                  }
+                  setMode("recent");
+                }}
+                style={({ pressed }) => [
+                  styles.chooserRow,
+                  { borderColor: "#E5E7EB", opacity: pressed ? 0.7 : 1 },
+                ]}
+                testID="chooser-recent-scans"
+              >
+                <View style={[styles.chooserIcon, { backgroundColor: "#ECFDF5" }]}>
+                  <Feather name="clock" size={22} color={theme.colors.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.chooserTitle, { color: theme.colors.foreground }]}>
+                    From Recent Scans
+                  </Text>
+                  <Text style={[styles.chooserSub, { color: theme.colors.mutedForeground }]}>
+                    Pick something you already scanned.
+                  </Text>
+                </View>
+                <Feather name="chevron-right" size={20} color="#9CA3AF" />
+              </Pressable>
+            </View>
+          ) : selected ? (
             <View>
               <View style={[styles.selectedScanRow, { borderColor: "#E5E7EB" }]}>
                 {getScanThumbnail(selected) ? (
@@ -1148,6 +1251,35 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#F3F4F6",
     marginTop: 2,
+  },
+  chooserList: {
+    gap: 10,
+    paddingTop: 4,
+  },
+  chooserRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  chooserIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  chooserTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 2,
+  },
+  chooserSub: {
+    fontSize: 13,
+    lineHeight: 17,
   },
   scanList: {
     maxHeight: 420,

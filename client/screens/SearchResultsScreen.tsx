@@ -18,6 +18,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRevenueCat } from "@/contexts/RevenueCatContext";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import type { EbaySoldData, EbaySoldItem } from "@/types/product";
+import { addInventoryItem } from "@/lib/storage";
+import { Alert } from "react-native";
+
+function generateInventoryId(): string {
+  return `inv_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
 
 type SearchResultsRouteProp = RouteProp<RootStackParamList, "SearchResults">;
 
@@ -83,6 +89,8 @@ export default function SearchResultsScreen() {
 
   const { getDeviceId, getScansUsed } = useAuth();
   const { isPro, isReady: rcReady } = useRevenueCat();
+  const addToInventoryMode = route.params?.addToInventory ?? false;
+  const [savingToInventory, setSavingToInventory] = useState(false);
   const [purchasePrice, setPurchasePrice] = useState("");
   const [sellingPrice, setSellingPrice] = useState("");
   const [sortOption, setSortOption] = useState<string>("Best Match");
@@ -118,12 +126,80 @@ export default function SearchResultsScreen() {
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
+    if (addToInventoryMode) {
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: "MainTabs", params: { screen: "Inventory" } }],
+        })
+      );
+      return;
+    }
     if (navigation.canGoBack()) {
       navigation.goBack();
     } else {
       navigation.navigate("MainTabs" as never);
     }
-  }, [navigation]);
+  }, [navigation, addToInventoryMode]);
+
+  const handleAddToInventory = useCallback(async () => {
+    if (savingToInventory) return;
+    const deviceId = await getDeviceId();
+    if (!deviceId) {
+      Alert.alert("Couldn't add item", "Device not ready. Please try again in a moment.");
+      return;
+    }
+    const parsed = parseFloat(purchasePrice);
+    const price =
+      !isNaN(parsed) && parsed >= 0
+        ? parsed
+        : Number(results.avgListPrice) || 0;
+    const productName =
+      (results.productInfo && results.productInfo.name) ||
+      results.query ||
+      "Untitled item";
+    const imageUrl =
+      scannedImageUri ||
+      results.listings?.[0]?.imageUrl ||
+      "";
+
+    setSavingToInventory(true);
+    const created = await addInventoryItem(deviceId, {
+      id: generateInventoryId(),
+      productName,
+      imageUrl,
+      purchasePrice: price,
+      purchasedAt: new Date().toISOString(),
+      sourceProductId: results.scannedImageId,
+    });
+    setSavingToInventory(false);
+
+    if (!created) {
+      Alert.alert(
+        "Couldn't save item",
+        "Please check your connection and try again."
+      );
+      return;
+    }
+
+    if (Platform.OS !== "web") {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: "MainTabs", params: { screen: "Inventory" } }],
+      })
+    );
+  }, [
+    savingToInventory,
+    getDeviceId,
+    purchasePrice,
+    results,
+    scannedImageUri,
+    navigation,
+  ]);
 
   const CUSTOM_HEADER_HEIGHT = 44;
 
@@ -1239,20 +1315,45 @@ export default function SearchResultsScreen() {
         }
       />
 
-      <Pressable
-        onPress={handleNewSearch}
-        style={({ pressed }) => [
-          styles.newSearchButton,
-          { 
-            backgroundColor: theme.colors.primary, 
-            bottom: insets.bottom + 16,
-            opacity: pressed ? 0.7 : 1 
-          }
-        ]}
-      >
-        <Feather name="search" size={18} color={colors.light.primaryForeground} />
-        <Text style={styles.newSearchText}>New Search</Text>
-      </Pressable>
+      {addToInventoryMode ? (
+        <Pressable
+          onPress={handleAddToInventory}
+          disabled={savingToInventory}
+          style={({ pressed }) => [
+            styles.newSearchButton,
+            {
+              backgroundColor: theme.colors.primary,
+              bottom: insets.bottom + 16,
+              opacity: savingToInventory ? 0.6 : pressed ? 0.85 : 1,
+            },
+          ]}
+          testID="button-add-to-inventory"
+        >
+          {savingToInventory ? (
+            <ActivityIndicator size="small" color={colors.light.primaryForeground} />
+          ) : (
+            <Feather name="plus" size={18} color={colors.light.primaryForeground} />
+          )}
+          <Text style={styles.newSearchText}>
+            {savingToInventory ? "Saving..." : "Add to Inventory"}
+          </Text>
+        </Pressable>
+      ) : (
+        <Pressable
+          onPress={handleNewSearch}
+          style={({ pressed }) => [
+            styles.newSearchButton,
+            {
+              backgroundColor: theme.colors.primary,
+              bottom: insets.bottom + 16,
+              opacity: pressed ? 0.7 : 1,
+            },
+          ]}
+        >
+          <Feather name="search" size={18} color={colors.light.primaryForeground} />
+          <Text style={styles.newSearchText}>New Search</Text>
+        </Pressable>
+      )}
     </View>
   );
 }

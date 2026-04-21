@@ -44,6 +44,7 @@ export default function CameraScanScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, "CameraScan">>();
   const source: "camera" | "library" = route.params?.source ?? "camera";
+  const addToInventory: boolean = route.params?.addToInventory ?? false;
   const hasLaunched = useRef(false);
   const [state, setState] = useState<ScreenState>("checking");
 
@@ -93,7 +94,10 @@ export default function CameraScanScreen() {
         setState("processing");
         const resized = await resizeImage(result.assets[0].uri);
         if (resized) {
-          navigation.navigate("MainTabs", { screen: "Home", params: { photosToProcess: [resized] } });
+          navigation.navigate("MainTabs", {
+            screen: "Home",
+            params: { photosToProcess: [resized], addToInventory },
+          });
           return;
         }
       }

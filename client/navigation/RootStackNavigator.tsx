@@ -54,10 +54,10 @@ export interface CapturedPhoto {
 
 export type RootStackParamList = {
   MainTabs: NavigatorScreenParams<MainTabParamList> | undefined;
-  CameraScan: { source?: "camera" | "library" } | undefined;
+  CameraScan: { source?: "camera" | "library"; addToInventory?: boolean } | undefined;
   Paywall: { context?: "ebay" } | undefined;
   History: undefined;
-  SearchResults: { results: SearchResultsData };
+  SearchResults: { results: SearchResultsData; addToInventory?: boolean };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();

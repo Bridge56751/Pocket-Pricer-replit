@@ -212,7 +212,7 @@ export default function ScanScreen() {
     retry: 1,
   });
 
-  const processPhotos = useCallback(async (photos: CapturedPhoto[]) => {
+  const processPhotos = useCallback(async (photos: CapturedPhoto[], addToInventory: boolean = false) => {
     if (photos.length === 0 || processingRef.current) return;
     
     processingRef.current = true;
@@ -336,7 +336,7 @@ export default function ScanScreen() {
           index: 1,
           routes: [
             { name: "MainTabs" },
-            { name: "SearchResults", params: { results: enrichedResults } },
+            { name: "SearchResults", params: { results: enrichedResults, addToInventory } },
           ],
         })
       );
@@ -398,11 +398,12 @@ export default function ScanScreen() {
 
   useEffect(() => {
     const photosToProcess = route.params?.photosToProcess;
+    const addToInventoryFlag = route.params?.addToInventory ?? false;
     if (photosToProcess && photosToProcess.length > 0) {
-      navigation.setParams({ photosToProcess: undefined });
-      processPhotos(photosToProcess);
+      navigation.setParams({ photosToProcess: undefined, addToInventory: undefined });
+      processPhotos(photosToProcess, addToInventoryFlag);
     }
-  }, [route.params?.photosToProcess, processPhotos, navigation]);
+  }, [route.params?.photosToProcess, route.params?.addToInventory, processPhotos, navigation]);
 
   const checkAndNavigate = useCallback(async () => {
     if (!rcReady) return;
