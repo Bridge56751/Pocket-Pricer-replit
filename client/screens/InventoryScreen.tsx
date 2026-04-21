@@ -29,6 +29,8 @@ import {
   removeInventoryItem,
   getSearchHistory,
   migrateLocalInventoryToCloud,
+  cleanInventoryName,
+  INVENTORY_NAME_MAX_LENGTH,
 } from "@/lib/storage";
 import type { InventoryItem, SearchHistoryItem } from "@/types/product";
 
@@ -59,6 +61,7 @@ export default function InventoryScreen() {
   const [filter, setFilter] = useState<FilterMode>("stock");
   const [addOpen, setAddOpen] = useState(false);
   const [soldOpen, setSoldOpen] = useState<InventoryItem | null>(null);
+  const [editNameOpen, setEditNameOpen] = useState<InventoryItem | null>(null);
   const [deviceId, setDeviceId] = useState<string | null>(null);
   const [loadingItems, setLoadingItems] = useState(true);
 
@@ -273,6 +276,7 @@ export default function InventoryScreen() {
                     item={item}
                     onMarkSold={() => setSoldOpen(item)}
                     onDelete={() => handleDelete(item)}
+                    onEditName={() => setEditNameOpen(item)}
                   />
                 </Animated.View>
               ))}
@@ -299,6 +303,21 @@ export default function InventoryScreen() {
           await loadItems();
         }}
       />
+      <EditNameModal
+        item={editNameOpen}
+        deviceId={deviceId}
+        onClose={() => setEditNameOpen(null)}
+        onSaved={async (updated) => {
+          setEditNameOpen(null);
+          if (updated) {
+            setItems(prev =>
+              prev.map(i => (i.id === updated.id ? { ...i, productName: updated.productName } : i))
+            );
+          } else {
+            await loadItems();
+          }
+        }}
+      />
     </View>
   );
 }
@@ -307,10 +326,12 @@ function InventoryCard({
   item,
   onMarkSold,
   onDelete,
+  onEditName,
 }: {
   item: InventoryItem;
   onMarkSold: () => void;
   onDelete: () => void;
+  onEditName: () => void;
 }) {
   const { theme } = useDesignTokens();
   const isSold = item.soldPrice !== undefined;
@@ -388,6 +409,13 @@ function InventoryCard({
               <Text style={styles.markSoldText}>Mark Sold</Text>
             </Pressable>
           )}
+          <Pressable
+            onPress={onEditName}
+            style={({ pressed }) => [styles.deleteButton, { opacity: pressed ? 0.6 : 1 }]}
+            testID={`button-edit-name-${item.id}`}
+          >
+            <Feather name="edit-2" size={15} color="#6B7280" />
+          </Pressable>
           <Pressable
             onPress={onDelete}
             style={({ pressed }) => [styles.deleteButton, { opacity: pressed ? 0.6 : 1 }]}
@@ -911,6 +939,133 @@ function MarkSoldModal({
                 },
               ]}
               testID="button-save-sold"
+            >
+              <Text style={styles.modalSaveText}>Save</Text>
+            </Pressable>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
+function EditNameModal({
+  item,
+  deviceId,
+  onClose,
+  onSaved,
+}: {
+  item: InventoryItem | null;
+  deviceId: string | null;
+  onClose: () => void;
+  onSaved: (updated: InventoryItem | null) => void;
+}) {
+  const { theme } = useDesignTokens();
+  const [name, setName] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  React.useEffect(() => {
+    if (item) setName(item.productName);
+  }, [item]);
+
+  const trimmed = name.trim();
+  const previewClean = useMemo(() => cleanInventoryName(trimmed), [trimmed]);
+  const unchanged = !!item && previewClean === item.productName;
+
+  const handleSave = async () => {
+    if (!item || !deviceId) return;
+    if (!previewClean) return;
+    if (unchanged) {
+      onClose();
+      return;
+    }
+    setSaving(true);
+    const updated = await updateInventoryItem(deviceId, item.id, {
+      productName: previewClean,
+    });
+    setSaving(false);
+    if (!updated) {
+      Alert.alert("Couldn't save name", "Please check your connection and try again.");
+      return;
+    }
+    if (Platform.OS !== "web") {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+    onSaved(updated);
+  };
+
+  const showPreview = !!previewClean && previewClean !== trimmed;
+  const disableSave = saving || !previewClean || unchanged;
+
+  return (
+    <Modal visible={!!item} transparent animationType="fade" onRequestClose={onClose}>
+      <KeyboardAvoidingView
+        style={styles.modalBackdrop}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <View style={[styles.modalCard, { backgroundColor: theme.colors.background }]}>
+          <Text style={[styles.modalTitle, { color: theme.colors.foreground }]}>Edit name</Text>
+          <Text style={[styles.modalSub, { color: theme.colors.mutedForeground }]}>
+            Up to {INVENTORY_NAME_MAX_LENGTH} characters.
+          </Text>
+
+          <Text style={[styles.modalLabel, { color: theme.colors.foreground }]}>Item name</Text>
+          <TextInput
+            value={name}
+            onChangeText={setName}
+            placeholder="Item name"
+            placeholderTextColor={theme.colors.mutedForeground}
+            maxLength={INVENTORY_NAME_MAX_LENGTH}
+            multiline
+            style={[
+              styles.modalInput,
+              {
+                color: theme.colors.foreground,
+                borderColor: "#E5E7EB",
+                minHeight: 48,
+                textAlignVertical: "top",
+              },
+            ]}
+            testID="input-edit-name"
+            autoFocus
+          />
+
+          {showPreview ? (
+            <Text
+              style={{
+                marginTop: 8,
+                fontSize: 12,
+                color: theme.colors.mutedForeground,
+              }}
+            >
+              Will be saved as: {previewClean}
+            </Text>
+          ) : null}
+
+          <View style={styles.modalActions}>
+            <Pressable
+              onPress={onClose}
+              style={({ pressed }) => [
+                styles.modalCancelButton,
+                { opacity: pressed ? 0.7 : 1, borderColor: "#E5E7EB" },
+              ]}
+            >
+              <Text style={[styles.modalCancelText, { color: theme.colors.foreground }]}>
+                Cancel
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={handleSave}
+              disabled={disableSave}
+              style={({ pressed }) => [
+                styles.modalSaveButton,
+                {
+                  backgroundColor: theme.colors.primary,
+                  opacity: disableSave ? 0.5 : pressed ? 0.85 : 1,
+                },
+              ]}
+              testID="button-save-edit-name"
             >
               <Text style={styles.modalSaveText}>Save</Text>
             </Pressable>
