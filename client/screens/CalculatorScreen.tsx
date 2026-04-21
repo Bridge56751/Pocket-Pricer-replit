@@ -10,6 +10,7 @@ import {
   Modal,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
@@ -216,6 +217,7 @@ function parseMoney(input: string): number {
 
 export default function CalculatorScreen() {
   const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
   const { theme } = useDesignTokens();
   const tabBarFadeHandler = useTabBarFadeOnScroll();
 
@@ -284,7 +286,7 @@ export default function CalculatorScreen() {
       <View style={[styles.heroTopFill, { height: insets.top + 200 }]} />
       <Animated.ScrollView
         style={styles.scroll}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 120 }}
+        contentContainerStyle={{ paddingBottom: tabBarHeight + 24 }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         onScroll={tabBarFadeHandler}
