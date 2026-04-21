@@ -286,7 +286,7 @@ export default function CalculatorScreen() {
       <View style={[styles.heroTopFill, { height: insets.top + 200 }]} />
       <Animated.ScrollView
         style={styles.scroll}
-        contentContainerStyle={{ flexGrow: 1 }}
+        contentContainerStyle={{ paddingBottom: tabBarHeight + insets.bottom + 32 }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         onScroll={tabBarFadeHandler}
@@ -791,7 +791,6 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   belowHero: {
-    flex: 1,
     paddingHorizontal: 16,
     paddingTop: 16,
     backgroundColor: "#F3F4F6",
