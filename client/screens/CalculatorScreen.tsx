@@ -305,9 +305,9 @@ export default function CalculatorScreen() {
         scrollEventThrottle={16}
       >
         <LinearGradient
-          colors={["#0A3622", "#14532D", "#1A6B3C"]}
+          colors={["#0A3622", "#0A3622", "#14532D", "#1A6B3C"]}
           start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
+          end={{ x: 0, y: 1 }}
           style={[styles.heroCard, { paddingTop: insets.top + 16 }]}
         >
           <View style={styles.header}>
