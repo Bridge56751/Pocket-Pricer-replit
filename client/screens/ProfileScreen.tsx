@@ -128,7 +128,7 @@ export default function ProfileScreen() {
       <Animated.ScrollView
         ref={scrollRef}
         style={styles.scrollView}
-        contentContainerStyle={{ paddingBottom: tabBarHeight + insets.bottom + 32 }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
         showsVerticalScrollIndicator={false}
         onScroll={tabBarFadeHandler}
         scrollEventThrottle={16}
