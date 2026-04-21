@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { View, StyleSheet, Pressable, Text, ScrollView, Image, Platform } from "react-native";
-import { useTabBarVisibility } from "@/contexts/TabBarVisibilityContext";
+import { useTabBarFadeOnScroll } from "@/hooks/useTabBarFadeOnScroll";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as StoreReview from "expo-store-review";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -13,7 +13,6 @@ import Animated, {
   FadeInDown,
   useSharedValue,
   useAnimatedStyle,
-  useAnimatedScrollHandler,
   withRepeat,
   withTiming,
   withSequence,
@@ -158,26 +157,7 @@ export default function ScanScreen() {
   const { getDeviceId, getScansUsed, setScansUsed: persistScansUsed, incrementScans } = useAuth();
   const { isPro, isReady: rcReady } = useRevenueCat();
   const queryClient = useQueryClient();
-  const { opacity: tabBarOpacity } = useTabBarVisibility();
-
-  const tabBarFadeHandler = useAnimatedScrollHandler({
-    onScroll: (event) => {
-      const y = event.contentOffset.y;
-      const start = 40;
-      const end = 160;
-      const t = Math.min(Math.max((y - start) / (end - start), 0), 1);
-      tabBarOpacity.value = 1 - t;
-    },
-  });
-
-  useFocusEffect(
-    useCallback(() => {
-      tabBarOpacity.value = 1;
-      return () => {
-        tabBarOpacity.value = 1;
-      };
-    }, [tabBarOpacity])
-  );
+  const tabBarFadeHandler = useTabBarFadeOnScroll();
   
   const [recentScans, setRecentScans] = useState<SearchHistoryItem[]>([]);
   const [scansUsed, setScansUsed] = useState(0);

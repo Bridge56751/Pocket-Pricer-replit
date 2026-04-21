@@ -144,10 +144,12 @@ export default function InventoryScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <View style={[styles.heroTopFill, { height: insets.top + 200 }]} />
-      <ScrollView
+      <Animated.ScrollView
         style={styles.scroll}
         contentContainerStyle={{ paddingBottom: insets.bottom + 120 }}
         showsVerticalScrollIndicator={false}
+        onScroll={tabBarFadeHandler}
+        scrollEventThrottle={16}
       >
         <LinearGradient
           colors={["#0A3622", "#14532D", "#1A6B3C"]}
@@ -294,7 +296,7 @@ export default function InventoryScreen() {
             </View>
           )}
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
 
       <AddItemModal
         visible={addOpen}
