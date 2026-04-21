@@ -44,7 +44,10 @@ function AnimatedTabBar(props: BottomTabBarProps) {
     transform: [{ translateY: (1 - opacity.value) * (tabBarHeight + 40) }],
   }));
   return (
-    <Animated.View style={animatedStyle} pointerEvents="box-none">
+    <Animated.View
+      style={[styles.animatedTabBarWrap, animatedStyle]}
+      pointerEvents="box-none"
+    >
       <BottomTabBar {...props} />
     </Animated.View>
   );
@@ -203,6 +206,12 @@ export default function MainTabNavigator({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
+  animatedTabBarWrap: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
   cameraTabButton: {
     flex: 1,
     alignItems: "center",
