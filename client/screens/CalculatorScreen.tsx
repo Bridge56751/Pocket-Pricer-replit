@@ -727,6 +727,8 @@ const styles = StyleSheet.create({
   belowHero: {
     paddingHorizontal: 16,
     paddingTop: 16,
+    backgroundColor: "#F3F4F6",
+    minHeight: "100%",
   },
   card: {
     borderRadius: 16,
