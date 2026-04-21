@@ -1,14 +1,16 @@
 import React from "react";
 import { Platform, Pressable, StyleSheet, View } from "react-native";
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { BottomTabBar, createBottomTabNavigator, type BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
+import Animated, { useAnimatedStyle } from "react-native-reanimated";
 
 import ScanScreen from "@/screens/ScanScreen";
 import InventoryScreen from "@/screens/InventoryScreen";
 import ProfileScreen from "@/screens/ProfileScreen";
 import { useDesignTokens } from "@/hooks/useDesignTokens";
+import { useTabBarVisibility } from "@/contexts/TabBarVisibilityContext";
 import type { CapturedPhoto } from "@/navigation/RootStackNavigator";
 
 export type MainTabParamList = {
@@ -27,6 +29,19 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 
 function CameraTabPlaceholder() {
   return <View />;
+}
+
+function AnimatedTabBar(props: BottomTabBarProps) {
+  const { opacity } = useTabBarVisibility();
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: (1 - opacity.value) * 24 }],
+  }));
+  return (
+    <Animated.View style={animatedStyle}>
+      <BottomTabBar {...props} />
+    </Animated.View>
+  );
 }
 
 function TabIcon({
@@ -88,6 +103,7 @@ export default function MainTabNavigator({ navigation }: any) {
   return (
     <Tab.Navigator
       initialRouteName="Home"
+      tabBar={(props) => <AnimatedTabBar {...props} />}
       screenOptions={{
         headerShown: false,
         tabBarShowLabel: true,

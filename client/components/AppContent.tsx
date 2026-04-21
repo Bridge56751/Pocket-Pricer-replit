@@ -9,6 +9,7 @@ import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import OnboardingScreen, { checkOnboardingComplete } from "@/screens/OnboardingScreen";
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { useRevenueCat } from "@/contexts/RevenueCatContext";
+import { TabBarVisibilityProvider } from "@/contexts/TabBarVisibilityContext";
 
 let _triggerReplay: (() => void) | null = null;
 export function triggerOnboardingReplay() {
@@ -106,9 +107,11 @@ export function AppContent() {
 
   return (
     <>
-      <NavigationContainer ref={navigationRef}>
-        <RootStackNavigator />
-      </NavigationContainer>
+      <TabBarVisibilityProvider>
+        <NavigationContainer ref={navigationRef}>
+          <RootStackNavigator />
+        </NavigationContainer>
+      </TabBarVisibilityProvider>
       <StatusBar style="dark" />
     </>
   );

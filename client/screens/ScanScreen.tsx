@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { View, StyleSheet, Pressable, Text, ScrollView, Image, Platform } from "react-native";
+import { useTabBarVisibility } from "@/contexts/TabBarVisibilityContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as StoreReview from "expo-store-review";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -12,6 +13,7 @@ import Animated, {
   FadeInDown,
   useSharedValue,
   useAnimatedStyle,
+  useAnimatedScrollHandler,
   withRepeat,
   withTiming,
   withSequence,
@@ -156,6 +158,26 @@ export default function ScanScreen() {
   const { getDeviceId, getScansUsed, setScansUsed: persistScansUsed, incrementScans } = useAuth();
   const { isPro, isReady: rcReady } = useRevenueCat();
   const queryClient = useQueryClient();
+  const { opacity: tabBarOpacity } = useTabBarVisibility();
+
+  const tabBarFadeHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      const y = event.contentOffset.y;
+      const start = 40;
+      const end = 160;
+      const t = Math.min(Math.max((y - start) / (end - start), 0), 1);
+      tabBarOpacity.value = 1 - t;
+    },
+  });
+
+  useFocusEffect(
+    useCallback(() => {
+      tabBarOpacity.value = 1;
+      return () => {
+        tabBarOpacity.value = 1;
+      };
+    }, [tabBarOpacity])
+  );
   
   const [recentScans, setRecentScans] = useState<SearchHistoryItem[]>([]);
   const [scansUsed, setScansUsed] = useState(0);
@@ -462,13 +484,15 @@ export default function ScanScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <View style={[styles.heroTopFill, { height: insets.top + 200 }]} />
-      <ScrollView
+      <Animated.ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
           styles.content,
           { paddingBottom: insets.bottom + 100 },
         ]}
         showsVerticalScrollIndicator={false}
+        onScroll={tabBarFadeHandler}
+        scrollEventThrottle={16}
       >
         <LinearGradient
             colors={["#0A3622", "#14532D", "#1A6B3C"]}
@@ -682,7 +706,7 @@ export default function ScanScreen() {
           </View>
         )}
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
       
       {isAnalyzing ? (
         <View style={[styles.scanOverlay, { backgroundColor: theme.colors.background }]}>
