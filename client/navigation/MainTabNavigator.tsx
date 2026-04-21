@@ -97,6 +97,7 @@ export default function MainTabNavigator({ navigation }: any) {
   const { theme } = useDesignTokens();
 
   const openCamera = () => {
+    navigation.navigate("MainTabs", { screen: "Home" });
     navigation.navigate("CameraScan", { source: "camera" });
   };
 
