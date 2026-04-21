@@ -327,7 +327,7 @@ export default function CalculatorScreen() {
           </Pressable>
         </LinearGradient>
 
-        <View style={[styles.belowHero, { paddingBottom: tabBarHeight + 24 }]}>
+        <View style={[styles.belowHero, { paddingBottom: tabBarHeight + insets.bottom + 32 }]}>
           <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
             <View style={styles.cardHeaderRow}>
               <Text style={[styles.cardTitle, { color: theme.colors.foreground }]}>
@@ -794,7 +794,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
     paddingTop: 16,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: "#F9FAFB",
   },
   card: {
     borderRadius: 16,
