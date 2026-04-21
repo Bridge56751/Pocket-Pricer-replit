@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
+import { useFocusEffect } from "@react-navigation/native";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
@@ -220,6 +221,13 @@ export default function CalculatorScreen() {
   const tabBarHeight = useBottomTabBarHeight();
   const { theme } = useDesignTokens();
   const tabBarFadeHandler = useTabBarFadeOnScroll();
+  const scrollRef = useRef<any>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      scrollRef.current?.scrollTo?.({ y: 0, animated: false });
+    }, []),
+  );
 
   const [marketplaceId, setMarketplaceId] = useState<string>("ebay");
   const [salePrice, setSalePrice] = useState("");
@@ -285,6 +293,7 @@ export default function CalculatorScreen() {
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <View style={[styles.heroTopFill, { height: insets.top + 200 }]} />
       <Animated.ScrollView
+        ref={scrollRef}
         style={styles.scroll}
         contentContainerStyle={{ paddingBottom: tabBarHeight + insets.bottom + 32 }}
         showsVerticalScrollIndicator={false}

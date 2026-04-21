@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useRef } from "react";
 import {
   View,
   Text,
@@ -58,6 +58,13 @@ export default function InventoryScreen() {
   const { isPro, isReady: rcReady } = useRevenueCat();
   const navigation = useNavigation<any>();
   const tabBarFadeHandler = useTabBarFadeOnScroll();
+  const scrollRef = useRef<any>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      scrollRef.current?.scrollTo?.({ y: 0, animated: false });
+    }, []),
+  );
 
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [filter, setFilter] = useState<FilterMode>("stock");
@@ -147,6 +154,7 @@ export default function InventoryScreen() {
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <View style={[styles.heroTopFill, { height: insets.top + 200 }]} />
       <Animated.ScrollView
+        ref={scrollRef}
         style={styles.scroll}
         contentContainerStyle={{ paddingBottom: insets.bottom + 120 }}
         showsVerticalScrollIndicator={false}

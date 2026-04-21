@@ -158,6 +158,14 @@ export default function ScanScreen() {
   const { isPro, isReady: rcReady } = useRevenueCat();
   const queryClient = useQueryClient();
   const tabBarFadeHandler = useTabBarFadeOnScroll();
+  const scrollRef = useRef<any>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      scrollRef.current?.scrollTo?.({ y: 0, animated: false });
+    }, []),
+  );
+
   
   const [recentScans, setRecentScans] = useState<SearchHistoryItem[]>([]);
   const [scansUsed, setScansUsed] = useState(0);
@@ -465,6 +473,7 @@ export default function ScanScreen() {
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <View style={[styles.heroTopFill, { height: insets.top + 200 }]} />
       <Animated.ScrollView
+        ref={scrollRef}
         style={styles.scrollView}
         contentContainerStyle={[
           styles.content,
