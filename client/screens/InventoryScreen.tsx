@@ -62,7 +62,10 @@ export default function InventoryScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      scrollRef.current?.scrollTo?.({ y: 0, animated: false });
+      const id = requestAnimationFrame(() => {
+        scrollRef.current?.scrollTo?.({ y: 0, animated: false });
+      });
+      return () => cancelAnimationFrame(id);
     }, []),
   );
 
