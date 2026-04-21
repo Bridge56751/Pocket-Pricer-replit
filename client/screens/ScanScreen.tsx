@@ -507,12 +507,6 @@ export default function ScanScreen() {
                 Pocket Pricer
               </Text>
             </View>
-            <Pressable 
-              style={styles.headerIcon}
-              onPress={() => navigation.navigate("MainTabs", { screen: "Settings" })}
-            >
-              <Feather name="settings" size={22} color="rgba(255,255,255,0.6)" />
-            </Pressable>
           </View>
 
             <Text style={styles.heroTitle}>
