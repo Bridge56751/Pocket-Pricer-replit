@@ -23,7 +23,7 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const navigation = useNavigation<any>();
-  const tabBarFadeHandler = useTabBarFadeOnScroll();
+  const tabBarFadeHandler = useTabBarFadeOnScroll({ fadeStart: 12, fadeEnd: 80 });
   const scrollRef = useRef<any>(null);
 
   useFocusEffect(
