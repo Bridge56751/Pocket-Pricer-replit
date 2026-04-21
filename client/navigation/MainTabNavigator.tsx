@@ -9,6 +9,7 @@ import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import ScanScreen from "@/screens/ScanScreen";
 import InventoryScreen from "@/screens/InventoryScreen";
 import ProfileScreen from "@/screens/ProfileScreen";
+import CalculatorScreen from "@/screens/CalculatorScreen";
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { useTabBarVisibility } from "@/contexts/TabBarVisibilityContext";
 import type { CapturedPhoto } from "@/navigation/RootStackNavigator";
@@ -135,17 +136,12 @@ export default function MainTabNavigator({ navigation }: any) {
       />
       <Tab.Screen
         name="Calculator"
-        component={CameraTabPlaceholder}
+        component={CalculatorScreen}
         options={{
           tabBarLabel: "Calculator",
           tabBarIcon: ({ color, size, focused }) => (
             <TabIcon name="percent" color={color} size={size} focused={focused} />
           ),
-        }}
-        listeners={{
-          tabPress: (e) => {
-            e.preventDefault();
-          },
         }}
       />
       <Tab.Screen

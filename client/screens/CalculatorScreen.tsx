@@ -1,0 +1,889 @@
+import React, { useMemo, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Pressable,
+  TextInput,
+  Platform,
+  Modal,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Feather } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import * as Haptics from "expo-haptics";
+
+import { useDesignTokens } from "@/hooks/useDesignTokens";
+
+type FeeBreakdown = {
+  platformFee: number;
+  paymentFee: number;
+  perOrderFee: number;
+  totalFees: number;
+};
+
+type Marketplace = {
+  id: string;
+  name: string;
+  short: string;
+  accent: string;
+  feeNote: string;
+  calculate: (sale: number, shippingCharged: number) => FeeBreakdown;
+};
+
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+function fmt(value: number): string {
+  if (!isFinite(value)) return "$0.00";
+  const sign = value < 0 ? "-" : "";
+  const abs = Math.abs(value);
+  return `${sign}$${abs.toFixed(2)}`;
+}
+
+const MARKETPLACES: Marketplace[] = [
+  {
+    id: "ebay",
+    name: "eBay",
+    short: "eBay",
+    accent: "#0064D2",
+    feeNote: "13.25% of item + shipping, plus $0.40 per order. Most categories.",
+    calculate: (sale, shipping) => {
+      const base = sale + shipping;
+      const platformFee = round2(base * 0.1325);
+      const perOrderFee = sale > 0 ? 0.4 : 0;
+      const paymentFee = 0;
+      return {
+        platformFee,
+        paymentFee,
+        perOrderFee,
+        totalFees: round2(platformFee + paymentFee + perOrderFee),
+      };
+    },
+  },
+  {
+    id: "mercari",
+    name: "Mercari",
+    short: "Mercari",
+    accent: "#FF5B5B",
+    feeNote: "10% on item, plus 2.9% + $0.50 payment processing on the order total.",
+    calculate: (sale, shipping) => {
+      const platformFee = round2(sale * 0.1);
+      const paymentFee = sale > 0 ? round2((sale + shipping) * 0.029 + 0.5) : 0;
+      return {
+        platformFee,
+        paymentFee,
+        perOrderFee: 0,
+        totalFees: round2(platformFee + paymentFee),
+      };
+    },
+  },
+  {
+    id: "poshmark",
+    name: "Poshmark",
+    short: "Posh",
+    accent: "#7B2D8E",
+    feeNote: "Flat $2.95 under $15. 20% on $15 and up. Buyer pays shipping label.",
+    calculate: (sale) => {
+      const platformFee = sale <= 0 ? 0 : sale < 15 ? 2.95 : round2(sale * 0.2);
+      return {
+        platformFee,
+        paymentFee: 0,
+        perOrderFee: 0,
+        totalFees: platformFee,
+      };
+    },
+  },
+  {
+    id: "depop",
+    name: "Depop",
+    short: "Depop",
+    accent: "#FF2300",
+    feeNote: "10% selling fee on item + shipping, plus 3.3% + $0.45 payment processing.",
+    calculate: (sale, shipping) => {
+      const base = sale + shipping;
+      const platformFee = round2(base * 0.1);
+      const paymentFee = sale > 0 ? round2(base * 0.033 + 0.45) : 0;
+      return {
+        platformFee,
+        paymentFee,
+        perOrderFee: 0,
+        totalFees: round2(platformFee + paymentFee),
+      };
+    },
+  },
+  {
+    id: "etsy",
+    name: "Etsy",
+    short: "Etsy",
+    accent: "#F1641E",
+    feeNote: "6.5% transaction on item + shipping, $0.20 listing, plus 3% + $0.25 payment processing.",
+    calculate: (sale, shipping) => {
+      const base = sale + shipping;
+      const platformFee = round2(base * 0.065);
+      const perOrderFee = sale > 0 ? 0.2 : 0;
+      const paymentFee = sale > 0 ? round2(base * 0.03 + 0.25) : 0;
+      return {
+        platformFee,
+        paymentFee,
+        perOrderFee,
+        totalFees: round2(platformFee + paymentFee + perOrderFee),
+      };
+    },
+  },
+  {
+    id: "whatnot",
+    name: "Whatnot",
+    short: "Whatnot",
+    accent: "#FFCB05",
+    feeNote: "8% commission, plus 2.9% + $0.30 payment processing.",
+    calculate: (sale, shipping) => {
+      const base = sale + shipping;
+      const platformFee = round2(sale * 0.08);
+      const paymentFee = sale > 0 ? round2(base * 0.029 + 0.3) : 0;
+      return {
+        platformFee,
+        paymentFee,
+        perOrderFee: 0,
+        totalFees: round2(platformFee + paymentFee),
+      };
+    },
+  },
+  {
+    id: "stockx",
+    name: "StockX",
+    short: "StockX",
+    accent: "#006340",
+    feeNote: "9% transaction + 3% payment processing. Buyer pays shipping.",
+    calculate: (sale) => {
+      const platformFee = round2(sale * 0.09);
+      const paymentFee = round2(sale * 0.03);
+      return {
+        platformFee,
+        paymentFee,
+        perOrderFee: 0,
+        totalFees: round2(platformFee + paymentFee),
+      };
+    },
+  },
+  {
+    id: "facebook",
+    name: "Facebook",
+    short: "FB Mktpl",
+    accent: "#1877F2",
+    feeNote: "10% selling fee on shipped orders, with a $0.40 minimum. Local pickup is free.",
+    calculate: (sale, shipping) => {
+      if (sale <= 0) return { platformFee: 0, paymentFee: 0, perOrderFee: 0, totalFees: 0 };
+      const base = sale + shipping;
+      const platformFee = Math.max(round2(base * 0.1), 0.4);
+      return {
+        platformFee,
+        paymentFee: 0,
+        perOrderFee: 0,
+        totalFees: platformFee,
+      };
+    },
+  },
+  {
+    id: "amazon",
+    name: "Amazon",
+    short: "Amazon",
+    accent: "#FF9900",
+    feeNote: "15% referral fee on item + shipping. Varies by category — defaulting to the most common.",
+    calculate: (sale, shipping) => {
+      const base = sale + shipping;
+      const platformFee = round2(base * 0.15);
+      return {
+        platformFee,
+        paymentFee: 0,
+        perOrderFee: 0,
+        totalFees: platformFee,
+      };
+    },
+  },
+];
+
+function parseMoney(input: string): number {
+  if (!input) return 0;
+  const cleaned = input.replace(/[^0-9.]/g, "");
+  const n = parseFloat(cleaned);
+  return isFinite(n) && n > 0 ? n : 0;
+}
+
+export default function CalculatorScreen() {
+  const insets = useSafeAreaInsets();
+  const { theme } = useDesignTokens();
+
+  const [marketplaceId, setMarketplaceId] = useState<string>("ebay");
+  const [salePrice, setSalePrice] = useState("");
+  const [itemCost, setItemCost] = useState("");
+  const [shippingCharged, setShippingCharged] = useState("");
+  const [shippingCost, setShippingCost] = useState("");
+  const [feeInfoOpen, setFeeInfoOpen] = useState(false);
+
+  const marketplace = useMemo(
+    () => MARKETPLACES.find(m => m.id === marketplaceId) || MARKETPLACES[0],
+    [marketplaceId]
+  );
+
+  const result = useMemo(() => {
+    const sale = parseMoney(salePrice);
+    const cost = parseMoney(itemCost);
+    const shipCharged = parseMoney(shippingCharged);
+    const shipPaid = parseMoney(shippingCost);
+
+    const fees = marketplace.calculate(sale, shipCharged);
+    const gross = sale + shipCharged;
+    const netPayout = round2(gross - fees.totalFees);
+    const profit = round2(netPayout - cost - shipPaid);
+    const margin = sale > 0 ? (profit / sale) * 100 : 0;
+    const roi = cost > 0 ? (profit / cost) * 100 : 0;
+
+    return {
+      sale,
+      cost,
+      shipCharged,
+      shipPaid,
+      gross,
+      fees,
+      netPayout,
+      profit,
+      margin,
+      roi,
+      hasInputs: sale > 0,
+    };
+  }, [salePrice, itemCost, shippingCharged, shippingCost, marketplace]);
+
+  const profitColor = result.profit >= 0 ? "#047857" : "#DC2626";
+
+  const handleSelectMarketplace = (id: string) => {
+    if (Platform.OS !== "web") {
+      Haptics.selectionAsync();
+    }
+    setMarketplaceId(id);
+  };
+
+  const handleReset = () => {
+    if (Platform.OS !== "web") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    setSalePrice("");
+    setItemCost("");
+    setShippingCharged("");
+    setShippingCost("");
+  };
+
+  return (
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <View style={[styles.heroTopFill, { height: insets.top + 200 }]} />
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 120 }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <LinearGradient
+          colors={["#0A3622", "#14532D", "#1A6B3C"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.heroCard, { paddingTop: insets.top + 16 }]}
+        >
+          <View style={styles.header}>
+            <View style={styles.headerLeft}>
+              <Feather name="percent" size={20} color="#FFFFFF" />
+              <Text style={styles.appName}>Profit Calculator</Text>
+            </View>
+          </View>
+
+          <Text style={styles.heroTitle}>Know your margin</Text>
+          <Text style={styles.heroDescription}>
+            Pick a marketplace and we'll do the fee math for you.
+          </Text>
+
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.marketplaceRow}
+          >
+            {MARKETPLACES.map((m) => {
+              const active = m.id === marketplace.id;
+              return (
+                <Pressable
+                  key={m.id}
+                  onPress={() => handleSelectMarketplace(m.id)}
+                  style={[
+                    styles.marketplaceChip,
+                    active && {
+                      backgroundColor: "#FFFFFF",
+                      borderColor: "#FFFFFF",
+                    },
+                  ]}
+                  testID={`marketplace-${m.id}`}
+                >
+                  <View style={[styles.marketplaceDot, { backgroundColor: m.accent }]} />
+                  <Text
+                    style={[
+                      styles.marketplaceChipText,
+                      { color: active ? "#0A3622" : "rgba(255,255,255,0.85)" },
+                    ]}
+                  >
+                    {m.short}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </LinearGradient>
+
+        <View style={styles.belowHero}>
+          <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
+            <View style={styles.cardHeaderRow}>
+              <Text style={[styles.cardTitle, { color: theme.colors.foreground }]}>
+                {marketplace.name}
+              </Text>
+              <Pressable
+                onPress={() => setFeeInfoOpen(true)}
+                hitSlop={8}
+                style={styles.infoBtn}
+                testID="button-fee-info"
+              >
+                <Feather name="info" size={16} color={theme.colors.mutedForeground} />
+              </Pressable>
+            </View>
+            <Text style={[styles.cardSub, { color: theme.colors.mutedForeground }]}>
+              {marketplace.feeNote}
+            </Text>
+          </View>
+
+          <View style={[styles.card, { backgroundColor: theme.colors.card, marginTop: 12 }]}>
+            <Text style={[styles.sectionLabel, { color: theme.colors.mutedForeground }]}>
+              SALE
+            </Text>
+            <MoneyInput
+              label="Sale price"
+              value={salePrice}
+              onChangeText={setSalePrice}
+              placeholder="0.00"
+              theme={theme}
+              testID="input-sale-price"
+              autoFocus={false}
+            />
+            <MoneyInput
+              label="Shipping charged to buyer"
+              value={shippingCharged}
+              onChangeText={setShippingCharged}
+              placeholder="0.00"
+              theme={theme}
+              testID="input-shipping-charged"
+              hint="Leave 0 if buyer pays the carrier directly."
+            />
+
+            <View style={styles.divider} />
+
+            <Text style={[styles.sectionLabel, { color: theme.colors.mutedForeground, marginTop: 12 }]}>
+              YOUR COSTS
+            </Text>
+            <MoneyInput
+              label="Item cost"
+              value={itemCost}
+              onChangeText={setItemCost}
+              placeholder="0.00"
+              theme={theme}
+              testID="input-item-cost"
+            />
+            <MoneyInput
+              label="Shipping you pay"
+              value={shippingCost}
+              onChangeText={setShippingCost}
+              placeholder="0.00"
+              theme={theme}
+              testID="input-shipping-cost"
+              hint="Label, packaging, etc."
+            />
+
+            <Pressable
+              onPress={handleReset}
+              style={({ pressed }) => [
+                styles.resetButton,
+                { opacity: pressed ? 0.6 : 1 },
+              ]}
+              testID="button-reset"
+            >
+              <Feather name="rotate-ccw" size={14} color={theme.colors.mutedForeground} />
+              <Text style={[styles.resetText, { color: theme.colors.mutedForeground }]}>
+                Reset
+              </Text>
+            </Pressable>
+          </View>
+
+          <View style={[styles.card, { backgroundColor: theme.colors.card, marginTop: 12 }]}>
+            <Text style={[styles.sectionLabel, { color: theme.colors.mutedForeground }]}>
+              BREAKDOWN
+            </Text>
+
+            <Row label="Sale price" value={fmt(result.sale)} theme={theme} />
+            {result.shipCharged > 0 ? (
+              <Row label="Shipping charged" value={fmt(result.shipCharged)} theme={theme} />
+            ) : null}
+            <Row
+              label="Gross"
+              value={fmt(result.gross)}
+              theme={theme}
+              bold
+            />
+
+            <View style={styles.divider} />
+
+            {result.fees.platformFee > 0 ? (
+              <Row
+                label={`${marketplace.name} fee`}
+                value={`-${fmt(result.fees.platformFee)}`}
+                theme={theme}
+                negative
+              />
+            ) : null}
+            {result.fees.paymentFee > 0 ? (
+              <Row
+                label="Payment processing"
+                value={`-${fmt(result.fees.paymentFee)}`}
+                theme={theme}
+                negative
+              />
+            ) : null}
+            {result.fees.perOrderFee > 0 ? (
+              <Row
+                label="Per-order fee"
+                value={`-${fmt(result.fees.perOrderFee)}`}
+                theme={theme}
+                negative
+              />
+            ) : null}
+            <Row
+              label="Net payout"
+              value={fmt(result.netPayout)}
+              theme={theme}
+              bold
+            />
+
+            <View style={styles.divider} />
+
+            {result.cost > 0 ? (
+              <Row label="Item cost" value={`-${fmt(result.cost)}`} theme={theme} negative />
+            ) : null}
+            {result.shipPaid > 0 ? (
+              <Row label="Shipping you pay" value={`-${fmt(result.shipPaid)}`} theme={theme} negative />
+            ) : null}
+
+            <View style={styles.profitRow}>
+              <Text style={[styles.profitLabel, { color: theme.colors.foreground }]}>Profit</Text>
+              <Text style={[styles.profitValue, { color: profitColor }]} testID="text-profit">
+                {fmt(result.profit)}
+              </Text>
+            </View>
+
+            {result.hasInputs ? (
+              <View style={styles.metaRow}>
+                <View style={styles.metaPill}>
+                  <Text style={[styles.metaPillLabel, { color: theme.colors.mutedForeground }]}>
+                    Margin
+                  </Text>
+                  <Text style={[styles.metaPillValue, { color: theme.colors.foreground }]}>
+                    {result.margin.toFixed(1)}%
+                  </Text>
+                </View>
+                {result.cost > 0 ? (
+                  <View style={styles.metaPill}>
+                    <Text style={[styles.metaPillLabel, { color: theme.colors.mutedForeground }]}>
+                      ROI
+                    </Text>
+                    <Text style={[styles.metaPillValue, { color: theme.colors.foreground }]}>
+                      {result.roi.toFixed(1)}%
+                    </Text>
+                  </View>
+                ) : null}
+                <View style={styles.metaPill}>
+                  <Text style={[styles.metaPillLabel, { color: theme.colors.mutedForeground }]}>
+                    Total fees
+                  </Text>
+                  <Text style={[styles.metaPillValue, { color: theme.colors.foreground }]}>
+                    {fmt(result.fees.totalFees)}
+                  </Text>
+                </View>
+              </View>
+            ) : (
+              <Text style={[styles.emptyHint, { color: theme.colors.mutedForeground }]}>
+                Enter a sale price to see your profit.
+              </Text>
+            )}
+          </View>
+
+          <Text style={[styles.disclaimer, { color: theme.colors.mutedForeground }]}>
+            Estimates only. Fees can vary by category, store subscription, seller level,
+            and promoted-listing settings.
+          </Text>
+        </View>
+      </ScrollView>
+
+      <Modal
+        visible={feeInfoOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setFeeInfoOpen(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setFeeInfoOpen(false)} />
+          <View style={[styles.modalCard, { backgroundColor: theme.colors.background }]}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 }}>
+              <Feather name="info" size={18} color={theme.colors.primary} />
+              <Text style={[styles.modalTitle, { color: theme.colors.foreground }]}>
+                {marketplace.name} fees
+              </Text>
+            </View>
+            <Text style={[styles.modalSub, { color: theme.colors.mutedForeground }]}>
+              {marketplace.feeNote}
+            </Text>
+            <Text style={[styles.modalSub, { color: theme.colors.mutedForeground, marginTop: 12 }]}>
+              These are the most common public rates. Your actual fees may differ slightly based
+              on category, store subscription, or seller level.
+            </Text>
+            <Pressable
+              onPress={() => setFeeInfoOpen(false)}
+              style={({ pressed }) => [
+                styles.modalSaveButton,
+                { backgroundColor: theme.colors.primary, opacity: pressed ? 0.85 : 1 },
+              ]}
+            >
+              <Text style={styles.modalSaveText}>Got it</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+}
+
+function MoneyInput({
+  label,
+  value,
+  onChangeText,
+  placeholder,
+  theme,
+  testID,
+  hint,
+  autoFocus,
+}: {
+  label: string;
+  value: string;
+  onChangeText: (s: string) => void;
+  placeholder: string;
+  theme: any;
+  testID?: string;
+  hint?: string;
+  autoFocus?: boolean;
+}) {
+  return (
+    <View style={styles.inputBlock}>
+      <Text style={[styles.inputLabel, { color: theme.colors.foreground }]}>{label}</Text>
+      <View style={[styles.inputWrap, { borderColor: "#E5E7EB" }]}>
+        <Text style={[styles.dollarPrefix, { color: theme.colors.mutedForeground }]}>$</Text>
+        <TextInput
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor={theme.colors.mutedForeground}
+          keyboardType="decimal-pad"
+          style={[styles.input, { color: theme.colors.foreground }]}
+          testID={testID}
+          autoFocus={autoFocus}
+        />
+      </View>
+      {hint ? (
+        <Text style={[styles.inputHint, { color: theme.colors.mutedForeground }]}>{hint}</Text>
+      ) : null}
+    </View>
+  );
+}
+
+function Row({
+  label,
+  value,
+  theme,
+  bold,
+  negative,
+}: {
+  label: string;
+  value: string;
+  theme: any;
+  bold?: boolean;
+  negative?: boolean;
+}) {
+  return (
+    <View style={styles.row}>
+      <Text
+        style={[
+          styles.rowLabel,
+          { color: theme.colors.mutedForeground },
+          bold && { color: theme.colors.foreground, fontWeight: "700" },
+        ]}
+      >
+        {label}
+      </Text>
+      <Text
+        style={[
+          styles.rowValue,
+          { color: theme.colors.foreground },
+          negative && { color: "#DC2626" },
+          bold && { fontWeight: "800" },
+        ]}
+      >
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  scroll: { flex: 1 },
+  heroTopFill: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "#0A3622",
+  },
+  heroCard: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 18,
+  },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  appName: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  heroTitle: {
+    fontSize: 28,
+    fontWeight: "800",
+    marginBottom: 8,
+    color: "#FFFFFF",
+  },
+  heroDescription: {
+    fontSize: 14,
+    color: "rgba(255,255,255,0.75)",
+    marginBottom: 18,
+    lineHeight: 20,
+  },
+  marketplaceRow: {
+    flexDirection: "row",
+    gap: 8,
+    paddingVertical: 4,
+    paddingRight: 16,
+  },
+  marketplaceChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.25)",
+    backgroundColor: "rgba(0,0,0,0.2)",
+  },
+  marketplaceDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  marketplaceChipText: {
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  belowHero: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  card: {
+    borderRadius: 16,
+    padding: 16,
+  },
+  cardHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 4,
+  },
+  cardTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+  },
+  cardSub: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  infoBtn: {
+    padding: 4,
+  },
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+    marginBottom: 8,
+  },
+  inputBlock: {
+    marginBottom: 12,
+  },
+  inputLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    marginBottom: 6,
+  },
+  inputWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    height: 46,
+  },
+  dollarPrefix: {
+    fontSize: 16,
+    marginRight: 6,
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    paddingVertical: 0,
+  },
+  inputHint: {
+    fontSize: 11,
+    marginTop: 4,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "rgba(0,0,0,0.06)",
+    marginVertical: 10,
+  },
+  resetButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    alignSelf: "flex-end",
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+    marginTop: 4,
+  },
+  resetText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 6,
+  },
+  rowLabel: {
+    fontSize: 14,
+  },
+  rowValue: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  profitRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    backgroundColor: "rgba(4,120,87,0.06)",
+    marginTop: 10,
+  },
+  profitLabel: {
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  profitValue: {
+    fontSize: 22,
+    fontWeight: "800",
+  },
+  metaRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 12,
+  },
+  metaPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: "rgba(0,0,0,0.04)",
+  },
+  metaPillLabel: {
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 0.5,
+  },
+  metaPillValue: {
+    fontSize: 14,
+    fontWeight: "700",
+    marginTop: 2,
+  },
+  emptyHint: {
+    fontSize: 13,
+    marginTop: 12,
+    textAlign: "center",
+  },
+  disclaimer: {
+    fontSize: 11,
+    lineHeight: 16,
+    marginTop: 14,
+    paddingHorizontal: 4,
+    textAlign: "center",
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  modalCard: {
+    width: "100%",
+    borderRadius: 16,
+    padding: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  modalSub: {
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  modalSaveButton: {
+    marginTop: 16,
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  modalSaveText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "700",
+  },
+});
