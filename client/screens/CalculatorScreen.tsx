@@ -225,6 +225,7 @@ export default function CalculatorScreen() {
   const [shippingCharged, setShippingCharged] = useState("");
   const [shippingCost, setShippingCost] = useState("");
   const [feeInfoOpen, setFeeInfoOpen] = useState(false);
+  const [marketplacePickerOpen, setMarketplacePickerOpen] = useState(false);
 
   const marketplace = useMemo(
     () => MARKETPLACES.find(m => m.id === marketplaceId) || MARKETPLACES[0],
@@ -307,39 +308,21 @@ export default function CalculatorScreen() {
             Pick a marketplace and we'll do the fee math for you.
           </Text>
 
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.marketplaceRow}
+          <Pressable
+            onPress={() => setMarketplacePickerOpen(true)}
+            style={({ pressed }) => [
+              styles.marketplaceSelectButton,
+              { opacity: pressed ? 0.85 : 1 },
+            ]}
+            testID="button-open-marketplace-picker"
           >
-            {MARKETPLACES.map((m) => {
-              const active = m.id === marketplace.id;
-              return (
-                <Pressable
-                  key={m.id}
-                  onPress={() => handleSelectMarketplace(m.id)}
-                  style={[
-                    styles.marketplaceChip,
-                    active && {
-                      backgroundColor: "#FFFFFF",
-                      borderColor: "#FFFFFF",
-                    },
-                  ]}
-                  testID={`marketplace-${m.id}`}
-                >
-                  <View style={[styles.marketplaceDot, { backgroundColor: m.accent }]} />
-                  <Text
-                    style={[
-                      styles.marketplaceChipText,
-                      { color: active ? "#0A3622" : "rgba(255,255,255,0.85)" },
-                    ]}
-                  >
-                    {m.short}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
+            <View style={[styles.marketplaceDot, { backgroundColor: marketplace.accent }]} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.marketplaceSelectLabel}>SELLING ON</Text>
+              <Text style={styles.marketplaceSelectName}>{marketplace.name}</Text>
+            </View>
+            <Feather name="chevron-down" size={20} color="#0A3622" />
+          </Pressable>
         </LinearGradient>
 
         <View style={styles.belowHero}>
@@ -539,6 +522,70 @@ export default function CalculatorScreen() {
       </Animated.ScrollView>
 
       <Modal
+        visible={marketplacePickerOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMarketplacePickerOpen(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setMarketplacePickerOpen(false)} />
+          <View style={[styles.modalCard, { backgroundColor: theme.colors.background, maxHeight: "75%" }]}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <Text style={[styles.modalTitle, { color: theme.colors.foreground }]}>
+                Select a marketplace
+              </Text>
+              <Pressable
+                onPress={() => setMarketplacePickerOpen(false)}
+                hitSlop={8}
+                testID="button-close-marketplace-picker"
+              >
+                <Feather name="x" size={22} color={theme.colors.mutedForeground} />
+              </Pressable>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {MARKETPLACES.map((m) => {
+                const active = m.id === marketplace.id;
+                return (
+                  <Pressable
+                    key={m.id}
+                    onPress={() => {
+                      handleSelectMarketplace(m.id);
+                      setMarketplacePickerOpen(false);
+                    }}
+                    style={({ pressed }) => [
+                      styles.marketplaceListRow,
+                      {
+                        backgroundColor: active
+                          ? theme.colors.primary + "15"
+                          : pressed
+                          ? theme.colors.muted
+                          : "transparent",
+                        borderColor: active ? theme.colors.primary : theme.colors.border,
+                      },
+                    ]}
+                    testID={`marketplace-${m.id}`}
+                  >
+                    <View style={[styles.marketplaceDot, { backgroundColor: m.accent }]} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.marketplaceListName, { color: theme.colors.foreground }]}>
+                        {m.name}
+                      </Text>
+                      <Text style={[styles.marketplaceListSub, { color: theme.colors.mutedForeground }]} numberOfLines={1}>
+                        {m.feeNote}
+                      </Text>
+                    </View>
+                    {active ? (
+                      <Feather name="check" size={20} color={theme.colors.primary} />
+                    ) : null}
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
         visible={feeInfoOpen}
         transparent
         animationType="fade"
@@ -698,31 +745,48 @@ const styles = StyleSheet.create({
     marginBottom: 18,
     lineHeight: 20,
   },
-  marketplaceRow: {
-    flexDirection: "row",
-    gap: 8,
-    paddingVertical: 4,
-    paddingRight: 16,
-  },
-  marketplaceChip: {
+  marketplaceSelectButton: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 12,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    paddingVertical: 12,
     paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 999,
+  },
+  marketplaceSelectLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+    color: "#5C7568",
+    marginBottom: 2,
+  },
+  marketplaceSelectName: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#0A3622",
+  },
+  marketplaceListRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 14,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.25)",
-    backgroundColor: "rgba(0,0,0,0.2)",
+    marginBottom: 8,
+  },
+  marketplaceListName: {
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  marketplaceListSub: {
+    fontSize: 12,
+    marginTop: 2,
   },
   marketplaceDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  marketplaceChipText: {
-    fontSize: 13,
-    fontWeight: "600",
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
   belowHero: {
     paddingHorizontal: 16,
