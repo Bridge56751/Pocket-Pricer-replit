@@ -237,6 +237,42 @@ export async function removeInventoryItem(deviceId: string, id: string): Promise
   }
 }
 
+// Internal helper used by the migration only. Differentiates between:
+//   - "ok"     : upload succeeded OR the row already exists on the server
+//                (HTTP 2xx, or 409 conflict — both mean "it's there now").
+//   - "drop"   : server permanently rejected the item (HTTP 4xx, e.g. validation).
+//                Retrying will never succeed, so we drop it from the local cache
+//                instead of looping on it every launch.
+//   - "retry"  : transient failure (network error, 5xx). Keep locally and retry.
+async function uploadItemForMigration(
+  deviceId: string,
+  item: InventoryItem
+): Promise<"ok" | "drop" | "retry"> {
+  try {
+    const res = await apiRequest("POST", `/api/inventory/${encodeURIComponent(deviceId)}`, {
+      id: item.id,
+      productName: item.productName,
+      imageUrl: item.imageUrl ?? null,
+      purchasePrice: item.purchasePrice,
+      purchasedAt: item.purchasedAt,
+      notes: item.notes ?? null,
+      soldPrice: item.soldPrice ?? null,
+      soldAt: item.soldAt ?? null,
+      sourceScanId: item.sourceProductId ?? null,
+    });
+    if (res.ok) return "ok";
+    if (res.status === 409) return "ok";
+    if (res.status >= 400 && res.status < 500 && res.status !== 429) {
+      console.warn("Migration: dropping item rejected by server", item.id, res.status);
+      return "drop";
+    }
+    return "retry";
+  } catch (error) {
+    console.error("Migration: network error uploading item", item.id, error);
+    return "retry";
+  }
+}
+
 export async function migrateLocalInventoryToCloud(deviceId: string): Promise<void> {
   try {
     const flag = await AsyncStorage.getItem(STORAGE_KEYS.INVENTORY_MIGRATED);
@@ -246,28 +282,44 @@ export async function migrateLocalInventoryToCloud(deviceId: string): Promise<vo
     const local: InventoryItem[] = data ? JSON.parse(data) : [];
 
     if (local.length === 0) {
-      await AsyncStorage.setItem(STORAGE_KEYS.INVENTORY_MIGRATED, "1");
+      try {
+        await AsyncStorage.setItem(STORAGE_KEYS.INVENTORY_MIGRATED, "1");
+      } catch (e) {
+        console.warn("Migration: failed to set completion flag (empty case):", e);
+      }
       return;
     }
 
-    let allOk = true;
+    let anyRetry = false;
     const remaining: InventoryItem[] = [];
     for (const item of local) {
-      const created = await addInventoryItem(deviceId, item);
-      if (!created) {
-        allOk = false;
+      const result = await uploadItemForMigration(deviceId, item);
+      if (result === "retry") {
+        anyRetry = true;
         remaining.push(item);
       }
+      // "ok" and "drop" both mean: do not keep this item in local storage.
     }
 
-    if (allOk) {
-      await AsyncStorage.setItem(STORAGE_KEYS.INVENTORY_MIGRATED, "1");
-      await AsyncStorage.removeItem(STORAGE_KEYS.INVENTORY);
+    if (!anyRetry) {
+      // Everything either succeeded or was permanently rejected. Done forever.
+      try {
+        await AsyncStorage.setItem(STORAGE_KEYS.INVENTORY_MIGRATED, "1");
+      } catch (e) {
+        console.warn("Migration: failed to set completion flag:", e);
+      }
+      try {
+        await AsyncStorage.removeItem(STORAGE_KEYS.INVENTORY);
+      } catch (e) {
+        console.warn("Migration: failed to clear local cache:", e);
+      }
     } else {
-      // Keep only items that haven't migrated yet so the next launch retries.
-      // Server-side upsert (onConflict=id) makes re-running this safe for items
-      // that did succeed but we haven't pruned here.
-      await AsyncStorage.setItem(STORAGE_KEYS.INVENTORY, JSON.stringify(remaining));
+      // Persist only the unmigrated items for next launch's retry.
+      try {
+        await AsyncStorage.setItem(STORAGE_KEYS.INVENTORY, JSON.stringify(remaining));
+      } catch (e) {
+        console.warn("Migration: failed to write remaining items:", e);
+      }
     }
   } catch (error) {
     console.error("Inventory migration failed:", error);
