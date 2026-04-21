@@ -298,7 +298,7 @@ export default function CalculatorScreen() {
       <Animated.ScrollView
         ref={scrollRef}
         style={styles.scroll}
-        contentContainerStyle={{ paddingBottom: tabBarHeight + 32 }}
+        contentContainerStyle={{ paddingBottom: tabBarHeight + 4 }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         onScroll={tabBarFadeHandler}
@@ -954,7 +954,8 @@ const styles = StyleSheet.create({
   disclaimer: {
     fontSize: 11,
     lineHeight: 16,
-    marginTop: 14,
+    marginTop: 10,
+    marginBottom: 4,
     paddingHorizontal: 4,
     textAlign: "center",
   },
