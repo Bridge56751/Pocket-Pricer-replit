@@ -91,30 +91,30 @@ export default function SearchResultsScreen() {
   const { isPro, isReady: rcReady } = useRevenueCat();
   const addToInventoryMode = route.params?.addToInventory ?? false;
 
-  const resolvedName = useMemo(() => {
+  const rawName = useMemo(() => {
     return (
-      (results.productInfo && results.productInfo.name) ||
-      results.query ||
-      "Unidentified item"
+      ((results.productInfo && results.productInfo.name) || "").trim() ||
+      (results.query || "").trim() ||
+      ""
     );
   }, [results]);
 
   const brandLine = useMemo(() => {
     const brand = results.productInfo?.brand?.trim();
     if (!brand) return "";
-    if (resolvedName.toLowerCase().includes(brand.toLowerCase())) return "";
+    if (rawName.toLowerCase().includes(brand.toLowerCase())) return "";
     return brand;
-  }, [results, resolvedName]);
+  }, [results, rawName]);
 
   const [savingToInventory, setSavingToInventory] = useState(false);
-  const [displayName, setDisplayName] = useState(resolvedName);
+  const [displayName, setDisplayName] = useState(rawName);
   const [isEditingName, setIsEditingName] = useState(false);
 
   useEffect(() => {
     if (!isEditingName) {
-      setDisplayName(resolvedName);
+      setDisplayName(rawName);
     }
-  }, [resolvedName]);
+  }, [rawName]);
   const [purchasePrice, setPurchasePrice] = useState("");
   const [sellingPrice, setSellingPrice] = useState("");
   const [sortOption, setSortOption] = useState<string>("Best Match");
@@ -225,7 +225,6 @@ export default function SearchResultsScreen() {
     scannedImageUri,
     navigation,
     displayName,
-    resolvedName,
   ]);
 
   const CUSTOM_HEADER_HEIGHT = 44;
@@ -713,7 +712,8 @@ export default function SearchResultsScreen() {
                     testID="button-edit-product-name"
                   >
                     <Text style={styles.heroNameText} numberOfLines={2}>
-                      {displayName.trim() || "Name this item"}
+                      {displayName.trim() ||
+                        (addToInventoryMode ? "Name this item" : "Unidentified item")}
                     </Text>
                     {addToInventoryMode ? (
                       <Feather
