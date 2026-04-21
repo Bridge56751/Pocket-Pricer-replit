@@ -18,7 +18,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRevenueCat } from "@/contexts/RevenueCatContext";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import type { EbaySoldData, EbaySoldItem } from "@/types/product";
-import { addInventoryItem } from "@/lib/storage";
+import { addInventoryItem, cleanInventoryName, INVENTORY_NAME_MAX_LENGTH } from "@/lib/storage";
 import { Alert } from "react-native";
 
 function generateInventoryId(): string {
@@ -92,12 +92,12 @@ export default function SearchResultsScreen() {
   const addToInventoryMode = route.params?.addToInventory ?? false;
 
   const rawName = useMemo(() => {
-    return (
+    const raw =
       ((results.productInfo && results.productInfo.name) || "").trim() ||
       (results.query || "").trim() ||
-      ""
-    );
-  }, [results]);
+      "";
+    return addToInventoryMode ? cleanInventoryName(raw) : raw;
+  }, [results, addToInventoryMode]);
 
   const brandLine = useMemo(() => {
     const brand = results.productInfo?.brand?.trim();
@@ -689,7 +689,7 @@ export default function SearchResultsScreen() {
                       }}
                       autoFocus
                       multiline
-                      maxLength={120}
+                      maxLength={INVENTORY_NAME_MAX_LENGTH}
                       placeholder="Name this item"
                       placeholderTextColor="rgba(255,255,255,0.5)"
                       returnKeyType="done"

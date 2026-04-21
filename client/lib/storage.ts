@@ -42,6 +42,33 @@ function rowToItem(row: InventoryRowResponse): InventoryItem {
   };
 }
 
+export const INVENTORY_NAME_MAX_LENGTH = 50;
+
+export function cleanInventoryName(
+  input: string | undefined | null,
+  maxLength: number = INVENTORY_NAME_MAX_LENGTH
+): string {
+  if (!input) return "";
+  let s = String(input);
+  s = s.replace(
+    /[\u0000-\u001F\u007F-\u009F\u200B-\u200F\u202A-\u202E\u2060-\u206F\uFEFF]/g,
+    ""
+  );
+  try {
+    s = s.replace(/\p{Extended_Pictographic}/gu, "");
+  } catch {
+    // older JS engines without Unicode property escapes; skip emoji strip
+  }
+  s = s.replace(/\s+/g, " ").trim();
+  if (s.length > maxLength) {
+    const cut = s.slice(0, maxLength);
+    const lastSpace = cut.lastIndexOf(" ");
+    const trimmed = lastSpace > maxLength - 15 ? cut.slice(0, lastSpace) : cut;
+    s = trimmed.trimEnd() + "…";
+  }
+  return s;
+}
+
 const DEFAULT_SETTINGS: UserSettings = {
   defaultCost: 0,
   defaultShippingCost: 5,
@@ -170,9 +197,14 @@ export async function getInventory(deviceId: string): Promise<InventoryItem[]> {
 
 export async function addInventoryItem(deviceId: string, item: InventoryItem): Promise<InventoryItem | null> {
   try {
+    const cleanedName = cleanInventoryName(item.productName);
+    if (!cleanedName) {
+      console.error("addInventoryItem: empty productName after cleanup");
+      return null;
+    }
     const res = await apiRequest("POST", `/api/inventory/${encodeURIComponent(deviceId)}`, {
       id: item.id,
-      productName: item.productName,
+      productName: cleanedName,
       imageUrl: item.imageUrl ?? null,
       purchasePrice: item.purchasePrice,
       purchasedAt: item.purchasedAt,
@@ -200,7 +232,14 @@ export async function updateInventoryItem(
 ): Promise<InventoryItem | null> {
   try {
     const body: Record<string, unknown> = {};
-    if (updates.productName !== undefined) body.productName = updates.productName;
+    if (updates.productName !== undefined) {
+      const cleaned = cleanInventoryName(updates.productName);
+      if (!cleaned) {
+        console.error("updateInventoryItem: empty productName after cleanup");
+        return null;
+      }
+      body.productName = cleaned;
+    }
     if (updates.imageUrl !== undefined) body.imageUrl = updates.imageUrl ?? null;
     if (updates.purchasePrice !== undefined) body.purchasePrice = updates.purchasePrice;
     if (updates.notes !== undefined) body.notes = updates.notes ?? null;
