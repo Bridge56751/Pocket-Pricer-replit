@@ -9,7 +9,6 @@ import {
   Platform,
   Modal,
 } from "react-native";
-import { KeyboardToolbar } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useFocusEffect } from "@react-navigation/native";
@@ -695,7 +694,6 @@ export default function CalculatorScreen() {
         </View>
       </Modal>
 
-      <KeyboardToolbar showArrows={false} doneText="Done" />
     </View>
   );
 }
