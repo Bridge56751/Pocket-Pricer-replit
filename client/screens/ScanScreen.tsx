@@ -475,7 +475,7 @@ export default function ScanScreen() {
   const displayedScans = recentScans.slice(0, 15);
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <View style={[styles.container, { backgroundColor: "#F3F4F6" }]}>
       <View style={[styles.heroTopFill, { height: insets.top + 200 }]} />
       <Animated.ScrollView
         ref={scrollRef}
