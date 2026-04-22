@@ -209,7 +209,12 @@ export default function SearchResultsScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
     if (addToInventoryMode) {
-      handleAddToInventory();
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: "MainTabs", params: { screen: "Inventory" } }],
+        })
+      );
       return;
     }
     if (navigation.canGoBack()) {
@@ -217,7 +222,7 @@ export default function SearchResultsScreen() {
     } else {
       navigation.navigate("MainTabs", { screen: "Home" });
     }
-  }, [navigation, addToInventoryMode, handleAddToInventory]);
+  }, [navigation, addToInventoryMode]);
 
   const CUSTOM_HEADER_HEIGHT = 44;
 

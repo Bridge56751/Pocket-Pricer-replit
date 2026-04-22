@@ -204,13 +204,16 @@ export async function getInventory(deviceId: string): Promise<InventoryItem[]> {
 }
 
 export async function addInventoryItem(deviceId: string, item: InventoryItem): Promise<InventoryItem | null> {
+  const cleanedName = cleanInventoryName(item.productName);
+  if (!cleanedName) {
+    console.error("addInventoryItem: empty productName after cleanup");
+    return null;
+  }
+  const timeoutId = setTimeout(() => {
+    console.error("addInventoryItem timeout after 15s");
+  }, 15000);
   try {
-    const cleanedName = cleanInventoryName(item.productName);
-    if (!cleanedName) {
-      console.error("addInventoryItem: empty productName after cleanup");
-      return null;
-    }
-    const res = await apiRequest("POST", `/api/inventory/${encodeURIComponent(deviceId)}`, {
+    const racePromise = apiRequest("POST", `/api/inventory/${encodeURIComponent(deviceId)}`, {
       id: item.id,
       productName: cleanedName,
       imageUrl: item.imageUrl ?? null,
@@ -221,6 +224,11 @@ export async function addInventoryItem(deviceId: string, item: InventoryItem): P
       soldAt: item.soldAt ?? null,
       sourceScanId: item.sourceProductId ?? null,
     });
+    const timeoutPromise = new Promise<Response>((_, reject) =>
+      setTimeout(() => reject(new Error("inventory_save_timeout")), 15000)
+    );
+    const res = await Promise.race([racePromise, timeoutPromise]);
+    clearTimeout(timeoutId);
     if (!res.ok) {
       console.error("addInventoryItem http error", res.status);
       return null;
@@ -228,6 +236,7 @@ export async function addInventoryItem(deviceId: string, item: InventoryItem): P
     const json = await res.json();
     return json?.item ? rowToItem(json.item) : null;
   } catch (error) {
+    clearTimeout(timeoutId);
     console.error("Failed to add inventory item:", error);
     return null;
   }
