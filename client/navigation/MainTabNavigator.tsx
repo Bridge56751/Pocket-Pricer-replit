@@ -127,7 +127,7 @@ export default function MainTabNavigator({ navigation }: any) {
         headerShown: false,
         tabBarShowLabel: true,
         tabBarActiveTintColor: theme.colors.primary,
-        tabBarInactiveTintColor: theme.colors.mutedForeground,
+        tabBarInactiveTintColor: theme.colors.foreground,
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: "600",
