@@ -134,7 +134,7 @@ export default function PaywallScreen() {
   };
 
   const navigateHome = () => {
-    navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "Home" }] }));
+    navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "MainTabs" }] }));
   };
 
   const handleStartTrial = async () => {

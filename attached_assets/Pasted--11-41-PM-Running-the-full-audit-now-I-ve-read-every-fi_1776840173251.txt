@@ -1,0 +1,58 @@
+
+11:41 PM
+Running the full audit now. I've read every file. Here is the complete findings.
+Pocket Pricer v1.5.0 — Production Readiness Audit
+🔴 BLOCKERS (must fix before submission)
+B-1 client/lib/storage.ts — Migration runs on every app launch until complete, with no concurrency lock The migrateLocalInventoryToCloud function has no mutex/semaphore. InventoryScreen calls it in a useEffect on mount, and ScanScreen also causes the screen to mount. If the user navigates quickly between tabs before the first migration resolves, two concurrent migrations fire against the same local[] array read from AsyncStorage. Both see the full list, both upload all items, and both try to write the remaining[] array back — the second write races the first. Result: duplicate inventory items in Supabase that are impossible to deduplicate client-side because the IDs are identical (upsert on conflict protects Supabase, but the second concurrent run that reads the un-flagged local store will still re-upload). More critically, if the app crashes between the for loop finishing and the setItem("1") call, the flag is never set and the migration re-fires next launch — but now Supabase has the items and the server returns 409, which your code correctly maps to "ok", so no data loss there. The real crash risk is the concurrent path.
+Fix: Add a module-level boolean let _migrationInFlight = false guard at the top of migrateLocalInventoryToCloud — set it true on entry, reset in finally.
+B-2 server/routes.ts:~line 370 — deleteInventoryItem returns false for a missing row (Supabase DELETE on a non-existent row is not an error), causing the server to return 500 when it should return 200/204 deleteInventoryItem in supabase.ts returns false only when error is truthy. Supabase DELETE on a row that doesn't exist returns no error and count: 0. So ok is true and the route returns { ok: true } correctly. But if Supabase is null (misconfigured env), it returns false → the route sends 500 "Failed to delete inventory item" to the client → removeInventoryItem returns false → the client shows "Couldn't remove item" and re-fetches, potentially restoring the optimistically-deleted row on screen. This is a data-consistency issue for any deployment where SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing/rotated.
+Fix: In supabase.ts::deleteInventoryItem, log + return true (idempotent success) when supabase is null or when delete count is 0 but no error.
+B-3 client/screens/PaywallScreen.tsx — navigateHome uses CommonActions.reset with { name: "Home" } which does not exist in RootStackParamList
+typescript
+// PaywallScreen.tsx
+const navigateHome = () => {
+  navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "Home" }] }));
+};
+RootStackParamList has "MainTabs", "CameraScan", "SearchResults", "Paywall", "History" — there is no "Home" at the root stack level. "Home" is a tab inside MainTabParamList. This reset fires after a successful purchase and after restore. On a real device this will throw a navigation exception and potentially leave the user on the Paywall screen after paying — an App Store Review instant rejection trigger (paid and nothing happened).
+Fix: routes: [{ name: "MainTabs" }]
+B-4 server/routes.ts — /api/scan-with-lens sends the response before deleteSupabaseImage but also calls it after res.json() in the success path, meaning the image URL sent to the client is deleted while the client may still be loading it
+typescript
+res.json({ ... listings ... }); // listings contain thumbnail URLs from Supabase
+if (supabaseFileName) deleteSupabaseImage(supabaseFileName); // deletes immediately after
+The thumbnails in listings[].imageUrl are populated from item.thumbnail (the Google Lens result thumbnails — those are external URLs, not Supabase). The Supabase image is only used as the upload target for the Lens API call. So in the normal flow this is fine. However — in the error path at line ~277:
+typescript
+if (lensResult.error || lensResult.products.length === 0) {
+  if (supabaseFileName) deleteSupabaseImage(supabaseFileName);
+  return res.status(404).json({ ... });
+}
+The delete is correctly called before the 404 response here. The success path delete after res.json() is intentional and safe. This item was pre-fixed, no action needed — calling this out so it doesn't get re-"fixed" incorrectly.
+Severity downgrade: not a blocker — annotation only.
+B-5 client/screens/ScanScreen.tsx — processPhotos is listed as a useCallback dependency of the useEffect that watches route.params?.photosToProcess, but processPhotos itself depends on loadRecentScans, rcReady, isPro, getScansUsed, etc. When RevenueCat isn't ready yet (rcReady = false), the photo arrives, processPhotos runs, the Pro check is skipped (if (rcReady && !isPro)), and a free user can bypass the scan gate for one scan on cold start.
+Fix: Guard: if (!rcReady) { /* store photos, re-process once rcReady */ return; } at the top of processPhotos. Or simply don't navigation.navigate("CameraScan") until rcReady is true.
+B-6 client/contexts/RevenueCatContext.tsx — file was not provided. This is the most critical file for audit area 3 (paywall integrity / v1.4.0 Pro detection). Without seeing the entitlement string, I cannot confirm that isPro detection works for existing v1.4.0 subscribers. This file must be reviewed before ship. Confirm:
+The entitlement identifier string (e.g. "pro") has not changed between builds
+customerInfo.entitlements.active lookup is used (not activeSubscriptions string matching)
+isReady gates all paywall checks so a slow RC load doesn't flash the free UI to Pro users
+🟠 HIGH (fix before submission, not instant rejection but will cause user-facing failures)
+H-1 client/screens/SearchResultsScreen.tsx — results falls back to a hardcoded empty object when route.params?.results is undefined, but route.params is typed as required (SearchResults: { results: SearchResultsData; addToInventory?: boolean }) in RootStackParamList. If navigation ever arrives without params (e.g. from a history item whose results field is null/undefined — possible for v1.4.0 history entries), results.listings is [] which is safe, but results.productInfo is undefined, and then:
+typescript
+// line ~rawName useMemo
+const raw = ((results.productInfo && results.productInfo.name) || "").trim()
+This is guarded. But handleAddToInventory does:
+typescript
+const price = !isNaN(parsed) && parsed >= 0 ? parsed : Number(results.avgListPrice) || 0;
+Number(undefined) is NaN, NaN || 0 is 0 — safe. The real risk is results.scannedImageId being undefined and getImage(undefined) — image-store.ts::getImage accepts string, passing undefined returns undefined from Map.get which is fine. All paths guarded. Medium risk, downgrade below.
+H-2 client/screens/InventoryScreen.tsx — deviceId is null until the async getDeviceId() resolves. The loadItems callback guards with if (!deviceId) return, but the useFocusEffect that calls loadItems also guards with if (deviceId) loadItems(). However, the AddItemModal receives deviceId and calls addInventoryItem(deviceId, ...) — if the modal is opened before deviceId resolves (race on very slow device), deviceId is null, the guard if (!selected || !deviceId) return catches it. Safe. But handleDelete does:
+typescript
+if (!deviceId) return;
+only inside the Alert onPress callback — if deviceId becomes null between mount and press (theoretically impossible but the type is string | null) this is fine in practice. Real issue: migrateLocalInventoryToCloud is called with whatever getDeviceId() returns — if that throws, the catch logs but deviceId state is never set, so the inventory screen silently shows nothing forever with no error UI.
+Fix: Add a visible error state when deviceId fails to load.
+H-3 server/routes.ts — The in-memory rateLimitMap is per-process only. On Replit (or any multi-worker deployment), each worker has its own map. A user can hit RATE_LIMIT_MAX × worker_count requests per window. For a single-dyno Replit deploy this is fine. If you ever scale horizontally this becomes a bypass. Document the assumption or move to Redis.
+H-4 server/routes.ts::uploadImageForLens — The fallback chain (Supabase → FreeImage → ImgBB) uses process.env.FREEIMAGE_API_KEY || "" and process.env.IMGBB_API_KEY || "". If both third-party keys are empty strings, those services will return auth errors but the function tries them anyway, wasting ~40s of timeout budget before returning null, causing the scan endpoint to return 500. The Supabase upload should almost never fail in production, but a misconfigured env will produce a very slow 500.
+Fix: Skip a service immediately if its key is empty: if (!process.env.IMGBB_API_KEY) return null;
+H-5 client/screens/ScanScreen.tsx — addSearchHistory(historyItem) is called with .catch(() => {}) — silently swallows errors. If AsyncStorage write fails (device storage full — common on low-storage iPhones), the scan result is shown but history is lost with no user feedback. This is acceptable for history but the real problem is that loadRecentScans() is called immediately after, and if the write failed but the read succeeds from the stale cache, the new scan won't appear in "Recent Scans" until next focus. Not a crash but a confusing UX regression vs v1.4.0.
+H-6 client/lib/storage.ts::getSearchHistory — JSON.parse(data) with no guard against malformed data beyond the outer try/catch. If AsyncStorage returns a truncated string (interrupted write), JSON.parse throws, the catch returns [], and the user silently loses all history. This is acceptable behavior but means a corrupted write during an upgrade from v1.4.0 drops history permanently. The sanitizeResults call on each item is good defensive coding.
+H-7 client/screens/MainTabNavigator.tsx — openCamera calls navigation.navigate("MainTabs", { screen: "Home" }) followed immediately by navigation.navigate("CameraScan", ...). Two sequential navigate calls in the same tick can cause a race where the second fires before the first completes, especially on slower iPhones. In v1.4.0 this may not have existed if the camera button was different.
+Fix: Wrap the second navigate in a setTimeout(..., 50) or use a single navigation.navigate("CameraScan") directly (MainTabs doesn't need to be pushed first since CameraScan is already in the root stack).
+H-8 server/routes.ts — /api/ebay-sold-search does not validate searchQuery length or content before passing it to cleanQueryWithAI and then to SearchAPI. A malicious or accidental very long string (e.g. a base64 image accidentally sent) will be sent to the AI cleaner and then to SearchAPI, burning API credits.
+Fix: if (searchQuery.length > 500) return res.status(400).json({ error: "Query too long" });
