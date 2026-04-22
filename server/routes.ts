@@ -540,8 +540,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       logScanEvent(deviceId, isPro, productName, listings.length, pricedListings.length);
 
+      const ebaySeedQuery = titleSource === "fallback" ? "" : productName;
       res.json({
-        query: productName,
+        query: ebaySeedQuery,
         productName,
         productInfo: {
           name: productName,
