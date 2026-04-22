@@ -96,8 +96,8 @@ export default function SearchResultsScreen() {
       ((results.productInfo && results.productInfo.name) || "").trim() ||
       (results.query || "").trim() ||
       "";
-    return addToInventoryMode ? cleanInventoryName(raw) : raw;
-  }, [results, addToInventoryMode]);
+    return raw;
+  }, [results]);
 
   const brandLine = useMemo(() => {
     const brand = results.productInfo?.brand?.trim();
