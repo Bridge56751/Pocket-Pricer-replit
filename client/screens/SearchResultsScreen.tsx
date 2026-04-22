@@ -151,18 +151,13 @@ export default function SearchResultsScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
     if (addToInventoryMode) {
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [{ name: "MainTabs", params: { screen: "Inventory" } }],
-        })
-      );
+      navigation.navigate("MainTabs" as never, { screen: "Inventory" } as never);
       return;
     }
     if (navigation.canGoBack()) {
       navigation.goBack();
     } else {
-      navigation.navigate("MainTabs" as never);
+      navigation.navigate("MainTabs" as never, { screen: "Home" } as never);
     }
   }, [navigation, addToInventoryMode]);
 
