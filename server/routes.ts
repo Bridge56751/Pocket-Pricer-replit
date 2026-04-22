@@ -524,7 +524,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         productName = productLikeListing.title;
         titleSource = `listing:${productLikeListing.seller || productLikeListing.platform}`;
       } else {
-        productName = "Unidentified item";
+        productName = "Likely not worth reselling";
         titleSource = "fallback";
       }
       console.log(`[Scan] Title source: ${titleSource} -> "${productName}"`);
