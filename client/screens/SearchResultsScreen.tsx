@@ -359,8 +359,8 @@ export default function SearchResultsScreen() {
       CommonActions.reset({
         index: 1,
         routes: [
-          { name: "Home" },
-          { name: "CameraScan" },
+          { name: "MainTabs" },
+          { name: "CameraScan", params: { source: "camera" } },
         ],
       })
     );
