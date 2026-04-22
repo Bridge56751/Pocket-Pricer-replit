@@ -11,7 +11,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.ebayprofit.app",
-      "buildNumber": "68",
+      "buildNumber": "69",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "SKAdNetworkItems": [
@@ -27,7 +27,7 @@
         "foregroundImage": "./assets/images/icon.png"
       },
       "package": "com.ebayprofit.app",
-      "versionCode": 2,
+      "versionCode": 3,
       "googleServicesFile": "./google-services.json",
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
