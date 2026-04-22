@@ -514,15 +514,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Returning ${pricedListings.length} priced + ${noPriceListings.length} check-price = ${listings.length} total listings`);
 
       const knowledgeGraphName = lensResult.productName?.trim();
-      const productLikeListing = listings.find(l => isProductLikeSource(l.seller || l.platform || ''));
       let productName: string;
       let titleSource: string;
       if (knowledgeGraphName) {
         productName = knowledgeGraphName;
         titleSource = "knowledge_graph";
-      } else if (productLikeListing?.title) {
-        productName = productLikeListing.title;
-        titleSource = `listing:${productLikeListing.seller || productLikeListing.platform}`;
       } else {
         productName = "Unidentified item";
         titleSource = "fallback";
