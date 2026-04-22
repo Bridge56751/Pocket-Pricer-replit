@@ -529,6 +529,7 @@ function AddItemModal({
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<SearchHistoryItem | null>(null);
   const [price, setPrice] = useState("");
+  const [productName, setProductName] = useState("");
   const [saving, setSaving] = useState(false);
 
   React.useEffect(() => {
@@ -536,6 +537,7 @@ function AddItemModal({
     setMode("chooser");
     setSelected(null);
     setPrice("");
+    setProductName("");
     setSaving(false);
   }, [visible]);
 
@@ -573,16 +575,22 @@ function AddItemModal({
     setSelected(scan);
     const suggested = getScanSuggestedPrice(scan);
     setPrice(suggested && suggested > 0 ? suggested.toFixed(2) : "");
+    setProductName(cleanInventoryName(getScanTitle(scan)));
   };
 
   const handleSave = async () => {
     if (!selected || !deviceId) return;
     const parsedPrice = parseFloat(price);
     if (isNaN(parsedPrice) || parsedPrice < 0) return;
+    const trimmedName = productName.trim();
+    if (!trimmedName) {
+      Alert.alert("Name required", "Please enter a name for this item before saving.");
+      return;
+    }
     setSaving(true);
     const created = await addInventoryItem(deviceId, {
       id: generateId(),
-      productName: getScanTitle(selected),
+      productName: trimmedName,
       imageUrl: getScanThumbnail(selected),
       purchasePrice: parsedPrice,
       purchasedAt: new Date().toISOString(),
@@ -602,6 +610,7 @@ function AddItemModal({
   const handleClose = () => {
     setSelected(null);
     setPrice("");
+    setProductName("");
     onClose();
   };
 
@@ -750,7 +759,7 @@ function AddItemModal({
                     style={[styles.selectedScanTitle, { color: theme.colors.foreground }]}
                     numberOfLines={2}
                   >
-                    {getScanTitle(selected)}
+                    {productName.trim() || getScanTitle(selected)}
                   </Text>
                   {getScanSuggestedPrice(selected) ? (
                     <Text
@@ -763,6 +772,22 @@ function AddItemModal({
               </View>
 
               <Text style={[styles.modalLabel, { color: theme.colors.foreground }]}>
+                Product name
+              </Text>
+              <TextInput
+                value={productName}
+                onChangeText={setProductName}
+                placeholder="Name this item"
+                placeholderTextColor={theme.colors.mutedForeground}
+                maxLength={INVENTORY_NAME_MAX_LENGTH}
+                style={[
+                  styles.modalInput,
+                  { color: theme.colors.foreground, borderColor: "#E5E7EB" },
+                ]}
+                testID="input-product-name"
+              />
+
+              <Text style={[styles.modalLabel, { color: theme.colors.foreground }]}>
                 Purchase price
               </Text>
               <TextInput
@@ -771,7 +796,6 @@ function AddItemModal({
                 placeholder="0.00"
                 placeholderTextColor={theme.colors.mutedForeground}
                 keyboardType="decimal-pad"
-                autoFocus
                 style={[
                   styles.modalInput,
                   { color: theme.colors.foreground, borderColor: "#E5E7EB" },
@@ -793,12 +817,17 @@ function AddItemModal({
                 </Pressable>
                 <Pressable
                   onPress={handleSave}
-                  disabled={saving || !price.trim()}
+                  disabled={saving || !price.trim() || !productName.trim()}
                   style={({ pressed }) => [
                     styles.modalSaveButton,
                     {
                       backgroundColor: theme.colors.primary,
-                      opacity: saving || !price.trim() ? 0.5 : pressed ? 0.85 : 1,
+                      opacity:
+                        saving || !price.trim() || !productName.trim()
+                          ? 0.5
+                          : pressed
+                          ? 0.85
+                          : 1,
                     },
                   ]}
                   testID="button-save-inventory"

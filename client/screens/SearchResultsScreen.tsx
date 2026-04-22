@@ -18,7 +18,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRevenueCat } from "@/contexts/RevenueCatContext";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import type { EbaySoldData, EbaySoldItem } from "@/types/product";
-import { addInventoryItem, cleanInventoryName, INVENTORY_NAME_MAX_LENGTH } from "@/lib/storage";
+import { addInventoryItem, cleanInventoryName } from "@/lib/storage";
 import { Alert } from "react-native";
 
 function generateInventoryId(): string {
@@ -108,12 +108,9 @@ export default function SearchResultsScreen() {
 
   const [savingToInventory, setSavingToInventory] = useState(false);
   const [displayName, setDisplayName] = useState(rawName);
-  const [isEditingName, setIsEditingName] = useState(false);
 
   useEffect(() => {
-    if (!isEditingName) {
-      setDisplayName(rawName);
-    }
+    setDisplayName(rawName);
   }, [rawName]);
   const [purchasePrice, setPurchasePrice] = useState("");
   const [sellingPrice, setSellingPrice] = useState("");
@@ -672,54 +669,11 @@ export default function SearchResultsScreen() {
                     {brandLine.toUpperCase()}
                   </Text>
                 ) : null}
-                {addToInventoryMode && isEditingName ? (
-                  <View style={styles.nameInputRow}>
-                    <TextInput
-                      value={displayName}
-                      onChangeText={setDisplayName}
-                      onBlur={() => setIsEditingName(false)}
-                      onSubmitEditing={() => {
-                        setIsEditingName(false);
-                        Keyboard.dismiss();
-                      }}
-                      autoFocus
-                      multiline
-                      maxLength={INVENTORY_NAME_MAX_LENGTH}
-                      placeholder="Name this item"
-                      placeholderTextColor="rgba(255,255,255,0.5)"
-                      returnKeyType="done"
-                      blurOnSubmit
-                      style={styles.heroNameInput}
-                      testID="input-product-name"
-                    />
-                  </View>
-                ) : (
-                  <Pressable
-                    onPress={() => {
-                      if (!addToInventoryMode) return;
-                      if (Platform.OS !== "web") {
-                        Haptics.selectionAsync();
-                      }
-                      setIsEditingName(true);
-                    }}
-                    style={styles.nameRow}
-                    disabled={!addToInventoryMode}
-                    testID="button-edit-product-name"
-                  >
-                    <Text style={styles.heroNameText} numberOfLines={2}>
-                      {displayName.trim() ||
-                        (addToInventoryMode ? "Name this item" : "Unidentified item")}
-                    </Text>
-                    {addToInventoryMode ? (
-                      <Feather
-                        name="edit-2"
-                        size={14}
-                        color="rgba(255,255,255,0.7)"
-                        style={{ marginLeft: 8, marginTop: 6 }}
-                      />
-                    ) : null}
-                  </Pressable>
-                )}
+                <View style={styles.nameRow} testID="text-product-name">
+                  <Text style={styles.heroNameText} numberOfLines={2}>
+                    {displayName.trim() || "Unidentified item"}
+                  </Text>
+                </View>
               </View>
 
               <View style={styles.suggestedPriceRow}>
@@ -1515,10 +1469,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#FFFFFF",
     lineHeight: 28,
-  },
-  nameInputRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
   },
   heroNameInput: {
     flex: 1,
