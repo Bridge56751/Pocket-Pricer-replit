@@ -117,7 +117,15 @@ export async function getSearchHistory(): Promise<SearchHistoryItem[]> {
 export async function addSearchHistory(item: SearchHistoryItem): Promise<void> {
   try {
     const history = await AsyncStorage.getItem(STORAGE_KEYS.SEARCH_HISTORY);
-    const parsed = history ? JSON.parse(history) : [];
+    let parsed: SearchHistoryItem[] = [];
+    if (history) {
+      try {
+        const candidate = JSON.parse(history);
+        parsed = Array.isArray(candidate) ? candidate : [];
+      } catch {
+        parsed = [];
+      }
+    }
     const newHistory = [item, ...parsed.filter((h: SearchHistoryItem) => h.id !== item.id)].slice(0, 10);
     await AsyncStorage.setItem(STORAGE_KEYS.SEARCH_HISTORY, JSON.stringify(newHistory));
   } catch (error) {
@@ -312,7 +320,11 @@ async function uploadItemForMigration(
   }
 }
 
+let _migrationInFlight = false;
+
 export async function migrateLocalInventoryToCloud(deviceId: string): Promise<void> {
+  if (_migrationInFlight) return;
+  _migrationInFlight = true;
   try {
     const flag = await AsyncStorage.getItem(STORAGE_KEYS.INVENTORY_MIGRATED);
     if (flag === "1") return;
@@ -362,6 +374,8 @@ export async function migrateLocalInventoryToCloud(deviceId: string): Promise<vo
     }
   } catch (error) {
     console.error("Inventory migration failed:", error);
+  } finally {
+    _migrationInFlight = false;
   }
 }
 

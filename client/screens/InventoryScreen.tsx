@@ -79,23 +79,27 @@ export default function InventoryScreen() {
   const [profitInfoOpen, setProfitInfoOpen] = useState(false);
   const [deviceId, setDeviceId] = useState<string | null>(null);
   const [loadingItems, setLoadingItems] = useState(true);
+  const [initError, setInitError] = useState(false);
+  const [initAttempt, setInitAttempt] = useState(0);
 
   React.useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
+        setInitError(false);
         const id = await getDeviceId();
         if (cancelled) return;
         setDeviceId(id);
         await migrateLocalInventoryToCloud(id);
       } catch (err) {
         console.error("Failed to init inventory device id:", err);
+        if (!cancelled) setInitError(true);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [getDeviceId]);
+  }, [getDeviceId, initAttempt]);
 
   const loadItems = useCallback(async () => {
     if (!deviceId) return;
@@ -275,7 +279,32 @@ export default function InventoryScreen() {
             })}
           </View>
 
-          {filteredItems.length === 0 ? (
+          {initError && filteredItems.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <View style={styles.emptyIconCircle}>
+                <Feather name="alert-circle" size={28} color={theme.colors.primary} />
+              </View>
+              <Text style={[styles.emptyTitle, { color: theme.colors.foreground }]}>
+                Couldn't load inventory
+              </Text>
+              <Text style={[styles.emptySub, { color: theme.colors.mutedForeground }]}>
+                Check your connection and try again.
+              </Text>
+              <Pressable
+                onPress={() => setInitAttempt((n) => n + 1)}
+                style={{
+                  marginTop: 16,
+                  paddingHorizontal: 20,
+                  paddingVertical: 10,
+                  borderRadius: 999,
+                  backgroundColor: theme.colors.primary,
+                }}
+                testID="button-inventory-retry"
+              >
+                <Text style={{ color: "#fff", fontWeight: "600" }}>Retry</Text>
+              </Pressable>
+            </View>
+          ) : filteredItems.length === 0 ? (
             <View style={styles.emptyContainer}>
               <View style={styles.emptyIconCircle}>
                 <Feather

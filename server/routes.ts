@@ -80,8 +80,9 @@ async function uploadImageForLens(imageBase64: string): Promise<{ url: string; s
       return { url: data.publicUrl, supabaseFileName: fileName };
     },
     async () => {
+      if (!process.env.FREEIMAGE_API_KEY) return null;
       const formData = new URLSearchParams();
-      formData.append("key", process.env.FREEIMAGE_API_KEY || "");
+      formData.append("key", process.env.FREEIMAGE_API_KEY);
       formData.append("source", cleanBase64);
       formData.append("format", "json");
       const response = await fetch("https://freeimage.host/api/1/upload", {
@@ -95,8 +96,9 @@ async function uploadImageForLens(imageBase64: string): Promise<{ url: string; s
       return null;
     },
     async () => {
+      if (!process.env.IMGBB_API_KEY) return null;
       const formData = new URLSearchParams();
-      formData.append("key", process.env.IMGBB_API_KEY || "");
+      formData.append("key", process.env.IMGBB_API_KEY);
       formData.append("image", cleanBase64);
       const response = await fetch("https://api.imgbb.com/1/upload", {
         method: "POST",
@@ -592,6 +594,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!searchQuery) {
         return res.status(400).json({ error: "Search query is required" });
       }
+      if (typeof searchQuery !== "string" || searchQuery.length > 500) {
+        return res.status(400).json({ error: "Invalid search query" });
+      }
 
       const apiKey = process.env.SEARCHAPI_API_KEY;
       if (!apiKey) {
@@ -631,8 +636,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         cleanQuery = words.join(" ").slice(0, 80) || searchQuery.trim().slice(0, 80);
       } else {
-        cleanQuery = searchQuery
-          .split(/[|·•–—]/).at(0)
+        cleanQuery = (searchQuery
+          .split(/[|·•–—]/)[0] ?? searchQuery)
           .replace(/free shipping.*/i, "")
           .replace(/\(.*?\)/g, "")
           .replace(/@\w+/g, "")
