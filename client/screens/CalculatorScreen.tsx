@@ -31,7 +31,9 @@ type FeeBreakdown = {
   totalFees: number;
 };
 
-type ShippingModel = "both" | "label-only" | "neither";
+type ShippingModel = "both" | "label-only" | "neither" | "flat-tier";
+
+type ShippingTier = { label: string; cost: number };
 
 type Marketplace = {
   id: string;
@@ -41,6 +43,7 @@ type Marketplace = {
   feeNote: string;
   shipping: ShippingModel;
   shippingNote: string;
+  shippingTiers?: ShippingTier[];
   calculate: (sale: number, shippingCharged: number) => FeeBreakdown;
 };
 
@@ -83,8 +86,15 @@ const MARKETPLACES: Marketplace[] = [
     short: "Mercari",
     accent: "#FF5B5B",
     feeNote: "10% on item, plus 2.9% + $0.50 payment processing on the order total.",
-    shipping: "both",
-    shippingNote: "Use a Mercari label or your own. You can charge the buyer or absorb it.",
+    shipping: "flat-tier",
+    shippingNote: "Mercari uses prepaid USPS labels at flat rates by weight. Pick a tier and choose who pays.",
+    shippingTiers: [
+      { label: "Up to 8 oz", cost: 5.21 },
+      { label: "Up to 1 lb", cost: 7.99 },
+      { label: "Up to 2 lb", cost: 11.49 },
+      { label: "Up to 5 lb", cost: 14.79 },
+      { label: "Up to 10 lb", cost: 19.49 },
+    ],
     calculate: (sale, shipping) => {
       const platformFee = round2(sale * 0.1);
       const paymentFee = sale > 0 ? round2((sale + shipping) * 0.029 + 0.5) : 0;
@@ -161,8 +171,15 @@ const MARKETPLACES: Marketplace[] = [
     short: "Whatnot",
     accent: "#FFCB05",
     feeNote: "8% commission, plus 2.9% + $0.30 payment processing.",
-    shipping: "both",
-    shippingNote: "Whatnot generates the label. Buyer typically pays shipping at checkout.",
+    shipping: "flat-tier",
+    shippingNote: "Whatnot generates flat-rate labels by weight. Buyer usually pays at checkout — exact rates vary by category.",
+    shippingTiers: [
+      { label: "Up to 4 oz", cost: 4.49 },
+      { label: "Up to 8 oz", cost: 5.49 },
+      { label: "Up to 1 lb", cost: 7.49 },
+      { label: "Up to 3 lb", cost: 10.99 },
+      { label: "Up to 7 lb", cost: 15.99 },
+    ],
     calculate: (sale, shipping) => {
       const base = sale + shipping;
       const platformFee = round2(sale * 0.08);
@@ -263,6 +280,8 @@ export default function CalculatorScreen() {
   const [itemCost, setItemCost] = useState("");
   const [shippingCharged, setShippingCharged] = useState("");
   const [shippingCost, setShippingCost] = useState("");
+  const [tierIdx, setTierIdx] = useState<number>(0);
+  const [tierPayer, setTierPayer] = useState<"buyer" | "seller">("buyer");
   const [feeInfoOpen, setFeeInfoOpen] = useState(false);
   const [marketplacePickerOpen, setMarketplacePickerOpen] = useState(false);
 
@@ -278,8 +297,18 @@ export default function CalculatorScreen() {
     const shipPaidRaw = parseMoney(shippingCost);
 
     // Clamp shipping inputs to what this marketplace actually allows.
-    const shipCharged = marketplace.shipping === "both" ? shipChargedRaw : 0;
-    const shipPaid = marketplace.shipping === "neither" ? 0 : shipPaidRaw;
+    let shipCharged: number;
+    let shipPaid: number;
+    if (marketplace.shipping === "flat-tier") {
+      const tiers = marketplace.shippingTiers || [];
+      const tier = tiers[tierIdx] || tiers[0];
+      const tierCost = tier ? tier.cost : 0;
+      shipCharged = tierPayer === "buyer" ? tierCost : 0;
+      shipPaid = tierCost;
+    } else {
+      shipCharged = marketplace.shipping === "both" ? shipChargedRaw : 0;
+      shipPaid = marketplace.shipping === "neither" ? 0 : shipPaidRaw;
+    }
 
     const fees = marketplace.calculate(sale, shipCharged);
     const gross = sale + shipCharged;
@@ -301,7 +330,7 @@ export default function CalculatorScreen() {
       roi,
       hasInputs: sale > 0,
     };
-  }, [salePrice, itemCost, shippingCharged, shippingCost, marketplace]);
+  }, [salePrice, itemCost, shippingCharged, shippingCost, marketplace, tierIdx, tierPayer]);
 
   const profitColor = result.profit >= 0 ? "#047857" : "#DC2626";
 
@@ -314,6 +343,10 @@ export default function CalculatorScreen() {
     if (next) {
       if (next.shipping !== "both") setShippingCharged("");
       if (next.shipping === "neither") setShippingCost("");
+      if (next.shipping === "flat-tier") {
+        setTierIdx(0);
+        setTierPayer("buyer");
+      }
     }
   };
 
@@ -325,6 +358,8 @@ export default function CalculatorScreen() {
     setItemCost("");
     setShippingCharged("");
     setShippingCost("");
+    setTierIdx(0);
+    setTierPayer("buyer");
   };
 
   return (
@@ -439,10 +474,95 @@ export default function CalculatorScreen() {
               </Text>
             </View>
 
+            {marketplace.shipping === "flat-tier" && marketplace.shippingTiers ? (
+              <View style={styles.tierBlock}>
+                <Text style={[styles.tinyLabel, { color: theme.colors.mutedForeground }]}>
+                  WHO PAYS SHIPPING
+                </Text>
+                <View style={styles.payerToggleRow}>
+                  {(["buyer", "seller"] as const).map((p) => {
+                    const active = tierPayer === p;
+                    return (
+                      <Pressable
+                        key={p}
+                        onPress={() => {
+                          if (Platform.OS !== "web") Haptics.selectionAsync();
+                          setTierPayer(p);
+                        }}
+                        style={[
+                          styles.payerToggleBtn,
+                          {
+                            backgroundColor: active ? "#047857" : theme.colors.muted,
+                            borderColor: active ? "#047857" : "rgba(0,0,0,0.06)",
+                          },
+                        ]}
+                        testID={`button-payer-${p}`}
+                      >
+                        <Text
+                          style={[
+                            styles.payerToggleText,
+                            { color: active ? "#FFFFFF" : theme.colors.foreground },
+                          ]}
+                        >
+                          {p === "buyer" ? "Buyer pays" : "I cover it"}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+                <Text style={[styles.tinyLabel, { color: theme.colors.mutedForeground, marginTop: 12 }]}>
+                  LABEL TIER
+                </Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.tierChipsRow}
+                >
+                  {marketplace.shippingTiers.map((tier, idx) => {
+                    const active = tierIdx === idx;
+                    return (
+                      <Pressable
+                        key={tier.label}
+                        onPress={() => {
+                          if (Platform.OS !== "web") Haptics.selectionAsync();
+                          setTierIdx(idx);
+                        }}
+                        style={[
+                          styles.tierChip,
+                          {
+                            backgroundColor: active ? "#ECFDF5" : theme.colors.muted,
+                            borderColor: active ? "#047857" : "rgba(0,0,0,0.06)",
+                          },
+                        ]}
+                        testID={`chip-tier-${idx}`}
+                      >
+                        <Text
+                          style={[
+                            styles.tierChipLabel,
+                            { color: active ? "#047857" : theme.colors.foreground },
+                          ]}
+                        >
+                          {tier.label}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.tierChipCost,
+                            { color: active ? "#047857" : theme.colors.mutedForeground },
+                          ]}
+                        >
+                          {fmt(tier.cost)}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            ) : null}
+
             <Text style={[styles.sectionLabel, { color: theme.colors.mutedForeground, marginTop: 8 }]}>
               YOUR COSTS
             </Text>
-            {marketplace.shipping === "neither" ? (
+            {marketplace.shipping === "neither" || marketplace.shipping === "flat-tier" ? (
               <MoneyInput
                 label="Item cost"
                 value={itemCost}
@@ -902,6 +1022,51 @@ const styles = StyleSheet.create({
     fontSize: 11,
     lineHeight: 15,
     fontStyle: "italic",
+  },
+  tierBlock: {
+    marginTop: 12,
+  },
+  tinyLabel: {
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 0.6,
+    marginBottom: 6,
+  },
+  payerToggleRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  payerToggleBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignItems: "center",
+    borderWidth: 1,
+  },
+  payerToggleText: {
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  tierChipsRow: {
+    gap: 8,
+    paddingRight: 4,
+  },
+  tierChip: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    minWidth: 86,
+    alignItems: "center",
+  },
+  tierChipLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  tierChipCost: {
+    fontSize: 11,
+    marginTop: 2,
+    fontWeight: "500",
   },
   inputAccessoryBar: {
     flexDirection: "row",
