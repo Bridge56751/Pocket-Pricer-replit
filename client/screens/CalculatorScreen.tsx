@@ -8,6 +8,8 @@ import {
   TextInput,
   Platform,
   Modal,
+  InputAccessoryView,
+  Keyboard,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
@@ -19,6 +21,8 @@ import Animated from "react-native-reanimated";
 
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { useTabBarFadeOnScroll } from "@/hooks/useTabBarFadeOnScroll";
+
+const CALC_INPUT_ACCESSORY_ID = "calculatorInputDone";
 
 type FeeBreakdown = {
   platformFee: number;
@@ -633,6 +637,21 @@ export default function CalculatorScreen() {
           </View>
         </View>
       </Modal>
+
+      {Platform.OS === "ios" ? (
+        <InputAccessoryView nativeID={CALC_INPUT_ACCESSORY_ID}>
+          <View style={styles.inputAccessoryBar}>
+            <Pressable
+              onPress={() => Keyboard.dismiss()}
+              hitSlop={10}
+              style={styles.inputAccessoryDoneBtn}
+              testID="button-keyboard-done"
+            >
+              <Text style={styles.inputAccessoryDoneText}>Done</Text>
+            </Pressable>
+          </View>
+        </InputAccessoryView>
+      ) : null}
     </View>
   );
 }
@@ -670,6 +689,8 @@ function MoneyInput({
           style={[styles.input, { color: theme.colors.foreground }]}
           testID={testID}
           autoFocus={autoFocus}
+          inputAccessoryViewID={Platform.OS === "ios" ? CALC_INPUT_ACCESSORY_ID : undefined}
+          returnKeyType="done"
         />
       </View>
       {hint ? (
@@ -808,6 +829,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
     backgroundColor: "#F3F4F6",
+  },
+  inputAccessoryBar: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    alignItems: "center",
+    backgroundColor: "#F3F4F6",
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "#D1D5DB",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  inputAccessoryDoneBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  inputAccessoryDoneText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#047857",
   },
   card: {
     borderRadius: 16,
