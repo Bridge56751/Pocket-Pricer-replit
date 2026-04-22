@@ -395,6 +395,21 @@ const isReliableSource = (source: string) => {
   return !blockedSources.some(blocked => lowerSource.includes(blocked));
 };
 
+const nonProductSources = [
+  'reddit', 'pinterest', 'youtube', 'youtu.be', 'tiktok', 'quora',
+  'facebook', 'instagram', 'twitter', 'x.com', 'tumblr', 'medium',
+  'imgur', 'blogspot', 'wordpress', 'substack', 'flickr', 'vimeo',
+  'linkedin', 'snapchat', 'threads.net', 'discord', 'twitch'
+];
+
+const isProductLikeSource = (source: string) => {
+  const lowerSource = (source || '').toLowerCase();
+  if (!lowerSource) return false;
+  if (blockedSources.some(blocked => lowerSource.includes(blocked))) return false;
+  if (nonProductSources.some(np => lowerSource.includes(np))) return false;
+  return true;
+};
+
 export async function registerRoutes(app: Express): Promise<Server> {
   initScanImagesBucket().catch((err) => {
     console.error("Failed to init scan-images bucket:", err?.message);
@@ -498,9 +513,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const listings = [...pricedListings, ...noPriceListings];
       console.log(`Returning ${pricedListings.length} priced + ${noPriceListings.length} check-price = ${listings.length} total listings`);
 
-      const productName = lensResult.productName
-        || listings[0]?.title
-        || "Scanned Product";
+      const knowledgeGraphName = lensResult.productName?.trim();
+      const productLikeListing = listings.find(l => isProductLikeSource(l.seller || l.platform || ''));
+      let productName: string;
+      let titleSource: string;
+      if (knowledgeGraphName) {
+        productName = knowledgeGraphName;
+        titleSource = "knowledge_graph";
+      } else if (productLikeListing?.title) {
+        productName = productLikeListing.title;
+        titleSource = `listing:${productLikeListing.seller || productLikeListing.platform}`;
+      } else {
+        productName = "Unidentified item";
+        titleSource = "fallback";
+      }
+      console.log(`[Scan] Title source: ${titleSource} -> "${productName}"`);
 
       if (!isPro) {
         await incrementGuestScan(deviceId);
