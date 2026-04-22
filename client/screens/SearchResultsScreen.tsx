@@ -146,21 +146,6 @@ export default function SearchResultsScreen() {
     extrapolate: "clamp",
   });
 
-  const handleGoBack = useCallback(() => {
-    if (Platform.OS !== "web") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
-    if (addToInventoryMode) {
-      navigation.navigate("MainTabs" as never, { screen: "Inventory" } as never);
-      return;
-    }
-    if (navigation.canGoBack()) {
-      navigation.goBack();
-    } else {
-      navigation.navigate("MainTabs" as never, { screen: "Home" } as never);
-    }
-  }, [navigation, addToInventoryMode]);
-
   const handleAddToInventory = useCallback(async () => {
     if (savingToInventory) return;
     const deviceId = await getDeviceId();
@@ -221,6 +206,21 @@ export default function SearchResultsScreen() {
     navigation,
     displayName,
   ]);
+
+  const handleGoBack = useCallback(() => {
+    if (Platform.OS !== "web") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    if (addToInventoryMode) {
+      handleAddToInventory();
+      return;
+    }
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    } else {
+      navigation.navigate("MainTabs" as never, { screen: "Home" } as never);
+    }
+  }, [navigation, addToInventoryMode, handleAddToInventory]);
 
   const CUSTOM_HEADER_HEIGHT = 44;
 
