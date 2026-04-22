@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { View, StyleSheet, Pressable, Text, ScrollView, Image, Platform } from "react-native";
 import { useTabBarFadeOnScroll } from "@/hooks/useTabBarFadeOnScroll";
+import { useTabBarVisibility } from "@/contexts/TabBarVisibilityContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as StoreReview from "expo-store-review";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -160,6 +161,7 @@ export default function ScanScreen() {
   const { isPro, isReady: rcReady } = useRevenueCat();
   const queryClient = useQueryClient();
   const tabBarFadeHandler = useTabBarFadeOnScroll();
+  const { opacity: tabBarOpacity } = useTabBarVisibility();
   const scrollRef = useRef<any>(null);
 
   useFocusEffect(
@@ -182,6 +184,14 @@ export default function ScanScreen() {
   const [currentStep, setCurrentStep] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [scannedPhotoUri, setScannedPhotoUri] = useState<string | null>(null);
+
+  useEffect(() => {
+    const shouldHide = isAnalyzing || !!errorMessage;
+    tabBarOpacity.value = shouldHide ? 0 : 1;
+    return () => {
+      tabBarOpacity.value = 1;
+    };
+  }, [isAnalyzing, errorMessage, tabBarOpacity]);
   const processingRef = useRef(false);
   const lastScanSourceRef = useRef<"camera" | "library">("camera");
 
