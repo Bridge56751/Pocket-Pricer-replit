@@ -10,6 +10,7 @@ import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as WebBrowser from "expo-web-browser";
 import * as StoreReview from "expo-store-review";
+import Constants from "expo-constants";
 import { LinearGradient } from "expo-linear-gradient";
 
 import { useDesignTokens } from "@/hooks/useDesignTokens";
@@ -416,7 +417,9 @@ export default function ProfileScreen() {
             ) : null}
           </View>
 
-          <Text style={styles.versionText}>Version 1.4.0</Text>
+          <Text style={styles.versionText}>
+            Version {Constants.expoConfig?.version ?? "1.5.0"}
+          </Text>
         </View>
       </Animated.ScrollView>
     </View>
