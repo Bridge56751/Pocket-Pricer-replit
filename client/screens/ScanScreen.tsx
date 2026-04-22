@@ -558,7 +558,7 @@ export default function ScanScreen() {
                 onPress={() => handleScanProduct("camera")}
                 style={({ pressed }) => [styles.scanButtonPressable, { opacity: pressed ? 0.9 : 1 }]}
               >
-                <View style={[styles.scanButton, isPro ? { borderColor: "rgba(212,169,38,0.4)" } : undefined]}>
+                <View style={styles.scanButton}>
                   <View style={styles.scanButtonLeft}>
                     <Feather name="camera" size={20} color="#14532D" />
                     <Text style={styles.scanButtonText}>Scan Product</Text>
@@ -588,8 +588,8 @@ export default function ScanScreen() {
                 style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}
                 testID="button-scan-from-library"
               >
-                <View style={[styles.libraryTile, isPro ? { borderColor: "rgba(212,169,38,0.4)" } : undefined]}>
-                  <Feather name="image" size={22} color={isPro ? "#D4A926" : "#14532D"} />
+                <View style={styles.libraryTile}>
+                  <Feather name="image" size={22} color="#14532D" />
                 </View>
               </Pressable>
             </View>
