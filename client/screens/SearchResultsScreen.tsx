@@ -215,7 +215,7 @@ export default function SearchResultsScreen() {
     if (navigation.canGoBack()) {
       navigation.goBack();
     } else {
-      navigation.navigate("MainTabs" as never, { screen: "Home" } as never);
+      navigation.navigate("MainTabs", { screen: "Home" });
     }
   }, [navigation, addToInventoryMode, handleAddToInventory]);
 

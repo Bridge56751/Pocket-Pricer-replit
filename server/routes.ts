@@ -416,6 +416,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/scan-with-lens", async (req: Request, res: Response) => {
+    let supabaseFileName: string | null = null;
     try {
       const deviceId = req.headers["x-device-id"] as string | undefined;
       const isPro = req.headers["x-is-pro"] === "true";
@@ -444,8 +445,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!imageBase64) {
         return res.status(400).json({ error: "Image data is required" });
       }
-
-      let supabaseFileName: string | null = null;
 
       console.log("Uploading image for Google Lens search...");
       const uploadResult = await uploadImageForLens(imageBase64);
@@ -827,8 +826,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/device-stats/:deviceId", async (req: Request, res: Response) => {
     try {
-      const { deviceId } = req.params;
-      if (!deviceId) {
+      const deviceId = req.params.deviceId;
+      if (typeof deviceId !== "string" || !deviceId) {
         return res.status(400).json({ error: "Missing deviceId" });
       }
       if (isRateLimited(deviceId)) {
@@ -911,8 +910,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/inventory/:deviceId/:itemId", async (req: Request, res: Response) => {
     try {
-      const { deviceId, itemId } = req.params;
-      if (!isValidDeviceId(deviceId) || !itemId) return res.status(400).json({ error: "Invalid identifiers" });
+      const deviceId = req.params.deviceId;
+      const itemId = req.params.itemId;
+      if (!isValidDeviceId(deviceId) || typeof itemId !== "string" || !itemId) {
+        return res.status(400).json({ error: "Invalid identifiers" });
+      }
       if (isRateLimited(deviceId)) {
         return res.status(429).json({ error: "Too many requests. Please wait a moment and try again." });
       }
@@ -950,8 +952,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/inventory/:deviceId/:itemId", async (req: Request, res: Response) => {
     try {
-      const { deviceId, itemId } = req.params;
-      if (!isValidDeviceId(deviceId) || !itemId) return res.status(400).json({ error: "Invalid identifiers" });
+      const deviceId = req.params.deviceId;
+      const itemId = req.params.itemId;
+      if (!isValidDeviceId(deviceId) || typeof itemId !== "string" || !itemId) {
+        return res.status(400).json({ error: "Invalid identifiers" });
+      }
       if (isRateLimited(deviceId)) {
         return res.status(429).json({ error: "Too many requests. Please wait a moment and try again." });
       }
