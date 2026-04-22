@@ -484,8 +484,8 @@ export default function CalculatorScreen() {
               ]}
               testID="button-reset"
             >
-              <Feather name="rotate-ccw" size={14} color={theme.colors.mutedForeground} />
-              <Text style={[styles.resetText, { color: theme.colors.mutedForeground }]}>
+              <Feather name="rotate-ccw" size={14} color="#DC2626" />
+              <Text style={[styles.resetText, { color: "#DC2626" }]}>
                 Reset
               </Text>
             </Pressable>
