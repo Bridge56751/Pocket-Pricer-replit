@@ -8,9 +8,8 @@ import {
   TextInput,
   Platform,
   Modal,
-  InputAccessoryView,
-  Keyboard,
 } from "react-native";
+import { KeyboardToolbar } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useFocusEffect } from "@react-navigation/native";
@@ -21,8 +20,6 @@ import Animated from "react-native-reanimated";
 
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { useTabBarFadeOnScroll } from "@/hooks/useTabBarFadeOnScroll";
-
-const CALC_INPUT_ACCESSORY_ID = "calculatorInputDone";
 
 type FeeBreakdown = {
   platformFee: number;
@@ -818,20 +815,7 @@ export default function CalculatorScreen() {
         </View>
       </Modal>
 
-      {Platform.OS === "ios" ? (
-        <InputAccessoryView nativeID={CALC_INPUT_ACCESSORY_ID}>
-          <View style={styles.inputAccessoryBar}>
-            <Pressable
-              onPress={() => Keyboard.dismiss()}
-              hitSlop={10}
-              style={styles.inputAccessoryDoneBtn}
-              testID="button-keyboard-done"
-            >
-              <Text style={styles.inputAccessoryDoneText}>Done</Text>
-            </Pressable>
-          </View>
-        </InputAccessoryView>
-      ) : null}
+      <KeyboardToolbar showArrows={false} doneText="Done" />
     </View>
   );
 }
@@ -869,7 +853,6 @@ function MoneyInput({
           style={[styles.input, { color: theme.colors.foreground }]}
           testID={testID}
           autoFocus={autoFocus}
-          inputAccessoryViewID={Platform.OS === "ios" ? CALC_INPUT_ACCESSORY_ID : undefined}
           returnKeyType="done"
         />
       </View>
@@ -1067,25 +1050,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     marginTop: 2,
     fontWeight: "500",
-  },
-  inputAccessoryBar: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    alignItems: "center",
-    backgroundColor: "#F3F4F6",
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: "#D1D5DB",
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  inputAccessoryDoneBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  inputAccessoryDoneText: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#047857",
   },
   card: {
     borderRadius: 16,
