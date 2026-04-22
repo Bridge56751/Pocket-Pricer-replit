@@ -560,8 +560,8 @@ export default function ScanScreen() {
               >
                 <View style={[styles.scanButton, isPro ? { borderColor: "rgba(212,169,38,0.4)" } : undefined]}>
                   <View style={styles.scanButtonLeft}>
-                    <Feather name="camera" size={20} color={isPro ? "#D4A926" : "#14532D"} />
-                    <Text style={[styles.scanButtonText, isPro ? { color: "#B8941F" } : undefined]}>Scan Product</Text>
+                    <Feather name="camera" size={20} color="#14532D" />
+                    <Text style={styles.scanButtonText}>Scan Product</Text>
                   </View>
                   {isPro ? (
                     <LinearGradient
