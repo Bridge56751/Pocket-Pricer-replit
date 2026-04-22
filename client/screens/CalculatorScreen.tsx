@@ -31,12 +31,16 @@ type FeeBreakdown = {
   totalFees: number;
 };
 
+type ShippingModel = "both" | "label-only" | "neither";
+
 type Marketplace = {
   id: string;
   name: string;
   short: string;
   accent: string;
   feeNote: string;
+  shipping: ShippingModel;
+  shippingNote: string;
   calculate: (sale: number, shippingCharged: number) => FeeBreakdown;
 };
 
@@ -58,6 +62,8 @@ const MARKETPLACES: Marketplace[] = [
     short: "eBay",
     accent: "#0064D2",
     feeNote: "13.25% of item + shipping, plus $0.40 per order. Most categories.",
+    shipping: "both",
+    shippingNote: "You set the shipping price. eBay labels are usually discounted.",
     calculate: (sale, shipping) => {
       const base = sale + shipping;
       const platformFee = round2(base * 0.1325);
@@ -77,6 +83,8 @@ const MARKETPLACES: Marketplace[] = [
     short: "Mercari",
     accent: "#FF5B5B",
     feeNote: "10% on item, plus 2.9% + $0.50 payment processing on the order total.",
+    shipping: "both",
+    shippingNote: "Use a Mercari label or your own. You can charge the buyer or absorb it.",
     calculate: (sale, shipping) => {
       const platformFee = round2(sale * 0.1);
       const paymentFee = sale > 0 ? round2((sale + shipping) * 0.029 + 0.5) : 0;
@@ -94,6 +102,8 @@ const MARKETPLACES: Marketplace[] = [
     short: "Posh",
     accent: "#7B2D8E",
     feeNote: "Flat $2.95 under $15. 20% on $15 and up. Buyer pays shipping label.",
+    shipping: "neither",
+    shippingNote: "Buyer pays Poshmark's flat-rate label directly. You don't pay or charge for shipping.",
     calculate: (sale) => {
       const platformFee = sale <= 0 ? 0 : sale < 15 ? 2.95 : round2(sale * 0.2);
       return {
@@ -110,6 +120,8 @@ const MARKETPLACES: Marketplace[] = [
     short: "Depop",
     accent: "#FF2300",
     feeNote: "10% selling fee on item + shipping, plus 3.3% + $0.45 payment processing.",
+    shipping: "both",
+    shippingNote: "You can use a Depop label (buyer pays at checkout) or arrange your own.",
     calculate: (sale, shipping) => {
       const base = sale + shipping;
       const platformFee = round2(base * 0.1);
@@ -128,6 +140,8 @@ const MARKETPLACES: Marketplace[] = [
     short: "Etsy",
     accent: "#F1641E",
     feeNote: "6.5% transaction on item + shipping, $0.20 listing, plus 3% + $0.25 payment processing.",
+    shipping: "both",
+    shippingNote: "You set shipping. Fees apply to item + shipping combined.",
     calculate: (sale, shipping) => {
       const base = sale + shipping;
       const platformFee = round2(base * 0.065);
@@ -147,6 +161,8 @@ const MARKETPLACES: Marketplace[] = [
     short: "Whatnot",
     accent: "#FFCB05",
     feeNote: "8% commission, plus 2.9% + $0.30 payment processing.",
+    shipping: "both",
+    shippingNote: "Whatnot generates the label. Buyer typically pays shipping at checkout.",
     calculate: (sale, shipping) => {
       const base = sale + shipping;
       const platformFee = round2(sale * 0.08);
@@ -165,6 +181,8 @@ const MARKETPLACES: Marketplace[] = [
     short: "StockX",
     accent: "#006340",
     feeNote: "9% transaction + 3% payment processing. Buyer pays shipping.",
+    shipping: "label-only",
+    shippingNote: "You ship to StockX using their discounted label. Buyer pays shipping separately at checkout.",
     calculate: (sale) => {
       const platformFee = round2(sale * 0.09);
       const paymentFee = round2(sale * 0.03);
@@ -182,6 +200,8 @@ const MARKETPLACES: Marketplace[] = [
     short: "FB Mktpl",
     accent: "#1877F2",
     feeNote: "10% selling fee on shipped orders, with a $0.40 minimum. Local pickup is free.",
+    shipping: "both",
+    shippingNote: "Local pickup has no shipping. For shipped orders you set the rate and pay the label.",
     calculate: (sale, shipping) => {
       if (sale <= 0) return { platformFee: 0, paymentFee: 0, perOrderFee: 0, totalFees: 0 };
       const base = sale + shipping;
@@ -200,6 +220,8 @@ const MARKETPLACES: Marketplace[] = [
     short: "Amazon",
     accent: "#FF9900",
     feeNote: "15% referral fee on item + shipping. Varies by category — defaulting to the most common.",
+    shipping: "both",
+    shippingNote: "Merchant-fulfilled: you pay the label. Referral fee applies to item + shipping.",
     calculate: (sale, shipping) => {
       const base = sale + shipping;
       const platformFee = round2(base * 0.15);
@@ -252,8 +274,12 @@ export default function CalculatorScreen() {
   const result = useMemo(() => {
     const sale = parseMoney(salePrice);
     const cost = parseMoney(itemCost);
-    const shipCharged = parseMoney(shippingCharged);
-    const shipPaid = parseMoney(shippingCost);
+    const shipChargedRaw = parseMoney(shippingCharged);
+    const shipPaidRaw = parseMoney(shippingCost);
+
+    // Clamp shipping inputs to what this marketplace actually allows.
+    const shipCharged = marketplace.shipping === "both" ? shipChargedRaw : 0;
+    const shipPaid = marketplace.shipping === "neither" ? 0 : shipPaidRaw;
 
     const fees = marketplace.calculate(sale, shipCharged);
     const gross = sale + shipCharged;
@@ -284,6 +310,11 @@ export default function CalculatorScreen() {
       Haptics.selectionAsync();
     }
     setMarketplaceId(id);
+    const next = MARKETPLACES.find(m => m.id === id);
+    if (next) {
+      if (next.shipping !== "both") setShippingCharged("");
+      if (next.shipping === "neither") setShippingCost("");
+    }
   };
 
   const handleReset = () => {
@@ -367,54 +398,83 @@ export default function CalculatorScreen() {
             <Text style={[styles.sectionLabel, { color: theme.colors.mutedForeground }]}>
               SALE
             </Text>
-            <View style={styles.inputsRow}>
-              <View style={styles.inputCell}>
-                <MoneyInput
-                  label="Sale price"
-                  value={salePrice}
-                  onChangeText={setSalePrice}
-                  placeholder="0.00"
-                  theme={theme}
-                  testID="input-sale-price"
-                />
+            {marketplace.shipping === "both" ? (
+              <View style={styles.inputsRow}>
+                <View style={styles.inputCell}>
+                  <MoneyInput
+                    label="Sale price"
+                    value={salePrice}
+                    onChangeText={setSalePrice}
+                    placeholder="0.00"
+                    theme={theme}
+                    testID="input-sale-price"
+                  />
+                </View>
+                <View style={styles.inputCell}>
+                  <MoneyInput
+                    label="Shipping charged"
+                    value={shippingCharged}
+                    onChangeText={setShippingCharged}
+                    placeholder="0.00"
+                    theme={theme}
+                    testID="input-shipping-charged"
+                  />
+                </View>
               </View>
-              <View style={styles.inputCell}>
-                <MoneyInput
-                  label="Shipping charged"
-                  value={shippingCharged}
-                  onChangeText={setShippingCharged}
-                  placeholder="0.00"
-                  theme={theme}
-                  testID="input-shipping-charged"
-                />
-              </View>
+            ) : (
+              <MoneyInput
+                label="Sale price"
+                value={salePrice}
+                onChangeText={setSalePrice}
+                placeholder="0.00"
+                theme={theme}
+                testID="input-sale-price"
+              />
+            )}
+
+            <View style={styles.shippingNoteRow}>
+              <Feather name="truck" size={12} color="#047857" />
+              <Text style={[styles.shippingNoteText, { color: theme.colors.mutedForeground }]}>
+                {marketplace.shippingNote}
+              </Text>
             </View>
 
             <Text style={[styles.sectionLabel, { color: theme.colors.mutedForeground, marginTop: 8 }]}>
               YOUR COSTS
             </Text>
-            <View style={styles.inputsRow}>
-              <View style={styles.inputCell}>
-                <MoneyInput
-                  label="Item cost"
-                  value={itemCost}
-                  onChangeText={setItemCost}
-                  placeholder="0.00"
-                  theme={theme}
-                  testID="input-item-cost"
-                />
+            {marketplace.shipping === "neither" ? (
+              <MoneyInput
+                label="Item cost"
+                value={itemCost}
+                onChangeText={setItemCost}
+                placeholder="0.00"
+                theme={theme}
+                testID="input-item-cost"
+              />
+            ) : (
+              <View style={styles.inputsRow}>
+                <View style={styles.inputCell}>
+                  <MoneyInput
+                    label="Item cost"
+                    value={itemCost}
+                    onChangeText={setItemCost}
+                    placeholder="0.00"
+                    theme={theme}
+                    testID="input-item-cost"
+                  />
+                </View>
+                <View style={styles.inputCell}>
+                  <MoneyInput
+                    label="Shipping you pay"
+                    value={shippingCost}
+                    onChangeText={setShippingCost}
+                    placeholder="0.00"
+                    theme={theme}
+                    testID="input-shipping-cost"
+                  />
+                </View>
               </View>
-              <View style={styles.inputCell}>
-                <MoneyInput
-                  label="Shipping you pay"
-                  value={shippingCost}
-                  onChangeText={setShippingCost}
-                  placeholder="0.00"
-                  theme={theme}
-                  testID="input-shipping-cost"
-                />
-              </View>
-            </View>
+            )}
 
             <Pressable
               onPress={handleReset}
@@ -829,6 +889,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 16,
     backgroundColor: "#F3F4F6",
+  },
+  shippingNoteRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 6,
+    marginTop: 8,
+    paddingHorizontal: 2,
+  },
+  shippingNoteText: {
+    flex: 1,
+    fontSize: 11,
+    lineHeight: 15,
+    fontStyle: "italic",
   },
   inputAccessoryBar: {
     flexDirection: "row",
