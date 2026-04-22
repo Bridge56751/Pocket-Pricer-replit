@@ -82,16 +82,9 @@ const MARKETPLACES: Marketplace[] = [
     name: "Mercari",
     short: "Mercari",
     accent: "#FF5B5B",
-    feeNote: "10% on item, plus 2.9% + $0.50 payment processing on the order total.",
-    shipping: "flat-tier",
-    shippingNote: "Mercari uses prepaid USPS labels at flat rates by weight. Pick a tier and choose who pays.",
-    shippingTiers: [
-      { label: "Up to 8 oz", cost: 5.21 },
-      { label: "Up to 1 lb", cost: 7.99 },
-      { label: "Up to 2 lb", cost: 11.49 },
-      { label: "Up to 5 lb", cost: 14.79 },
-      { label: "Up to 10 lb", cost: 19.49 },
-    ],
+    feeNote: "10% on item, plus 2.9% + $0.50 payment processing.",
+    shipping: "neither",
+    shippingNote: "Mercari shipping varies by label and category. Enter just the sale price — handle shipping separately.",
     calculate: (sale, shipping) => {
       const platformFee = round2(sale * 0.1);
       const paymentFee = sale > 0 ? round2((sale + shipping) * 0.029 + 0.5) : 0;
