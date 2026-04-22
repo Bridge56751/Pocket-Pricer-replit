@@ -45,6 +45,11 @@ const FEATURES = [
     badge: "New",
     badgeColor: "#047857",
   },
+  {
+    icon: "package" as const,
+    title: "Inventory tracking",
+    desc: "Log flips, mark items sold, and see live profit",
+  },
 ];
 
 export default function PaywallScreen() {
