@@ -161,15 +161,8 @@ const MARKETPLACES: Marketplace[] = [
     short: "Whatnot",
     accent: "#FFCB05",
     feeNote: "8% commission, plus 2.9% + $0.30 payment processing.",
-    shipping: "flat-tier",
-    shippingNote: "Whatnot generates flat-rate labels by weight. Buyer usually pays at checkout — exact rates vary by category.",
-    shippingTiers: [
-      { label: "Up to 4 oz", cost: 4.49 },
-      { label: "Up to 8 oz", cost: 5.49 },
-      { label: "Up to 1 lb", cost: 7.49 },
-      { label: "Up to 3 lb", cost: 10.99 },
-      { label: "Up to 7 lb", cost: 15.99 },
-    ],
+    shipping: "both",
+    shippingNote: "Whatnot generates the label. Enter what the buyer was charged and what the label cost you.",
     calculate: (sale, shipping) => {
       const base = sale + shipping;
       const platformFee = round2(sale * 0.08);
