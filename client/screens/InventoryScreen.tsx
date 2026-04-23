@@ -175,9 +175,27 @@ export default function InventoryScreen() {
             if (Platform.OS !== "web") {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
             }
+            // Capture the item's original position so we can restore it at the
+            // same spot in the list if the server call fails.
+            const originalIndex = items.findIndex(i => i.id === item.id);
             setItems(prev => prev.filter(i => i.id !== item.id));
             const ok = await removeInventoryItem(deviceId, item.id);
             if (!ok) {
+              // Restore the deleted item locally so the UI matches the server
+              // truth even when offline. We also fire reconcile() as a
+              // belt-and-suspenders measure for the eventual-consistency case
+              // where the delete actually reached the server, but the local
+              // restore is what guarantees the user doesn't see their item
+              // disappear when they're offline.
+              setItems(prev => {
+                if (prev.some(i => i.id === item.id)) return prev;
+                const next = [...prev];
+                const insertAt = originalIndex >= 0 && originalIndex <= next.length
+                  ? originalIndex
+                  : next.length;
+                next.splice(insertAt, 0, item);
+                return next;
+              });
               Alert.alert("Couldn't remove item", "Please check your connection and try again.");
               reconcile();
             }

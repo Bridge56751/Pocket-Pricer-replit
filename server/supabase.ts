@@ -176,22 +176,21 @@ export interface InventoryRow {
 }
 
 export async function listInventory(deviceId: string): Promise<InventoryRow[]> {
-  if (!supabase) return [];
-  try {
-    const { data, error } = await supabase
-      .from("inventory_items")
-      .select("*")
-      .eq("device_id", deviceId)
-      .order("purchased_at", { ascending: false });
-    if (error) {
-      console.error("Supabase listInventory error:", error.message);
-      return [];
-    }
-    return (data as unknown as InventoryRow[]) || [];
-  } catch (err: any) {
-    console.error("listInventory error:", err?.message);
-    return [];
+  // THROWS on Supabase / transport failure so the route handler can surface a
+  // proper 5xx and the client can distinguish "fetch failed" from "user has
+  // zero items". Returning [] on error here previously caused the client to
+  // silently wipe a user's on-screen inventory whenever Supabase had a hiccup.
+  if (!supabase) throw new Error("Supabase client not configured");
+  const { data, error } = await supabase
+    .from("inventory_items")
+    .select("*")
+    .eq("device_id", deviceId)
+    .order("purchased_at", { ascending: false });
+  if (error) {
+    console.error("Supabase listInventory error:", error.message);
+    throw new Error(error.message);
   }
+  return (data as unknown as InventoryRow[]) || [];
 }
 
 export async function createInventoryItem(
@@ -211,32 +210,51 @@ export async function createInventoryItem(
   if (!supabase) return null;
   try {
     const now = new Date().toISOString();
-    const { data, error } = await supabase
+    // Race-safe insert-or-update so we never clobber the original `created_at`
+    // on retries / migration replay, even under concurrent in-flight requests
+    // for the same id. We try INSERT first (Postgres serializes the unique
+    // constraint on `id`); on conflict (23505) we fall through to an UPDATE
+    // that omits `created_at`. This avoids the SELECT-then-upsert TOCTOU
+    // race where two parallel callers can both observe "doesn't exist" and
+    // both write `created_at`.
+    const updateFields = {
+      device_id: deviceId,
+      product_name: payload.productName,
+      image_url: payload.imageUrl ?? null,
+      purchase_price: payload.purchasePrice,
+      purchased_at: payload.purchasedAt ?? now,
+      notes: payload.notes ?? null,
+      sold_price: payload.soldPrice ?? null,
+      sold_at: payload.soldAt ?? null,
+      source_scan_id: payload.sourceScanId ?? null,
+      updated_at: now,
+    };
+    const insertFields = { id: payload.id, ...updateFields, created_at: now };
+
+    const { data: inserted, error: insertErr } = await supabase
       .from("inventory_items")
-      .upsert(
-        {
-          id: payload.id,
-          device_id: deviceId,
-          product_name: payload.productName,
-          image_url: payload.imageUrl ?? null,
-          purchase_price: payload.purchasePrice,
-          purchased_at: payload.purchasedAt ?? now,
-          notes: payload.notes ?? null,
-          sold_price: payload.soldPrice ?? null,
-          sold_at: payload.soldAt ?? null,
-          source_scan_id: payload.sourceScanId ?? null,
-          created_at: now,
-          updated_at: now,
-        },
-        { onConflict: "id" }
-      )
+      .insert(insertFields)
       .select()
-      .single();
-    if (error) {
-      console.error("Supabase createInventoryItem error:", error.message);
+      .maybeSingle();
+    if (!insertErr) {
+      return (inserted as unknown as InventoryRow) || null;
+    }
+    // 23505 = unique_violation → row already exists; update without touching created_at.
+    if ((insertErr as any).code !== "23505") {
+      console.error("Supabase createInventoryItem insert error:", insertErr.message);
       return null;
     }
-    return (data as unknown as InventoryRow) || null;
+    const { data: updated, error: updErr } = await supabase
+      .from("inventory_items")
+      .update(updateFields)
+      .eq("id", payload.id)
+      .select()
+      .maybeSingle();
+    if (updErr) {
+      console.error("Supabase createInventoryItem update error:", updErr.message);
+      return null;
+    }
+    return (updated as unknown as InventoryRow) || null;
   } catch (err: any) {
     console.error("createInventoryItem error:", err?.message);
     return null;
@@ -271,15 +289,19 @@ export async function updateInventoryItemRow(
       .eq("device_id", deviceId)
       .eq("id", itemId)
       .select()
-      .single();
+      .maybeSingle();
     if (error) {
+      // Distinguish "no row matched" (legitimate 404) from real Supabase
+      // errors. With .maybeSingle() a missing row returns data=null without
+      // an error, so any error here is a true backend failure — throw so
+      // the route handler returns 500 instead of a misleading 404.
       console.error("Supabase updateInventoryItem error:", error.message);
-      return null;
+      throw new Error(error.message);
     }
     return (data as unknown as InventoryRow) || null;
   } catch (err: any) {
     console.error("updateInventoryItem error:", err?.message);
-    return null;
+    throw err;
   }
 }
 

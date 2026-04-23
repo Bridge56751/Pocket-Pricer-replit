@@ -17,30 +17,45 @@ import { cleanQueryWithAI } from "./gemini";
 const FREE_LIFETIME_SEARCHES = 3;
 const RATE_LIMIT_MAX = 20;
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+// Inventory ops are bursty (e.g., bulk-adding multiple flips with a refresh
+// after each save). Give them their own, more generous limit so a power
+// reseller can't get throttled by their own scan activity.
+const INVENTORY_RATE_LIMIT_MAX = 60;
 
 const rateLimitMap = new Map<string, number[]>();
+const inventoryRateLimitMap = new Map<string, number[]>();
 
-function isRateLimited(deviceId: string): boolean {
+function checkRateLimit(map: Map<string, number[]>, deviceId: string, max: number): boolean {
   const now = Date.now();
-  const timestamps = rateLimitMap.get(deviceId) || [];
+  const timestamps = map.get(deviceId) || [];
   const recent = timestamps.filter(t => now - t < RATE_LIMIT_WINDOW_MS);
-  if (recent.length >= RATE_LIMIT_MAX) {
-    rateLimitMap.set(deviceId, recent);
+  if (recent.length >= max) {
+    map.set(deviceId, recent);
     return true;
   }
   recent.push(now);
-  rateLimitMap.set(deviceId, recent);
+  map.set(deviceId, recent);
   return false;
+}
+
+function isRateLimited(deviceId: string): boolean {
+  return checkRateLimit(rateLimitMap, deviceId, RATE_LIMIT_MAX);
+}
+
+function isInventoryRateLimited(deviceId: string): boolean {
+  return checkRateLimit(inventoryRateLimitMap, deviceId, INVENTORY_RATE_LIMIT_MAX);
 }
 
 setInterval(() => {
   const now = Date.now();
-  for (const [key, timestamps] of rateLimitMap) {
-    const recent = timestamps.filter(t => now - t < RATE_LIMIT_WINDOW_MS);
-    if (recent.length === 0) {
-      rateLimitMap.delete(key);
-    } else {
-      rateLimitMap.set(key, recent);
+  for (const map of [rateLimitMap, inventoryRateLimitMap]) {
+    for (const [key, timestamps] of map) {
+      const recent = timestamps.filter(t => now - t < RATE_LIMIT_WINDOW_MS);
+      if (recent.length === 0) {
+        map.delete(key);
+      } else {
+        map.set(key, recent);
+      }
     }
   }
 }, 5 * 60 * 1000);
@@ -855,7 +870,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { deviceId } = req.params;
       if (!isValidDeviceId(deviceId)) return res.status(400).json({ error: "Invalid deviceId" });
-      if (isRateLimited(deviceId)) {
+      if (isInventoryRateLimited(deviceId)) {
         return res.status(429).json({ error: "Too many requests. Please wait a moment and try again." });
       }
       const items = await listInventory(deviceId);
@@ -870,7 +885,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { deviceId } = req.params;
       if (!isValidDeviceId(deviceId)) return res.status(400).json({ error: "Invalid deviceId" });
-      if (isRateLimited(deviceId)) {
+      if (isInventoryRateLimited(deviceId)) {
         return res.status(429).json({ error: "Too many requests. Please wait a moment and try again." });
       }
       const {
@@ -920,7 +935,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!isValidDeviceId(deviceId) || typeof itemId !== "string" || !itemId) {
         return res.status(400).json({ error: "Invalid identifiers" });
       }
-      if (isRateLimited(deviceId)) {
+      if (isInventoryRateLimited(deviceId)) {
         return res.status(429).json({ error: "Too many requests. Please wait a moment and try again." });
       }
       const { productName, imageUrl, purchasePrice, notes, soldPrice, soldAt } = req.body || {};
@@ -962,7 +977,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!isValidDeviceId(deviceId) || typeof itemId !== "string" || !itemId) {
         return res.status(400).json({ error: "Invalid identifiers" });
       }
-      if (isRateLimited(deviceId)) {
+      if (isInventoryRateLimited(deviceId)) {
         return res.status(429).json({ error: "Too many requests. Please wait a moment and try again." });
       }
       const ok = await deleteInventoryItem(deviceId, itemId);
