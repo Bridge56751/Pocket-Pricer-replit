@@ -119,12 +119,19 @@ export default function InventoryScreen() {
 
   const FOCUS_REFETCH_DEDUPE_MS = 2000;
 
-  const loadItems = useCallback(async () => {
+  const loadItems = useCallback(async (opts?: { force?: boolean }) => {
     if (!deviceId) return;
     // Skip if we just fetched (e.g. reconcile() ran moments ago after a save
     // and now the screen is regaining focus). Without this guard the user
     // sees an immediate second fetch on every tab return after a save.
-    if (Date.now() - lastFetchedAtRef.current < FOCUS_REFETCH_DEDUPE_MS) {
+    //
+    // The dedupe applies ONLY to the automatic focus refetch. Explicit
+    // user-initiated refreshes (Retry button) and post-mutation reloads
+    // (modal onSaved callbacks) MUST bypass it via { force: true } —
+    // otherwise a fast user could mark an item sold within 2s of opening
+    // the app and never see the sold state update until the next tab
+    // return.
+    if (!opts?.force && Date.now() - lastFetchedAtRef.current < FOCUS_REFETCH_DEDUPE_MS) {
       return;
     }
     // Only show the full-screen spinner when we have nothing on screen yet.
@@ -398,7 +405,9 @@ export default function InventoryScreen() {
                   if (initError) {
                     setInitAttempt((n) => n + 1);
                   } else {
-                    loadItems();
+                    // Explicit user action — bypass dedupe so the Retry
+                    // button always actually retries.
+                    loadItems({ force: true });
                   }
                 }}
                 style={{
@@ -457,7 +466,9 @@ export default function InventoryScreen() {
         onClose={() => setAddOpen(false)}
         onSaved={async () => {
           setAddOpen(false);
-          await loadItems();
+          // Force-refetch — the new item must appear regardless of how
+          // recently the focus effect last fetched.
+          await loadItems({ force: true });
         }}
         onWriteFailed={reconcile}
       />
@@ -467,7 +478,9 @@ export default function InventoryScreen() {
         onClose={() => setSoldOpen(null)}
         onSaved={async () => {
           setSoldOpen(null);
-          await loadItems();
+          // Force-refetch — the sold-state transition must be reflected
+          // even if the user marked sold within 2s of opening the screen.
+          await loadItems({ force: true });
         }}
         onWriteFailed={reconcile}
       />
@@ -519,7 +532,9 @@ export default function InventoryScreen() {
               prev.map(i => (i.id === updated.id ? { ...i, productName: updated.productName } : i))
             );
           } else {
-            await loadItems();
+            // Server didn't echo the updated row — force a refetch so
+            // the rename is reflected even if focus just fired.
+            await loadItems({ force: true });
           }
         }}
         onWriteFailed={reconcile}
