@@ -268,6 +268,8 @@ export default function ScanScreen() {
       let productInfo: any = null;
       let usedLens = false;
 
+      const lensController = new AbortController();
+      const lensTimeoutId = setTimeout(() => lensController.abort(), 25000);
       try {
         const deviceId = await getDeviceId();
         const scanHeaders: Record<string, string> = {
@@ -281,6 +283,7 @@ export default function ScanScreen() {
             method: "POST",
             headers: scanHeaders,
             body: JSON.stringify({ imageBase64: `data:image/jpeg;base64,${photos[0].base64}` }),
+            signal: lensController.signal,
           }
         );
         
@@ -289,7 +292,6 @@ export default function ScanScreen() {
           if (lensData.limitReached) {
             setIsAnalyzing(false);
             setAnalyzingProgress("");
-            processingRef.current = false;
             navigation.navigate("Paywall");
             return;
           }
@@ -305,8 +307,17 @@ export default function ScanScreen() {
             description: results.productDescription || "",
           };
         }
-      } catch (lensError) {
+      } catch (lensError: any) {
+        if (lensError?.name === "AbortError") {
+          setIsAnalyzing(false);
+          setAnalyzingProgress("");
+          setErrorMessage("Connection lost. Please check your internet and try again.");
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          return;
+        }
         console.log("Lens search failed:", lensError);
+      } finally {
+        clearTimeout(lensTimeoutId);
       }
 
       if (!results || !results.listings?.length) {
@@ -406,7 +417,6 @@ export default function ScanScreen() {
       console.error("Processing failed:", error);
       setIsAnalyzing(false);
       setAnalyzingProgress("");
-      processingRef.current = false;
       const errorMsg = error instanceof Error ? error.message : "Something went wrong. Please try again.";
       if (errorMsg.includes("401") || errorMsg.includes("Not authenticated")) {
         setErrorMessage("Authentication error. Please try again.");
@@ -418,6 +428,8 @@ export default function ScanScreen() {
         setErrorMessage(errorMsg);
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      processingRef.current = false;
     }
   }, [loadRecentScans, navigation, rcReady, isPro, getScansUsed, persistScansUsed, incrementScans, getDeviceId]);
 

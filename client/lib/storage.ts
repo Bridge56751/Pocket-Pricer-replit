@@ -263,11 +263,21 @@ export async function updateInventoryItem(
     if (updates.soldPrice !== undefined) body.soldPrice = updates.soldPrice ?? null;
     if (updates.soldAt !== undefined) body.soldAt = updates.soldAt ?? null;
 
-    const res = await apiRequest(
+    const racePromise = apiRequest(
       "PATCH",
       `/api/inventory/${encodeURIComponent(deviceId)}/${encodeURIComponent(id)}`,
       body
     );
+    let updateTimeoutHandle: ReturnType<typeof setTimeout> | null = null;
+    const timeoutPromise = new Promise<Response>((_, reject) => {
+      updateTimeoutHandle = setTimeout(() => reject(new Error("inventory_update_timeout")), 10000);
+    });
+    let res: Response;
+    try {
+      res = await Promise.race([racePromise, timeoutPromise]);
+    } finally {
+      if (updateTimeoutHandle) clearTimeout(updateTimeoutHandle);
+    }
     if (!res.ok) {
       console.error("updateInventoryItem http error", res.status);
       return null;
@@ -282,10 +292,20 @@ export async function updateInventoryItem(
 
 export async function removeInventoryItem(deviceId: string, id: string): Promise<boolean> {
   try {
-    const res = await apiRequest(
+    const racePromise = apiRequest(
       "DELETE",
       `/api/inventory/${encodeURIComponent(deviceId)}/${encodeURIComponent(id)}`
     );
+    let removeTimeoutHandle: ReturnType<typeof setTimeout> | null = null;
+    const timeoutPromise = new Promise<Response>((_, reject) => {
+      removeTimeoutHandle = setTimeout(() => reject(new Error("inventory_remove_timeout")), 10000);
+    });
+    let res: Response;
+    try {
+      res = await Promise.race([racePromise, timeoutPromise]);
+    } finally {
+      if (removeTimeoutHandle) clearTimeout(removeTimeoutHandle);
+    }
     return res.ok;
   } catch (error) {
     console.error("Failed to remove inventory item:", error);

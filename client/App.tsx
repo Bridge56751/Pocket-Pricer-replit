@@ -101,6 +101,7 @@ export default function App() {
             appId: "6758423765",
             onInstallConversionDataListener: false,
             onDeepLinkListener: false,
+            timeToWaitForATTUserAuthorization: 60,
           },
           () => { console.log("AppsFlyer initialized"); },
           (error: any) => { console.log("AppsFlyer init error:", error); }

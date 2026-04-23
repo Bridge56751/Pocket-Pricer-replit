@@ -388,6 +388,8 @@ export default function SearchResultsScreen() {
 
     setEbaySoldLoading(true);
     setEbaySoldError(null);
+    const ebayController = new AbortController();
+    const ebayTimeoutId = setTimeout(() => ebayController.abort(), 30000);
     try {
       const productName = results.productInfo?.name || results.query;
       const deviceId = await getDeviceId();
@@ -403,6 +405,7 @@ export default function SearchResultsScreen() {
           "X-Is-Pro": isPro ? "true" : "false",
         },
         body: JSON.stringify(body),
+        signal: ebayController.signal,
       });
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
@@ -436,8 +439,13 @@ export default function SearchResultsScreen() {
       }
       setShowEbaySold(true);
     } catch (err: any) {
-      setEbaySoldError(err.message || "Failed to load sales data");
+      if (err?.name === "AbortError") {
+        setEbaySoldError("Connection lost. Please check your internet and try again.");
+      } else {
+        setEbaySoldError(err.message || "Failed to load sales data");
+      }
     } finally {
+      clearTimeout(ebayTimeoutId);
       setEbaySoldLoading(false);
     }
   };
