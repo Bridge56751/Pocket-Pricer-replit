@@ -81,6 +81,7 @@ export default function InventoryScreen() {
   const [deviceId, setDeviceId] = useState<string | null>(null);
   const [loadingItems, setLoadingItems] = useState(true);
   const [reconciling, setReconciling] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [initError, setInitError] = useState(false);
   const [initAttempt, setInitAttempt] = useState(0);
 
@@ -109,9 +110,11 @@ export default function InventoryScreen() {
     try {
       const data = await getInventory(deviceId);
       setItems(data);
+      setLoadError(false);
     } catch {
       // Keep existing items on failure — wiping the list on a transient
       // network error is worse than showing slightly stale data.
+      setLoadError(true);
     } finally {
       setLoadingItems(false);
     }
@@ -125,6 +128,7 @@ export default function InventoryScreen() {
     try {
       const data = await getInventory(deviceId);
       setItems(data);
+      setLoadError(false);
     } catch {
       // Swallow — pill simply hides; user can retry the action.
     } finally {
@@ -321,7 +325,7 @@ export default function InventoryScreen() {
             </View>
           ) : null}
 
-          {initError && filteredItems.length === 0 ? (
+          {(initError || loadError) && items.length === 0 ? (
             <View style={styles.emptyContainer}>
               <View style={styles.emptyIconCircle}>
                 <Feather name="alert-circle" size={28} color={theme.colors.primary} />
@@ -333,7 +337,13 @@ export default function InventoryScreen() {
                 Check your connection and try again.
               </Text>
               <Pressable
-                onPress={() => setInitAttempt((n) => n + 1)}
+                onPress={() => {
+                  if (initError) {
+                    setInitAttempt((n) => n + 1);
+                  } else {
+                    loadItems();
+                  }
+                }}
                 style={{
                   marginTop: 16,
                   paddingHorizontal: 20,
