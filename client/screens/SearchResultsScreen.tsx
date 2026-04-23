@@ -789,10 +789,10 @@ export default function SearchResultsScreen() {
                 <View style={[styles.profitRow, { backgroundColor: profit > 0 ? "#ECFDF5" : "#FEF2F2" }]}>
                   <View>
                     <Text style={[styles.profitLabel, { color: profit > 0 ? "#047857" : "#EF4444" }]}>
-                      Estimated Profit
+                      Estimated eBay Profit
                     </Text>
                     <Text style={{ fontSize: 11, color: "#6B7280", marginTop: 1 }}>
-                      After fees · before shipping
+                      After eBay fees · before shipping
                     </Text>
                   </View>
                   <View style={{ alignItems: "flex-end" }}>

@@ -247,7 +247,7 @@ export default function InventoryScreen() {
             </View>
             <View style={styles.metricCard}>
               <View style={styles.metricLabelRow}>
-                <Text style={styles.metricLabel}>PROFIT</Text>
+                <Text style={styles.metricLabel}>GROSS PROFIT</Text>
                 <Pressable
                   onPress={() => setProfitInfoOpen(true)}
                   hitSlop={8}
@@ -449,14 +449,17 @@ export default function InventoryScreen() {
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 }}>
               <Feather name="info" size={18} color={theme.colors.primary} />
               <Text style={[styles.modalTitle, { color: theme.colors.foreground, marginBottom: 0 }]}>
-                How profit works
+                How gross profit works
               </Text>
             </View>
             <Text style={[styles.modalSub, { color: theme.colors.mutedForeground, marginBottom: 16 }]}>
-              Profit only counts items you've already sold. Unsold inventory isn't a loss — it's stock you haven't moved yet.
+              Gross profit is sale price minus what you paid, on items you've already sold. Unsold inventory isn't a loss — it's stock you haven't moved yet.
             </Text>
             <Text style={[styles.modalSub, { color: theme.colors.mutedForeground, marginBottom: 16 }]}>
-              Example: buy 10 items at $10 each ($100 spent), sell 3 at $20 each. Profit shows +$30, not -$40.
+              It does not deduct platform fees (eBay, Mercari, Poshmark, etc.) or shipping. Your actual take-home will be lower depending on where you sell.
+            </Text>
+            <Text style={[styles.modalSub, { color: theme.colors.mutedForeground, marginBottom: 16 }]}>
+              Example: buy 10 items at $10 each ($100 spent), sell 3 at $20 each. Gross profit shows +$30, not -$40.
             </Text>
             <Pressable
               onPress={() => setProfitInfoOpen(false)}
