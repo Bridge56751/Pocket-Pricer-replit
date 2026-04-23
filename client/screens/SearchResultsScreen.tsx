@@ -389,7 +389,7 @@ export default function SearchResultsScreen() {
     setEbaySoldLoading(true);
     setEbaySoldError(null);
     const ebayController = new AbortController();
-    const ebayTimeoutId = setTimeout(() => ebayController.abort(), 30000);
+    const ebayTimeoutId = setTimeout(() => ebayController.abort(), 15000);
     try {
       const productName = results.productInfo?.name || results.query;
       const deviceId = await getDeviceId();
