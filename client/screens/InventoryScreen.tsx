@@ -109,6 +109,9 @@ export default function InventoryScreen() {
     try {
       const data = await getInventory(deviceId);
       setItems(data);
+    } catch {
+      // Keep existing items on failure — wiping the list on a transient
+      // network error is worse than showing slightly stale data.
     } finally {
       setLoadingItems(false);
     }

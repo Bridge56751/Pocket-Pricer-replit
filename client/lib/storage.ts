@@ -188,19 +188,23 @@ export async function isFavorite(productId: string): Promise<boolean> {
 }
 
 export async function getInventory(deviceId: string): Promise<InventoryItem[]> {
+  // Throws on network/HTTP failure so callers can distinguish "fetch failed"
+  // from "inventory is genuinely empty" and avoid wiping the on-screen list
+  // when a refresh fails. Callers should catch and keep their existing state.
+  let res: Response;
   try {
-    const res = await apiRequest("GET", `/api/inventory/${encodeURIComponent(deviceId)}`);
-    if (!res.ok) {
-      console.error("getInventory http error", res.status);
-      return [];
-    }
-    const json = await res.json();
-    const rows: InventoryRowResponse[] = json?.items || [];
-    return rows.map(rowToItem);
+    res = await apiRequest("GET", `/api/inventory/${encodeURIComponent(deviceId)}`);
   } catch (error) {
     console.error("Failed to load inventory:", error);
-    return [];
+    throw error;
   }
+  if (!res.ok) {
+    console.error("getInventory http error", res.status);
+    throw new Error(`getInventory failed with status ${res.status}`);
+  }
+  const json = await res.json();
+  const rows: InventoryRowResponse[] = json?.items || [];
+  return rows.map(rowToItem);
 }
 
 export async function addInventoryItem(deviceId: string, item: InventoryItem): Promise<InventoryItem | null> {
