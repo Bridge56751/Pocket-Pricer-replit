@@ -10,6 +10,7 @@ import {
   Platform,
   KeyboardAvoidingView,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
@@ -79,6 +80,7 @@ export default function InventoryScreen() {
   const [profitInfoOpen, setProfitInfoOpen] = useState(false);
   const [deviceId, setDeviceId] = useState<string | null>(null);
   const [loadingItems, setLoadingItems] = useState(true);
+  const [reconciling, setReconciling] = useState(false);
   const [initError, setInitError] = useState(false);
   const [initAttempt, setInitAttempt] = useState(0);
 
@@ -109,6 +111,25 @@ export default function InventoryScreen() {
       setItems(data);
     } finally {
       setLoadingItems(false);
+    }
+  }, [deviceId]);
+
+  const reconcileCountRef = useRef(0);
+  const reconcile = useCallback(async () => {
+    if (!deviceId) return;
+    reconcileCountRef.current += 1;
+    setReconciling(true);
+    try {
+      const data = await getInventory(deviceId);
+      setItems(data);
+    } catch {
+      // Swallow — pill simply hides; user can retry the action.
+    } finally {
+      reconcileCountRef.current -= 1;
+      if (reconcileCountRef.current <= 0) {
+        reconcileCountRef.current = 0;
+        setReconciling(false);
+      }
     }
   }, [deviceId]);
 
@@ -151,7 +172,7 @@ export default function InventoryScreen() {
             const ok = await removeInventoryItem(deviceId, item.id);
             if (!ok) {
               Alert.alert("Couldn't remove item", "Please check your connection and try again.");
-              await loadItems();
+              reconcile();
             }
           },
         },
@@ -279,6 +300,24 @@ export default function InventoryScreen() {
             })}
           </View>
 
+          {reconciling ? (
+            <View
+              style={[
+                styles.syncPill,
+                {
+                  backgroundColor: theme.colors.primary + "1A",
+                  borderColor: theme.colors.primary + "33",
+                },
+              ]}
+              testID="status-inventory-syncing"
+            >
+              <ActivityIndicator size="small" color={theme.colors.primary} />
+              <Text style={[styles.syncPillText, { color: theme.colors.primary }]}>
+                Syncing…
+              </Text>
+            </View>
+          ) : null}
+
           {initError && filteredItems.length === 0 ? (
             <View style={styles.emptyContainer}>
               <View style={styles.emptyIconCircle}>
@@ -350,6 +389,7 @@ export default function InventoryScreen() {
           setAddOpen(false);
           await loadItems();
         }}
+        onWriteFailed={reconcile}
       />
       <MarkSoldModal
         item={soldOpen}
@@ -359,6 +399,7 @@ export default function InventoryScreen() {
           setSoldOpen(null);
           await loadItems();
         }}
+        onWriteFailed={reconcile}
       />
       <Modal
         visible={profitInfoOpen}
@@ -408,6 +449,7 @@ export default function InventoryScreen() {
             await loadItems();
           }
         }}
+        onWriteFailed={reconcile}
       />
     </View>
   );
@@ -544,11 +586,13 @@ function AddItemModal({
   deviceId,
   onClose,
   onSaved,
+  onWriteFailed,
 }: {
   visible: boolean;
   deviceId: string | null;
   onClose: () => void;
   onSaved: () => void;
+  onWriteFailed?: () => void;
 }) {
   const insets = useSafeAreaInsets();
   const { theme } = useDesignTokens();
@@ -627,6 +671,7 @@ function AddItemModal({
     });
     setSaving(false);
     if (!created) {
+      onWriteFailed?.();
       Alert.alert("Couldn't save item", "Please check your connection and try again.");
       return;
     }
@@ -951,11 +996,13 @@ function MarkSoldModal({
   deviceId,
   onClose,
   onSaved,
+  onWriteFailed,
 }: {
   item: InventoryItem | null;
   deviceId: string | null;
   onClose: () => void;
   onSaved: () => void;
+  onWriteFailed?: () => void;
 }) {
   const { theme } = useDesignTokens();
   const [price, setPrice] = useState("");
@@ -976,6 +1023,7 @@ function MarkSoldModal({
     });
     setSaving(false);
     if (!updated) {
+      onWriteFailed?.();
       Alert.alert("Couldn't mark sold", "Please check your connection and try again.");
       return;
     }
@@ -1074,11 +1122,13 @@ function EditNameModal({
   deviceId,
   onClose,
   onSaved,
+  onWriteFailed,
 }: {
   item: InventoryItem | null;
   deviceId: string | null;
   onClose: () => void;
   onSaved: (updated: InventoryItem | null) => void;
+  onWriteFailed?: () => void;
 }) {
   const { theme } = useDesignTokens();
   const [name, setName] = useState("");
@@ -1105,6 +1155,7 @@ function EditNameModal({
     });
     setSaving(false);
     if (!updated) {
+      onWriteFailed?.();
       Alert.alert("Couldn't save name", "Please check your connection and try again.");
       return;
     }
@@ -1318,6 +1369,21 @@ const styles = StyleSheet.create({
   },
   toggleText: {
     fontSize: 13,
+    fontWeight: "600",
+  },
+  syncPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    marginBottom: 12,
+  },
+  syncPillText: {
+    fontSize: 12,
     fontWeight: "600",
   },
   list: {
