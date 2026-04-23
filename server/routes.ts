@@ -866,6 +866,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const isValidDeviceId = (id: unknown): id is string =>
     typeof id === "string" && /^[A-Za-z0-9_-]{8,128}$/.test(id);
 
+  // Server-side defense in depth: even though the current client cleans
+  // and truncates productName via cleanInventoryName(), enforce the same
+  // invariants here so a buggy or future client (or any direct API caller)
+  // can never store control characters, zero-width chars, or oversized
+  // strings in the database. Mirrors client/lib/storage.ts: 50-char cap,
+  // strip C0/C1 controls + bidi/format/BOM chars, collapse whitespace.
+  const SERVER_INVENTORY_NAME_MAX = 50;
+  const sanitizeInventoryName = (input: unknown): string => {
+    if (typeof input !== "string") return "";
+    let s = input;
+    s = s.replace(
+      /[\u0000-\u001F\u007F-\u009F\u200B-\u200F\u202A-\u202E\u2060-\u206F\uFEFF]/g,
+      "",
+    );
+    s = s.replace(/\s+/g, " ").trim();
+    if (s.length > SERVER_INVENTORY_NAME_MAX) {
+      s = s.slice(0, SERVER_INVENTORY_NAME_MAX).trimEnd();
+    }
+    return s;
+  };
+
   app.get("/api/inventory/:deviceId", async (req: Request, res: Response) => {
     try {
       const { deviceId } = req.params;
@@ -905,13 +926,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!productName || typeof productName !== "string") {
         return res.status(400).json({ error: "Missing productName" });
       }
+      const cleanedName = sanitizeInventoryName(productName);
+      if (!cleanedName) {
+        return res.status(400).json({ error: "Missing productName" });
+      }
       const price = Number(purchasePrice);
       if (!isFinite(price) || price < 0) {
         return res.status(400).json({ error: "Invalid purchasePrice" });
       }
       const created = await createInventoryItem(deviceId, {
         id,
-        productName,
+        productName: cleanedName,
         imageUrl: typeof imageUrl === "string" ? imageUrl : null,
         purchasePrice: price,
         purchasedAt: typeof purchasedAt === "string" ? purchasedAt : undefined,
@@ -940,7 +965,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const { productName, imageUrl, purchasePrice, notes, soldPrice, soldAt } = req.body || {};
       const updates: Parameters<typeof updateInventoryItemRow>[2] = {};
-      if (productName !== undefined) updates.productName = String(productName);
+      if (productName !== undefined) {
+        const cleanedName = sanitizeInventoryName(productName);
+        if (!cleanedName) return res.status(400).json({ error: "Invalid productName" });
+        updates.productName = cleanedName;
+      }
       if (imageUrl !== undefined) updates.imageUrl = imageUrl === null ? null : String(imageUrl);
       if (purchasePrice !== undefined) {
         const p = Number(purchasePrice);

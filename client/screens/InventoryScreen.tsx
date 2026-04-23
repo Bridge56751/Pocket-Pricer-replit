@@ -274,7 +274,12 @@ export default function InventoryScreen() {
               if (Platform.OS !== "web") {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               }
-              if (rcReady && !isPro) {
+              // Fail-closed paywall gate: until RevenueCat confirms Pro
+              // entitlement (`rcReady && isPro`), treat the user as not-Pro
+              // and route them to the Paywall. This prevents a free user from
+              // bypassing the gate by tapping "Add Item" during the brief
+              // window before RevenueCat finishes initializing.
+              if (!rcReady || !isPro) {
                 navigation.navigate("Paywall", { context: "inventory" });
                 return;
               }
@@ -284,12 +289,12 @@ export default function InventoryScreen() {
             testID="button-add-inventory"
           >
             <Feather
-              name={rcReady && !isPro ? "lock" : "plus"}
+              name={!rcReady || !isPro ? "lock" : "plus"}
               size={18}
               color="#14532D"
             />
             <Text style={styles.addButtonText}>
-              {rcReady && !isPro ? "Unlock Inventory" : "Add Item"}
+              {!rcReady || !isPro ? "Unlock Inventory" : "Add Item"}
             </Text>
           </Pressable>
         </LinearGradient>
@@ -500,12 +505,26 @@ function InventoryCard({
   const { theme } = useDesignTokens();
   const isSold = item.soldPrice !== undefined;
   const profit = isSold ? (item.soldPrice || 0) - item.purchasePrice : 0;
+  // Inventory item thumbnails are 3rd-party URLs (SearchAPI, freeimage.host,
+  // imgbb) that can expire or 404 over time. Track load failures so we can
+  // show the package fallback icon instead of an empty/broken tile. Reset
+  // when the imageUrl actually changes (e.g. user edits the item).
+  const [imageFailed, setImageFailed] = useState(false);
+  React.useEffect(() => {
+    setImageFailed(false);
+  }, [item.imageUrl]);
+  const showImage = !!item.imageUrl && !imageFailed;
 
   return (
     <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
       <View style={styles.cardImageWrap}>
-        {item.imageUrl ? (
-          <Image source={{ uri: item.imageUrl }} style={styles.cardImage} contentFit="cover" />
+        {showImage ? (
+          <Image
+            source={{ uri: item.imageUrl }}
+            style={styles.cardImage}
+            contentFit="cover"
+            onError={() => setImageFailed(true)}
+          />
         ) : (
           <View style={[styles.cardImage, styles.cardImageFallback]}>
             <Feather name="package" size={22} color="#9CA3AF" />
@@ -1048,12 +1067,21 @@ function MarkSoldModal({
     const parsedPrice = parseFloat(price);
     if (isNaN(parsedPrice) || parsedPrice < 0) return;
     setSaving(true);
-    const updated = await updateInventoryItem(deviceId, item.id, {
+    const result = await updateInventoryItem(deviceId, item.id, {
       soldPrice: parsedPrice,
       soldAt: new Date().toISOString(),
     });
     setSaving(false);
-    if (!updated) {
+    if (!result.ok) {
+      // If the row was already deleted on the server (e.g. the user deleted
+      // the item right before tapping Save), suppress the misleading alert.
+      // Reconcile will quietly drop it from the list on the next refresh.
+      if (result.notFound) {
+        onWriteFailed?.();
+        setPrice("");
+        onSaved();
+        return;
+      }
       onWriteFailed?.();
       Alert.alert("Couldn't mark sold", "Please check your connection and try again.");
       return;
@@ -1181,11 +1209,18 @@ function EditNameModal({
       return;
     }
     setSaving(true);
-    const updated = await updateInventoryItem(deviceId, item.id, {
+    const result = await updateInventoryItem(deviceId, item.id, {
       productName: previewClean,
     });
     setSaving(false);
-    if (!updated) {
+    if (!result.ok) {
+      // If the row was already deleted on the server, suppress the
+      // misleading alert and let reconcile drop it from the list quietly.
+      if (result.notFound) {
+        onWriteFailed?.();
+        onSaved(null);
+        return;
+      }
       onWriteFailed?.();
       Alert.alert("Couldn't save name", "Please check your connection and try again.");
       return;
@@ -1193,7 +1228,7 @@ function EditNameModal({
     if (Platform.OS !== "web") {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
-    onSaved(updated);
+    onSaved(result.item);
   };
 
   const showPreview = !!previewClean && previewClean !== trimmed;

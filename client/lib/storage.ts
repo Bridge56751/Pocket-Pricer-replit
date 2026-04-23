@@ -255,18 +255,27 @@ export async function addInventoryItem(deviceId: string, item: InventoryItem): P
   }
 }
 
+// Discriminated result so callers can distinguish "item no longer exists on
+// the server" (HTTP 404) from a real failure. The mark-sold / edit-name
+// flows use this to suppress the misleading "Couldn't save" alert when the
+// item was already deleted (e.g. user mark-sold and delete back-to-back) —
+// the next reconcile will quietly drop it from the UI.
+export type UpdateInventoryResult =
+  | { ok: true; item: InventoryItem }
+  | { ok: false; notFound: boolean };
+
 export async function updateInventoryItem(
   deviceId: string,
   id: string,
   updates: Partial<InventoryItem>
-): Promise<InventoryItem | null> {
+): Promise<UpdateInventoryResult> {
   try {
     const body: Record<string, unknown> = {};
     if (updates.productName !== undefined) {
       const cleaned = cleanInventoryName(updates.productName);
       if (!cleaned) {
         console.error("updateInventoryItem: empty productName after cleanup");
-        return null;
+        return { ok: false, notFound: false };
       }
       body.productName = cleaned;
     }
@@ -299,13 +308,14 @@ export async function updateInventoryItem(
     }
     if (!res.ok) {
       console.error("updateInventoryItem http error", res.status);
-      return null;
+      return { ok: false, notFound: res.status === 404 };
     }
     const json = await res.json();
-    return json?.item ? rowToItem(json.item) : null;
+    if (!json?.item) return { ok: false, notFound: false };
+    return { ok: true, item: rowToItem(json.item) };
   } catch (error) {
     console.error("Failed to update inventory item:", error);
-    return null;
+    return { ok: false, notFound: false };
   }
 }
 
@@ -385,13 +395,37 @@ export async function migrateLocalInventoryToCloud(deviceId: string): Promise<vo
     if (flag === "1") return;
 
     const data = await AsyncStorage.getItem(STORAGE_KEYS.INVENTORY);
-    const local: InventoryItem[] = data ? JSON.parse(data) : [];
+    // Defensively parse the local cache. If it's corrupt (malformed JSON or
+    // not an array), treat it as empty rather than throwing — otherwise the
+    // migration would fail every launch forever and never set the completion
+    // flag, looping on every cold start.
+    let local: InventoryItem[] = [];
+    if (data) {
+      try {
+        const parsed = JSON.parse(data);
+        if (Array.isArray(parsed)) {
+          local = parsed as InventoryItem[];
+        } else {
+          console.warn("Migration: local inventory cache is not an array; treating as empty");
+        }
+      } catch (e) {
+        console.warn("Migration: local inventory cache is corrupt; treating as empty", e);
+      }
+    }
 
     if (local.length === 0) {
       try {
         await AsyncStorage.setItem(STORAGE_KEYS.INVENTORY_MIGRATED, "1");
       } catch (e) {
         console.warn("Migration: failed to set completion flag (empty case):", e);
+      }
+      // Also clear the underlying key so a corrupt-but-non-null blob (or any
+      // legacy data) does not linger in AsyncStorage forever. If the key was
+      // already absent this is a harmless no-op.
+      try {
+        await AsyncStorage.removeItem(STORAGE_KEYS.INVENTORY);
+      } catch (e) {
+        console.warn("Migration: failed to clear local cache (empty case):", e);
       }
       return;
     }
