@@ -209,25 +209,34 @@ export async function addInventoryItem(deviceId: string, item: InventoryItem): P
     console.error("addInventoryItem: empty productName after cleanup");
     return null;
   }
+  // Cancel the in-flight fetch on timeout (best-effort at the transport
+  // layer; the server may still receive/process the request). Server-side
+  // createInventoryItem upserts by id, so any retry from the user reuses
+  // the same item.id and won't create a duplicate. The next inventory
+  // refresh reconciles local state with whatever the server actually has.
+  const controller = new AbortController();
   const timeoutId = setTimeout(() => {
-    console.error("addInventoryItem timeout after 15s");
+    console.error("addInventoryItem timeout after 15s, aborting");
+    controller.abort();
   }, 15000);
   try {
-    const racePromise = apiRequest("POST", `/api/inventory/${encodeURIComponent(deviceId)}`, {
-      id: item.id,
-      productName: cleanedName,
-      imageUrl: item.imageUrl ?? null,
-      purchasePrice: item.purchasePrice,
-      purchasedAt: item.purchasedAt,
-      notes: item.notes ?? null,
-      soldPrice: item.soldPrice ?? null,
-      soldAt: item.soldAt ?? null,
-      sourceScanId: item.sourceProductId ?? null,
-    });
-    const timeoutPromise = new Promise<Response>((_, reject) =>
-      setTimeout(() => reject(new Error("inventory_save_timeout")), 15000)
+    const res = await apiRequest(
+      "POST",
+      `/api/inventory/${encodeURIComponent(deviceId)}`,
+      {
+        id: item.id,
+        productName: cleanedName,
+        imageUrl: item.imageUrl ?? null,
+        purchasePrice: item.purchasePrice,
+        purchasedAt: item.purchasedAt,
+        notes: item.notes ?? null,
+        soldPrice: item.soldPrice ?? null,
+        soldAt: item.soldAt ?? null,
+        sourceScanId: item.sourceProductId ?? null,
+      },
+      undefined,
+      controller.signal,
     );
-    const res = await Promise.race([racePromise, timeoutPromise]);
     clearTimeout(timeoutId);
     if (!res.ok) {
       console.error("addInventoryItem http error", res.status);
@@ -263,20 +272,26 @@ export async function updateInventoryItem(
     if (updates.soldPrice !== undefined) body.soldPrice = updates.soldPrice ?? null;
     if (updates.soldAt !== undefined) body.soldAt = updates.soldAt ?? null;
 
-    const racePromise = apiRequest(
-      "PATCH",
-      `/api/inventory/${encodeURIComponent(deviceId)}/${encodeURIComponent(id)}`,
-      body
-    );
-    let updateTimeoutHandle: ReturnType<typeof setTimeout> | null = null;
-    const timeoutPromise = new Promise<Response>((_, reject) => {
-      updateTimeoutHandle = setTimeout(() => reject(new Error("inventory_update_timeout")), 10000);
-    });
+    // Cancel the in-flight fetch on timeout (best-effort; the server may
+    // still process the request). Updates are keyed by item id, so any
+    // client retry targets the same row (idempotent) and the next
+    // inventory refresh reconciles local state with the server.
+    const controller = new AbortController();
+    const updateTimeoutHandle = setTimeout(() => {
+      console.error("updateInventoryItem timeout after 10s, aborting");
+      controller.abort();
+    }, 10000);
     let res: Response;
     try {
-      res = await Promise.race([racePromise, timeoutPromise]);
+      res = await apiRequest(
+        "PATCH",
+        `/api/inventory/${encodeURIComponent(deviceId)}/${encodeURIComponent(id)}`,
+        body,
+        undefined,
+        controller.signal,
+      );
     } finally {
-      if (updateTimeoutHandle) clearTimeout(updateTimeoutHandle);
+      clearTimeout(updateTimeoutHandle);
     }
     if (!res.ok) {
       console.error("updateInventoryItem http error", res.status);
@@ -292,19 +307,26 @@ export async function updateInventoryItem(
 
 export async function removeInventoryItem(deviceId: string, id: string): Promise<boolean> {
   try {
-    const racePromise = apiRequest(
-      "DELETE",
-      `/api/inventory/${encodeURIComponent(deviceId)}/${encodeURIComponent(id)}`
-    );
-    let removeTimeoutHandle: ReturnType<typeof setTimeout> | null = null;
-    const timeoutPromise = new Promise<Response>((_, reject) => {
-      removeTimeoutHandle = setTimeout(() => reject(new Error("inventory_remove_timeout")), 10000);
-    });
+    // Cancel the in-flight fetch on timeout (best-effort; the server may
+    // still process the request). Deletes are keyed by item id and naturally
+    // idempotent; any retry targets the same row, and the next inventory
+    // refresh reconciles local state with the server.
+    const controller = new AbortController();
+    const removeTimeoutHandle = setTimeout(() => {
+      console.error("removeInventoryItem timeout after 10s, aborting");
+      controller.abort();
+    }, 10000);
     let res: Response;
     try {
-      res = await Promise.race([racePromise, timeoutPromise]);
+      res = await apiRequest(
+        "DELETE",
+        `/api/inventory/${encodeURIComponent(deviceId)}/${encodeURIComponent(id)}`,
+        undefined,
+        undefined,
+        controller.signal,
+      );
     } finally {
-      if (removeTimeoutHandle) clearTimeout(removeTimeoutHandle);
+      clearTimeout(removeTimeoutHandle);
     }
     return res.ok;
   } catch (error) {
