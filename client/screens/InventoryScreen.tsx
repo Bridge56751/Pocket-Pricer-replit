@@ -104,13 +104,38 @@ export default function InventoryScreen() {
     };
   }, [getDeviceId, initAttempt]);
 
+  // Tracks when we last successfully fetched inventory from the server.
+  // Used to suppress redundant focus-refetches that would otherwise flash
+  // a loading spinner immediately after a save/reconcile already refreshed
+  // the list. Initialised to 0 so the first focus always fetches.
+  const lastFetchedAtRef = useRef(0);
+  // Mirror of `items` we can read from inside loadItems' callback without
+  // adding `items` to its dep array (which would re-create loadItems on
+  // every state change and re-fire the focus effect in an infinite loop).
+  const itemsRef = useRef<InventoryItem[]>(items);
+  React.useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
+
+  const FOCUS_REFETCH_DEDUPE_MS = 2000;
+
   const loadItems = useCallback(async () => {
     if (!deviceId) return;
-    setLoadingItems(true);
+    // Skip if we just fetched (e.g. reconcile() ran moments ago after a save
+    // and now the screen is regaining focus). Without this guard the user
+    // sees an immediate second fetch on every tab return after a save.
+    if (Date.now() - lastFetchedAtRef.current < FOCUS_REFETCH_DEDUPE_MS) {
+      return;
+    }
+    // Only show the full-screen spinner when we have nothing on screen yet.
+    // Otherwise refresh in the background to avoid a jarring flicker on
+    // every tab return.
+    if (itemsRef.current.length === 0) setLoadingItems(true);
     try {
       const data = await getInventory(deviceId);
       setItems(data);
       setLoadError(false);
+      lastFetchedAtRef.current = Date.now();
     } catch {
       // Keep existing items on failure — wiping the list on a transient
       // network error is worse than showing slightly stale data.
@@ -129,6 +154,9 @@ export default function InventoryScreen() {
       const data = await getInventory(deviceId);
       setItems(data);
       setLoadError(false);
+      // Stamp the dedupe clock so the next focus event won't re-fetch the
+      // same data we just pulled here.
+      lastFetchedAtRef.current = Date.now();
     } catch {
       // Swallow — pill simply hides; user can retry the action.
     } finally {
@@ -175,10 +203,16 @@ export default function InventoryScreen() {
             if (Platform.OS !== "web") {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
             }
-            // Capture the item's original position so we can restore it at the
-            // same spot in the list if the server call fails.
-            const originalIndex = items.findIndex(i => i.id === item.id);
-            setItems(prev => prev.filter(i => i.id !== item.id));
+            // Capture the item's original position from inside the setItems
+            // updater so it always reflects the freshest state — not the
+            // closure value at handler-creation time. If a reconcile or
+            // mark-sold has reordered the list while the destructive Alert
+            // was open, the rollback still lands at the correct spot.
+            let originalIndex = -1;
+            setItems(prev => {
+              originalIndex = prev.findIndex(i => i.id === item.id);
+              return prev.filter(i => i.id !== item.id);
+            });
             const ok = await removeInventoryItem(deviceId, item.id);
             if (!ok) {
               // Restore the deleted item locally so the UI matches the server
