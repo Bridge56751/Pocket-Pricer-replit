@@ -550,7 +550,7 @@ export default function InventoryScreen() {
           setEditNameOpen(null);
           if (updated) {
             setItems(prev =>
-              prev.map(i => (i.id === updated.id ? { ...i, productName: updated.productName } : i))
+              prev.map(i => (i.id === updated.id ? { ...i, ...updated } : i))
             );
           } else {
             // Server didn't echo the updated row — force a refetch so
@@ -605,23 +605,43 @@ function InventoryCard({
         )}
       </View>
       <View style={styles.cardBody}>
-        <Text
-          style={[styles.cardTitle, { color: theme.colors.foreground }]}
-          numberOfLines={2}
-        >
-          {item.productName}
-        </Text>
-        <View style={styles.cardPriceRow}>
-          <View style={styles.cardPriceCol}>
-            <Text style={[styles.cardPriceLabel, { color: theme.colors.mutedForeground }]}>
-              Paid
-            </Text>
-            <Text style={[styles.cardPriceValue, { color: theme.colors.foreground }]}>
-              {formatCurrency(item.purchasePrice)}
-            </Text>
+        <View style={styles.cardHeaderRow}>
+          <Text
+            style={[styles.cardTitle, { color: theme.colors.foreground, flex: 1 }]}
+            numberOfLines={2}
+          >
+            {item.productName}
+          </Text>
+          <View style={styles.cardCornerActions}>
+            <Pressable
+              onPress={onEditName}
+              hitSlop={8}
+              style={({ pressed }) => [styles.cornerIconButton, { opacity: pressed ? 0.6 : 1 }]}
+              testID={`button-edit-name-${item.id}`}
+            >
+              <Feather name="edit-2" size={15} color="#6B7280" />
+            </Pressable>
+            <Pressable
+              onPress={onDelete}
+              hitSlop={8}
+              style={({ pressed }) => [styles.cornerIconButton, { opacity: pressed ? 0.6 : 1 }]}
+              testID={`button-delete-${item.id}`}
+            >
+              <Feather name="trash-2" size={16} color="#DC2626" />
+            </Pressable>
           </View>
-          {isSold ? (
-            <>
+        </View>
+        {isSold ? (
+          <>
+            <View style={styles.cardPriceRow}>
+              <View style={styles.cardPriceCol}>
+                <Text style={[styles.cardPriceLabel, { color: theme.colors.mutedForeground }]}>
+                  Paid
+                </Text>
+                <Text style={[styles.cardPriceValue, { color: theme.colors.foreground }]}>
+                  {formatCurrency(item.purchasePrice)}
+                </Text>
+              </View>
               <View style={styles.cardPriceCol}>
                 <Text style={[styles.cardPriceLabel, { color: theme.colors.mutedForeground }]}>
                   Sold
@@ -643,43 +663,40 @@ function InventoryCard({
                   {formatCurrency(profit)}
                 </Text>
               </View>
-            </>
-          ) : null}
-        </View>
-        <View style={styles.cardActions}>
-          {isSold ? (
-            <View style={[styles.soldBadge, { backgroundColor: "#DCFCE7" }]}>
+            </View>
+            <View style={[styles.soldBadge, { backgroundColor: "#DCFCE7", alignSelf: "flex-start" }]}>
               <Feather name="check" size={12} color="#047857" />
               <Text style={[styles.soldBadgeText, { color: "#047857" }]}>Sold</Text>
             </View>
-          ) : (
+          </>
+        ) : (
+          <>
+            <View style={styles.cardPaidBlock}>
+              <Text style={[styles.cardPriceLabel, { color: theme.colors.mutedForeground }]}>
+                Paid
+              </Text>
+              <Text
+                style={[styles.cardPaidBigValue, { color: theme.colors.foreground }]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.6}
+              >
+                {formatCurrency(item.purchasePrice)}
+              </Text>
+            </View>
             <Pressable
               onPress={onMarkSold}
               style={({ pressed }) => [
-                styles.markSoldButton,
+                styles.markSoldButtonFull,
                 { backgroundColor: theme.colors.primary, opacity: pressed ? 0.85 : 1 },
               ]}
               testID={`button-mark-sold-${item.id}`}
             >
-              <Feather name="dollar-sign" size={14} color="#FFFFFF" />
-              <Text style={styles.markSoldText}>Mark Sold</Text>
+              <Feather name="dollar-sign" size={16} color="#FFFFFF" />
+              <Text style={styles.markSoldTextLarge}>Mark Sold</Text>
             </Pressable>
-          )}
-          <Pressable
-            onPress={onEditName}
-            style={({ pressed }) => [styles.deleteButton, { opacity: pressed ? 0.6 : 1 }]}
-            testID={`button-edit-name-${item.id}`}
-          >
-            <Feather name="edit-2" size={15} color="#6B7280" />
-          </Pressable>
-          <Pressable
-            onPress={onDelete}
-            style={({ pressed }) => [styles.deleteButton, { opacity: pressed ? 0.6 : 1 }]}
-            testID={`button-delete-${item.id}`}
-          >
-            <Feather name="trash-2" size={16} color="#DC2626" />
-          </Pressable>
-        </View>
+          </>
+        )}
       </View>
     </View>
   );
@@ -1264,27 +1281,36 @@ function EditNameModal({
 }) {
   const { theme } = useDesignTokens();
   const [name, setName] = useState("");
+  const [price, setPrice] = useState("");
   const [saving, setSaving] = useState(false);
 
   React.useEffect(() => {
-    if (item) setName(item.productName);
+    if (item) {
+      setName(item.productName);
+      setPrice(item.purchasePrice.toFixed(2));
+    }
   }, [item]);
 
   const trimmed = name.trim();
   const previewClean = useMemo(() => cleanInventoryName(trimmed), [trimmed]);
-  const unchanged = !!item && previewClean === item.productName;
+  const parsedPrice = parseFloat(price);
+  const priceValid = !isNaN(parsedPrice) && parsedPrice >= 0;
+  const nameUnchanged = !!item && previewClean === item.productName;
+  const priceUnchanged = !!item && priceValid && parsedPrice === item.purchasePrice;
+  const unchanged = nameUnchanged && priceUnchanged;
 
   const handleSave = async () => {
     if (!item || !deviceId) return;
-    if (!previewClean) return;
+    if (!previewClean || !priceValid) return;
     if (unchanged) {
       onClose();
       return;
     }
     setSaving(true);
-    const result = await updateInventoryItem(deviceId, item.id, {
-      productName: previewClean,
-    });
+    const updates: Partial<Pick<InventoryItem, "productName" | "purchasePrice">> = {};
+    if (!nameUnchanged) updates.productName = previewClean;
+    if (!priceUnchanged) updates.purchasePrice = parsedPrice;
+    const result = await updateInventoryItem(deviceId, item.id, updates);
     setSaving(false);
     if (!result.ok) {
       // If the row was already deleted on the server, suppress the
@@ -1295,7 +1321,7 @@ function EditNameModal({
         return;
       }
       onWriteFailed?.();
-      Alert.alert("Couldn't save name", "Please check your connection and try again.");
+      Alert.alert("Couldn't save changes", "Please check your connection and try again.");
       return;
     }
     if (Platform.OS !== "web") {
@@ -1305,7 +1331,7 @@ function EditNameModal({
   };
 
   const showPreview = !!previewClean && previewClean !== trimmed;
-  const disableSave = saving || !previewClean || unchanged;
+  const disableSave = saving || !previewClean || !priceValid || unchanged;
 
   return (
     <Modal visible={!!item} transparent animationType="fade" onRequestClose={onClose}>
@@ -1315,9 +1341,9 @@ function EditNameModal({
       >
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
         <View style={[styles.modalCard, { backgroundColor: theme.colors.background }]}>
-          <Text style={[styles.modalTitle, { color: theme.colors.foreground }]}>Edit name</Text>
+          <Text style={[styles.modalTitle, { color: theme.colors.foreground }]}>Edit item</Text>
           <Text style={[styles.modalSub, { color: theme.colors.mutedForeground }]}>
-            Up to {INVENTORY_NAME_MAX_LENGTH} characters.
+            Update the name or what you paid.
           </Text>
 
           <Text style={[styles.modalLabel, { color: theme.colors.foreground }]}>Item name</Text>
@@ -1352,6 +1378,26 @@ function EditNameModal({
               Will be saved as: {previewClean}
             </Text>
           ) : null}
+
+          <Text style={[styles.modalLabel, { color: theme.colors.foreground, marginTop: 16 }]}>
+            Purchase price
+          </Text>
+          <TextInput
+            value={price}
+            onChangeText={setPrice}
+            placeholder="0.00"
+            placeholderTextColor={theme.colors.mutedForeground}
+            keyboardType="decimal-pad"
+            inputMode="decimal"
+            style={[
+              styles.modalInput,
+              {
+                color: theme.colors.foreground,
+                borderColor: "#E5E7EB",
+              },
+            ]}
+            testID="input-edit-price"
+          />
 
           <View style={styles.modalActions}>
             <Pressable
@@ -1578,23 +1624,46 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
   },
-  cardActions: {
+  cardHeaderRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  cardCornerActions: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 4,
+    marginTop: -4,
+    marginRight: -4,
+  },
+  cornerIconButton: {
+    width: 32,
+    height: 32,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 8,
+  },
+  cardPaidBlock: {
     marginTop: 2,
   },
-  markSoldButton: {
+  cardPaidBigValue: {
+    fontSize: 22,
+    fontWeight: "800",
+    letterSpacing: -0.3,
+  },
+  markSoldButtonFull: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 10,
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginTop: 4,
   },
-  markSoldText: {
-    fontSize: 13,
-    fontWeight: "600",
+  markSoldTextLarge: {
+    fontSize: 15,
+    fontWeight: "700",
     color: "#FFFFFF",
   },
   soldBadge: {
@@ -1608,13 +1677,6 @@ const styles = StyleSheet.create({
   soldBadgeText: {
     fontSize: 12,
     fontWeight: "700",
-  },
-  deleteButton: {
-    width: 36,
-    height: 36,
-    alignItems: "center",
-    justifyContent: "center",
-    marginLeft: "auto",
   },
   emptyContainer: {
     alignItems: "center",
