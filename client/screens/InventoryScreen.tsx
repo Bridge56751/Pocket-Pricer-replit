@@ -493,31 +493,30 @@ export default function InventoryScreen() {
         <View style={styles.modalBackdrop}>
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setProfitInfoOpen(false)} />
           <View style={[styles.modalCard, { backgroundColor: theme.colors.background }]}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 }}>
-              <Feather name="info" size={18} color={theme.colors.primary} />
-              <Text style={[styles.modalTitle, { color: theme.colors.foreground, marginBottom: 0 }]}>
-                How gross profit works
-              </Text>
+            <View style={styles.profitInfoHeader}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1 }}>
+                <Feather name="info" size={18} color={theme.colors.primary} />
+                <Text style={[styles.modalTitle, { color: theme.colors.foreground, marginBottom: 0 }]}>
+                  How gross profit works
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => setProfitInfoOpen(false)}
+                hitSlop={12}
+                accessibilityRole="button"
+                accessibilityLabel="Close"
+                style={({ pressed }) => [
+                  styles.profitInfoClose,
+                  { backgroundColor: theme.colors.muted, opacity: pressed ? 0.7 : 1 },
+                ]}
+                testID="button-close-profit-info"
+              >
+                <Feather name="x" size={18} color={theme.colors.mutedForeground} />
+              </Pressable>
             </View>
-            <Text style={[styles.modalSub, { color: theme.colors.mutedForeground, marginBottom: 16 }]}>
-              Gross profit is sale price minus what you paid, on items you've already sold. Unsold inventory isn't a loss — it's stock you haven't moved yet.
+            <Text style={[styles.modalSub, { color: theme.colors.mutedForeground, marginTop: 12, marginBottom: 0 }]}>
+              Only counts items you've actually sold — unsold stock isn't a loss. Doesn't subtract platform fees or shipping, so your take-home will be a bit lower.
             </Text>
-            <Text style={[styles.modalSub, { color: theme.colors.mutedForeground, marginBottom: 16 }]}>
-              It does not deduct platform fees (eBay, Mercari, Poshmark, etc.) or shipping. Your actual take-home will be lower depending on where you sell.
-            </Text>
-            <Text style={[styles.modalSub, { color: theme.colors.mutedForeground, marginBottom: 16 }]}>
-              Example: buy 10 items at $10 each ($100 spent), sell 3 at $20 each. Gross profit shows +$30, not -$40.
-            </Text>
-            <Pressable
-              onPress={() => setProfitInfoOpen(false)}
-              style={({ pressed }) => [
-                styles.modalSaveButton,
-                { backgroundColor: theme.colors.primary, opacity: pressed ? 0.85 : 1 },
-              ]}
-              testID="button-close-profit-info"
-            >
-              <Text style={styles.modalSaveText}>Got it</Text>
-            </Pressable>
           </View>
         </View>
       </Modal>
@@ -1628,6 +1627,18 @@ const styles = StyleSheet.create({
   modalCard: {
     borderRadius: 18,
     padding: 22,
+  },
+  profitInfoHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  profitInfoClose: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: "center",
+    justifyContent: "center",
   },
   modalTitle: {
     fontSize: 20,
