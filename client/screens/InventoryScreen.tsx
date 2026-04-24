@@ -286,7 +286,7 @@ export default function InventoryScreen() {
               >
                 {formatCurrency(metrics.spent)}
               </Text>
-              <Text style={styles.metricSub} numberOfLines={1}>All inventory cost</Text>
+              <Text style={styles.metricSub}>All inventory cost</Text>
             </View>
             <View style={styles.metricCard}>
               <Text style={styles.metricLabel} numberOfLines={1}>SOLD</Text>
@@ -298,7 +298,7 @@ export default function InventoryScreen() {
               >
                 {formatCurrency(metrics.soldRevenue)}
               </Text>
-              <Text style={styles.metricSub} numberOfLines={1}>Revenue from sold</Text>
+              <Text style={styles.metricSub}>Revenue from sold</Text>
             </View>
             <View style={styles.metricCard}>
               <Pressable
@@ -328,7 +328,7 @@ export default function InventoryScreen() {
               >
                 {formatCurrency(metrics.profit)}
               </Text>
-              <Text style={styles.metricSub} numberOfLines={1}>On items sold</Text>
+              <Text style={styles.metricSub}>On items sold</Text>
             </View>
           </View>
 
