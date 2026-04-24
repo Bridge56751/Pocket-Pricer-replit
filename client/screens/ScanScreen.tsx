@@ -344,6 +344,13 @@ export default function ScanScreen() {
       const historyItem: SearchHistoryItem = {
         id: Date.now().toString(),
         query: queryString,
+        // Persist the hosted URL of the user's actual scan photo so recent-
+        // scan thumbnails survive app restarts (the in-memory image-store
+        // doesn't). Falls back to the scraped product image at render time
+        // when this isn't set (e.g. older scans, or fallback upload host).
+        thumbnailUrl: typeof results.scannedImageUrl === "string" && results.scannedImageUrl
+          ? results.scannedImageUrl
+          : undefined,
         product: results.listings?.[0] || null,
         searchedAt: new Date().toISOString(),
         results: enrichedResults,

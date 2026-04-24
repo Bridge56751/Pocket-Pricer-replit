@@ -53,6 +53,7 @@ interface SearchResultsData {
   listings: ListingItem[];
   scannedImageId?: string;
   scannedImageUri?: string;
+  scannedImageUrl?: string | null;
   usedLens?: boolean;
   productInfo?: {
     name: string;
@@ -160,8 +161,12 @@ export default function SearchResultsScreen() {
       Alert.alert("Name required", "Please enter a name for this item before saving.");
       return;
     }
+    // Prefer the hosted Supabase URL of the user's actual scan photo so
+    // inventory cards show their photo (and so we don't bloat Supabase rows
+    // with hundreds of KB of base64). Fall back to the scraped product image
+    // if the hosted URL isn't available (e.g. fallback upload host was used).
     const imageUrl =
-      scannedImageUri ||
+      results.scannedImageUrl ||
       results.listings?.[0]?.imageUrl ||
       "";
 

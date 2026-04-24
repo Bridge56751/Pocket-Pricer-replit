@@ -47,6 +47,111 @@ function safeLog(promise: PromiseLike<any>, label: string) {
   });
 }
 
+// --- Scan image retention --------------------------------------------------
+// Tracks photos uploaded to the `scan-images` bucket so we can prune them.
+// Policy: keep the 10 most recent scans per device, plus any photo whose
+// public_url is referenced by an inventory_items.image_url row for the device.
+// Anything else gets deleted (storage file + table row).
+
+const RECENT_SCAN_KEEP = 10;
+
+export async function insertScanImage(
+  deviceId: string,
+  fileName: string,
+  publicUrl: string
+): Promise<void> {
+  if (!supabase) return;
+  try {
+    const { error } = await supabase
+      .from("device_scan_images")
+      .insert({
+        device_id: deviceId,
+        file_name: fileName,
+        public_url: publicUrl,
+      });
+    if (error) {
+      console.error("Supabase insertScanImage error:", error.message);
+    }
+  } catch (err: any) {
+    console.error("insertScanImage error:", err?.message);
+  }
+}
+
+export async function pruneDeviceScanImages(deviceId: string): Promise<void> {
+  if (!supabase) return;
+  try {
+    // 1. All scan-image rows for this device, newest first. Tie-break on `id`
+    //    so two inserts with the exact same created_at sort deterministically
+    //    (avoids edge-case misclassification under concurrent scans).
+    const { data: allRows, error: listErr } = await supabase
+      .from("device_scan_images")
+      .select("id, file_name, public_url, created_at")
+      .eq("device_id", deviceId)
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false });
+    if (listErr) {
+      console.error("Supabase pruneDeviceScanImages list error:", listErr.message);
+      return;
+    }
+    const rows = (allRows || []) as Array<{
+      id: string;
+      file_name: string;
+      public_url: string;
+      created_at: string;
+    }>;
+    if (rows.length <= RECENT_SCAN_KEEP) return;
+
+    // 2. Candidates for removal: anything past the recent-N window.
+    const candidates = rows.slice(RECENT_SCAN_KEEP);
+
+    // 3. Pull the device's full set of inventory image_urls and filter in
+    //    memory. Doing this in-memory (rather than `.in(image_url, [...])`)
+    //    keeps query size bounded by inventory row count instead of
+    //    candidate URL string length, which avoids PostgREST URL-size limits
+    //    for power users with long histories.
+    const { data: invRows, error: invErr } = await supabase
+      .from("inventory_items")
+      .select("image_url")
+      .eq("device_id", deviceId);
+    if (invErr) {
+      console.error("Supabase pruneDeviceScanImages inv lookup error:", invErr.message);
+      return;
+    }
+    const pinned = new Set<string>(
+      ((invRows || []) as Array<{ image_url: string | null }>)
+        .map((r) => r.image_url)
+        .filter((u): u is string => !!u)
+    );
+
+    const toDelete = candidates.filter((r) => !pinned.has(r.public_url));
+    if (toDelete.length === 0) return;
+
+    // 4. Delete storage files (best-effort) then table rows.
+    const fileNames = toDelete.map((r) => r.file_name);
+    const { error: storageErr } = await supabase.storage
+      .from("scan-images")
+      .remove(fileNames);
+    if (storageErr) {
+      console.error("Supabase pruneDeviceScanImages storage error:", storageErr.message);
+      // Continue to row delete anyway — orphaned storage is preferable to
+      // orphaned table rows that would prevent re-pruning.
+    }
+
+    const ids = toDelete.map((r) => r.id);
+    const { error: rowErr } = await supabase
+      .from("device_scan_images")
+      .delete()
+      .in("id", ids);
+    if (rowErr) {
+      console.error("Supabase pruneDeviceScanImages row delete error:", rowErr.message);
+    } else {
+      console.log(`Pruned ${toDelete.length} scan image(s) for device ${deviceId.slice(0, 8)}...`);
+    }
+  } catch (err: any) {
+    console.error("pruneDeviceScanImages error:", err?.message);
+  }
+}
+
 export function logScanEvent(
   deviceId: string,
   isPro: boolean,

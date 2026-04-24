@@ -11,6 +11,8 @@ import {
   createInventoryItem,
   updateInventoryItemRow,
   deleteInventoryItem,
+  insertScanImage,
+  pruneDeviceScanImages,
 } from "./supabase";
 import { cleanQueryWithAI } from "./gemini";
 
@@ -477,11 +479,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const lensResult = await searchWithGoogleLens(imageUrl);
 
       if (lensResult.error || lensResult.products.length === 0) {
+        // Lens didn't find anything — clean up the upload, no point keeping it.
         if (supabaseFileName) deleteSupabaseImage(supabaseFileName);
         return res.status(404).json({ 
           error: "No products found",
           fallbackToText: true 
         });
+      }
+
+      // From here on the scan is "successful" — track the image so we can
+      // surface the user's photo on inventory cards / recent scans, and so the
+      // prune helper knows it exists. Only do this when the upload landed in
+      // our own Supabase bucket (fallback hosts are out of our control).
+      if (supabaseFileName) {
+        await insertScanImage(deviceId, supabaseFileName, imageUrl);
       }
 
       const allProducts = lensResult.products.slice(0, 60);
@@ -572,9 +583,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         listings,
         usedLens: true,
         totalScans,
+        // Hosted URL of the user's actual scan photo (Supabase Storage). The
+        // client persists this on the scan-history item and on any inventory
+        // item the user creates, so cards show the user's photo instead of a
+        // scraped product thumbnail. Only set when the upload landed in our
+        // own bucket — fallback hosts return an opaque URL we can't manage.
+        scannedImageUrl: supabaseFileName ? imageUrl : null,
       });
 
-      if (supabaseFileName) deleteSupabaseImage(supabaseFileName);
+      // Fire-and-forget: enforce the recent-10 retention window. Any scan
+      // image past #10 that isn't pinned by an inventory_items row gets
+      // deleted from storage. Errors are swallowed inside the helper.
+      pruneDeviceScanImages(deviceId);
     } catch (error) {
       if (supabaseFileName) deleteSupabaseImage(supabaseFileName);
       console.error("Lens scan error:", error);
@@ -1012,6 +1032,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const ok = await deleteInventoryItem(deviceId, itemId);
       if (!ok) return res.status(500).json({ error: "Failed to delete inventory item" });
       res.json({ ok: true });
+      // Fire-and-forget: the deleted item's photo is no longer pinned by
+      // inventory; if it's also outside the recent-10 window, prune cleans
+      // it up from Supabase Storage.
+      pruneDeviceScanImages(deviceId);
     } catch (error) {
       console.error("Delete inventory error:", error);
       res.status(500).json({ error: "Failed to delete inventory item" });
