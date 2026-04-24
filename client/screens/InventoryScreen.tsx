@@ -277,25 +277,46 @@ export default function InventoryScreen() {
 
           <View style={styles.metricsRow}>
             <View style={styles.metricCard}>
-              <Text style={styles.metricLabel}>SPENT</Text>
-              <Text style={styles.metricValue}>{formatCurrency(metrics.spent)}</Text>
-              <Text style={styles.metricSub}>All inventory cost</Text>
+              <Text style={styles.metricLabel} numberOfLines={1}>SPENT</Text>
+              <Text
+                style={styles.metricValue}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.6}
+              >
+                {formatCurrency(metrics.spent)}
+              </Text>
+              <Text style={styles.metricSub} numberOfLines={1}>All inventory cost</Text>
             </View>
             <View style={styles.metricCard}>
-              <Text style={styles.metricLabel}>SOLD</Text>
-              <Text style={styles.metricValue}>{formatCurrency(metrics.soldRevenue)}</Text>
-              <Text style={styles.metricSub}>Revenue from sold</Text>
+              <Text style={styles.metricLabel} numberOfLines={1}>SOLD</Text>
+              <Text
+                style={styles.metricValue}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.6}
+              >
+                {formatCurrency(metrics.soldRevenue)}
+              </Text>
+              <Text style={styles.metricSub} numberOfLines={1}>Revenue from sold</Text>
             </View>
             <View style={styles.metricCard}>
               <View style={styles.metricLabelRow}>
-                <Text style={styles.metricLabel}>GROSS PROFIT</Text>
+                <Text
+                  style={[styles.metricLabel, styles.metricLabelFlex]}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.85}
+                >
+                  GROSS PROFIT
+                </Text>
                 <Pressable
                   onPress={() => setProfitInfoOpen(true)}
                   hitSlop={8}
                   style={styles.metricInfoButton}
                   testID="button-profit-info"
                 >
-                  <Feather name="info" size={12} color="rgba(255,255,255,0.7)" />
+                  <Feather name="info" size={11} color="rgba(255,255,255,0.7)" />
                 </Pressable>
               </View>
               <Text
@@ -303,10 +324,13 @@ export default function InventoryScreen() {
                   styles.metricValue,
                   { color: metrics.profit >= 0 ? "#4ADE80" : "#F87171" },
                 ]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.6}
               >
                 {formatCurrency(metrics.profit)}
               </Text>
-              <Text style={styles.metricSub}>On items sold</Text>
+              <Text style={styles.metricSub} numberOfLines={1}>On items sold</Text>
             </View>
           </View>
 
@@ -1427,15 +1451,18 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
     marginBottom: 4,
   },
+  metricLabelFlex: {
+    flexShrink: 1,
+    marginBottom: 0,
+  },
   metricLabelRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 3,
     marginBottom: 4,
   },
   metricInfoButton: {
     padding: 2,
-    marginBottom: 4,
   },
   metricValue: {
     fontSize: 22,
