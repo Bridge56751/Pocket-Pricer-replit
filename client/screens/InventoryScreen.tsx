@@ -1282,12 +1282,16 @@ function EditNameModal({
   const { theme } = useDesignTokens();
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
+  const [salePrice, setSalePrice] = useState("");
   const [saving, setSaving] = useState(false);
+
+  const isSold = !!item && typeof item.soldPrice === "number";
 
   React.useEffect(() => {
     if (item) {
       setName(item.productName);
       setPrice(item.purchasePrice.toFixed(2));
+      setSalePrice(typeof item.soldPrice === "number" ? item.soldPrice.toFixed(2) : "");
     }
   }, [item]);
 
@@ -1295,21 +1299,26 @@ function EditNameModal({
   const previewClean = useMemo(() => cleanInventoryName(trimmed), [trimmed]);
   const parsedPrice = parseFloat(price);
   const priceValid = !isNaN(parsedPrice) && parsedPrice >= 0;
+  const parsedSalePrice = parseFloat(salePrice);
+  const salePriceValid = !isSold || (!isNaN(parsedSalePrice) && parsedSalePrice >= 0);
   const nameUnchanged = !!item && previewClean === item.productName;
   const priceUnchanged = !!item && priceValid && parsedPrice === item.purchasePrice;
-  const unchanged = nameUnchanged && priceUnchanged;
+  const salePriceUnchanged =
+    !isSold || (salePriceValid && parsedSalePrice === item!.soldPrice);
+  const unchanged = nameUnchanged && priceUnchanged && salePriceUnchanged;
 
   const handleSave = async () => {
     if (!item || !deviceId) return;
-    if (!previewClean || !priceValid) return;
+    if (!previewClean || !priceValid || !salePriceValid) return;
     if (unchanged) {
       onClose();
       return;
     }
     setSaving(true);
-    const updates: Partial<Pick<InventoryItem, "productName" | "purchasePrice">> = {};
+    const updates: Partial<Pick<InventoryItem, "productName" | "purchasePrice" | "soldPrice">> = {};
     if (!nameUnchanged) updates.productName = previewClean;
     if (!priceUnchanged) updates.purchasePrice = parsedPrice;
+    if (isSold && !salePriceUnchanged) updates.soldPrice = parsedSalePrice;
     const result = await updateInventoryItem(deviceId, item.id, updates);
     setSaving(false);
     if (!result.ok) {
@@ -1331,7 +1340,7 @@ function EditNameModal({
   };
 
   const showPreview = !!previewClean && previewClean !== trimmed;
-  const disableSave = saving || !previewClean || !priceValid || unchanged;
+  const disableSave = saving || !previewClean || !priceValid || !salePriceValid || unchanged;
 
   return (
     <Modal visible={!!item} transparent animationType="fade" onRequestClose={onClose}>
@@ -1343,7 +1352,9 @@ function EditNameModal({
         <View style={[styles.modalCard, { backgroundColor: theme.colors.background }]}>
           <Text style={[styles.modalTitle, { color: theme.colors.foreground }]}>Edit item</Text>
           <Text style={[styles.modalSub, { color: theme.colors.mutedForeground }]}>
-            Update the name or what you paid.
+            {isSold
+              ? "Update the name, purchase price, or sale price."
+              : "Update the name or what you paid."}
           </Text>
 
           <Text style={[styles.modalLabel, { color: theme.colors.foreground }]}>Item name</Text>
@@ -1398,6 +1409,30 @@ function EditNameModal({
             ]}
             testID="input-edit-price"
           />
+
+          {isSold ? (
+            <>
+              <Text style={[styles.modalLabel, { color: theme.colors.foreground, marginTop: 16 }]}>
+                Sale price
+              </Text>
+              <TextInput
+                value={salePrice}
+                onChangeText={setSalePrice}
+                placeholder="0.00"
+                placeholderTextColor={theme.colors.mutedForeground}
+                keyboardType="decimal-pad"
+                inputMode="decimal"
+                style={[
+                  styles.modalInput,
+                  {
+                    color: theme.colors.foreground,
+                    borderColor: "#E5E7EB",
+                  },
+                ]}
+                testID="input-edit-sold-price"
+              />
+            </>
+          ) : null}
 
           <View style={styles.modalActions}>
             <Pressable
