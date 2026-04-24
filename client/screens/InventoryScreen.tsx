@@ -309,7 +309,14 @@ export default function InventoryScreen() {
               >
                 <Feather name="info" size={11} color="rgba(255,255,255,0.7)" />
               </Pressable>
-              <Text style={styles.metricLabel} numberOfLines={1}>GROSS PROFIT</Text>
+              <Text
+                style={[styles.metricLabel, styles.metricLabelWithIcon]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}
+              >
+                GROSS PROFIT
+              </Text>
               <Text
                 style={[
                   styles.metricValue,
@@ -1441,6 +1448,9 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.5)",
     letterSpacing: 0.8,
     marginBottom: 4,
+  },
+  metricLabelWithIcon: {
+    paddingRight: 18,
   },
   metricInfoButton: {
     position: "absolute",
