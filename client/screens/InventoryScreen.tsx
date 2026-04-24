@@ -301,24 +301,15 @@ export default function InventoryScreen() {
               <Text style={styles.metricSub} numberOfLines={1}>Revenue from sold</Text>
             </View>
             <View style={styles.metricCard}>
-              <View style={styles.metricLabelRow}>
-                <Text
-                  style={[styles.metricLabel, styles.metricLabelFlex]}
-                  numberOfLines={1}
-                  adjustsFontSizeToFit
-                  minimumFontScale={0.85}
-                >
-                  GROSS PROFIT
-                </Text>
-                <Pressable
-                  onPress={() => setProfitInfoOpen(true)}
-                  hitSlop={8}
-                  style={styles.metricInfoButton}
-                  testID="button-profit-info"
-                >
-                  <Feather name="info" size={11} color="rgba(255,255,255,0.7)" />
-                </Pressable>
-              </View>
+              <Pressable
+                onPress={() => setProfitInfoOpen(true)}
+                hitSlop={12}
+                style={styles.metricInfoButton}
+                testID="button-profit-info"
+              >
+                <Feather name="info" size={11} color="rgba(255,255,255,0.7)" />
+              </Pressable>
+              <Text style={styles.metricLabel} numberOfLines={1}>GROSS PROFIT</Text>
               <Text
                 style={[
                   styles.metricValue,
@@ -1451,18 +1442,12 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
     marginBottom: 4,
   },
-  metricLabelFlex: {
-    flexShrink: 1,
-    marginBottom: 0,
-  },
-  metricLabelRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 3,
-    marginBottom: 4,
-  },
   metricInfoButton: {
+    position: "absolute",
+    top: 8,
+    right: 8,
     padding: 2,
+    zIndex: 1,
   },
   metricValue: {
     fontSize: 22,
