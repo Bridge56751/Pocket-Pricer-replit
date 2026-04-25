@@ -38,6 +38,7 @@ interface SearchResultsData {
   listings: ListingItem[];
   scannedImageId?: string;
   scannedImageUri?: string;
+  scannedImageUrl?: string | null;
   usedLens?: boolean;
   productInfo?: {
     name: string;
