@@ -199,22 +199,29 @@ export function PurchasePriceSheet({
 }: PurchasePriceSheetProps) {
   const insets = useSafeAreaInsets();
   const { theme } = useDesignTokens();
-  const { gesture, animatedStyle, onLayout } = useSheetDragToDismiss({
-    visible,
-    onClose,
-  });
+  const {
+    shouldRender,
+    gesture,
+    sheetAnimatedStyle,
+    backdropAnimatedStyle,
+    onLayout,
+  } = useSheetDragToDismiss({ visible, onClose });
 
   return (
     <Modal
-      visible={visible}
+      visible={shouldRender}
       transparent
-      animationType="slide"
+      animationType="none"
       onRequestClose={onClose}
     >
       <KeyboardAvoidingView
-        style={styles.backdrop}
+        style={styles.backdropContainer}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
+        <Animated.View
+          pointerEvents="none"
+          style={[styles.dim, backdropAnimatedStyle]}
+        />
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
         <Animated.View
           onLayout={onLayout}
@@ -224,7 +231,7 @@ export function PurchasePriceSheet({
               backgroundColor: theme.colors.background,
               paddingBottom: Math.max(insets.bottom, 16) + 16,
             },
-            animatedStyle,
+            sheetAnimatedStyle,
           ]}
         >
           <GestureDetector gesture={gesture}>
@@ -255,10 +262,13 @@ export function PurchasePriceSheet({
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
+  backdropContainer: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
     justifyContent: "flex-end",
+  },
+  dim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   card: {
     borderTopLeftRadius: 24,

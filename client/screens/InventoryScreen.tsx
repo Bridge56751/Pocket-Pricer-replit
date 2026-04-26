@@ -826,25 +826,27 @@ function AddItemModal({
   };
 
   const handleClose = useCallback(() => {
-    setMode("chooser");
-    setSelected(null);
-    setPrice("");
-    setProductName("");
     onClose();
   }, [onClose]);
 
   const {
+    shouldRender: sheetShouldRender,
     gesture: dismissGesture,
-    animatedStyle: sheetAnimatedStyle,
+    sheetAnimatedStyle,
+    backdropAnimatedStyle,
     onLayout: onSheetLayout,
   } = useSheetDragToDismiss({ visible, onClose: handleClose });
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
+    <Modal visible={sheetShouldRender} transparent animationType="none" onRequestClose={handleClose}>
       <KeyboardAvoidingView
-        style={styles.sheetBackdrop}
+        style={styles.sheetBackdropContainer}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
+        <Animated.View
+          pointerEvents="none"
+          style={[styles.sheetDim, backdropAnimatedStyle]}
+        />
         <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} />
         <Animated.View
           onLayout={onSheetLayout}
@@ -1784,10 +1786,13 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#FFFFFF",
   },
-  sheetBackdrop: {
+  sheetBackdropContainer: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
     justifyContent: "flex-end",
+  },
+  sheetDim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.45)",
   },
   sheetCard: {
     borderTopLeftRadius: 24,

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Dimensions, Keyboard, type LayoutChangeEvent } from "react-native";
 import { Gesture } from "react-native-gesture-handler";
 import {
@@ -12,6 +12,9 @@ import {
 const SCREEN_HEIGHT = Dimensions.get("window").height;
 const MIN_DISMISS_DISTANCE = 80;
 const DISMISS_VELOCITY = 800;
+const OPEN_DURATION = 280;
+const CLOSE_DURATION = 220;
+const BACKDROP_MAX_OPACITY = 1;
 
 export function useSheetDragToDismiss({
   visible,
@@ -20,14 +23,35 @@ export function useSheetDragToDismiss({
   visible: boolean;
   onClose: () => void;
 }) {
-  const translateY = useSharedValue(0);
+  const [shouldRender, setShouldRender] = useState(visible);
+  const translateY = useSharedValue(SCREEN_HEIGHT);
   const sheetHeight = useSharedValue(0);
 
   useEffect(() => {
-    if (visible) {
-      translateY.value = 0;
+    if (visible && !shouldRender) {
+      setShouldRender(true);
     }
-  }, [visible, translateY]);
+  }, [visible, shouldRender]);
+
+  useEffect(() => {
+    if (shouldRender && visible) {
+      translateY.value = withTiming(0, { duration: OPEN_DURATION });
+    }
+  }, [shouldRender, visible, translateY]);
+
+  useEffect(() => {
+    if (!visible && shouldRender) {
+      translateY.value = withTiming(
+        SCREEN_HEIGHT,
+        { duration: CLOSE_DURATION },
+        (finished) => {
+          if (finished) {
+            runOnJS(setShouldRender)(false);
+          }
+        }
+      );
+    }
+  }, [visible, shouldRender, translateY]);
 
   const onLayout = (event: LayoutChangeEvent) => {
     sheetHeight.value = event.nativeEvent.layout.height;
@@ -49,23 +73,29 @@ export function useSheetDragToDismiss({
         translateY.value > dynamicThreshold ||
         e.velocityY > DISMISS_VELOCITY
       ) {
-        translateY.value = withTiming(
-          SCREEN_HEIGHT,
-          { duration: 200 },
-          (finished) => {
-            if (finished) {
-              runOnJS(onClose)();
-            }
-          }
-        );
+        runOnJS(onClose)();
       } else {
         translateY.value = withSpring(0, { damping: 18, stiffness: 200 });
       }
     });
 
-  const animatedStyle = useAnimatedStyle(() => ({
+  const sheetAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],
   }));
 
-  return { gesture, animatedStyle, onLayout };
+  const backdropAnimatedStyle = useAnimatedStyle(() => {
+    const denom = sheetHeight.value > 0 ? sheetHeight.value : SCREEN_HEIGHT;
+    const ratio = translateY.value / denom;
+    const clamped = ratio < 0 ? 0 : ratio > 1 ? 1 : ratio;
+    return { opacity: (1 - clamped) * BACKDROP_MAX_OPACITY };
+  });
+
+  return {
+    shouldRender,
+    gesture,
+    animatedStyle: sheetAnimatedStyle,
+    sheetAnimatedStyle,
+    backdropAnimatedStyle,
+    onLayout,
+  };
 }
