@@ -73,10 +73,10 @@ export default function SearchResultsScreen() {
 
   const [savingToInventory, setSavingToInventory] = useState(false);
   const [pricePromptVisible, setPricePromptVisible] = useState(false);
-  const [displayName, setDisplayName] = useState(rawName);
+  const [displayName, setDisplayName] = useState(() => cleanInventoryName(rawName));
 
   useEffect(() => {
-    setDisplayName(rawName);
+    setDisplayName(cleanInventoryName(rawName));
   }, [rawName]);
   const [purchasePrice, setPurchasePrice] = useState("");
   const [sellingPrice, setSellingPrice] = useState("");
