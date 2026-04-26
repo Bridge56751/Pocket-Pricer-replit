@@ -14,39 +14,7 @@ import { useScreenOptions } from "@/hooks/useScreenOptions";
 import { HeaderTitle } from "@/components/HeaderTitle";
 import { useTheme } from "@/hooks/useTheme";
 import { useDesignTokens } from "@/hooks/useDesignTokens";
-
-interface ListingItem {
-  id: string;
-  title: string;
-  imageUrl: string;
-  currentPrice: number;
-  originalPrice?: number;
-  condition?: string;
-  shipping: number;
-  link: string;
-  seller?: string;
-}
-
-interface SearchResultsData {
-  query: string;
-  totalListings: number;
-  avgListPrice: number;
-  avgSalePrice: number | null;
-  soldCount: number;
-  bestBuyNow: number;
-  topSalePrice: number | null;
-  listings: ListingItem[];
-  scannedImageId?: string;
-  scannedImageUri?: string;
-  scannedImageUrl?: string | null;
-  usedLens?: boolean;
-  productInfo?: {
-    name: string;
-    brand?: string;
-    category?: string;
-    description?: string;
-  };
-}
+import type { SearchResultsData } from "@/types/product";
 
 export interface CapturedPhoto {
   uri: string;

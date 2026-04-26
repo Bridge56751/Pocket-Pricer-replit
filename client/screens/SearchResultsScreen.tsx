@@ -17,7 +17,7 @@ import { getApiUrl } from "@/lib/query-client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRevenueCat } from "@/contexts/RevenueCatContext";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
-import type { EbaySoldData, EbaySoldItem } from "@/types/product";
+import type { EbaySoldData, EbaySoldItem, ListingItem, SearchResultsData } from "@/types/product";
 import { addInventoryItem, cleanInventoryName } from "@/lib/storage";
 import { Alert } from "react-native";
 
@@ -26,42 +26,6 @@ function generateInventoryId(): string {
 }
 
 type SearchResultsRouteProp = RouteProp<RootStackParamList, "SearchResults">;
-
-interface ListingItem {
-  id: string;
-  title: string;
-  imageUrl: string;
-  currentPrice: number;
-  originalPrice?: number;
-  condition?: string;
-  shipping: number;
-  link: string;
-  seller?: string;
-  platform?: string;
-  rating?: number;
-  reviews?: number;
-}
-
-interface SearchResultsData {
-  query: string;
-  totalListings: number;
-  avgListPrice: number;
-  avgSalePrice: number | null;
-  soldCount: number;
-  bestBuyNow: number;
-  topSalePrice: number | null;
-  listings: ListingItem[];
-  scannedImageId?: string;
-  scannedImageUri?: string;
-  scannedImageUrl?: string | null;
-  usedLens?: boolean;
-  productInfo?: {
-    name: string;
-    brand?: string;
-    category?: string;
-    description?: string;
-  };
-}
 
 export default function SearchResultsScreen() {
   const insets = useSafeAreaInsets();
