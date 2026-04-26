@@ -93,7 +93,6 @@ export function useSheetDragToDismiss({
   return {
     shouldRender,
     gesture,
-    animatedStyle: sheetAnimatedStyle,
     sheetAnimatedStyle,
     backdropAnimatedStyle,
     onLayout,
