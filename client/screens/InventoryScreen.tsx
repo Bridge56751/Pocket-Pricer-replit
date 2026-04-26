@@ -36,6 +36,7 @@ import {
   INVENTORY_NAME_MAX_LENGTH,
 } from "@/lib/storage";
 import type { InventoryItem, SearchHistoryItem } from "@/types/product";
+import { PurchasePriceSheetContent } from "@/components/PurchasePriceSheet";
 
 type FilterMode = "stock" | "sold";
 
@@ -955,101 +956,25 @@ function AddItemModal({
               </Pressable>
             </View>
           ) : selected ? (
-            <View>
-              <View style={[styles.selectedScanRow, { borderColor: "#E5E7EB" }]}>
-                {getScanThumbnail(selected) ? (
-                  <Image
-                    source={{ uri: getScanThumbnail(selected) }}
-                    style={styles.selectedScanImage}
-                    contentFit="cover"
-                  />
-                ) : (
-                  <View style={[styles.selectedScanImage, styles.cardImageFallback]}>
-                    <Feather name="package" size={20} color="#9CA3AF" />
-                  </View>
-                )}
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={[styles.selectedScanTitle, { color: theme.colors.foreground }]}
-                    numberOfLines={2}
-                  >
-                    {productName.trim() || getScanTitle(selected)}
-                  </Text>
-                  {getScanSuggestedPrice(selected) ? (
-                    <Text
-                      style={[styles.selectedScanHint, { color: theme.colors.mutedForeground }]}
-                    >
-                      Market avg: {formatCurrency(getScanSuggestedPrice(selected) || 0)}
-                    </Text>
-                  ) : null}
-                </View>
-              </View>
+            <PurchasePriceSheetContent
+              thumbnailUri={getScanThumbnail(selected)}
+              displayTitle={getScanTitle(selected)}
+              marketAverageLabel={
+                getScanSuggestedPrice(selected)
+                  ? formatCurrency(getScanSuggestedPrice(selected) || 0)
+                  : null
+              }
+              name={productName}
+              onNameChange={setProductName}
+              price={price}
+              onPriceChange={setPrice}
+              saving={saving}
+              showSavingSpinner={false}
+              onCancel={handleClose}
+              onSave={handleSave}
+              saveButtonTestID="button-save-inventory"
+            />
 
-              <Text style={[styles.modalLabel, { color: theme.colors.foreground }]}>
-                Product name
-              </Text>
-              <TextInput
-                value={productName}
-                onChangeText={setProductName}
-                placeholder="Name this item"
-                placeholderTextColor={theme.colors.mutedForeground}
-                maxLength={INVENTORY_NAME_MAX_LENGTH}
-                style={[
-                  styles.modalInput,
-                  { color: theme.colors.foreground, borderColor: "#E5E7EB" },
-                ]}
-                testID="input-product-name"
-              />
-
-              <Text style={[styles.modalLabel, { color: theme.colors.foreground }]}>
-                Purchase price
-              </Text>
-              <TextInput
-                value={price}
-                onChangeText={setPrice}
-                placeholder="0.00"
-                placeholderTextColor={theme.colors.mutedForeground}
-                keyboardType="decimal-pad"
-                style={[
-                  styles.modalInput,
-                  { color: theme.colors.foreground, borderColor: "#E5E7EB" },
-                ]}
-                testID="input-purchase-price"
-              />
-
-              <View style={styles.modalActions}>
-                <Pressable
-                  onPress={handleClose}
-                  style={({ pressed }) => [
-                    styles.modalCancelButton,
-                    { opacity: pressed ? 0.7 : 1, borderColor: "#E5E7EB" },
-                  ]}
-                >
-                  <Text style={[styles.modalCancelText, { color: theme.colors.foreground }]}>
-                    Cancel
-                  </Text>
-                </Pressable>
-                <Pressable
-                  onPress={handleSave}
-                  disabled={saving || !price.trim() || !productName.trim()}
-                  style={({ pressed }) => [
-                    styles.modalSaveButton,
-                    {
-                      backgroundColor: theme.colors.primary,
-                      opacity:
-                        saving || !price.trim() || !productName.trim()
-                          ? 0.5
-                          : pressed
-                          ? 0.85
-                          : 1,
-                    },
-                  ]}
-                  testID="button-save-inventory"
-                >
-                  <Text style={styles.modalSaveText}>Add to Inventory</Text>
-                </Pressable>
-              </View>
-            </View>
           ) : (
             <ScrollView
               style={styles.scanList}
@@ -1929,28 +1854,5 @@ const styles = StyleSheet.create({
   },
   scanEmptyText: {
     fontSize: 13,
-  },
-  selectedScanRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    padding: 12,
-    borderRadius: 14,
-    borderWidth: 1,
-    marginBottom: 16,
-  },
-  selectedScanImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 12,
-  },
-  selectedScanTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    lineHeight: 20,
-  },
-  selectedScanHint: {
-    fontSize: 12,
-    marginTop: 4,
   },
 });

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
-import { View, StyleSheet, Pressable, Text, Linking, TextInput, ActivityIndicator, ScrollView, Keyboard, Animated as RNAnimated, Platform, Modal, KeyboardAvoidingView } from "react-native";
+import { View, StyleSheet, Pressable, Text, Linking, TextInput, ActivityIndicator, ScrollView, Keyboard, Animated as RNAnimated, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useRoute, RouteProp, useNavigation, CommonActions } from "@react-navigation/native";
@@ -18,7 +18,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRevenueCat } from "@/contexts/RevenueCatContext";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import type { EbaySoldData, EbaySoldItem, ListingItem, SearchResultsData } from "@/types/product";
-import { addInventoryItem, cleanInventoryName, INVENTORY_NAME_MAX_LENGTH } from "@/lib/storage";
+import { addInventoryItem, cleanInventoryName } from "@/lib/storage";
+import { PurchasePriceSheet } from "@/components/PurchasePriceSheet";
 import { Alert } from "react-native";
 
 function generateInventoryId(): string {
@@ -1394,194 +1395,26 @@ export default function SearchResultsScreen() {
         </Pressable>
       )}
 
-      <Modal
+      <PurchasePriceSheet
         visible={pricePromptVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={handleClosePricePrompt}
-      >
-        <KeyboardAvoidingView
-          style={styles.priceSheetBackdrop}
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-        >
-          <Pressable
-            style={StyleSheet.absoluteFill}
-            onPress={handleClosePricePrompt}
-          />
-          <View
-            style={[
-              styles.priceSheetCard,
-              {
-                backgroundColor: theme.colors.background,
-                paddingBottom: Math.max(insets.bottom, 16) + 16,
-              },
-            ]}
-          >
-            <View style={styles.priceSheetHandle} />
-            <View style={styles.priceSheetHeader}>
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={[
-                    styles.priceSheetTitle,
-                    { color: theme.colors.foreground },
-                  ]}
-                >
-                  Set Purchase Price
-                </Text>
-                <Text
-                  style={[
-                    styles.priceSheetSub,
-                    { color: theme.colors.mutedForeground },
-                  ]}
-                >
-                  Enter what you actually paid for this item.
-                </Text>
-              </View>
-            </View>
-
-            <View
-              style={[styles.priceSheetSelectedRow, { borderColor: "#E5E7EB" }]}
-            >
-              {(() => {
-                const thumb =
-                  scannedImageUri ||
-                  results.scannedImageUrl ||
-                  results.listings?.[0]?.imageUrl;
-                return thumb ? (
-                  <Image
-                    source={{ uri: thumb }}
-                    style={styles.priceSheetThumb}
-                    contentFit="cover"
-                  />
-                ) : (
-                  <View
-                    style={[
-                      styles.priceSheetThumb,
-                      styles.priceSheetThumbFallback,
-                    ]}
-                  >
-                    <Feather name="package" size={20} color="#9CA3AF" />
-                  </View>
-                );
-              })()}
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={[
-                    styles.priceSheetSelectedTitle,
-                    { color: theme.colors.foreground },
-                  ]}
-                  numberOfLines={2}
-                >
-                  {displayName.trim() || "Unidentified item"}
-                </Text>
-                {suggestedPrice > 0 ? (
-                  <Text
-                    style={[
-                      styles.priceSheetSelectedHint,
-                      { color: theme.colors.mutedForeground },
-                    ]}
-                  >
-                    Market avg: ${suggestedPrice.toFixed(2)}
-                  </Text>
-                ) : null}
-              </View>
-            </View>
-
-            <Text
-              style={[
-                styles.priceSheetLabel,
-                { color: theme.colors.foreground },
-              ]}
-            >
-              Product name
-            </Text>
-            <TextInput
-              value={displayName}
-              onChangeText={setDisplayName}
-              placeholder="Name this item"
-              placeholderTextColor={theme.colors.mutedForeground}
-              maxLength={INVENTORY_NAME_MAX_LENGTH}
-              style={[
-                styles.priceSheetInput,
-                { color: theme.colors.foreground, borderColor: "#E5E7EB" },
-              ]}
-              testID="input-product-name"
-            />
-
-            <Text
-              style={[
-                styles.priceSheetLabel,
-                { color: theme.colors.foreground },
-              ]}
-            >
-              Purchase price
-            </Text>
-            <TextInput
-              value={purchasePrice}
-              onChangeText={setPurchasePrice}
-              placeholder="0.00"
-              placeholderTextColor={theme.colors.mutedForeground}
-              keyboardType="decimal-pad"
-              style={[
-                styles.priceSheetInput,
-                { color: theme.colors.foreground, borderColor: "#E5E7EB" },
-              ]}
-              testID="input-purchase-price"
-            />
-
-            <View style={styles.priceSheetActions}>
-              <Pressable
-                onPress={handleClosePricePrompt}
-                style={({ pressed }) => [
-                  styles.priceSheetCancelButton,
-                  { opacity: pressed ? 0.7 : 1, borderColor: "#E5E7EB" },
-                ]}
-                testID="button-cancel-price-prompt"
-              >
-                <Text
-                  style={[
-                    styles.priceSheetCancelText,
-                    { color: theme.colors.foreground },
-                  ]}
-                >
-                  Cancel
-                </Text>
-              </Pressable>
-              <Pressable
-                onPress={handleConfirmAddToInventory}
-                disabled={
-                  savingToInventory ||
-                  !displayName.trim() ||
-                  !purchasePrice.trim()
-                }
-                style={({ pressed }) => [
-                  styles.priceSheetSaveButton,
-                  {
-                    backgroundColor: theme.colors.primary,
-                    opacity:
-                      savingToInventory ||
-                      !displayName.trim() ||
-                      !purchasePrice.trim()
-                        ? 0.5
-                        : pressed
-                        ? 0.85
-                        : 1,
-                  },
-                ]}
-                testID="button-save-price-prompt"
-              >
-                {savingToInventory ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <Text style={styles.priceSheetSaveText}>
-                    Add to Inventory
-                  </Text>
-                )}
-              </Pressable>
-            </View>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
+        onClose={handleClosePricePrompt}
+        thumbnailUri={
+          scannedImageUri ||
+          results.scannedImageUrl ||
+          results.listings?.[0]?.imageUrl
+        }
+        displayTitle={displayName}
+        marketAverageLabel={
+          suggestedPrice > 0 ? `$${suggestedPrice.toFixed(2)}` : null
+        }
+        name={displayName}
+        onNameChange={setDisplayName}
+        price={purchasePrice}
+        onPriceChange={setPurchasePrice}
+        saving={savingToInventory}
+        onCancel={handleClosePricePrompt}
+        onSave={handleConfirmAddToInventory}
+      />
     </View>
   );
 }
@@ -2637,109 +2470,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
     color: "#047857",
-  },
-  priceSheetBackdrop: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "flex-end",
-  },
-  priceSheetCard: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 20,
-    paddingTop: 8,
-  },
-  priceSheetHandle: {
-    alignSelf: "center",
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "#D1D5DB",
-    marginBottom: 12,
-  },
-  priceSheetHeader: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    marginBottom: 14,
-  },
-  priceSheetTitle: {
-    fontSize: 20,
-    fontWeight: "800",
-    marginBottom: 4,
-  },
-  priceSheetSub: {
-    fontSize: 13,
-    marginBottom: 4,
-  },
-  priceSheetSelectedRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    padding: 12,
-    borderRadius: 14,
-    borderWidth: 1,
-    marginBottom: 16,
-  },
-  priceSheetThumb: {
-    width: 60,
-    height: 60,
-    borderRadius: 12,
-  },
-  priceSheetThumbFallback: {
-    backgroundColor: "#F3F4F6",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  priceSheetSelectedTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    lineHeight: 20,
-  },
-  priceSheetSelectedHint: {
-    fontSize: 12,
-    marginTop: 4,
-  },
-  priceSheetLabel: {
-    fontSize: 12,
-    fontWeight: "700",
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
-    marginBottom: 6,
-    marginTop: 4,
-  },
-  priceSheetInput: {
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
-    marginBottom: 14,
-  },
-  priceSheetActions: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 4,
-  },
-  priceSheetCancelButton: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: "center",
-    borderWidth: 1,
-  },
-  priceSheetCancelText: {
-    fontSize: 15,
-    fontWeight: "600",
-  },
-  priceSheetSaveButton: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: "center",
-  },
-  priceSheetSaveText: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#FFFFFF",
   },
 });
