@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Dimensions, Keyboard } from "react-native";
+import { Dimensions, Keyboard, type LayoutChangeEvent } from "react-native";
 import { Gesture } from "react-native-gesture-handler";
 import {
   useSharedValue,
@@ -10,7 +10,7 @@ import {
 } from "react-native-reanimated";
 
 const SCREEN_HEIGHT = Dimensions.get("window").height;
-const DISMISS_DISTANCE = 120;
+const MIN_DISMISS_DISTANCE = 80;
 const DISMISS_VELOCITY = 800;
 
 export function useSheetDragToDismiss({
@@ -21,12 +21,17 @@ export function useSheetDragToDismiss({
   onClose: () => void;
 }) {
   const translateY = useSharedValue(0);
+  const sheetHeight = useSharedValue(0);
 
   useEffect(() => {
     if (visible) {
       translateY.value = 0;
     }
   }, [visible, translateY]);
+
+  const onLayout = (event: LayoutChangeEvent) => {
+    sheetHeight.value = event.nativeEvent.layout.height;
+  };
 
   const gesture = Gesture.Pan()
     .onStart(() => {
@@ -36,8 +41,12 @@ export function useSheetDragToDismiss({
       translateY.value = Math.max(0, e.translationY);
     })
     .onEnd((e) => {
+      const dynamicThreshold = Math.max(
+        MIN_DISMISS_DISTANCE,
+        sheetHeight.value / 3
+      );
       if (
-        translateY.value > DISMISS_DISTANCE ||
+        translateY.value > dynamicThreshold ||
         e.velocityY > DISMISS_VELOCITY
       ) {
         translateY.value = withTiming(
@@ -58,5 +67,5 @@ export function useSheetDragToDismiss({
     transform: [{ translateY: translateY.value }],
   }));
 
-  return { gesture, animatedStyle };
+  return { gesture, animatedStyle, onLayout };
 }

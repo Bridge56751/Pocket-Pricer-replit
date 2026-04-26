@@ -832,8 +832,11 @@ function AddItemModal({
     onClose();
   }, [onClose]);
 
-  const { gesture: dismissGesture, animatedStyle: sheetAnimatedStyle } =
-    useSheetDragToDismiss({ visible, onClose: handleClose });
+  const {
+    gesture: dismissGesture,
+    animatedStyle: sheetAnimatedStyle,
+    onLayout: onSheetLayout,
+  } = useSheetDragToDismiss({ visible, onClose: handleClose });
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
@@ -843,6 +846,7 @@ function AddItemModal({
       >
         <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} />
         <Animated.View
+          onLayout={onSheetLayout}
           style={[
             styles.sheetCard,
             {

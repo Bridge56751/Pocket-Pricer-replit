@@ -199,7 +199,10 @@ export function PurchasePriceSheet({
 }: PurchasePriceSheetProps) {
   const insets = useSafeAreaInsets();
   const { theme } = useDesignTokens();
-  const { gesture, animatedStyle } = useSheetDragToDismiss({ visible, onClose });
+  const { gesture, animatedStyle, onLayout } = useSheetDragToDismiss({
+    visible,
+    onClose,
+  });
 
   return (
     <Modal
@@ -214,6 +217,7 @@ export function PurchasePriceSheet({
       >
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
         <Animated.View
+          onLayout={onLayout}
           style={[
             styles.card,
             {
