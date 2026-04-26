@@ -44,6 +44,16 @@ function rowToItem(row: InventoryRowResponse): InventoryItem {
 
 export const INVENTORY_NAME_MAX_LENGTH = 50;
 
+export function parsePurchasePrice(input: string | null | undefined): number | null {
+  if (input == null) return null;
+  const trimmed = String(input).trim();
+  if (!trimmed) return null;
+  if (!/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(trimmed)) return null;
+  const n = Number(trimmed);
+  if (!Number.isFinite(n) || n < 0) return null;
+  return n;
+}
+
 export function cleanInventoryName(
   input: string | undefined | null,
   maxLength: number = INVENTORY_NAME_MAX_LENGTH

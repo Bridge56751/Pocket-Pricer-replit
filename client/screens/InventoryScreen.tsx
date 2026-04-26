@@ -33,6 +33,7 @@ import {
   getSearchHistory,
   migrateLocalInventoryToCloud,
   cleanInventoryName,
+  parsePurchasePrice,
   INVENTORY_NAME_MAX_LENGTH,
 } from "@/lib/storage";
 import type { InventoryItem, SearchHistoryItem } from "@/types/product";
@@ -794,8 +795,8 @@ function AddItemModal({
 
   const handleSave = async () => {
     if (!selected || !deviceId) return;
-    const parsedPrice = parseFloat(price);
-    if (isNaN(parsedPrice) || parsedPrice < 0) return;
+    const parsedPrice = parsePurchasePrice(price);
+    if (parsedPrice === null) return;
     const trimmedName = productName.trim();
     if (!trimmedName) {
       Alert.alert("Name required", "Please enter a name for this item before saving.");
@@ -1222,8 +1223,10 @@ function EditNameModal({
 
   const trimmed = name.trim();
   const previewClean = useMemo(() => cleanInventoryName(trimmed), [trimmed]);
-  const parsedPrice = parseFloat(price);
-  const priceValid = !isNaN(parsedPrice) && parsedPrice >= 0;
+  const parsedPriceOrNull = parsePurchasePrice(price);
+  const priceValid = parsedPriceOrNull !== null;
+  const parsedPrice = parsedPriceOrNull ?? 0;
+  const showPriceInvalidHint = price.trim().length > 0 && !priceValid;
   const parsedSalePrice = parseFloat(salePrice);
   const salePriceValid = !isSold || (!isNaN(parsedSalePrice) && parsedSalePrice >= 0);
   const nameUnchanged = !!item && previewClean === item.productName;
@@ -1329,11 +1332,23 @@ function EditNameModal({
               styles.modalInput,
               {
                 color: theme.colors.foreground,
-                borderColor: "#E5E7EB",
+                borderColor: showPriceInvalidHint ? "#DC2626" : "#E5E7EB",
               },
             ]}
             testID="input-edit-price"
           />
+          {showPriceInvalidHint ? (
+            <Text
+              style={{
+                marginTop: 6,
+                fontSize: 12,
+                color: "#DC2626",
+              }}
+              testID="text-edit-price-invalid-hint"
+            >
+              Enter a valid price like 12.50 (or 0 for a free find).
+            </Text>
+          ) : null}
 
           {isSold ? (
             <>

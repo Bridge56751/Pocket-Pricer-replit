@@ -18,7 +18,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRevenueCat } from "@/contexts/RevenueCatContext";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import type { EbaySoldData, EbaySoldItem, ListingItem, SearchResultsData } from "@/types/product";
-import { addInventoryItem, cleanInventoryName } from "@/lib/storage";
+import { addInventoryItem, cleanInventoryName, parsePurchasePrice } from "@/lib/storage";
 import { PurchasePriceSheet } from "@/components/PurchasePriceSheet";
 import { Alert } from "react-native";
 
@@ -117,11 +117,14 @@ export default function SearchResultsScreen() {
       Alert.alert("Couldn't add item", "Device not ready. Please try again in a moment.");
       return;
     }
-    const parsed = parseFloat(purchasePrice);
-    const price =
-      !isNaN(parsed) && parsed >= 0
-        ? parsed
-        : Number(results.avgListPrice) || 0;
+    const price = parsePurchasePrice(purchasePrice);
+    if (price === null) {
+      Alert.alert(
+        "Invalid price",
+        "Enter what you actually paid (a number like 12.50, or 0 for a free find)."
+      );
+      return;
+    }
     const productName = displayName.trim();
     if (!productName) {
       Alert.alert("Name required", "Please enter a name for this item before saving.");

@@ -15,7 +15,7 @@ import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useDesignTokens } from "@/hooks/useDesignTokens";
-import { INVENTORY_NAME_MAX_LENGTH } from "@/lib/storage";
+import { INVENTORY_NAME_MAX_LENGTH, parsePurchasePrice } from "@/lib/storage";
 
 export type PurchasePriceSheetContentProps = {
   thumbnailUri?: string | null;
@@ -59,7 +59,10 @@ export function PurchasePriceSheetContent({
   const { theme } = useDesignTokens();
   const trimmedName = name.trim();
   const trimmedPrice = price.trim();
-  const saveDisabled = saving || !trimmedName || !trimmedPrice;
+  const parsedPrice = parsePurchasePrice(price);
+  const priceValid = parsedPrice !== null;
+  const showPriceInvalidHint = trimmedPrice.length > 0 && !priceValid;
+  const saveDisabled = saving || !trimmedName || !priceValid;
   const trimmedMarketAverage =
     typeof marketAverageLabel === "string" ? marketAverageLabel.trim() : "";
   const showMarketAverage = trimmedMarketAverage.length > 0;
@@ -125,10 +128,19 @@ export function PurchasePriceSheetContent({
         keyboardType="decimal-pad"
         style={[
           styles.input,
-          { color: theme.colors.foreground, borderColor: "#E5E7EB" },
+          showPriceInvalidHint ? styles.inputNoBottomMargin : null,
+          {
+            color: theme.colors.foreground,
+            borderColor: showPriceInvalidHint ? "#DC2626" : "#E5E7EB",
+          },
         ]}
         testID={priceInputTestID}
       />
+      {showPriceInvalidHint ? (
+        <Text style={styles.priceInvalidHint} testID="text-price-invalid-hint">
+          Enter a valid price like 12.50 (or 0 for a free find).
+        </Text>
+      ) : null}
 
       <View style={styles.actions}>
         <Pressable
@@ -306,6 +318,15 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 15,
     marginBottom: 14,
+  },
+  inputNoBottomMargin: {
+    marginBottom: 6,
+  },
+  priceInvalidHint: {
+    fontSize: 12,
+    color: "#DC2626",
+    marginBottom: 14,
+    marginLeft: 2,
   },
   actions: {
     flexDirection: "row",
