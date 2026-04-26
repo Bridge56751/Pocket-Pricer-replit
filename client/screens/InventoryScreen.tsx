@@ -826,6 +826,7 @@ function AddItemModal({
   };
 
   const handleClose = useCallback(() => {
+    setMode("chooser");
     setSelected(null);
     setPrice("");
     setProductName("");
