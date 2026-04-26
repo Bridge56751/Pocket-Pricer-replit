@@ -13,9 +13,12 @@ import {
 import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Animated from "react-native-reanimated";
+import { GestureDetector } from "react-native-gesture-handler";
 
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { INVENTORY_NAME_MAX_LENGTH, parsePurchasePrice } from "@/lib/storage";
+import { useSheetDragToDismiss } from "@/hooks/useSheetDragToDismiss";
 
 export type PurchasePriceSheetContentProps = {
   thumbnailUri?: string | null;
@@ -196,6 +199,7 @@ export function PurchasePriceSheet({
 }: PurchasePriceSheetProps) {
   const insets = useSafeAreaInsets();
   const { theme } = useDesignTokens();
+  const { gesture, animatedStyle } = useSheetDragToDismiss({ visible, onClose });
 
   return (
     <Modal
@@ -209,16 +213,21 @@ export function PurchasePriceSheet({
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-        <View
+        <Animated.View
           style={[
             styles.card,
             {
               backgroundColor: theme.colors.background,
               paddingBottom: Math.max(insets.bottom, 16) + 16,
             },
+            animatedStyle,
           ]}
         >
-          <View style={styles.handle} />
+          <GestureDetector gesture={gesture}>
+            <View style={styles.handleHitArea}>
+              <View style={styles.handle} />
+            </View>
+          </GestureDetector>
           <View style={styles.header}>
             <View style={{ flex: 1 }}>
               <Text
@@ -235,7 +244,7 @@ export function PurchasePriceSheet({
           </View>
 
           <PurchasePriceSheetContent {...contentProps} />
-        </View>
+        </Animated.View>
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -251,15 +260,19 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 20,
-    paddingTop: 8,
+    paddingTop: 0,
+  },
+  handleHitArea: {
+    alignSelf: "center",
+    paddingHorizontal: 80,
+    paddingTop: 12,
+    paddingBottom: 8,
   },
   handle: {
-    alignSelf: "center",
     width: 40,
     height: 4,
     borderRadius: 2,
     backgroundColor: "#D1D5DB",
-    marginBottom: 12,
   },
   header: {
     flexDirection: "row",

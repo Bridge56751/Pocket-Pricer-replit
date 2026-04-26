@@ -20,6 +20,7 @@ import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import Animated, { FadeInDown } from "react-native-reanimated";
+import { GestureDetector } from "react-native-gesture-handler";
 
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { useTabBarFadeOnScroll } from "@/hooks/useTabBarFadeOnScroll";
@@ -38,6 +39,7 @@ import {
 } from "@/lib/storage";
 import type { InventoryItem, SearchHistoryItem } from "@/types/product";
 import { PurchasePriceSheetContent } from "@/components/PurchasePriceSheet";
+import { useSheetDragToDismiss } from "@/hooks/useSheetDragToDismiss";
 
 type FilterMode = "stock" | "sold";
 
@@ -823,12 +825,15 @@ function AddItemModal({
     onSaved();
   };
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setSelected(null);
     setPrice("");
     setProductName("");
     onClose();
-  };
+  }, [onClose]);
+
+  const { gesture: dismissGesture, animatedStyle: sheetAnimatedStyle } =
+    useSheetDragToDismiss({ visible, onClose: handleClose });
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
@@ -837,16 +842,21 @@ function AddItemModal({
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <Pressable style={StyleSheet.absoluteFill} onPress={handleClose} />
-        <View
+        <Animated.View
           style={[
             styles.sheetCard,
             {
               backgroundColor: theme.colors.background,
               paddingBottom: Math.max(insets.bottom, 16) + 16,
             },
+            sheetAnimatedStyle,
           ]}
         >
-          <View style={styles.sheetHandle} />
+          <GestureDetector gesture={dismissGesture}>
+            <View style={styles.sheetHandleHitArea}>
+              <View style={styles.sheetHandle} />
+            </View>
+          </GestureDetector>
           <View style={styles.sheetHeader}>
             {(mode === "recent" || selected) ? (
               <Pressable
@@ -1051,7 +1061,7 @@ function AddItemModal({
               )}
             </ScrollView>
           )}
-        </View>
+        </Animated.View>
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -1778,16 +1788,20 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 22,
-    paddingTop: 10,
+    paddingTop: 0,
     maxHeight: "85%",
   },
-  sheetHandle: {
+  sheetHandleHitArea: {
     alignSelf: "center",
+    paddingHorizontal: 80,
+    paddingTop: 12,
+    paddingBottom: 10,
+  },
+  sheetHandle: {
     width: 40,
     height: 4,
     borderRadius: 2,
     backgroundColor: "#D1D5DB",
-    marginBottom: 14,
   },
   sheetHeader: {
     flexDirection: "row",
