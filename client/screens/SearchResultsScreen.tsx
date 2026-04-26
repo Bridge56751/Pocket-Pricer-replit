@@ -1403,7 +1403,7 @@ export default function SearchResultsScreen() {
           results.scannedImageUrl ||
           results.listings?.[0]?.imageUrl
         }
-        displayTitle={displayName}
+        displayTitle="Unidentified item"
         marketAverageLabel={
           suggestedPrice > 0 ? `$${suggestedPrice.toFixed(2)}` : null
         }

@@ -83,7 +83,7 @@ export function PurchasePriceSheetContent({
             style={[styles.selectedTitle, { color: theme.colors.foreground }]}
             numberOfLines={2}
           >
-            {trimmedName || displayTitle.trim() || "Unidentified item"}
+            {trimmedName || displayTitle}
           </Text>
           {showMarketAverage ? (
             <Text
