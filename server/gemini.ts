@@ -22,28 +22,34 @@ interface GeminiResponse {
   modelVersion?: string;
 }
 
-const EBAY_QUERY_PROMPT = `You are an eBay search query optimizer. Your output will be used directly as an eBay sold listings search query. Given a raw product name or description, produce the best possible eBay search query to find this exact item's sold listings.
+const EBAY_QUERY_PROMPT = `You are an eBay search query optimizer. Your output will be used directly as an eBay sold listings search query. Given a raw product name (and, when provided, up to 5 real seller listing titles for the same item), produce the best possible eBay search query to find this exact item's sold listings.
 
 Rules:
-- Keep: brand name, model name/number, product type/category
-- Keep model numbers and hyphenated names exactly as they appear (e.g. "WH-1000XM5", "Air Max 90", "High-Rise")
-- Remove: colors, sizes, conditions (NWT, NWOT, etc.), retailer names (Amazon, Walmart, Target), marketing words (premium, authentic, genuine, exclusive), measurements, quantities, "free shipping", URLs, social handles
-- If there's a clear brand + model (e.g. "Nike Air Max 90", "Sony WH-1000XM5"), return just that with the product type
-- If there's no clear model number, keep brand + the most specific product descriptor
+- Keep: brand name, model name/number, product type/category. When seller listing titles are provided, prefer the brand/model wording sellers actually use over noisy retail copy.
+- Aim for 3-5 keywords. Hard cap: 8 words.
+- Keep model numbers and hyphenated names exactly as they appear (e.g. "WH-1000XM5", "Air Max 90", "High-Rise").
+- If a strong brand + model number is present, you may drop the generic product-type word (e.g. "Sony WH-1000XM5" already implies headphones).
+- For media titles (DVDs, Blu-rays, books, video games), keep the franchise/title plus the format ("DVD", "Blu-ray") and phrases like "Complete Series" or "Box Set" if present. Drop disc counts, season ranges, ratings, and edition fluff.
+- Remove: colors, sizes, conditions (NWT, NWOT, NIB, etc.), retailer names (Amazon, Walmart, Target, Mercari, Costco), marketing words (premium, authentic, genuine, exclusive, limited, professional), measurements, quantities, "free shipping", URLs, social handles.
 - Return ONLY the search query, nothing else. No quotes, no explanation, no commentary.
-- Keep it under 8 words
-- Do NOT add words that weren't in the original query
-- Think about what an eBay seller would title this listing as
+- Do NOT add words that weren't in the original product name or the seller listing titles.
+- Think about what an eBay seller would title this listing as.
 
 Examples:
 Input: "Nike Air Max 90 Men's Running Shoes Size 10.5 Black/White - Brand New NWT Free Shipping"
 Output: Nike Air Max 90 Running Shoes
 
-Input: "Lululemon Align High-Rise Pant 25" Women's Yoga Leggings Dark Olive Size 6 NWT"
-Output: Lululemon Align High-Rise Pant Leggings
-
 Input: "Sony WH-1000XM5 Wireless Noise Canceling Over-Ear Headphones - Silver - Authentic"
-Output: Sony WH-1000XM5 Headphones
+Output: Sony WH-1000XM5
+
+Input: "Supernatural The Complete Series 86-DVD Box Set Seasons 1-15 Sealed New"
+Output: Supernatural Complete Series DVD Box Set
+
+Input: "Homedics Shiatsu Massager with Heat - Professional Back Neck Foot Therapy"
+Listing titles:
+- HoMedics Shiatsu Pro Plus Massager with Heat — back & neck
+- HoMedics SBM-179H Shiatsu Massage Cushion with Heat
+Output: Homedics Shiatsu Massager Heat
 
 Input: "Vintage Pyrex 404 Large Mixing Bowl Yellow 4 Quart"
 Output: Vintage Pyrex 404 Mixing Bowl
@@ -54,7 +60,10 @@ Output: Stanley Adventure Quencher Tumbler
 Input: "Crocs Classic Clog - White - Men's Size 10"
 Output: Crocs Classic Clog`;
 
-export async function cleanQueryWithAI(rawQuery: string): Promise<string | null> {
+export async function cleanQueryWithAI(
+  rawQuery: string,
+  listingTitles?: string[],
+): Promise<string | null> {
   const baseUrl = process.env.AI_INTEGRATIONS_GEMINI_BASE_URL;
   const apiKey = process.env.AI_INTEGRATIONS_GEMINI_API_KEY;
 
@@ -62,6 +71,18 @@ export async function cleanQueryWithAI(rawQuery: string): Promise<string | null>
     console.log("AI query cleaning skipped: env vars not set");
     return null;
   }
+
+  const sanitizedTitles = Array.isArray(listingTitles)
+    ? listingTitles
+        .filter((t): t is string => typeof t === "string")
+        .map((t) => t.replace(/\s+/g, " ").trim())
+        .filter((t) => t.length > 0 && t.length <= 200)
+        .slice(0, 5)
+    : [];
+
+  const userMessage = sanitizedTitles.length > 0
+    ? `Product name: ${rawQuery}\nListing titles:\n${sanitizedTitles.map((t) => `- ${t}`).join("\n")}`
+    : rawQuery;
 
   try {
     const url = `${baseUrl}/models/gemini-2.5-flash:generateContent`;
@@ -74,7 +95,7 @@ export async function cleanQueryWithAI(rawQuery: string): Promise<string | null>
       },
       body: JSON.stringify({
         system_instruction: { parts: [{ text: EBAY_QUERY_PROMPT }] },
-        contents: [{ role: "user", parts: [{ text: rawQuery }] }],
+        contents: [{ role: "user", parts: [{ text: userMessage }] }],
         generationConfig: {
           maxOutputTokens: 256,
           temperature: 0,
@@ -103,7 +124,9 @@ export async function cleanQueryWithAI(rawQuery: string): Promise<string | null>
       return null;
     }
 
-    console.log(`AI query cleaning: "${rawQuery.slice(0, 60)}" → "${cleaned}"`);
+    console.log(
+      `AI query cleaning: "${rawQuery.slice(0, 60)}"${sanitizedTitles.length > 0 ? ` (+${sanitizedTitles.length} titles)` : ""} → "${cleaned}"`,
+    );
     return cleaned;
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);

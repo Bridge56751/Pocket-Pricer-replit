@@ -403,6 +403,246 @@ function calculateMedian(prices: number[]): number {
   return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
 
+// --- eBay sold-search helpers ---------------------------------------------
+// Used by /api/ebay-sold-search for retry/auto-broaden cascade.
+
+const EBAY_PRODUCT_CATEGORIES = new Set([
+  "sunglasses","glasses","eyeglasses","goggles",
+  "shoes","shoe","sneakers","sneaker","boots","boot","sandals","sandal","slippers","loafers","heels","clogs","mules","cleats",
+  "jacket","hoodie","sweater","sweatshirt","shirt","blouse","cardigan","blazer","vest","coat","parka","windbreaker","poncho",
+  "pants","jeans","shorts","skirt","leggings","joggers","trousers","dress","romper","jumpsuit","overalls",
+  "watch","watches","bag","handbag","purse","backpack","wallet","belt","scarf","gloves","hat","cap","beanie","visor","headband","tie","bracelet","necklace","ring","earrings",
+  "plush","figure","figurine","doll","toy","funko","lego",
+  "controller","mouse","keyboard","headphones","earbuds","speaker","monitor","console","camera","printer","router","tablet","phone",
+  "sign","lamp","light","clock","mirror","vase","frame","rug","pillow","blanket","towel","candle",
+  "racket","bat","glove","helmet","pads","jersey",
+  "stroller","carseat","carrier","toolbox","cooler","thermos","bottle","mug","cup","pan","skillet","knife",
+  "shake","protein","supplement","vitamins","powder","bars",
+  "vacuum","iron","blender","mixer","toaster","microwave","grill",
+]);
+
+function capWordsWithCategory(words: string[], cap: number): string[] {
+  if (words.length <= cap) return words;
+  const categoryIdx = words.findIndex((w) => EBAY_PRODUCT_CATEGORIES.has(w.toLowerCase()));
+  if (categoryIdx >= cap) {
+    const capped = words.slice(0, cap - 1);
+    capped.push(words[categoryIdx]);
+    return capped;
+  }
+  return words.slice(0, cap);
+}
+
+function regexCleanQuery(searchQuery: string): string {
+  return (searchQuery
+    .split(/[|·•–—]/)[0] ?? searchQuery)
+    .replace(/free shipping.*/i, "")
+    .replace(/\(.*?\)/g, "")
+    .replace(/@\w+/g, "")
+    .replace(/https?:\/\/\S+/g, "")
+    .replace(/\b(Size|Sz)\s*\d+[\w.]*/gi, "")
+    .replace(/\s*-\s*[\w\s]*\/[\w\s/]*$/i, "")
+    .replace(/\s*-\s*(?:Peacoat|Navy|Gold|Silver|Ivory|Coral|Teal|Maroon|Burgundy|Olive|Charcoal|Beige|Tan|Cream)[\w\s/]*$/i, "")
+    .replace(/\b(Adjustable|Premium|Official|Authentic|Genuine|Brand New|NWT|NWOT|NWB|NIB|NWOB|BNIB|BNWT|BNWOT|MIB|Exclusive)\b/gi, "")
+    .replace(/\b(RARE|HTF|MINT|EUC|GUC|VGC|OBO)\b/gi, "")
+    .replace(/\b(Fit|Style|Collection|Pack|Bundle|Lot)\b/gi, "")
+    .replace(/\b(Ultra-Lightweight|Lightweight|Ultra-Light|Super Light|Ergonomic|High-Performance|High Performance|Advanced|Professional|Next-Gen|Next Gen)\b/gi, "")
+    .replace(/\b(with|and|for|the|in|of|by|to|on|at|from|into)\b/gi, "")
+    .replace(/\b\d+(?:\.\d+)?\s*(?:CPI|DPI|Hz|MHz|GHz|mm|cm|oz|fl|Fl|ML|ml|mg|g|GB|TB|MB|mAh|W|HP|RPM|PSI|FPS|MP|inch|inches|ft|lb|lbs|kg|ct|pk|pc)\b/gi, "")
+    .replace(/\b\d+(?:\.\d+)?(?:g|oz)\b/gi, "")
+    .replace(/\b\d+\s*(?:inch|inches|ft|cm|mm|oz|fl|ml|lb|lbs|kg)\b/gi, "")
+    .replace(/\b(Sipbox|Boxed)\b/gi, "")
+    .replace(/\b(Walmart|Amazon|Target|Nordstrom|Mercari|Poshmark|eBay|Costco|Sam's|Kohls|Macy's|JCPenney|Marshalls|TJ\s*Maxx|HomeGoods|Ross)\b/gi, "")
+    .replace(/\b(New|Tags|Size|Sz|Step)\b/gi, "")
+    .replace(/\b(Jumbo)\b/gi, "")
+    .replace(/[\/,&]+/g, " ")
+    .replace(/-+\s*$/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function applyBroadFilters(words: string[]): string[] {
+  return words
+    .filter((w) => !/^\d+(\.\d+)?$/.test(w))
+    .filter((w) => !/^(Men's|Women's|Mens|Womens|Men|Women|Unisex|Boy's|Girl's|Kids|Youth|Adult|Adults|Toddler|Baby|Infant)$/i.test(w))
+    .filter((w) => !/^(Black|White|Red|Blue|Green|Navy|Gold|Silver|Gray|Grey|Pink|Purple|Orange|Brown|Beige|Tan|Cream|Ivory|Coral|Teal|Maroon|Burgundy|Olive|Charcoal|Yellow|Camo|Matte|Powder)$/i.test(w))
+    .filter((w) => !/^(Large|Small|Medium|XL|XXL|XS|XXXL|Long|Short|Tall|Full|Half|Mini|Micro|Mega|Giant|Big|Tiny|Jumbo)$/i.test(w))
+    .filter((w) => !/^(Wireless|Wired|Optical|Mechanical|Programmable|Buttons?|Sensor|Lighting|RGB|LED)$/i.test(w))
+    .filter((w) => !/^(Nutrition|Plan|Power|Elite|Core|Basic|Classic|Original|Standard|Limited|Edition|Special|Deluxe)$/i.test(w))
+    .filter((w) => !/^(Glossy|Shiny|Clear|Frosted|Tinted)$/i.test(w));
+}
+
+export function buildEbaySearchQuery(
+  rawQuery: string,
+  broadSearch: boolean,
+  aiCleaned: string | null,
+): string {
+  // AI-cleaned strict path: trust the AI output, just enforce the 8-word safety cap.
+  if (!broadSearch && aiCleaned) {
+    let words = aiCleaned.replace(/\s+/g, " ").trim().split(" ").filter((w) => w.length > 0);
+    words = capWordsWithCategory(words, 8);
+    return words.join(" ").slice(0, 80) || rawQuery.trim().slice(0, 80);
+  }
+
+  // Regex path (fallback when AI skipped/failed, OR for broad searches).
+  let words = regexCleanQuery(rawQuery).split(" ").filter((w) => w.length > 0);
+  if (broadSearch) {
+    words = applyBroadFilters(words);
+    words = capWordsWithCategory(words, 5);
+  } else {
+    words = capWordsWithCategory(words, 8);
+  }
+  return words.join(" ").slice(0, 80) || rawQuery.trim().slice(0, 80);
+}
+
+interface EbayApiResult {
+  position?: number;
+  item_id?: string;
+  title?: string;
+  price?: string;
+  extracted_price?: number;
+  condition?: string;
+  shipping?: string;
+  extracted_shipping?: number;
+  link?: string;
+  thumbnail?: string;
+  sold_date?: string;
+  extracted_sold_date?: string;
+}
+
+interface EbayApiData {
+  organic_results?: EbayApiResult[];
+  search_information?: { total_results?: number };
+  error?: string;
+}
+
+type EbaySearchAttempt =
+  | { ok: true; data: EbayApiData }
+  | { ok: false; reason: string };
+
+async function runEbaySearchAttempt(
+  apiKey: string,
+  cleanQuery: string,
+): Promise<EbaySearchAttempt> {
+  try {
+    const params = new URLSearchParams({
+      engine: "ebay_search",
+      q: cleanQuery,
+      filters: "sold_listings",
+      api_key: apiKey,
+    });
+    const response = await fetch(
+      `https://www.searchapi.io/api/v1/search?${params.toString()}`,
+      { signal: AbortSignal.timeout(12000) },
+    );
+    if (!response.ok) {
+      const text = await response.text().catch(() => "");
+      return {
+        ok: false,
+        reason: `http_${response.status}${text ? `: ${text.slice(0, 120).replace(/\s+/g, " ")}` : ""}`,
+      };
+    }
+    const data = (await response.json()) as EbayApiData;
+    if (data.error) {
+      return { ok: false, reason: `api_error: ${String(data.error).slice(0, 200)}` };
+    }
+    return { ok: true, data };
+  } catch (err: unknown) {
+    const name = (err as { name?: string } | null)?.name;
+    if (name === "TimeoutError" || name === "AbortError") {
+      return { ok: false, reason: "timeout_12s" };
+    }
+    const message = err instanceof Error ? err.message : String(err);
+    return { ok: false, reason: `fetch_error: ${message.slice(0, 200)}` };
+  }
+}
+
+interface EbayParsedPayload {
+  avgSoldPrice: number;
+  medianSoldPrice: number;
+  lowPrice: number;
+  highPrice: number;
+  totalSold: number;
+  avgSoldPerMonth: number;
+  items: {
+    id: string;
+    title: string;
+    price: number;
+    condition?: string;
+    shipping: number;
+    link: string;
+    imageUrl: string;
+    soldDate?: string;
+  }[];
+}
+
+function parseEbayResults(data: EbayApiData): {
+  items: EbayParsedPayload["items"];
+  avgSoldPrice: number;
+  payload: EbayParsedPayload;
+} {
+  const results = data.organic_results || [];
+  const items = results
+    .filter((r) => r.extracted_price && r.extracted_price > 0)
+    .map((r, index) => ({
+      id: `ebay-sold-${index}`,
+      title: r.title || "Unknown Item",
+      price: r.extracted_price || 0,
+      condition: r.condition,
+      shipping: r.extracted_shipping || 0,
+      link: r.link || "",
+      imageUrl: r.thumbnail || "",
+      soldDate: r.sold_date || r.extracted_sold_date || undefined,
+    }));
+
+  const prices = items.map((i) => i.price);
+  const sortedPrices = [...prices].sort((a, b) => a - b);
+  const mid = Math.floor(sortedPrices.length / 2);
+  const medianSoldPrice = sortedPrices.length === 0
+    ? 0
+    : sortedPrices.length % 2 !== 0
+      ? sortedPrices[mid]
+      : (sortedPrices[mid - 1] + sortedPrices[mid]) / 2;
+
+  const avgSoldPrice = prices.length > 0
+    ? prices.reduce((a, b) => a + b, 0) / prices.length
+    : 0;
+
+  const soldDates = results
+    .map((r) => {
+      if (r.extracted_sold_date) return new Date(r.extracted_sold_date + "T00:00:00Z").getTime();
+      if (r.sold_date) {
+        const cleaned = r.sold_date.replace(/^Sold\s+/i, "");
+        const parsed = new Date(cleaned).getTime();
+        if (!isNaN(parsed)) return parsed;
+      }
+      return NaN;
+    })
+    .filter((t) => !isNaN(t))
+    .sort((a, b) => a - b);
+
+  let avgSoldPerMonth = 0;
+  if (soldDates.length >= 2) {
+    const oldest = soldDates[0];
+    const newest = soldDates[soldDates.length - 1];
+    const monthsSpan = Math.max((newest - oldest) / (1000 * 60 * 60 * 24 * 30.44), 0.5);
+    avgSoldPerMonth = Math.round(soldDates.length / monthsSpan);
+  } else if (soldDates.length === 1) {
+    avgSoldPerMonth = 1;
+  }
+
+  const payload: EbayParsedPayload = {
+    avgSoldPrice,
+    medianSoldPrice,
+    lowPrice: prices.length > 0 ? Math.min(...prices) : 0,
+    highPrice: prices.length > 0 ? Math.max(...prices) : 0,
+    totalSold: data.search_information?.total_results || items.length,
+    avgSoldPerMonth,
+    items,
+  };
+
+  return { items, avgSoldPrice, payload };
+}
+
 const blockedSources = [
   'alibaba', 'aliexpress', 'temu', 'wish', 'dhgate', 'banggood',
   'tiktok', 'shein', 'made-in-china', 'lightinthebox', 'gearbest',
@@ -625,12 +865,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const { searchQuery, broadSearch } = req.body;
+      const { searchQuery, broadSearch, listingTitles } = req.body;
       if (!searchQuery) {
         return res.status(400).json({ error: "Search query is required" });
       }
       if (typeof searchQuery !== "string" || searchQuery.length > 500) {
         return res.status(400).json({ error: "Invalid search query" });
+      }
+      if (searchQuery.trim().length === 0) {
+        return res.status(400).json({ error: "Search query is required" });
       }
 
       const apiKey = process.env.SEARCHAPI_API_KEY;
@@ -638,138 +881,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: "Search API key not configured" });
       }
 
-      const aiCleaned = broadSearch ? null : await cleanQueryWithAI(searchQuery);
+      const sanitizedListingTitles = Array.isArray(listingTitles)
+        ? (listingTitles as unknown[])
+            .filter((t): t is string => typeof t === "string")
+            .map((t) => t.replace(/\s+/g, " ").trim())
+            .filter((t) => t.length > 0 && t.length <= 200)
+            .slice(0, 5)
+        : [];
 
-      const productCategories = new Set([
-        "sunglasses","glasses","eyeglasses","goggles",
-        "shoes","shoe","sneakers","sneaker","boots","boot","sandals","sandal","slippers","loafers","heels","clogs","mules","cleats",
-        "jacket","hoodie","sweater","sweatshirt","shirt","blouse","cardigan","blazer","vest","coat","parka","windbreaker","poncho",
-        "pants","jeans","shorts","skirt","leggings","joggers","trousers","dress","romper","jumpsuit","overalls",
-        "watch","watches","bag","handbag","purse","backpack","wallet","belt","scarf","gloves","hat","cap","beanie","visor","headband","tie","bracelet","necklace","ring","earrings",
-        "plush","figure","figurine","doll","toy","funko","lego",
-        "controller","mouse","keyboard","headphones","earbuds","speaker","monitor","console","camera","printer","router","tablet","phone",
-        "sign","lamp","light","clock","mirror","vase","frame","rug","pillow","blanket","towel","candle",
-        "racket","bat","glove","helmet","pads","jersey",
-        "stroller","carseat","carrier","toolbox","cooler","thermos","bottle","mug","cup","pan","skillet","knife",
-        "shake","protein","supplement","vitamins","powder","bars",
-        "vacuum","iron","blender","mixer","toaster","microwave","grill",
-      ]);
+      const aiCleaned = broadSearch
+        ? null
+        : await cleanQueryWithAI(searchQuery, sanitizedListingTitles);
 
-      let cleanQuery: string;
+      const strictQuery = buildEbaySearchQuery(searchQuery, false, aiCleaned);
+      const broadQuery = buildEbaySearchQuery(searchQuery, true, null);
+      const initialQuery = broadSearch ? broadQuery : strictQuery;
 
-      if (aiCleaned) {
-        let words = aiCleaned.replace(/\s+/g, " ").trim().split(" ").filter(w => w.length > 0);
-        if (words.length > 8) {
-          const categoryIdx = words.findIndex(w => productCategories.has(w.toLowerCase()));
-          if (categoryIdx >= 8) {
-            const capped = words.slice(0, 7);
-            capped.push(words[categoryIdx]);
-            words = capped;
-          } else {
-            words = words.slice(0, 8);
-          }
-        }
-        cleanQuery = words.join(" ").slice(0, 80) || searchQuery.trim().slice(0, 80);
-      } else {
-        cleanQuery = (searchQuery
-          .split(/[|·•–—]/)[0] ?? searchQuery)
-          .replace(/free shipping.*/i, "")
-          .replace(/\(.*?\)/g, "")
-          .replace(/@\w+/g, "")
-          .replace(/https?:\/\/\S+/g, "")
-          .replace(/\b(Size|Sz)\s*\d+[\w.]*/gi, "")
-          .replace(/\s*-\s*[\w\s]*\/[\w\s/]*$/i, "")
-          .replace(/\s*-\s*(?:Peacoat|Navy|Gold|Silver|Ivory|Coral|Teal|Maroon|Burgundy|Olive|Charcoal|Beige|Tan|Cream)[\w\s/]*$/i, "")
-          .replace(/\b(Adjustable|Premium|Official|Authentic|Genuine|Brand New|NWT|NWOT|NWB|NIB|NWOB|BNIB|BNWT|BNWOT|MIB|Exclusive)\b/gi, "")
-          .replace(/\b(RARE|HTF|MINT|EUC|GUC|VGC|OBO)\b/gi, "")
-          .replace(/\b(Fit|Style|Collection|Pack|Bundle|Lot)\b/gi, "")
-          .replace(/\b(Ultra-Lightweight|Lightweight|Ultra-Light|Super Light|Ergonomic|High-Performance|High Performance|Advanced|Professional|Next-Gen|Next Gen)\b/gi, "")
-          .replace(/\b(with|and|for|the|in|of|by|to|on|at|from|into)\b/gi, "")
-          .replace(/\b\d+(?:\.\d+)?\s*(?:CPI|DPI|Hz|MHz|GHz|mm|cm|oz|fl|Fl|ML|ml|mg|g|GB|TB|MB|mAh|W|HP|RPM|PSI|FPS|MP|inch|inches|ft|lb|lbs|kg|ct|pk|pc)\b/gi, "")
-          .replace(/\b\d+(?:\.\d+)?(?:g|oz)\b/gi, "")
-          .replace(/\b\d+\s*(?:inch|inches|ft|cm|mm|oz|fl|ml|lb|lbs|kg)\b/gi, "")
-          .replace(/\b(Sipbox|Boxed)\b/gi, "")
-          .replace(/\b(Walmart|Amazon|Target|Nordstrom|Mercari|Poshmark|eBay|Costco|Sam's|Kohls|Macy's|JCPenney|Marshalls|TJ\s*Maxx|HomeGoods|Ross)\b/gi, "")
-          .replace(/\b(New|Tags|Size|Sz|Step)\b/gi, "")
-          .replace(/\b(Jumbo)\b/gi, "")
-          .replace(/[\/,&]+/g, " ")
-          .replace(/-+\s*$/g, "")
-          .replace(/\s+/g, " ")
-          .trim();
+      console.log(
+        `eBay sold search — original: "${searchQuery.slice(0, 60)}" | AI-cleaned: "${aiCleaned ?? "(skipped)"}" | strict: "${strictQuery}" | broad: "${broadQuery}" | starting: "${initialQuery}"`,
+      );
 
-        let words = cleanQuery.split(" ").filter(w => w.length > 0);
+      // First attempt
+      const firstAttempt = await runEbaySearchAttempt(apiKey, initialQuery);
 
-        if (broadSearch) {
-          words = words
-            .filter(w => !/^\d+(\.\d+)?$/.test(w))
-            .filter(w => !/^(Men's|Women's|Mens|Womens|Men|Women|Unisex|Boy's|Girl's|Kids|Youth|Adult|Adults|Toddler|Baby|Infant)$/i.test(w))
-            .filter(w => !/^(Black|White|Red|Blue|Green|Navy|Gold|Silver|Gray|Grey|Pink|Purple|Orange|Brown|Beige|Tan|Cream|Ivory|Coral|Teal|Maroon|Burgundy|Olive|Charcoal|Yellow|Camo|Matte|Powder)$/i.test(w))
-            .filter(w => !/^(Large|Small|Medium|XL|XXL|XS|XXXL|Long|Short|Tall|Full|Half|Mini|Micro|Mega|Giant|Big|Tiny|Jumbo)$/i.test(w))
-            .filter(w => !/^(Wireless|Wired|Optical|Mechanical|Programmable|Buttons?|Sensor|Lighting|RGB|LED)$/i.test(w))
-            .filter(w => !/^(Nutrition|Plan|Power|Elite|Core|Basic|Classic|Original|Standard|Limited|Edition|Special|Deluxe)$/i.test(w))
-            .filter(w => !/^(Glossy|Shiny|Clear|Frosted|Tinted)$/i.test(w));
+      // Failure path: retry once with same query, ~1s backoff. Hard cap of 2 calls.
+      if (!firstAttempt.ok) {
+        console.warn(`eBay sold search attempt 1 failed: ${firstAttempt.reason}`);
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        const retry = await runEbaySearchAttempt(apiKey, initialQuery);
 
-          const BROAD_CAP = 5;
-          if (words.length > BROAD_CAP) {
-            const categoryIdx = words.findIndex(w => productCategories.has(w.toLowerCase()));
-            if (categoryIdx >= BROAD_CAP) {
-              const capped = words.slice(0, BROAD_CAP - 1);
-              capped.push(words[categoryIdx]);
-              words = capped;
-            } else {
-              words = words.slice(0, BROAD_CAP);
-            }
-          }
-        } else if (words.length > 8) {
-          const categoryIdx = words.findIndex(w => productCategories.has(w.toLowerCase()));
-          if (categoryIdx >= 8) {
-            const capped = words.slice(0, 7);
-            capped.push(words[categoryIdx]);
-            words = capped;
-          } else {
-            words = words.slice(0, 8);
-          }
+        if (!retry.ok) {
+          const combinedReason = `${firstAttempt.reason} | retry: ${retry.reason}`;
+          console.error(`eBay sold search failed after retry: ${combinedReason}`);
+          logEbaySearchEvent(
+            deviceId,
+            isPro,
+            initialQuery,
+            !!broadSearch,
+            0,
+            0,
+            combinedReason,
+          );
+          return res.json({
+            avgSoldPrice: 0,
+            medianSoldPrice: 0,
+            lowPrice: 0,
+            highPrice: 0,
+            totalSold: 0,
+            avgSoldPerMonth: 0,
+            items: [],
+            serviceError: true,
+          });
         }
 
-        cleanQuery = words.join(" ").slice(0, 80) || searchQuery.trim().slice(0, 80);
+        // Retry succeeded — process whatever it returned (zero or non-zero).
+        // Per spec: do NOT also broaden; budget of 2 calls is spent.
+        const parsed = parseEbayResults(retry.data);
+        if (parsed.items.length === 0) {
+          logEbaySearchEvent(
+            deviceId,
+            isPro,
+            initialQuery,
+            !!broadSearch,
+            0,
+            0,
+            `recovered_after_retry_zero_results | first: ${firstAttempt.reason}`,
+          );
+          return res.json({
+            avgSoldPrice: 0,
+            medianSoldPrice: 0,
+            lowPrice: 0,
+            highPrice: 0,
+            totalSold: 0,
+            avgSoldPerMonth: 0,
+            items: [],
+            noResults: true,
+          });
+        }
+        logEbaySearchEvent(
+          deviceId,
+          isPro,
+          initialQuery,
+          !!broadSearch,
+          parsed.items.length,
+          parsed.avgSoldPrice,
+          `recovered_after_retry | first: ${firstAttempt.reason}`,
+        );
+        return res.json(parsed.payload);
       }
 
-      console.log(`eBay sold search — original: "${searchQuery.slice(0, 60)}" | AI-cleaned: "${aiCleaned ?? "(skipped)"}" | final: "${cleanQuery}"`);
+      // First call succeeded.
+      const firstParsed = parseEbayResults(firstAttempt.data);
+      console.log(`eBay sold search attempt 1 returned ${firstParsed.items.length} processable items`);
 
-      const params = new URLSearchParams({
-        engine: "ebay_search",
-        q: cleanQuery,
-        filters: "sold_listings",
-        no_cache: "true",
-        api_key: apiKey,
-      });
+      if (firstParsed.items.length > 0) {
+        logEbaySearchEvent(
+          deviceId,
+          isPro,
+          initialQuery,
+          !!broadSearch,
+          firstParsed.items.length,
+          firstParsed.avgSoldPrice,
+        );
+        return res.json(firstParsed.payload);
+      }
 
-      const response = await fetch(`https://www.searchapi.io/api/v1/search?${params.toString()}`, {
-        signal: AbortSignal.timeout(30000),
-      });
-      const data = await response.json() as {
-        organic_results?: {
-          position?: number;
-          item_id?: string;
-          title?: string;
-          price?: string;
-          extracted_price?: number;
-          condition?: string;
-          shipping?: string;
-          extracted_shipping?: number;
-          link?: string;
-          thumbnail?: string;
-          sold_date?: string;
-          extracted_sold_date?: string;
-        }[];
-        search_information?: {
-          total_results?: number;
-        };
-        error?: string;
-      };
-
-      if (data.error) {
-        console.error("eBay sold search error:", data.error);
+      // First call returned zero. If this was already a broad search, we're done.
+      // Otherwise, auto-broaden as the second (and final) attempt. No retry on broad failure.
+      if (broadSearch || broadQuery === strictQuery) {
+        logEbaySearchEvent(deviceId, isPro, initialQuery, !!broadSearch, 0, 0);
         return res.json({
           avgSoldPrice: 0,
           medianSoldPrice: 0,
@@ -782,10 +1002,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const results = data.organic_results || [];
-      console.log(`eBay sold search returned ${results.length} results`);
+      console.log(`eBay sold search auto-broadening: "${strictQuery}" → "${broadQuery}"`);
+      const broadAttempt = await runEbaySearchAttempt(apiKey, broadQuery);
 
-      if (results.length === 0) {
+      if (!broadAttempt.ok) {
+        // Broad attempt failed after a strict-zero — we can't distinguish
+        // "no sold listings exist" from "SearchAPI is having a bad day."
+        // Surface as serviceError so the client offers retry instead of a
+        // misleading definitive empty state.
+        console.warn(`eBay auto-broaden failed: ${broadAttempt.reason}`);
+        logEbaySearchEvent(
+          deviceId,
+          isPro,
+          broadQuery,
+          true,
+          0,
+          0,
+          `auto_broaden_failed: ${broadAttempt.reason}`,
+        );
+        return res.json({
+          avgSoldPrice: 0,
+          medianSoldPrice: 0,
+          lowPrice: 0,
+          highPrice: 0,
+          totalSold: 0,
+          avgSoldPerMonth: 0,
+          items: [],
+          serviceError: true,
+        });
+      }
+
+      const broadParsed = parseEbayResults(broadAttempt.data);
+      console.log(`eBay auto-broaden returned ${broadParsed.items.length} processable items`);
+
+      if (broadParsed.items.length === 0) {
+        logEbaySearchEvent(deviceId, isPro, broadQuery, true, 0, 0);
         return res.json({
           avgSoldPrice: 0,
           medianSoldPrice: 0,
@@ -798,68 +1049,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const items = results
-        .filter(r => r.extracted_price && r.extracted_price > 0)
-        .map((r, index) => ({
-          id: `ebay-sold-${index}`,
-          title: r.title || "Unknown Item",
-          price: r.extracted_price || 0,
-          condition: r.condition,
-          shipping: r.extracted_shipping || 0,
-          link: r.link || "",
-          imageUrl: r.thumbnail || "",
-          soldDate: r.sold_date || r.extracted_sold_date || undefined,
-        }));
-
-      const prices = items.map(i => i.price);
-      const sortedPrices = [...prices].sort((a, b) => a - b);
-      const mid = Math.floor(sortedPrices.length / 2);
-      const medianSoldPrice = sortedPrices.length === 0
-        ? 0
-        : sortedPrices.length % 2 !== 0
-          ? sortedPrices[mid]
-          : (sortedPrices[mid - 1] + sortedPrices[mid]) / 2;
-
-      const avgSoldPrice = prices.length > 0
-        ? prices.reduce((a, b) => a + b, 0) / prices.length
-        : 0;
-
-      const soldDates = results
-        .map(r => {
-          if (r.extracted_sold_date) return new Date(r.extracted_sold_date + "T00:00:00Z").getTime();
-          if (r.sold_date) {
-            const cleaned = r.sold_date.replace(/^Sold\s+/i, "");
-            const parsed = new Date(cleaned).getTime();
-            if (!isNaN(parsed)) return parsed;
-          }
-          return NaN;
-        })
-        .filter(t => !isNaN(t))
-        .sort((a, b) => a - b);
-
-      let avgSoldPerMonth = 0;
-      if (soldDates.length >= 2) {
-        const oldest = soldDates[0];
-        const newest = soldDates[soldDates.length - 1];
-        const monthsSpan = Math.max((newest - oldest) / (1000 * 60 * 60 * 24 * 30.44), 0.5);
-        avgSoldPerMonth = Math.round(soldDates.length / monthsSpan);
-      } else if (soldDates.length === 1) {
-        avgSoldPerMonth = 1;
-      }
-
-      logEbaySearchEvent(deviceId, isPro, cleanQuery, !!broadSearch, items.length, avgSoldPrice);
-
-      res.json({
-        avgSoldPrice,
-        medianSoldPrice,
-        lowPrice: prices.length > 0 ? Math.min(...prices) : 0,
-        highPrice: prices.length > 0 ? Math.max(...prices) : 0,
-        totalSold: data.search_information?.total_results || items.length,
-        avgSoldPerMonth,
-        items,
+      logEbaySearchEvent(
+        deviceId,
+        isPro,
+        broadQuery,
+        true,
+        broadParsed.items.length,
+        broadParsed.avgSoldPrice,
+      );
+      return res.json({
+        ...broadParsed.payload,
+        broadenedFromStrict: true,
+        isBroadSearch: true,
       });
     } catch (error) {
       console.error("eBay sold search error:", error);
+      // Best-effort analytics for unhandled exceptions so failure rate is
+      // visible — pulls device/query info from the request if available.
+      try {
+        const deviceId = (req.headers["x-device-id"] as string | undefined) || "unknown";
+        const isPro = req.headers["x-is-pro"] === "true";
+        const rawQuery =
+          typeof req.body?.searchQuery === "string"
+            ? req.body.searchQuery.slice(0, 200)
+            : "(unknown)";
+        const isBroad = !!req.body?.broadSearch;
+        const reason =
+          error instanceof Error ? error.message : String(error);
+        logEbaySearchEvent(
+          deviceId,
+          isPro,
+          rawQuery,
+          isBroad,
+          0,
+          0,
+          `unhandled_exception: ${reason.slice(0, 200)}`,
+        );
+      } catch {
+        // analytics is best-effort — never let it shadow the original error
+      }
       res.status(500).json({ error: "Failed to search eBay sold data" });
     }
   });

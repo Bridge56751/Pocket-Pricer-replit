@@ -184,37 +184,133 @@ export function logScanEvent(
   }
 }
 
+// Once we discover that the optional `error_reason` column doesn't exist on
+// the ebay_search_events table (e.g. on a Supabase project where the
+// startup migration couldn't run), stop trying to insert it. This keeps
+// analytics from generating two inserts per call forever.
+let ebaySearchEventsHasErrorReasonColumn: boolean | null = null;
+
+function ebaySearchEventsBaseRow(
+  deviceId: string,
+  isPro: boolean,
+  searchQuery: string,
+  isBroad: boolean,
+  resultsCount: number,
+  avgSoldPrice: number,
+): Record<string, unknown> {
+  return {
+    device_id: deviceId,
+    is_pro: isPro,
+    search_query: searchQuery,
+    is_broad: isBroad,
+    results_count: resultsCount,
+    avg_sold_price: avgSoldPrice,
+  };
+}
+
 export function logEbaySearchEvent(
   deviceId: string,
   isPro: boolean,
   searchQuery: string,
   isBroad: boolean,
   resultsCount: number,
-  avgSoldPrice: number
+  avgSoldPrice: number,
+  errorReason?: string | null
 ) {
   if (!supabase) return;
+  const sb = supabase; // narrow for closures
 
   try {
-    safeLog(
-      supabase
-        .from("ebay_search_events")
-        .insert({
-          device_id: deviceId,
-          is_pro: isPro,
-          search_query: searchQuery,
-          is_broad: isBroad,
-          results_count: resultsCount,
-          avg_sold_price: avgSoldPrice,
-        })
-        .then(({ error }) => {
-          if (error) console.error("Supabase ebay_search_events error:", error.message);
-        }),
-      "ebay_search_events insert"
+    const baseRow = ebaySearchEventsBaseRow(
+      deviceId,
+      isPro,
+      searchQuery,
+      isBroad,
+      resultsCount,
+      avgSoldPrice,
     );
+    const truncatedReason = errorReason ? errorReason.slice(0, 500) : null;
+
+    const insertWithoutReason = () =>
+      sb.from("ebay_search_events").insert(baseRow).then(({ error }) => {
+        if (error) {
+          console.error("Supabase ebay_search_events error:", error.message);
+        }
+      });
+
+    const insertPromise =
+      truncatedReason && ebaySearchEventsHasErrorReasonColumn !== false
+        ? sb
+            .from("ebay_search_events")
+            .insert({ ...baseRow, error_reason: truncatedReason })
+            .then(({ error }) => {
+              if (error) {
+                // Postgres "undefined column" is 42703; PostgREST uses code
+                // PGRST204 ("column not found in cache") for the same situation.
+                const code = (error as { code?: string }).code || "";
+                const msg = error.message || "";
+                if (
+                  code === "42703" ||
+                  code === "PGRST204" ||
+                  /column\s+"?error_reason"?\s+(?:of|does not exist|not found)/i.test(msg)
+                ) {
+                  if (ebaySearchEventsHasErrorReasonColumn !== false) {
+                    console.log(
+                      "ebay_search_events.error_reason column missing — falling back; analytics will skip the field until column is added",
+                    );
+                  }
+                  ebaySearchEventsHasErrorReasonColumn = false;
+                  return insertWithoutReason();
+                }
+                console.error("Supabase ebay_search_events error:", msg);
+                return undefined;
+              }
+              if (ebaySearchEventsHasErrorReasonColumn === null) {
+                ebaySearchEventsHasErrorReasonColumn = true;
+              }
+              return undefined;
+            })
+        : insertWithoutReason();
+
+    safeLog(insertPromise, "ebay_search_events insert");
 
     upsertDevice(deviceId, isPro, "ebay");
   } catch (err: any) {
     console.error("Supabase logEbaySearchEvent error:", err?.message);
+  }
+}
+
+export async function ensureEbaySearchEventsSchema(): Promise<void> {
+  const dbUrl = process.env.SUPABASE_DB_URL;
+  if (!dbUrl) {
+    console.log("ensureEbaySearchEventsSchema skipped: SUPABASE_DB_URL not set");
+    return;
+  }
+
+  try {
+    const { Client } = await import("pg");
+    const client = new Client({
+      connectionString: dbUrl,
+      // Cap connection attempt so DNS/network failures fail fast and don't
+      // keep boot logs noisy.
+      connectionTimeoutMillis: 5000,
+      statement_timeout: 5000,
+    } as any);
+    await client.connect();
+    await client.query(
+      "ALTER TABLE ebay_search_events ADD COLUMN IF NOT EXISTS error_reason text",
+    );
+    await client.end();
+    ebaySearchEventsHasErrorReasonColumn = true;
+    console.log("Supabase ebay_search_events schema ensured (error_reason present)");
+  } catch (err: any) {
+    // DNS or network unreachable to the direct Supabase DB host is common in
+    // some Replit dev containers — the analytics insert path will fall back
+    // gracefully, so just warn instead of erroring loudly.
+    const msg = err?.message || String(err);
+    console.log(
+      `ensureEbaySearchEventsSchema skipped (analytics will fall back if needed): ${msg}`,
+    );
   }
 }
 

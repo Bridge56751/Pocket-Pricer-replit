@@ -388,14 +388,30 @@ export default function SearchResultsScreen() {
     setEbaySoldLoading(true);
     setEbaySoldError(null);
     const ebayController = new AbortController();
-    const ebayTimeoutId = setTimeout(() => ebayController.abort(), 15000);
+    // Server can take up to ~25s on the failure-retry path (12s + 1s + 12s),
+    // so allow ~30s total including network overhead.
+    const ebayTimeoutId = setTimeout(() => ebayController.abort(), 30000);
     try {
       const productName = results.productInfo?.name || results.query;
       const deviceId = await getDeviceId();
       const baseUrl = getApiUrl();
       const url = new URL("/api/ebay-sold-search", baseUrl);
-      const body: { searchQuery: string; broadSearch?: boolean } = { searchQuery: productName };
+
+      // Pull up to 5 reliable seller listing titles from the scan results
+      // already on screen so the AI sees real-world wording, not just our
+      // possibly-noisy product name.
+      const listingTitles = (results.listings || [])
+        .map((l) => (typeof l?.title === "string" ? l.title.trim() : ""))
+        .filter((t) => t.length > 0)
+        .slice(0, 5);
+
+      const body: {
+        searchQuery: string;
+        broadSearch?: boolean;
+        listingTitles?: string[];
+      } = { searchQuery: productName };
       if (broad) body.broadSearch = true;
+      if (!broad && listingTitles.length > 0) body.listingTitles = listingTitles;
       const res = await fetch(url, {
         method: "POST",
         headers: {
@@ -415,6 +431,14 @@ export default function SearchResultsScreen() {
         throw new Error(errData.error || "Search failed");
       }
       const raw = await res.json();
+
+      // Service-level failure (SearchAPI failed twice) — surface a retry
+      // affordance instead of a fake "no results" empty state.
+      if (raw.serviceError) {
+        setEbaySoldError("Couldn't reach our pricing service. Tap to try again.");
+        return;
+      }
+
       const data: EbaySoldData = {
         avgSoldPrice: Number(raw.avgSoldPrice) || 0,
         medianSoldPrice: Number(raw.medianSoldPrice) || 0,
@@ -429,9 +453,28 @@ export default function SearchResultsScreen() {
         })) : [],
         noResults: !!raw.noResults,
         isBroadSearch: !!raw.isBroadSearch,
+        broadenedFromStrict: !!raw.broadenedFromStrict,
       };
+
       if (broad) {
+        // Manual "Search Similar Items" path (legacy).
         data.isBroadSearch = true;
+        setBroadSoldData(data);
+      } else if (data.broadenedFromStrict && data.items.length > 0) {
+        // Server transparently auto-broadened after the strict query returned
+        // zero results. Surface the broadened payload via the existing
+        // "Similar Sales" UI path: empty strict result + populated broad result.
+        setEbaySoldData({
+          avgSoldPrice: 0,
+          medianSoldPrice: 0,
+          lowPrice: 0,
+          highPrice: 0,
+          totalSold: 0,
+          avgSoldPerMonth: 0,
+          items: [],
+          noResults: true,
+          broadenedFromStrict: true,
+        });
         setBroadSoldData(data);
       } else {
         setEbaySoldData(data);

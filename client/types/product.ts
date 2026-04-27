@@ -89,6 +89,8 @@ export interface EbaySoldData {
   items: EbaySoldItem[];
   noResults?: boolean;
   isBroadSearch?: boolean;
+  serviceError?: boolean;
+  broadenedFromStrict?: boolean;
 }
 
 export interface SearchResultsData {

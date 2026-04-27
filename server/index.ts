@@ -1,6 +1,7 @@
 import express from "express";
 import type { Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
+import { ensureEbaySearchEventsSchema } from "./supabase";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -257,6 +258,12 @@ function setupErrorHandler(app: express.Application) {
   const server = await registerRoutes(app);
 
   setupErrorHandler(app);
+
+  // Fire-and-forget startup migration (non-blocking) — adds error_reason column
+  // to ebay_search_events if missing. Idempotent.
+  ensureEbaySearchEventsSchema().catch((err) => {
+    console.error("ensureEbaySearchEventsSchema unhandled:", err?.message);
+  });
 
   const port = parseInt(process.env.PORT || "5000", 10);
   server.listen(
