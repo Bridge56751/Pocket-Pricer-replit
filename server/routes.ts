@@ -556,6 +556,155 @@ async function runEbaySearchAttempt(
   }
 }
 
+// --- SerpAPI fallback (used when SearchAPI fails) -------------------------
+// SerpAPI's eBay engine returns a similar but not identical shape. We
+// normalize it into our EbayApiData type so parseEbayResults can consume it
+// without changes.
+
+interface SerpApiEbayResult {
+  title?: string;
+  price?: string | { raw?: string; extracted?: number };
+  extracted_price?: number;
+  condition?: string | { type?: string };
+  shipping?: string | { raw?: string; extracted_cost?: number };
+  shipping_cost?: number;
+  extracted_shipping_cost?: number;
+  link?: string;
+  thumbnail?: string;
+  sold_date?: string;
+  date?: string;
+  id?: string;
+}
+
+interface SerpApiEbayResponse {
+  organic_results?: SerpApiEbayResult[];
+  search_information?: { total_results?: number };
+  error?: string;
+}
+
+async function runEbaySerpApiAttempt(
+  apiKey: string,
+  cleanQuery: string,
+): Promise<EbaySearchAttempt> {
+  try {
+    const params = new URLSearchParams({
+      engine: "ebay",
+      _nkw: cleanQuery,
+      LH_Sold: "1",
+      LH_Complete: "1",
+      api_key: apiKey,
+    });
+    // SerpAPI scrapes eBay live, so cold queries can be slow. Cached
+    // queries return in <1s. Give it more headroom than SearchAPI.
+    const response = await fetch(
+      `https://serpapi.com/search.json?${params.toString()}`,
+      { signal: AbortSignal.timeout(18000) },
+    );
+    if (!response.ok) {
+      const text = await response.text().catch(() => "");
+      return {
+        ok: false,
+        reason: `serpapi_http_${response.status}${text ? `: ${text.slice(0, 120).replace(/\s+/g, " ")}` : ""}`,
+      };
+    }
+    const raw = (await response.json()) as SerpApiEbayResponse;
+    if (raw.error) {
+      return { ok: false, reason: `serpapi_error: ${String(raw.error).slice(0, 200)}` };
+    }
+
+    const organicResults = Array.isArray(raw.organic_results) ? raw.organic_results : [];
+
+    // Last-resort: pull a number out of a price string like "$267.54" or
+    // "+$1,299.00 / Best Offer" so we don't drop valid listings just because
+    // SerpAPI changed its extracted-numeric field name.
+    const parsePriceString = (s: string | undefined): number => {
+      if (typeof s !== "string") return 0;
+      const match = s.replace(/,/g, "").match(/(\d+(?:\.\d+)?)/);
+      if (!match) return 0;
+      const n = parseFloat(match[1]);
+      return Number.isFinite(n) && n > 0 ? n : 0;
+    };
+
+    const normalized: EbayApiResult[] = organicResults.map((r, idx) => {
+      const priceStrCandidate =
+        typeof r.price === "string"
+          ? r.price
+          : typeof r.price === "object" && r.price !== null && typeof r.price.raw === "string"
+            ? r.price.raw
+            : "";
+      const extractedPrice =
+        typeof r.extracted_price === "number" && r.extracted_price > 0
+          ? r.extracted_price
+          : typeof r.price === "object" && r.price !== null && typeof r.price.extracted === "number" && r.price.extracted > 0
+            ? r.price.extracted
+            : parsePriceString(priceStrCandidate);
+      const priceStr =
+        typeof r.price === "string"
+          ? r.price
+          : typeof r.price === "object" && r.price !== null && typeof r.price.raw === "string"
+            ? r.price.raw
+            : extractedPrice > 0
+              ? `$${extractedPrice.toFixed(2)}`
+              : "";
+      const conditionStr =
+        typeof r.condition === "string"
+          ? r.condition
+          : typeof r.condition === "object" && r.condition !== null && typeof r.condition.type === "string"
+            ? r.condition.type
+            : undefined;
+      const extractedShipping =
+        typeof r.extracted_shipping_cost === "number"
+          ? r.extracted_shipping_cost
+          : typeof r.shipping_cost === "number"
+            ? r.shipping_cost
+            : typeof r.shipping === "object" && r.shipping !== null
+              ? typeof r.shipping.extracted === "number"
+                ? r.shipping.extracted
+                : typeof r.shipping.extracted_cost === "number"
+                  ? r.shipping.extracted_cost
+                  : 0
+              : 0;
+      const shippingStr =
+        typeof r.shipping === "string"
+          ? r.shipping
+          : typeof r.shipping === "object" && r.shipping !== null && typeof r.shipping.raw === "string"
+            ? r.shipping.raw
+            : extractedShipping > 0
+              ? `$${extractedShipping.toFixed(2)} shipping`
+              : "Free shipping";
+
+      return {
+        position: idx + 1,
+        item_id: r.id,
+        title: r.title,
+        price: priceStr,
+        extracted_price: extractedPrice,
+        condition: conditionStr,
+        shipping: shippingStr,
+        extracted_shipping: extractedShipping,
+        link: r.link,
+        thumbnail: r.thumbnail,
+        sold_date: r.sold_date || r.date,
+      };
+    });
+
+    return {
+      ok: true,
+      data: {
+        organic_results: normalized,
+        search_information: raw.search_information,
+      },
+    };
+  } catch (err: unknown) {
+    const name = (err as { name?: string } | null)?.name;
+    if (name === "TimeoutError" || name === "AbortError") {
+      return { ok: false, reason: "serpapi_timeout_18s" };
+    }
+    const message = err instanceof Error ? err.message : String(err);
+    return { ok: false, reason: `serpapi_fetch_error: ${message.slice(0, 200)}` };
+  }
+}
+
 interface EbayParsedPayload {
   avgSoldPrice: number;
   medianSoldPrice: number;
@@ -901,18 +1050,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `eBay sold search — original: "${searchQuery.slice(0, 60)}" | AI-cleaned: "${aiCleaned ?? "(skipped)"}" | strict: "${strictQuery}" | broad: "${broadQuery}" | starting: "${initialQuery}"`,
       );
 
-      // First attempt
+      // First attempt — primary provider (SearchAPI)
       const firstAttempt = await runEbaySearchAttempt(apiKey, initialQuery);
 
-      // Failure path: retry once with same query, ~1s backoff. Hard cap of 2 calls.
+      // Failure path: fall back to SerpAPI (different provider) instead of
+      // retrying the same broken service. Hard cap stays at 2 external calls.
       if (!firstAttempt.ok) {
-        console.warn(`eBay sold search attempt 1 failed: ${firstAttempt.reason}`);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        const retry = await runEbaySearchAttempt(apiKey, initialQuery);
+        console.warn(`eBay sold search SearchAPI failed: ${firstAttempt.reason}`);
+        const serpApiKey = process.env.SERPAPI_API_KEY;
 
-        if (!retry.ok) {
-          const combinedReason = `${firstAttempt.reason} | retry: ${retry.reason}`;
-          console.error(`eBay sold search failed after retry: ${combinedReason}`);
+        if (!serpApiKey) {
+          // No fallback configured — surface as service error.
+          console.error("SERPAPI_API_KEY not set; cannot fall back");
+          logEbaySearchEvent(
+            deviceId,
+            isPro,
+            initialQuery,
+            !!broadSearch,
+            0,
+            0,
+            `${firstAttempt.reason} | no_serpapi_fallback`,
+          );
+          return res.json({
+            avgSoldPrice: 0,
+            medianSoldPrice: 0,
+            lowPrice: 0,
+            highPrice: 0,
+            totalSold: 0,
+            avgSoldPerMonth: 0,
+            items: [],
+            serviceError: true,
+          });
+        }
+
+        console.log(`Falling back to SerpAPI for: "${initialQuery}"`);
+        const serpAttempt = await runEbaySerpApiAttempt(serpApiKey, initialQuery);
+
+        if (!serpAttempt.ok) {
+          const combinedReason = `searchapi: ${firstAttempt.reason} | ${serpAttempt.reason}`;
+          console.error(`eBay sold search both providers failed: ${combinedReason}`);
           logEbaySearchEvent(
             deviceId,
             isPro,
@@ -934,9 +1110,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
 
-        // Retry succeeded — process whatever it returned (zero or non-zero).
-        // Per spec: do NOT also broaden; budget of 2 calls is spent.
-        const parsed = parseEbayResults(retry.data);
+        // SerpAPI fallback succeeded — process whatever it returned.
+        // Per cap: do NOT also broaden; budget of 2 external calls is spent.
+        const parsed = parseEbayResults(serpAttempt.data);
+        console.log(
+          `eBay sold search via SerpAPI fallback returned ${parsed.items.length} processable items`,
+        );
         if (parsed.items.length === 0) {
           logEbaySearchEvent(
             deviceId,
@@ -945,7 +1124,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             !!broadSearch,
             0,
             0,
-            `recovered_after_retry_zero_results | first: ${firstAttempt.reason}`,
+            `serpapi_fallback_zero_results | first: ${firstAttempt.reason}`,
           );
           return res.json({
             avgSoldPrice: 0,
@@ -965,7 +1144,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           !!broadSearch,
           parsed.items.length,
           parsed.avgSoldPrice,
-          `recovered_after_retry | first: ${firstAttempt.reason}`,
+          `recovered_via_serpapi | first: ${firstAttempt.reason}`,
         );
         return res.json(parsed.payload);
       }

@@ -388,9 +388,9 @@ export default function SearchResultsScreen() {
     setEbaySoldLoading(true);
     setEbaySoldError(null);
     const ebayController = new AbortController();
-    // Server can take up to ~25s on the failure-retry path (12s + 1s + 12s),
-    // so allow ~30s total including network overhead.
-    const ebayTimeoutId = setTimeout(() => ebayController.abort(), 30000);
+    // Server worst-case: AI cleaning 10s + SearchAPI 12s + SerpAPI 18s = ~40s.
+    // Allow 45s to give the fallback path room to land before we abort.
+    const ebayTimeoutId = setTimeout(() => ebayController.abort(), 45000);
     try {
       const productName = results.productInfo?.name || results.query;
       const deviceId = await getDeviceId();
