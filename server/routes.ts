@@ -1025,10 +1025,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Search query is required" });
       }
 
-      const apiKey = process.env.SEARCHAPI_API_KEY;
-      if (!apiKey) {
+      // SerpAPI is currently the primary provider while SearchAPI is unstable.
+      // SearchAPI key is optional — used only as a backup if SerpAPI fails.
+      const serpApiKey = process.env.SERPAPI_API_KEY;
+      if (!serpApiKey) {
         return res.status(500).json({ error: "Search API key not configured" });
       }
+      const apiKey = process.env.SEARCHAPI_API_KEY;
 
       const sanitizedListingTitles = Array.isArray(listingTitles)
         ? (listingTitles as unknown[])
@@ -1050,18 +1053,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `eBay sold search — original: "${searchQuery.slice(0, 60)}" | AI-cleaned: "${aiCleaned ?? "(skipped)"}" | strict: "${strictQuery}" | broad: "${broadQuery}" | starting: "${initialQuery}"`,
       );
 
-      // First attempt — primary provider (SearchAPI)
-      const firstAttempt = await runEbaySearchAttempt(apiKey, initialQuery);
+      // First attempt — primary provider (SerpAPI). SerpAPI is currently
+      // primary because SearchAPI has been failing on common products.
+      const firstAttempt = await runEbaySerpApiAttempt(serpApiKey, initialQuery);
 
-      // Failure path: fall back to SerpAPI (different provider) instead of
+      // Failure path: fall back to SearchAPI (different provider) instead of
       // retrying the same broken service. Hard cap stays at 2 external calls.
       if (!firstAttempt.ok) {
-        console.warn(`eBay sold search SearchAPI failed: ${firstAttempt.reason}`);
-        const serpApiKey = process.env.SERPAPI_API_KEY;
+        console.warn(`eBay sold search SerpAPI failed: ${firstAttempt.reason}`);
 
-        if (!serpApiKey) {
+        if (!apiKey) {
           // No fallback configured — surface as service error.
-          console.error("SERPAPI_API_KEY not set; cannot fall back");
+          console.error("SEARCHAPI_API_KEY not set; cannot fall back");
           logEbaySearchEvent(
             deviceId,
             isPro,
@@ -1069,7 +1072,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             !!broadSearch,
             0,
             0,
-            `${firstAttempt.reason} | no_serpapi_fallback`,
+            `${firstAttempt.reason} | no_searchapi_fallback`,
           );
           return res.json({
             avgSoldPrice: 0,
@@ -1083,11 +1086,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
 
-        console.log(`Falling back to SerpAPI for: "${initialQuery}"`);
-        const serpAttempt = await runEbaySerpApiAttempt(serpApiKey, initialQuery);
+        console.log(`Falling back to SearchAPI for: "${initialQuery}"`);
+        const searchApiAttempt = await runEbaySearchAttempt(apiKey, initialQuery);
 
-        if (!serpAttempt.ok) {
-          const combinedReason = `searchapi: ${firstAttempt.reason} | ${serpAttempt.reason}`;
+        if (!searchApiAttempt.ok) {
+          const combinedReason = `serpapi: ${firstAttempt.reason} | searchapi: ${searchApiAttempt.reason}`;
           console.error(`eBay sold search both providers failed: ${combinedReason}`);
           logEbaySearchEvent(
             deviceId,
@@ -1110,11 +1113,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
 
-        // SerpAPI fallback succeeded — process whatever it returned.
+        // SearchAPI fallback succeeded — process whatever it returned.
         // Per cap: do NOT also broaden; budget of 2 external calls is spent.
-        const parsed = parseEbayResults(serpAttempt.data);
+        const parsed = parseEbayResults(searchApiAttempt.data);
         console.log(
-          `eBay sold search via SerpAPI fallback returned ${parsed.items.length} processable items`,
+          `eBay sold search via SearchAPI fallback returned ${parsed.items.length} processable items`,
         );
         if (parsed.items.length === 0) {
           logEbaySearchEvent(
@@ -1124,7 +1127,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             !!broadSearch,
             0,
             0,
-            `serpapi_fallback_zero_results | first: ${firstAttempt.reason}`,
+            `searchapi_fallback_zero_results | first: ${firstAttempt.reason}`,
           );
           return res.json({
             avgSoldPrice: 0,
@@ -1144,14 +1147,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           !!broadSearch,
           parsed.items.length,
           parsed.avgSoldPrice,
-          `recovered_via_serpapi | first: ${firstAttempt.reason}`,
+          `recovered_via_searchapi | first: ${firstAttempt.reason}`,
         );
         return res.json(parsed.payload);
       }
 
-      // First call succeeded.
+      // First call (SerpAPI) succeeded.
       const firstParsed = parseEbayResults(firstAttempt.data);
-      console.log(`eBay sold search attempt 1 returned ${firstParsed.items.length} processable items`);
+      console.log(`eBay sold search SerpAPI returned ${firstParsed.items.length} processable items`);
 
       if (firstParsed.items.length > 0) {
         logEbaySearchEvent(
@@ -1166,7 +1169,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // First call returned zero. If this was already a broad search, we're done.
-      // Otherwise, auto-broaden as the second (and final) attempt. No retry on broad failure.
+      // Otherwise, auto-broaden as the second (and final) attempt via SerpAPI.
       if (broadSearch || broadQuery === strictQuery) {
         logEbaySearchEvent(deviceId, isPro, initialQuery, !!broadSearch, 0, 0);
         return res.json({
@@ -1182,7 +1185,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       console.log(`eBay sold search auto-broadening: "${strictQuery}" → "${broadQuery}"`);
-      const broadAttempt = await runEbaySearchAttempt(apiKey, broadQuery);
+      const broadAttempt = await runEbaySerpApiAttempt(serpApiKey, broadQuery);
 
       if (!broadAttempt.ok) {
         // Broad attempt failed after a strict-zero — we can't distinguish
