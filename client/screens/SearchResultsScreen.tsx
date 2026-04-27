@@ -388,11 +388,12 @@ export default function SearchResultsScreen() {
     setEbaySoldLoading(true);
     setEbaySoldError(null);
     const ebayController = new AbortController();
-    // Server worst-case: AI cleaning 10s + initial parallel race 18s
-    // (SerpAPI is the slower side at 18s) + auto-broaden parallel race 18s
-    // = ~46s. Allow 50s so the broaden path can land before we abort.
-    // Typical case is much faster — race returns when whichever provider
-    // responds first has usable results.
+    // Server worst-case: AI cleaning 10s + initial waterfall up to ~30s
+    // (SerpAPI 18s timeout, then SearchAPI fallback 12s timeout) + the
+    // auto-broaden waterfall when strict returned zero, which adds another
+    // ~30s in the worst case. Best/typical case is much faster: SerpAPI
+    // returns priced results in 1-3s and SearchAPI is never called.
+    // Keep the 50s ceiling — most real requests finish in well under 5s.
     const ebayTimeoutId = setTimeout(() => ebayController.abort(), 50000);
     try {
       const productName = results.productInfo?.name || results.query;

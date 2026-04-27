@@ -716,19 +716,21 @@ async function runEbaySerpApiAttempt(
   }
 }
 
-// --- Parallel-race cascade ------------------------------------------------
-// Fire SerpAPI and SearchAPI in parallel and use whichever returns first
-// with usable results. If the faster one comes back empty, wait for the
-// slower one. If both come back empty or one empty + one error, surface as
-// "no results". If both fail outright, surface as "service error".
+// --- SerpAPI-first waterfall ----------------------------------------------
+// Try SerpAPI first; only fall back to SearchAPI when SerpAPI either fails
+// outright (timeout, HTTP error, fetch error) or returns zero usable priced
+// results. Per user preference, SearchAPI is strictly a fallback — we'd
+// rather wait longer for a SerpAPI response than have SearchAPI ever serve
+// as the primary on a given query.
 //
-// Hard cap stays at 2 external calls per query — both providers run once.
-// Auto-broaden adds 2 more calls (a second race), only on the strict-zero
-// path. Maximum 4 external calls per request.
+// Hard cap stays at 2 external calls per query (1 if SerpAPI succeeds).
+// Auto-broaden adds 2 more calls (a second waterfall), only on the
+// strict-zero path. Maximum 4 external calls per request.
+// Worst-case wall clock per waterfall: ~30s (SerpAPI 18s + SearchAPI 12s).
 
 type ProviderName = "serpapi" | "searchapi";
 
-interface EbayRaceOutcome {
+interface EbayCascadeOutcome {
   data: EbayApiData | null;
   via: ProviderName | null;
   serpReason: string;
@@ -746,58 +748,37 @@ const countUsablePricedResults = (a: EbaySearchAttempt): number => {
 const describeAttempt = (a: EbaySearchAttempt): string =>
   a.ok ? `ok_${countUsablePricedResults(a)}` : a.reason;
 
-async function raceEbayProviders(
+async function runEbayWaterfall(
   serpApiKey: string,
   searchApiKey: string | undefined,
   query: string,
-): Promise<EbayRaceOutcome> {
-  const serpPromise = runEbaySerpApiAttempt(serpApiKey, query);
-  const searchPromise: Promise<EbaySearchAttempt> = searchApiKey
-    ? runEbaySearchAttempt(searchApiKey, query)
-    : Promise.resolve<EbaySearchAttempt>({ ok: false, reason: "no_searchapi_key" });
-
-  const serpTagged = serpPromise.then(
-    (attempt) => ({ provider: "serpapi" as const, attempt }),
-  );
-  const searchTagged = searchPromise.then(
-    (attempt) => ({ provider: "searchapi" as const, attempt }),
-  );
-
-  // Wait for whichever provider settles first.
-  const first = await Promise.race([serpTagged, searchTagged]);
-
-  // Fast path: first provider returned usable priced results — short-circuit.
-  // The other request is already in flight; we let it complete in the
-  // background (its promise always resolves so no unhandled-rejection risk).
-  if (countUsablePricedResults(first.attempt) > 0) {
+): Promise<EbayCascadeOutcome> {
+  // Step 1: SerpAPI (priority).
+  const serpAttempt = await runEbaySerpApiAttempt(serpApiKey, query);
+  if (countUsablePricedResults(serpAttempt) > 0) {
     return {
-      data: first.attempt.ok ? first.attempt.data : null,
-      via: first.provider,
-      serpReason:
-        first.provider === "serpapi" ? describeAttempt(first.attempt) : "skipped_winner",
-      searchReason:
-        first.provider === "searchapi" ? describeAttempt(first.attempt) : "skipped_winner",
+      data: serpAttempt.ok ? serpAttempt.data : null,
+      via: "serpapi",
+      serpReason: describeAttempt(serpAttempt),
+      searchReason: "skipped_serpapi_won",
     };
   }
 
-  // First wasn't usable — wait for the second provider.
-  const otherTagged = first.provider === "serpapi" ? searchTagged : serpTagged;
-  const second = await otherTagged;
+  // Step 2: SerpAPI didn't yield usable results — try SearchAPI as fallback.
+  const searchAttempt: EbaySearchAttempt = searchApiKey
+    ? await runEbaySearchAttempt(searchApiKey, query)
+    : { ok: false, reason: "no_searchapi_key" };
 
-  if (countUsablePricedResults(second.attempt) > 0) {
-    const serpAttempt = first.provider === "serpapi" ? first.attempt : second.attempt;
-    const searchAttempt = first.provider === "searchapi" ? first.attempt : second.attempt;
+  if (countUsablePricedResults(searchAttempt) > 0) {
     return {
-      data: second.attempt.ok ? second.attempt.data : null,
-      via: second.provider,
+      data: searchAttempt.ok ? searchAttempt.data : null,
+      via: "searchapi",
       serpReason: describeAttempt(serpAttempt),
       searchReason: describeAttempt(searchAttempt),
     };
   }
 
-  // Neither produced usable results.
-  const serpAttempt = first.provider === "serpapi" ? first.attempt : second.attempt;
-  const searchAttempt = first.provider === "searchapi" ? first.attempt : second.attempt;
+  // Neither provider produced usable results.
   return {
     data: null,
     via: null,
@@ -806,14 +787,15 @@ async function raceEbayProviders(
   };
 }
 
-// True only when BOTH providers failed outright (neither returned a 2xx
-// response). One ok-but-empty + one failure is treated as a real "no results"
-// because at least one provider confirmed the absence of sold listings.
-const isRaceTotalServiceFailure = (race: EbayRaceOutcome): boolean =>
-  !race.serpReason.startsWith("ok_") &&
-  !race.searchReason.startsWith("ok_") &&
-  race.serpReason !== "skipped_winner" &&
-  race.searchReason !== "skipped_winner";
+// True only when BOTH providers failed outright (neither returned a 2xx).
+// One ok-but-empty + one failure is treated as a real "no results" because
+// at least one provider confirmed the absence of sold listings. The
+// "skipped_serpapi_won" sentinel never appears in failure paths (SerpAPI
+// winning means we already returned data), but we exclude it defensively.
+const isCascadeTotalServiceFailure = (outcome: EbayCascadeOutcome): boolean =>
+  !outcome.serpReason.startsWith("ok_") &&
+  !outcome.searchReason.startsWith("ok_") &&
+  outcome.searchReason !== "skipped_serpapi_won";
 
 interface EbayParsedPayload {
   avgSoldPrice: number;
@@ -1135,10 +1117,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Search query is required" });
       }
 
-      // Both providers run in parallel and we use whichever returns usable
-      // results first. SerpAPI is required (cold-cache scrape source);
-      // SearchAPI is optional but strongly recommended — it usually responds
-      // fastest when SerpAPI hasn't cached the query yet.
+      // SerpAPI is the primary provider and is required. SearchAPI is the
+      // optional fallback used only when SerpAPI fails outright or returns
+      // zero usable priced results (see `runEbayWaterfall` below).
       const serpApiKey = process.env.SERPAPI_API_KEY;
       if (!serpApiKey) {
         return res.status(500).json({ error: "Search API key not configured" });
@@ -1175,18 +1156,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         items: [],
       };
 
-      // First race: fire SerpAPI and SearchAPI in parallel for the initial
-      // query. Whichever returns usable priced results first wins; the loser
-      // continues in the background harmlessly.
-      const initialRace = await raceEbayProviders(serpApiKey, apiKey, initialQuery);
+      // SerpAPI-first waterfall: try SerpAPI; only fall back to SearchAPI
+      // when SerpAPI fails outright or returns zero usable priced results.
+      const initialOutcome = await runEbayWaterfall(serpApiKey, apiKey, initialQuery);
       console.log(
-        `eBay sold search initial race — via: ${initialRace.via ?? "none"} | serpapi: ${initialRace.serpReason} | searchapi: ${initialRace.searchReason}`,
+        `eBay sold search initial — via: ${initialOutcome.via ?? "none"} | serpapi: ${initialOutcome.serpReason} | searchapi: ${initialOutcome.searchReason}`,
       );
 
-      if (initialRace.data) {
-        const parsed = parseEbayResults(initialRace.data);
+      if (initialOutcome.data) {
+        const parsed = parseEbayResults(initialOutcome.data);
         console.log(
-          `eBay sold search via ${initialRace.via} returned ${parsed.items.length} processable items`,
+          `eBay sold search via ${initialOutcome.via} returned ${parsed.items.length} processable items`,
         );
         if (parsed.items.length > 0) {
           logEbaySearchEvent(
@@ -1196,18 +1176,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
             !!broadSearch,
             parsed.items.length,
             parsed.avgSoldPrice,
-            `via_${initialRace.via} | serpapi: ${initialRace.serpReason} | searchapi: ${initialRace.searchReason}`,
+            `via_${initialOutcome.via} | serpapi: ${initialOutcome.serpReason} | searchapi: ${initialOutcome.searchReason}`,
           );
           return res.json(parsed.payload);
         }
-        // Race claimed usable results but downstream parsing dropped them all
-        // (e.g. all listings filtered out by sanity rules). Treat as empty.
+        // Provider returned usable raw results but downstream parsing dropped
+        // them all (e.g. all listings filtered out by sanity rules). Treat
+        // as empty.
       }
 
-      // No usable results from the initial race. Decide between
+      // No usable results from either provider. Decide between
       // serviceError, noResults, and auto-broaden.
-      if (isRaceTotalServiceFailure(initialRace)) {
-        const combinedReason = `serpapi: ${initialRace.serpReason} | searchapi: ${initialRace.searchReason}`;
+      if (isCascadeTotalServiceFailure(initialOutcome)) {
+        const combinedReason = `serpapi: ${initialOutcome.serpReason} | searchapi: ${initialOutcome.searchReason}`;
         console.error(`eBay sold search both providers failed: ${combinedReason}`);
         logEbaySearchEvent(
           deviceId,
@@ -1231,23 +1212,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           !!broadSearch,
           0,
           0,
-          `no_results | serpapi: ${initialRace.serpReason} | searchapi: ${initialRace.searchReason}`,
+          `no_results | serpapi: ${initialOutcome.serpReason} | searchapi: ${initialOutcome.searchReason}`,
         );
         return res.json({ ...emptyPayload, noResults: true });
       }
 
-      // Strict-zero path: auto-broaden via a second parallel race using the
-      // broadened query.
+      // Strict-zero path: auto-broaden via a second SerpAPI-first waterfall
+      // using the broadened query.
       console.log(`eBay sold search auto-broadening: "${strictQuery}" → "${broadQuery}"`);
-      const broadRace = await raceEbayProviders(serpApiKey, apiKey, broadQuery);
+      const broadOutcome = await runEbayWaterfall(serpApiKey, apiKey, broadQuery);
       console.log(
-        `eBay auto-broaden race — via: ${broadRace.via ?? "none"} | serpapi: ${broadRace.serpReason} | searchapi: ${broadRace.searchReason}`,
+        `eBay auto-broaden — via: ${broadOutcome.via ?? "none"} | serpapi: ${broadOutcome.serpReason} | searchapi: ${broadOutcome.searchReason}`,
       );
 
-      if (broadRace.data) {
-        const parsed = parseEbayResults(broadRace.data);
+      if (broadOutcome.data) {
+        const parsed = parseEbayResults(broadOutcome.data);
         console.log(
-          `eBay auto-broaden via ${broadRace.via} returned ${parsed.items.length} processable items`,
+          `eBay auto-broaden via ${broadOutcome.via} returned ${parsed.items.length} processable items`,
         );
         if (parsed.items.length > 0) {
           logEbaySearchEvent(
@@ -1257,7 +1238,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             true,
             parsed.items.length,
             parsed.avgSoldPrice,
-            `broadened_via_${broadRace.via} | serpapi: ${broadRace.serpReason} | searchapi: ${broadRace.searchReason}`,
+            `broadened_via_${broadOutcome.via} | serpapi: ${broadOutcome.serpReason} | searchapi: ${broadOutcome.searchReason}`,
           );
           return res.json({
             ...parsed.payload,
@@ -1268,8 +1249,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Broaden also failed. Decide noResults vs serviceError.
-      if (isRaceTotalServiceFailure(broadRace)) {
-        const combinedReason = `auto_broaden_failed | serpapi: ${broadRace.serpReason} | searchapi: ${broadRace.searchReason}`;
+      if (isCascadeTotalServiceFailure(broadOutcome)) {
+        const combinedReason = `auto_broaden_failed | serpapi: ${broadOutcome.serpReason} | searchapi: ${broadOutcome.searchReason}`;
         console.warn(`eBay auto-broaden failed: ${combinedReason}`);
         logEbaySearchEvent(deviceId, isPro, broadQuery, true, 0, 0, combinedReason);
         return res.json({ ...emptyPayload, serviceError: true });
@@ -1282,7 +1263,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         true,
         0,
         0,
-        `no_results_after_broaden | serpapi: ${broadRace.serpReason} | searchapi: ${broadRace.searchReason}`,
+        `no_results_after_broaden | serpapi: ${broadOutcome.serpReason} | searchapi: ${broadOutcome.searchReason}`,
       );
       return res.json({ ...emptyPayload, noResults: true });
     } catch (error) {
