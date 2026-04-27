@@ -388,9 +388,11 @@ export default function SearchResultsScreen() {
     setEbaySoldLoading(true);
     setEbaySoldError(null);
     const ebayController = new AbortController();
-    // Server worst-case: AI cleaning 10s + SerpAPI strict 18s + SerpAPI
-    // auto-broaden 18s = ~46s. Allow 50s so the broaden path can land
-    // before we abort. (SearchAPI fallback path is shorter at ~40s.)
+    // Server worst-case: AI cleaning 10s + initial parallel race 18s
+    // (SerpAPI is the slower side at 18s) + auto-broaden parallel race 18s
+    // = ~46s. Allow 50s so the broaden path can land before we abort.
+    // Typical case is much faster — race returns when whichever provider
+    // responds first has usable results.
     const ebayTimeoutId = setTimeout(() => ebayController.abort(), 50000);
     try {
       const productName = results.productInfo?.name || results.query;

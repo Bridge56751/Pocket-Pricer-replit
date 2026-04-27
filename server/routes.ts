@@ -566,7 +566,7 @@ interface SerpApiEbayResult {
   price?: string | { raw?: string; extracted?: number };
   extracted_price?: number;
   condition?: string | { type?: string };
-  shipping?: string | { raw?: string; extracted_cost?: number };
+  shipping?: string | { raw?: string; extracted?: number; extracted_cost?: number };
   shipping_cost?: number;
   extracted_shipping_cost?: number;
   link?: string;
@@ -664,11 +664,22 @@ async function runEbaySerpApiAttempt(
                   ? r.shipping.extracted_cost
                   : 0
               : 0;
+      // Shipping display logic:
+      // - String form: trust it as-is.
+      // - Object with raw: use the raw string verbatim (don't invent values).
+      // - Object without raw: only synthesize a string when we have a real
+      //   parsed cost. If shipping is present but unparseable, return ""
+      //   rather than misleading the user with "Free shipping".
+      // - Field absent entirely: keep the legacy "Free shipping" default.
       const shippingStr =
         typeof r.shipping === "string"
           ? r.shipping
-          : typeof r.shipping === "object" && r.shipping !== null && typeof r.shipping.raw === "string"
-            ? r.shipping.raw
+          : typeof r.shipping === "object" && r.shipping !== null
+            ? typeof r.shipping.raw === "string"
+              ? r.shipping.raw
+              : extractedShipping > 0
+                ? `$${extractedShipping.toFixed(2)} shipping`
+                : ""
             : extractedShipping > 0
               ? `$${extractedShipping.toFixed(2)} shipping`
               : "Free shipping";
@@ -704,6 +715,105 @@ async function runEbaySerpApiAttempt(
     return { ok: false, reason: `serpapi_fetch_error: ${message.slice(0, 200)}` };
   }
 }
+
+// --- Parallel-race cascade ------------------------------------------------
+// Fire SerpAPI and SearchAPI in parallel and use whichever returns first
+// with usable results. If the faster one comes back empty, wait for the
+// slower one. If both come back empty or one empty + one error, surface as
+// "no results". If both fail outright, surface as "service error".
+//
+// Hard cap stays at 2 external calls per query — both providers run once.
+// Auto-broaden adds 2 more calls (a second race), only on the strict-zero
+// path. Maximum 4 external calls per request.
+
+type ProviderName = "serpapi" | "searchapi";
+
+interface EbayRaceOutcome {
+  data: EbayApiData | null;
+  via: ProviderName | null;
+  serpReason: string;
+  searchReason: string;
+}
+
+const countUsablePricedResults = (a: EbaySearchAttempt): number => {
+  if (!a.ok) return 0;
+  const results = Array.isArray(a.data.organic_results) ? a.data.organic_results : [];
+  return results.filter(
+    (r) => typeof r.extracted_price === "number" && r.extracted_price > 0,
+  ).length;
+};
+
+const describeAttempt = (a: EbaySearchAttempt): string =>
+  a.ok ? `ok_${countUsablePricedResults(a)}` : a.reason;
+
+async function raceEbayProviders(
+  serpApiKey: string,
+  searchApiKey: string | undefined,
+  query: string,
+): Promise<EbayRaceOutcome> {
+  const serpPromise = runEbaySerpApiAttempt(serpApiKey, query);
+  const searchPromise: Promise<EbaySearchAttempt> = searchApiKey
+    ? runEbaySearchAttempt(searchApiKey, query)
+    : Promise.resolve<EbaySearchAttempt>({ ok: false, reason: "no_searchapi_key" });
+
+  const serpTagged = serpPromise.then(
+    (attempt) => ({ provider: "serpapi" as const, attempt }),
+  );
+  const searchTagged = searchPromise.then(
+    (attempt) => ({ provider: "searchapi" as const, attempt }),
+  );
+
+  // Wait for whichever provider settles first.
+  const first = await Promise.race([serpTagged, searchTagged]);
+
+  // Fast path: first provider returned usable priced results — short-circuit.
+  // The other request is already in flight; we let it complete in the
+  // background (its promise always resolves so no unhandled-rejection risk).
+  if (countUsablePricedResults(first.attempt) > 0) {
+    return {
+      data: first.attempt.ok ? first.attempt.data : null,
+      via: first.provider,
+      serpReason:
+        first.provider === "serpapi" ? describeAttempt(first.attempt) : "skipped_winner",
+      searchReason:
+        first.provider === "searchapi" ? describeAttempt(first.attempt) : "skipped_winner",
+    };
+  }
+
+  // First wasn't usable — wait for the second provider.
+  const otherTagged = first.provider === "serpapi" ? searchTagged : serpTagged;
+  const second = await otherTagged;
+
+  if (countUsablePricedResults(second.attempt) > 0) {
+    const serpAttempt = first.provider === "serpapi" ? first.attempt : second.attempt;
+    const searchAttempt = first.provider === "searchapi" ? first.attempt : second.attempt;
+    return {
+      data: second.attempt.ok ? second.attempt.data : null,
+      via: second.provider,
+      serpReason: describeAttempt(serpAttempt),
+      searchReason: describeAttempt(searchAttempt),
+    };
+  }
+
+  // Neither produced usable results.
+  const serpAttempt = first.provider === "serpapi" ? first.attempt : second.attempt;
+  const searchAttempt = first.provider === "searchapi" ? first.attempt : second.attempt;
+  return {
+    data: null,
+    via: null,
+    serpReason: describeAttempt(serpAttempt),
+    searchReason: describeAttempt(searchAttempt),
+  };
+}
+
+// True only when BOTH providers failed outright (neither returned a 2xx
+// response). One ok-but-empty + one failure is treated as a real "no results"
+// because at least one provider confirmed the absence of sold listings.
+const isRaceTotalServiceFailure = (race: EbayRaceOutcome): boolean =>
+  !race.serpReason.startsWith("ok_") &&
+  !race.searchReason.startsWith("ok_") &&
+  race.serpReason !== "skipped_winner" &&
+  race.searchReason !== "skipped_winner";
 
 interface EbayParsedPayload {
   avgSoldPrice: number;
@@ -1025,8 +1135,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Search query is required" });
       }
 
-      // SerpAPI is currently the primary provider while SearchAPI is unstable.
-      // SearchAPI key is optional — used only as a backup if SerpAPI fails.
+      // Both providers run in parallel and we use whichever returns usable
+      // results first. SerpAPI is required (cold-cache scrape source);
+      // SearchAPI is optional but strongly recommended — it usually responds
+      // fastest when SerpAPI hasn't cached the query yet.
       const serpApiKey = process.env.SERPAPI_API_KEY;
       if (!serpApiKey) {
         return res.status(500).json({ error: "Search API key not configured" });
@@ -1053,182 +1165,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `eBay sold search — original: "${searchQuery.slice(0, 60)}" | AI-cleaned: "${aiCleaned ?? "(skipped)"}" | strict: "${strictQuery}" | broad: "${broadQuery}" | starting: "${initialQuery}"`,
       );
 
-      // First attempt — primary provider (SerpAPI). SerpAPI is currently
-      // primary because SearchAPI has been failing on common products.
-      const firstAttempt = await runEbaySerpApiAttempt(serpApiKey, initialQuery);
+      const emptyPayload = {
+        avgSoldPrice: 0,
+        medianSoldPrice: 0,
+        lowPrice: 0,
+        highPrice: 0,
+        totalSold: 0,
+        avgSoldPerMonth: 0,
+        items: [],
+      };
 
-      // Failure path: fall back to SearchAPI (different provider) instead of
-      // retrying the same broken service. Hard cap stays at 2 external calls.
-      if (!firstAttempt.ok) {
-        console.warn(`eBay sold search SerpAPI failed: ${firstAttempt.reason}`);
+      // First race: fire SerpAPI and SearchAPI in parallel for the initial
+      // query. Whichever returns usable priced results first wins; the loser
+      // continues in the background harmlessly.
+      const initialRace = await raceEbayProviders(serpApiKey, apiKey, initialQuery);
+      console.log(
+        `eBay sold search initial race — via: ${initialRace.via ?? "none"} | serpapi: ${initialRace.serpReason} | searchapi: ${initialRace.searchReason}`,
+      );
 
-        if (!apiKey) {
-          // No fallback configured — surface as service error.
-          console.error("SEARCHAPI_API_KEY not set; cannot fall back");
-          logEbaySearchEvent(
-            deviceId,
-            isPro,
-            initialQuery,
-            !!broadSearch,
-            0,
-            0,
-            `${firstAttempt.reason} | no_searchapi_fallback`,
-          );
-          return res.json({
-            avgSoldPrice: 0,
-            medianSoldPrice: 0,
-            lowPrice: 0,
-            highPrice: 0,
-            totalSold: 0,
-            avgSoldPerMonth: 0,
-            items: [],
-            serviceError: true,
-          });
-        }
-
-        console.log(`Falling back to SearchAPI for: "${initialQuery}"`);
-        const searchApiAttempt = await runEbaySearchAttempt(apiKey, initialQuery);
-
-        if (!searchApiAttempt.ok) {
-          const combinedReason = `serpapi: ${firstAttempt.reason} | searchapi: ${searchApiAttempt.reason}`;
-          console.error(`eBay sold search both providers failed: ${combinedReason}`);
-          logEbaySearchEvent(
-            deviceId,
-            isPro,
-            initialQuery,
-            !!broadSearch,
-            0,
-            0,
-            combinedReason,
-          );
-          return res.json({
-            avgSoldPrice: 0,
-            medianSoldPrice: 0,
-            lowPrice: 0,
-            highPrice: 0,
-            totalSold: 0,
-            avgSoldPerMonth: 0,
-            items: [],
-            serviceError: true,
-          });
-        }
-
-        // SearchAPI fallback succeeded — process whatever it returned.
-        // Per cap: do NOT also broaden; budget of 2 external calls is spent.
-        const parsed = parseEbayResults(searchApiAttempt.data);
+      if (initialRace.data) {
+        const parsed = parseEbayResults(initialRace.data);
         console.log(
-          `eBay sold search via SearchAPI fallback returned ${parsed.items.length} processable items`,
+          `eBay sold search via ${initialRace.via} returned ${parsed.items.length} processable items`,
         );
-        if (parsed.items.length === 0) {
+        if (parsed.items.length > 0) {
           logEbaySearchEvent(
             deviceId,
             isPro,
             initialQuery,
             !!broadSearch,
-            0,
-            0,
-            `searchapi_fallback_zero_results | first: ${firstAttempt.reason}`,
+            parsed.items.length,
+            parsed.avgSoldPrice,
+            `via_${initialRace.via} | serpapi: ${initialRace.serpReason} | searchapi: ${initialRace.searchReason}`,
+          );
+          return res.json(parsed.payload);
+        }
+        // Race claimed usable results but downstream parsing dropped them all
+        // (e.g. all listings filtered out by sanity rules). Treat as empty.
+      }
+
+      // No usable results from the initial race. Decide between
+      // serviceError, noResults, and auto-broaden.
+      if (isRaceTotalServiceFailure(initialRace)) {
+        const combinedReason = `serpapi: ${initialRace.serpReason} | searchapi: ${initialRace.searchReason}`;
+        console.error(`eBay sold search both providers failed: ${combinedReason}`);
+        logEbaySearchEvent(
+          deviceId,
+          isPro,
+          initialQuery,
+          !!broadSearch,
+          0,
+          0,
+          combinedReason,
+        );
+        return res.json({ ...emptyPayload, serviceError: true });
+      }
+
+      // At least one provider responded with a real (but empty) result set.
+      // If the user already chose broad search or strict==broad, we're done.
+      if (broadSearch || broadQuery === strictQuery) {
+        logEbaySearchEvent(
+          deviceId,
+          isPro,
+          initialQuery,
+          !!broadSearch,
+          0,
+          0,
+          `no_results | serpapi: ${initialRace.serpReason} | searchapi: ${initialRace.searchReason}`,
+        );
+        return res.json({ ...emptyPayload, noResults: true });
+      }
+
+      // Strict-zero path: auto-broaden via a second parallel race using the
+      // broadened query.
+      console.log(`eBay sold search auto-broadening: "${strictQuery}" → "${broadQuery}"`);
+      const broadRace = await raceEbayProviders(serpApiKey, apiKey, broadQuery);
+      console.log(
+        `eBay auto-broaden race — via: ${broadRace.via ?? "none"} | serpapi: ${broadRace.serpReason} | searchapi: ${broadRace.searchReason}`,
+      );
+
+      if (broadRace.data) {
+        const parsed = parseEbayResults(broadRace.data);
+        console.log(
+          `eBay auto-broaden via ${broadRace.via} returned ${parsed.items.length} processable items`,
+        );
+        if (parsed.items.length > 0) {
+          logEbaySearchEvent(
+            deviceId,
+            isPro,
+            broadQuery,
+            true,
+            parsed.items.length,
+            parsed.avgSoldPrice,
+            `broadened_via_${broadRace.via} | serpapi: ${broadRace.serpReason} | searchapi: ${broadRace.searchReason}`,
           );
           return res.json({
-            avgSoldPrice: 0,
-            medianSoldPrice: 0,
-            lowPrice: 0,
-            highPrice: 0,
-            totalSold: 0,
-            avgSoldPerMonth: 0,
-            items: [],
-            noResults: true,
+            ...parsed.payload,
+            broadenedFromStrict: true,
+            isBroadSearch: true,
           });
         }
-        logEbaySearchEvent(
-          deviceId,
-          isPro,
-          initialQuery,
-          !!broadSearch,
-          parsed.items.length,
-          parsed.avgSoldPrice,
-          `recovered_via_searchapi | first: ${firstAttempt.reason}`,
-        );
-        return res.json(parsed.payload);
       }
 
-      // First call (SerpAPI) succeeded.
-      const firstParsed = parseEbayResults(firstAttempt.data);
-      console.log(`eBay sold search SerpAPI returned ${firstParsed.items.length} processable items`);
-
-      if (firstParsed.items.length > 0) {
-        logEbaySearchEvent(
-          deviceId,
-          isPro,
-          initialQuery,
-          !!broadSearch,
-          firstParsed.items.length,
-          firstParsed.avgSoldPrice,
-        );
-        return res.json(firstParsed.payload);
-      }
-
-      // First call returned zero. If this was already a broad search, we're done.
-      // Otherwise, auto-broaden as the second (and final) attempt via SerpAPI.
-      if (broadSearch || broadQuery === strictQuery) {
-        logEbaySearchEvent(deviceId, isPro, initialQuery, !!broadSearch, 0, 0);
-        return res.json({
-          avgSoldPrice: 0,
-          medianSoldPrice: 0,
-          lowPrice: 0,
-          highPrice: 0,
-          totalSold: 0,
-          avgSoldPerMonth: 0,
-          items: [],
-          noResults: true,
-        });
-      }
-
-      console.log(`eBay sold search auto-broadening: "${strictQuery}" → "${broadQuery}"`);
-      const broadAttempt = await runEbaySerpApiAttempt(serpApiKey, broadQuery);
-
-      if (!broadAttempt.ok) {
-        // Broad attempt failed after a strict-zero — we can't distinguish
-        // "no sold listings exist" from "SearchAPI is having a bad day."
-        // Surface as serviceError so the client offers retry instead of a
-        // misleading definitive empty state.
-        console.warn(`eBay auto-broaden failed: ${broadAttempt.reason}`);
-        logEbaySearchEvent(
-          deviceId,
-          isPro,
-          broadQuery,
-          true,
-          0,
-          0,
-          `auto_broaden_failed: ${broadAttempt.reason}`,
-        );
-        return res.json({
-          avgSoldPrice: 0,
-          medianSoldPrice: 0,
-          lowPrice: 0,
-          highPrice: 0,
-          totalSold: 0,
-          avgSoldPerMonth: 0,
-          items: [],
-          serviceError: true,
-        });
-      }
-
-      const broadParsed = parseEbayResults(broadAttempt.data);
-      console.log(`eBay auto-broaden returned ${broadParsed.items.length} processable items`);
-
-      if (broadParsed.items.length === 0) {
-        logEbaySearchEvent(deviceId, isPro, broadQuery, true, 0, 0);
-        return res.json({
-          avgSoldPrice: 0,
-          medianSoldPrice: 0,
-          lowPrice: 0,
-          highPrice: 0,
-          totalSold: 0,
-          avgSoldPerMonth: 0,
-          items: [],
-          noResults: true,
-        });
+      // Broaden also failed. Decide noResults vs serviceError.
+      if (isRaceTotalServiceFailure(broadRace)) {
+        const combinedReason = `auto_broaden_failed | serpapi: ${broadRace.serpReason} | searchapi: ${broadRace.searchReason}`;
+        console.warn(`eBay auto-broaden failed: ${combinedReason}`);
+        logEbaySearchEvent(deviceId, isPro, broadQuery, true, 0, 0, combinedReason);
+        return res.json({ ...emptyPayload, serviceError: true });
       }
 
       logEbaySearchEvent(
@@ -1236,14 +1280,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isPro,
         broadQuery,
         true,
-        broadParsed.items.length,
-        broadParsed.avgSoldPrice,
+        0,
+        0,
+        `no_results_after_broaden | serpapi: ${broadRace.serpReason} | searchapi: ${broadRace.searchReason}`,
       );
-      return res.json({
-        ...broadParsed.payload,
-        broadenedFromStrict: true,
-        isBroadSearch: true,
-      });
+      return res.json({ ...emptyPayload, noResults: true });
     } catch (error) {
       console.error("eBay sold search error:", error);
       // Best-effort analytics for unhandled exceptions so failure rate is
