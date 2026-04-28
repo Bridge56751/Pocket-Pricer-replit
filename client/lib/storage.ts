@@ -124,22 +124,159 @@ export async function getSearchHistory(): Promise<SearchHistoryItem[]> {
   }
 }
 
+const HISTORY_LISTING_CAP = 12;
+const HISTORY_MAX_ITEMS = 10;
+
+function slimListing(listing: any): any {
+  if (!listing || typeof listing !== "object") return listing;
+  return {
+    id: listing.id,
+    title: listing.title,
+    imageUrl: listing.imageUrl,
+    currentPrice: listing.currentPrice,
+    originalPrice: listing.originalPrice,
+    condition: listing.condition,
+    shipping: listing.shipping,
+    link: listing.link,
+    seller: listing.seller,
+    platform: listing.platform,
+  };
+}
+
+function slimResultsForHistory(results: any): any {
+  if (!results || typeof results !== "object") return results;
+  const listings = Array.isArray(results.listings)
+    ? results.listings.slice(0, HISTORY_LISTING_CAP).map(slimListing)
+    : [];
+  const productInfo =
+    results.productInfo && typeof results.productInfo === "object"
+      ? {
+          name:
+            typeof results.productInfo.name === "string"
+              ? results.productInfo.name
+              : "Product",
+          brand: results.productInfo.brand,
+          category: results.productInfo.category,
+          description: results.productInfo.description,
+        }
+      : undefined;
+  return {
+    query: typeof results.query === "string" ? results.query : "Product",
+    totalListings: results.totalListings,
+    avgListPrice: results.avgListPrice,
+    avgSalePrice: results.avgSalePrice,
+    soldCount: results.soldCount,
+    bestBuyNow: results.bestBuyNow,
+    topSalePrice: results.topSalePrice,
+    listings,
+    scannedImageUrl:
+      typeof results.scannedImageUrl === "string" ? results.scannedImageUrl : null,
+    usedLens: results.usedLens,
+    productInfo,
+  };
+}
+
+function slimHistoryItem(item: SearchHistoryItem): SearchHistoryItem {
+  return {
+    id: item.id,
+    query: typeof item.query === "string" ? item.query : "Product",
+    product: item.product ? (slimListing(item.product) as any) : null,
+    searchedAt: item.searchedAt,
+    thumbnailUrl: item.thumbnailUrl,
+    avgPrice: item.avgPrice,
+    bestPrice: item.bestPrice,
+    totalListings: item.totalListings,
+    results: slimResultsForHistory(item.results) as any,
+  };
+}
+
+function ultraLeanHistoryItem(item: SearchHistoryItem): SearchHistoryItem {
+  const slim = slimHistoryItem(item);
+  const firstListing =
+    slim.results && Array.isArray((slim.results as any).listings)
+      ? (slim.results as any).listings[0] ?? null
+      : null;
+  return {
+    id: slim.id,
+    query: slim.query,
+    product: slim.product,
+    searchedAt: slim.searchedAt,
+    thumbnailUrl: slim.thumbnailUrl,
+    avgPrice: slim.avgPrice,
+    bestPrice: slim.bestPrice,
+    totalListings: slim.totalListings,
+    results: slim.results
+      ? ({
+          query: (slim.results as any).query,
+          totalListings: (slim.results as any).totalListings,
+          avgListPrice: (slim.results as any).avgListPrice,
+          avgSalePrice: (slim.results as any).avgSalePrice,
+          soldCount: (slim.results as any).soldCount,
+          bestBuyNow: (slim.results as any).bestBuyNow,
+          topSalePrice: (slim.results as any).topSalePrice,
+          listings: firstListing ? [firstListing] : [],
+          scannedImageUrl: (slim.results as any).scannedImageUrl ?? null,
+          productInfo: (slim.results as any).productInfo,
+        } as any)
+      : undefined,
+  };
+}
+
 export async function addSearchHistory(item: SearchHistoryItem): Promise<void> {
-  try {
-    const history = await AsyncStorage.getItem(STORAGE_KEYS.SEARCH_HISTORY);
-    let parsed: SearchHistoryItem[] = [];
-    if (history) {
-      try {
-        const candidate = JSON.parse(history);
-        parsed = Array.isArray(candidate) ? candidate : [];
-      } catch {
-        parsed = [];
-      }
+  const raw = await AsyncStorage.getItem(STORAGE_KEYS.SEARCH_HISTORY).catch(() => null);
+  let parsed: SearchHistoryItem[] = [];
+  if (raw) {
+    try {
+      const candidate = JSON.parse(raw);
+      parsed = Array.isArray(candidate) ? candidate : [];
+    } catch {
+      parsed = [];
     }
-    const newHistory = [item, ...parsed.filter((h: SearchHistoryItem) => h.id !== item.id)].slice(0, 10);
+  }
+  const slim = slimHistoryItem(item);
+  const newHistory = [
+    slim,
+    ...parsed.filter((h: SearchHistoryItem) => h.id !== slim.id),
+  ].slice(0, HISTORY_MAX_ITEMS);
+
+  try {
     await AsyncStorage.setItem(STORAGE_KEYS.SEARCH_HISTORY, JSON.stringify(newHistory));
-  } catch (error) {
-    console.error("Failed to save search history:", error);
+    return;
+  } catch (firstError) {
+    if (__DEV__) {
+      console.warn(
+        "addSearchHistory: slim payload write failed, retrying ultra-lean",
+        firstError,
+      );
+    }
+  }
+
+  const lean = ultraLeanHistoryItem(item);
+  const leanHistory = [
+    lean,
+    ...parsed.filter((h: SearchHistoryItem) => h.id !== lean.id),
+  ].slice(0, HISTORY_MAX_ITEMS);
+
+  try {
+    await AsyncStorage.setItem(STORAGE_KEYS.SEARCH_HISTORY, JSON.stringify(leanHistory));
+    return;
+  } catch (secondError) {
+    if (__DEV__) {
+      console.warn(
+        "addSearchHistory: ultra-lean payload write also failed, dropping older items",
+        secondError,
+      );
+    }
+  }
+
+  try {
+    await AsyncStorage.setItem(
+      STORAGE_KEYS.SEARCH_HISTORY,
+      JSON.stringify([ultraLeanHistoryItem(item)]),
+    );
+  } catch (finalError) {
+    console.error("Failed to save search history (all retries):", finalError);
+    throw finalError;
   }
 }
 

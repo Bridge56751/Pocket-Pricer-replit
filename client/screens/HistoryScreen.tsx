@@ -4,7 +4,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useFocusEffect, useNavigation, CommonActions } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import Animated, { FadeInDown } from "react-native-reanimated";
@@ -12,6 +11,7 @@ import Animated, { FadeInDown } from "react-native-reanimated";
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { EmptyState } from "@/components/EmptyState";
 import { SkeletonLoader } from "@/components/SkeletonLoader";
+import { FallbackImage } from "@/components/FallbackImage";
 import { getSearchHistory, clearSearchHistory } from "@/lib/storage";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import type { SearchHistoryItem } from "@/types/product";
@@ -92,17 +92,17 @@ export default function HistoryScreen() {
             { backgroundColor: theme.colors.card, opacity: pressed ? 0.7 : 1 }
           ]}
         >
-          {(item.thumbnailUrl || item.results?.listings?.[0]?.imageUrl) ? (
-            <Image 
-              source={{ uri: item.thumbnailUrl || item.results?.listings?.[0]?.imageUrl }} 
-              style={styles.thumbnail}
-              contentFit="cover"
-            />
-          ) : (
-            <View style={[styles.thumbnailPlaceholder, { backgroundColor: theme.colors.muted }]}>
-              <Feather name="package" size={24} color={theme.colors.mutedForeground} />
-            </View>
-          )}
+          <FallbackImage
+            primaryUri={item.thumbnailUrl}
+            fallbackUri={item.results?.listings?.[0]?.imageUrl}
+            style={styles.thumbnail}
+            contentFit="cover"
+            emptyPlaceholder={
+              <View style={[styles.thumbnailPlaceholder, { backgroundColor: theme.colors.muted }]}>
+                <Feather name="package" size={24} color={theme.colors.mutedForeground} />
+              </View>
+            }
+          />
           
           <View style={styles.historyContent}>
             <Text 

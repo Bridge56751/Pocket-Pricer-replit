@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
 import { View, StyleSheet, Pressable, Text, ScrollView, Image, Platform } from "react-native";
+import { FallbackImage } from "@/components/FallbackImage";
 import { useTabBarFadeOnScroll } from "@/hooks/useTabBarFadeOnScroll";
 import { useTabBarVisibility } from "@/contexts/TabBarVisibilityContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -384,8 +385,12 @@ export default function ScanScreen() {
         })
       );
 
-      addSearchHistory(historyItem).catch(() => {});
-      loadRecentScans();
+      addSearchHistory(historyItem)
+        .then(() => loadRecentScans())
+        .catch((err) => {
+          if (__DEV__) console.warn("ScanScreen: failed to save scan to history", err);
+          loadRecentScans();
+        });
       queryClient.invalidateQueries({ queryKey: ["/api/device-stats"] });
 
       if (Platform.OS !== "web") {
@@ -683,17 +688,17 @@ export default function ScanScreen() {
                   ]}
                 >
                   <View style={styles.scanImageContainer}>
-                    {(scan.thumbnailUrl || scan.results?.listings?.[0]?.imageUrl) ? (
-                      <Image
-                        source={{ uri: scan.thumbnailUrl || scan.results?.listings?.[0]?.imageUrl }}
-                        style={styles.scanImage}
-                        resizeMode="cover"
-                      />
-                    ) : (
-                      <View style={[styles.scanImagePlaceholder, { backgroundColor: theme.colors.muted }]}>
-                        <Feather name="package" size={24} color={theme.colors.mutedForeground} />
-                      </View>
-                    )}
+                    <FallbackImage
+                      primaryUri={scan.thumbnailUrl}
+                      fallbackUri={scan.results?.listings?.[0]?.imageUrl}
+                      style={styles.scanImage}
+                      contentFit="cover"
+                      emptyPlaceholder={
+                        <View style={[styles.scanImagePlaceholder, { backgroundColor: theme.colors.muted }]}>
+                          <Feather name="package" size={24} color={theme.colors.mutedForeground} />
+                        </View>
+                      }
+                    />
                   </View>
                   <View style={styles.scanInfo}>
                     <Text 
