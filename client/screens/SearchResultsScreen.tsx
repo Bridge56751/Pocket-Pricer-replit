@@ -371,6 +371,14 @@ export default function SearchResultsScreen() {
   };
 
   const handleEbaySoldSearch = async (broad = false) => {
+    // Defensive in-flight guard: if a request is already running, ignore
+    // additional taps. Prevents double-tap from spawning duplicate
+    // /api/ebay-sold-search requests, racing concurrent results into state,
+    // and burning per-device rate-limit + upstream provider quota. Returns
+    // before haptics so a disabled tap doesn't even buzz.
+    if (ebaySoldLoading) {
+      return;
+    }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     if (!broad && ebaySoldData) {
       setShowEbaySold(!showEbaySold);
@@ -863,6 +871,7 @@ export default function SearchResultsScreen() {
             <Pressable
               testID="button-ebay-sold-search"
               onPress={() => handleEbaySoldSearch()}
+              disabled={ebaySoldLoading}
               style={({ pressed }) => [
                 rcReady && !isPro && !ebaySoldData ? styles.salesIntelCardWrapper : styles.ebaySoldButtonPro,
                 { opacity: pressed ? 0.7 : 1 }
