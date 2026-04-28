@@ -716,17 +716,17 @@ async function runEbaySerpApiAttempt(
   }
 }
 
-// --- SerpAPI-first waterfall ----------------------------------------------
-// Try SerpAPI first; only fall back to SearchAPI when SerpAPI either fails
-// outright (timeout, HTTP error, fetch error) or returns zero usable priced
-// results. Per user preference, SearchAPI is strictly a fallback — we'd
-// rather wait longer for a SerpAPI response than have SearchAPI ever serve
-// as the primary on a given query.
+// --- SearchAPI-first waterfall --------------------------------------------
+// Try SearchAPI first; only fall back to SerpAPI when SearchAPI either
+// fails outright (timeout, HTTP error, fetch error) or returns zero usable
+// priced results. SearchAPI is the preferred primary because it returns
+// pre-parsed JSON directly from eBay in ~1-2s; SerpAPI is the safety net
+// for the rare windows when SearchAPI is degraded.
 //
-// Hard cap stays at 2 external calls per query (1 if SerpAPI succeeds).
+// Hard cap stays at 2 external calls per query (1 if SearchAPI succeeds).
 // Auto-broaden adds 2 more calls (a second waterfall), only on the
 // strict-zero path. Maximum 4 external calls per request.
-// Worst-case wall clock per waterfall: ~30s (SerpAPI 18s + SearchAPI 12s).
+// Worst-case wall clock per waterfall: ~30s (SearchAPI 12s + SerpAPI 18s).
 
 type ProviderName = "serpapi" | "searchapi";
 
@@ -749,30 +749,30 @@ const describeAttempt = (a: EbaySearchAttempt): string =>
   a.ok ? `ok_${countUsablePricedResults(a)}` : a.reason;
 
 async function runEbayWaterfall(
-  serpApiKey: string,
-  searchApiKey: string | undefined,
+  searchApiKey: string,
+  serpApiKey: string | undefined,
   query: string,
 ): Promise<EbayCascadeOutcome> {
-  // Step 1: SerpAPI (priority).
-  const serpAttempt = await runEbaySerpApiAttempt(serpApiKey, query);
-  if (countUsablePricedResults(serpAttempt) > 0) {
-    return {
-      data: serpAttempt.ok ? serpAttempt.data : null,
-      via: "serpapi",
-      serpReason: describeAttempt(serpAttempt),
-      searchReason: "skipped_serpapi_won",
-    };
-  }
-
-  // Step 2: SerpAPI didn't yield usable results — try SearchAPI as fallback.
-  const searchAttempt: EbaySearchAttempt = searchApiKey
-    ? await runEbaySearchAttempt(searchApiKey, query)
-    : { ok: false, reason: "no_searchapi_key" };
-
+  // Step 1: SearchAPI (priority).
+  const searchAttempt = await runEbaySearchAttempt(searchApiKey, query);
   if (countUsablePricedResults(searchAttempt) > 0) {
     return {
       data: searchAttempt.ok ? searchAttempt.data : null,
       via: "searchapi",
+      serpReason: "skipped_searchapi_won",
+      searchReason: describeAttempt(searchAttempt),
+    };
+  }
+
+  // Step 2: SearchAPI didn't yield usable results — try SerpAPI as fallback.
+  const serpAttempt: EbaySearchAttempt = serpApiKey
+    ? await runEbaySerpApiAttempt(serpApiKey, query)
+    : { ok: false, reason: "no_serpapi_key" };
+
+  if (countUsablePricedResults(serpAttempt) > 0) {
+    return {
+      data: serpAttempt.ok ? serpAttempt.data : null,
+      via: "serpapi",
       serpReason: describeAttempt(serpAttempt),
       searchReason: describeAttempt(searchAttempt),
     };
@@ -790,12 +790,12 @@ async function runEbayWaterfall(
 // True only when BOTH providers failed outright (neither returned a 2xx).
 // One ok-but-empty + one failure is treated as a real "no results" because
 // at least one provider confirmed the absence of sold listings. The
-// "skipped_serpapi_won" sentinel never appears in failure paths (SerpAPI
+// "skipped_searchapi_won" sentinel never appears in failure paths (SearchAPI
 // winning means we already returned data), but we exclude it defensively.
 const isCascadeTotalServiceFailure = (outcome: EbayCascadeOutcome): boolean =>
   !outcome.serpReason.startsWith("ok_") &&
   !outcome.searchReason.startsWith("ok_") &&
-  outcome.searchReason !== "skipped_serpapi_won";
+  outcome.serpReason !== "skipped_searchapi_won";
 
 interface EbayParsedPayload {
   avgSoldPrice: number;
@@ -1117,14 +1117,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Search query is required" });
       }
 
-      // SerpAPI is the primary provider and is required. SearchAPI is the
-      // optional fallback used only when SerpAPI fails outright or returns
-      // zero usable priced results (see `runEbayWaterfall` below).
-      const serpApiKey = process.env.SERPAPI_API_KEY;
-      if (!serpApiKey) {
+      // SearchAPI is the primary provider and is required. SerpAPI is the
+      // optional fallback used only when SearchAPI fails outright or returns
+      // zero usable priced results (see `runEbayWaterfall` above).
+      const apiKey = process.env.SEARCHAPI_API_KEY;
+      if (!apiKey) {
         return res.status(500).json({ error: "Search API key not configured" });
       }
-      const apiKey = process.env.SEARCHAPI_API_KEY;
+      const serpApiKey = process.env.SERPAPI_API_KEY;
 
       const sanitizedListingTitles = Array.isArray(listingTitles)
         ? (listingTitles as unknown[])
@@ -1156,9 +1156,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         items: [],
       };
 
-      // SerpAPI-first waterfall: try SerpAPI; only fall back to SearchAPI
-      // when SerpAPI fails outright or returns zero usable priced results.
-      const initialOutcome = await runEbayWaterfall(serpApiKey, apiKey, initialQuery);
+      // SearchAPI-first waterfall: try SearchAPI; only fall back to SerpAPI
+      // when SearchAPI fails outright or returns zero usable priced results.
+      const initialOutcome = await runEbayWaterfall(apiKey, serpApiKey, initialQuery);
       console.log(
         `eBay sold search initial — via: ${initialOutcome.via ?? "none"} | serpapi: ${initialOutcome.serpReason} | searchapi: ${initialOutcome.searchReason}`,
       );
@@ -1217,10 +1217,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ ...emptyPayload, noResults: true });
       }
 
-      // Strict-zero path: auto-broaden via a second SerpAPI-first waterfall
-      // using the broadened query.
+      // Strict-zero path: auto-broaden via a second SearchAPI-first
+      // waterfall using the broadened query.
       console.log(`eBay sold search auto-broadening: "${strictQuery}" → "${broadQuery}"`);
-      const broadOutcome = await runEbayWaterfall(serpApiKey, apiKey, broadQuery);
+      const broadOutcome = await runEbayWaterfall(apiKey, serpApiKey, broadQuery);
       console.log(
         `eBay auto-broaden — via: ${broadOutcome.via ?? "none"} | serpapi: ${broadOutcome.serpReason} | searchapi: ${broadOutcome.searchReason}`,
       );
