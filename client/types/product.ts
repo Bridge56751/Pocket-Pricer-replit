@@ -79,6 +79,18 @@ export interface EbaySoldItem {
   soldDate?: string;
 }
 
+// Mirrors server/routes.ts buildEbayRateLimitPayload. Surfaces a structured
+// "Pro user has hit their monthly cap" signal so the client can render a
+// proper cooldown UI (ProCapReachedModal) instead of disguising it as a
+// generic service error.
+export interface RateLimitInfo {
+  cap: number;
+  provider: string;
+  resetAt: string;
+  isPro: boolean;
+  contactEmail: string;
+}
+
 export interface EbaySoldData {
   avgSoldPrice: number;
   medianSoldPrice: number;
@@ -91,6 +103,7 @@ export interface EbaySoldData {
   isBroadSearch?: boolean;
   serviceError?: boolean;
   broadenedFromStrict?: boolean;
+  rateLimit?: RateLimitInfo;
 }
 
 export interface SearchResultsData {

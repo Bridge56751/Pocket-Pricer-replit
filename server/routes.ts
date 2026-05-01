@@ -1033,11 +1033,21 @@ async function runEbaySerpApiAttempt(
 // strict-zero path. Maximum 4 external calls per request.
 // Worst-case wall clock per waterfall: ~30s (SearchAPI 12s + SerpAPI 18s).
 
-type ProviderName = "serpapi" | "searchapi";
+// eBay-cascade-local provider name (only the two providers that participate
+// in the eBay sold-search waterfall). The Lens scan path uses a wider set
+// (scrapingdog + searchapi via server/provider-budget.ts), and that wider
+// set is what we look up displayed caps for.
+type EbayProviderName = "serpapi" | "searchapi";
+
+// Wider provider set, including the Lens scan providers. Must stay in sync
+// with server/provider-budget.ts -> ProviderName so getDisplayedCap below
+// has a default for every provider that can ever appear in a budget_cap_*
+// reason string.
+type DisplayedProviderName = "serpapi" | "searchapi" | "scrapingdog" | "gemini";
 
 interface EbayCascadeOutcome {
   data: EbayApiData | null;
-  via: ProviderName | null;
+  via: EbayProviderName | null;
   serpReason: string;
   searchReason: string;
 }
@@ -1119,11 +1129,11 @@ const isCascadeTotalServiceFailure = (outcome: EbayCascadeOutcome): boolean =>
 // the prefix (e.g. "budget_cap_searchapi").
 function detectBudgetCap(
   outcome: EbayCascadeOutcome,
-): { provider: ProviderName } | null {
+): { provider: DisplayedProviderName } | null {
   const reasons = [outcome.serpReason, outcome.searchReason];
   for (const r of reasons) {
     if (r.startsWith("budget_cap_")) {
-      const name = r.slice("budget_cap_".length) as ProviderName;
+      const name = r.slice("budget_cap_".length) as DisplayedProviderName;
       return { provider: name };
     }
   }
@@ -1150,14 +1160,25 @@ function nextMonthResetIso(): string {
 // server/provider-budget.ts so the `rateLimit.cap` value the client shows
 // always matches the cap the server is actually enforcing — even if the
 // owner has bumped a particular cap via env var (e.g. PRO_CAP_SEARCHAPI=2000).
-function getDisplayedCap(provider: ProviderName): number {
-  const envOverrides: Record<ProviderName, string | undefined> = {
+//
+// MUST stay in lockstep with server/provider-budget.ts:DEFAULT_PER_PRO_CAPS.
+// Every provider that can appear in a budget_cap_* outcome string needs an
+// entry here, otherwise the modal on the client crashes with
+// "Cannot read property 'toLocaleString' of undefined".
+function getDisplayedCap(provider: DisplayedProviderName): number {
+  const envOverrides: Record<DisplayedProviderName, string | undefined> = {
     searchapi: process.env.PRO_CAP_SEARCHAPI,
     serpapi: process.env.PRO_CAP_SERPAPI,
+    scrapingdog: process.env.PRO_CAP_SCRAPINGDOG,
+    gemini: process.env.PRO_CAP_GEMINI,
   };
-  const defaults: Record<ProviderName, number> = {
+  // Defaults match server/provider-budget.ts so what the user sees in the
+  // modal matches what the server actually enforces.
+  const defaults: Record<DisplayedProviderName, number> = {
     searchapi: 1000,
     serpapi: 100,
+    scrapingdog: 1000,
+    gemini: 1000,
   };
   const raw = envOverrides[provider];
   if (raw) {
@@ -1175,7 +1196,7 @@ function getDisplayedCap(provider: ProviderName): number {
 // new client is fully backward compatible.
 type RateLimitInfo = {
   cap: number;
-  provider: ProviderName | "scan-with-lens";
+  provider: DisplayedProviderName | "scan-with-lens";
   resetAt: string;
   isPro: true;
   contactEmail: string;
@@ -1183,7 +1204,7 @@ type RateLimitInfo = {
 
 const PRO_CONTACT_EMAIL = "pricerpocket@gmail.com";
 
-function buildEbayRateLimitPayload(provider: ProviderName) {
+function buildEbayRateLimitPayload(provider: DisplayedProviderName) {
   const info: RateLimitInfo = {
     cap: getDisplayedCap(provider),
     provider,
@@ -1408,7 +1429,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (supabaseFileName) deleteSupabaseImage(supabaseFileName);
         const provider = lensResult.error!.slice(
           "budget_cap_".length,
-        ) as ProviderName;
+        ) as DisplayedProviderName;
         return res.status(200).json({
           rateLimit: buildEbayRateLimitPayload(provider),
         });
