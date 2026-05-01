@@ -15,6 +15,7 @@ import {
   pruneDeviceScanImages,
 } from "./supabase";
 import { cleanQueryWithAI } from "./gemini";
+import { checkProviderBudget } from "./provider-budget";
 
 const FREE_LIFETIME_SEARCHES = 3;
 const RATE_LIMIT_MAX = 20;
@@ -27,10 +28,14 @@ const INVENTORY_RATE_LIMIT_MAX = 60;
 const rateLimitMap = new Map<string, number[]>();
 const inventoryRateLimitMap = new Map<string, number[]>();
 
-function checkRateLimit(map: Map<string, number[]>, deviceId: string, max: number): boolean {
+function checkRateLimit(
+  map: Map<string, number[]>,
+  deviceId: string,
+  max: number,
+): boolean {
   const now = Date.now();
   const timestamps = map.get(deviceId) || [];
-  const recent = timestamps.filter(t => now - t < RATE_LIMIT_WINDOW_MS);
+  const recent = timestamps.filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
   if (recent.length >= max) {
     map.set(deviceId, recent);
     return true;
@@ -45,22 +50,29 @@ function isRateLimited(deviceId: string): boolean {
 }
 
 function isInventoryRateLimited(deviceId: string): boolean {
-  return checkRateLimit(inventoryRateLimitMap, deviceId, INVENTORY_RATE_LIMIT_MAX);
+  return checkRateLimit(
+    inventoryRateLimitMap,
+    deviceId,
+    INVENTORY_RATE_LIMIT_MAX,
+  );
 }
 
-setInterval(() => {
-  const now = Date.now();
-  for (const map of [rateLimitMap, inventoryRateLimitMap]) {
-    for (const [key, timestamps] of map) {
-      const recent = timestamps.filter(t => now - t < RATE_LIMIT_WINDOW_MS);
-      if (recent.length === 0) {
-        map.delete(key);
-      } else {
-        map.set(key, recent);
+setInterval(
+  () => {
+    const now = Date.now();
+    for (const map of [rateLimitMap, inventoryRateLimitMap]) {
+      for (const [key, timestamps] of map) {
+        const recent = timestamps.filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
+        if (recent.length === 0) {
+          map.delete(key);
+        } else {
+          map.set(key, recent);
+        }
       }
     }
-  }
-}, 5 * 60 * 1000);
+  },
+  5 * 60 * 1000,
+);
 
 async function deleteSupabaseImage(fileName: string): Promise<void> {
   if (!supabase || !fileName) return;
@@ -71,10 +83,15 @@ async function deleteSupabaseImage(fileName: string): Promise<void> {
   }
 }
 
-async function uploadImageForLens(imageBase64: string): Promise<{ url: string; supabaseFileName: string | null } | null> {
+async function uploadImageForLens(
+  imageBase64: string,
+): Promise<{ url: string; supabaseFileName: string | null } | null> {
   const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, "");
 
-  const uploadServices: Array<() => Promise<{ url: string; supabaseFileName: string | null } | null>> = [
+  const uploadServices: (() => Promise<{
+    url: string;
+    supabaseFileName: string | null;
+  } | null>)[] = [
     async () => {
       if (!supabase) return null;
       const mimeMatch = imageBase64.match(/^data:([^;]+);base64,/);
@@ -92,7 +109,9 @@ async function uploadImageForLens(imageBase64: string): Promise<{ url: string; s
         console.error("Supabase storage upload error:", error.message);
         return null;
       }
-      const { data } = supabase.storage.from("scan-images").getPublicUrl(fileName);
+      const { data } = supabase.storage
+        .from("scan-images")
+        .getPublicUrl(fileName);
       if (!data?.publicUrl) return null;
       return { url: data.publicUrl, supabaseFileName: fileName };
     },
@@ -109,7 +128,8 @@ async function uploadImageForLens(imageBase64: string): Promise<{ url: string; s
         signal: AbortSignal.timeout(20000),
       });
       const data = await response.json();
-      if (data.status_code === 200 && data.image?.url) return { url: data.image.url, supabaseFileName: null };
+      if (data.status_code === 200 && data.image?.url)
+        return { url: data.image.url, supabaseFileName: null };
       return null;
     },
     async () => {
@@ -124,7 +144,8 @@ async function uploadImageForLens(imageBase64: string): Promise<{ url: string; s
         signal: AbortSignal.timeout(20000),
       });
       const data = await response.json();
-      if (data.success && data.data?.url) return { url: data.data.url, supabaseFileName: null };
+      if (data.success && data.data?.url)
+        return { url: data.data.url, supabaseFileName: null };
       return null;
     },
   ];
@@ -220,17 +241,39 @@ function parsePrice(priceStr?: string): { value?: number; currency?: string } {
   if (!priceStr) return {};
   const match = priceStr.match(/([£€$]?)\s*([\d,]+\.?\d*)/);
   if (!match) return {};
-  const currencyMap: Record<string, string> = { "$": "USD", "£": "GBP", "€": "EUR" };
+  const currencyMap: Record<string, string> = {
+    $: "USD",
+    "£": "GBP",
+    "€": "EUR",
+  };
   return {
     value: parseFloat(match[2].replace(/,/g, "")),
     currency: currencyMap[match[1]] || "USD",
   };
 }
 
-async function searchWithScrapingDog(imageUrl: string): Promise<LensResult> {
+async function searchWithScrapingDog(
+  imageUrl: string,
+  customerKey: string,
+  isPro: boolean,
+): Promise<LensResult> {
   const apiKey = process.env.SCRAPINGDOG_API_KEY;
   if (!apiKey) {
-    return { products: [], provider: "scrapingdog", error: "ScrapingDog key not configured" };
+    return {
+      products: [],
+      provider: "scrapingdog",
+      error: "ScrapingDog key not configured",
+    };
+  }
+
+  // P0-8: per-Pro-customer monthly budget cap.
+  const budgetOk = await checkProviderBudget("scrapingdog", customerKey, isPro);
+  if (!budgetOk) {
+    return {
+      products: [],
+      provider: "scrapingdog",
+      error: "budget_cap_scrapingdog",
+    };
   }
 
   try {
@@ -245,17 +288,24 @@ async function searchWithScrapingDog(imageUrl: string): Promise<LensResult> {
       product_results: "true",
     });
 
-    const response = await fetch(`https://api.scrapingdog.com/google_lens?${params.toString()}`, {
-      signal: AbortSignal.timeout(12000),
-    });
+    const response = await fetch(
+      `https://api.scrapingdog.com/google_lens?${params.toString()}`,
+      {
+        signal: AbortSignal.timeout(12000),
+      },
+    );
     const elapsed = Date.now() - startTime;
 
     if (!response.ok) {
       console.error(`[ScrapingDog] HTTP ${response.status} (${elapsed}ms)`);
-      return { products: [], provider: "scrapingdog", error: `HTTP ${response.status}` };
+      return {
+        products: [],
+        provider: "scrapingdog",
+        error: `HTTP ${response.status}`,
+      };
     }
 
-    const data = await response.json() as ScrapingDogLensResponse;
+    const data = (await response.json()) as ScrapingDogLensResponse;
 
     if (data.error) {
       console.error(`[ScrapingDog] Error (${elapsed}ms):`, data.error);
@@ -274,7 +324,9 @@ async function searchWithScrapingDog(imageUrl: string): Promise<LensResult> {
       allItems.push(item);
     }
 
-    console.log(`[ScrapingDog] Raw: ${lensItems.length} lens_results, ${visualItems.length} visual_matches, ${productItems.length} product_results → ${allItems.length} unique (${elapsed}ms)`);
+    console.log(
+      `[ScrapingDog] Raw: ${lensItems.length} lens_results, ${visualItems.length} visual_matches, ${productItems.length} product_results → ${allItems.length} unique (${elapsed}ms)`,
+    );
 
     const products: GoogleLensProduct[] = allItems.map((item, index) => {
       const extractedPrice = item.extracted_price;
@@ -299,20 +351,46 @@ async function searchWithScrapingDog(imageUrl: string): Promise<LensResult> {
     });
 
     const productName = data.knowledge_graph?.[0]?.title;
-    const pricedCount = products.filter(p => p.price?.value && p.price.value > 0).length;
+    const pricedCount = products.filter(
+      (p) => p.price?.value && p.price.value > 0,
+    ).length;
 
-    console.log(`[ScrapingDog] ${products.length} products, ${pricedCount} with prices (${elapsed}ms)`);
+    console.log(
+      `[ScrapingDog] ${products.length} products, ${pricedCount} with prices (${elapsed}ms)`,
+    );
     return { products, productName, provider: "scrapingdog", pricedCount };
   } catch (error) {
     console.error("[ScrapingDog] Request failed:", error);
-    return { products: [], provider: "scrapingdog", error: "ScrapingDog request failed" };
+    return {
+      products: [],
+      provider: "scrapingdog",
+      error: "ScrapingDog request failed",
+    };
   }
 }
 
-async function searchWithSearchApi(imageUrl: string): Promise<LensResult> {
+async function searchWithSearchApi(
+  imageUrl: string,
+  customerKey: string,
+  isPro: boolean,
+): Promise<LensResult> {
   const apiKey = process.env.SEARCHAPI_API_KEY;
   if (!apiKey) {
-    return { products: [], provider: "searchapi", error: "SearchAPI key not configured" };
+    return {
+      products: [],
+      provider: "searchapi",
+      error: "SearchAPI key not configured",
+    };
+  }
+
+  // P0-8: per-Pro-customer monthly budget cap.
+  const budgetOk = await checkProviderBudget("searchapi", customerKey, isPro);
+  if (!budgetOk) {
+    return {
+      products: [],
+      provider: "searchapi",
+      error: "budget_cap_searchapi",
+    };
   }
 
   try {
@@ -325,70 +403,97 @@ async function searchWithSearchApi(imageUrl: string): Promise<LensResult> {
       api_key: apiKey,
     });
 
-    const response = await fetch(`https://www.searchapi.io/api/v1/search?${params.toString()}`, {
-      signal: AbortSignal.timeout(35000),
-    });
+    const response = await fetch(
+      `https://www.searchapi.io/api/v1/search?${params.toString()}`,
+      {
+        signal: AbortSignal.timeout(35000),
+      },
+    );
     const elapsed = Date.now() - startTime;
 
     if (!response.ok) {
       console.error(`[SearchAPI] HTTP ${response.status} (${elapsed}ms)`);
-      return { products: [], provider: "searchapi", error: `HTTP ${response.status}` };
+      return {
+        products: [],
+        provider: "searchapi",
+        error: `HTTP ${response.status}`,
+      };
     }
 
-    const data = await response.json() as SearchApiLensResponse;
+    const data = (await response.json()) as SearchApiLensResponse;
 
     if (data.error) {
       console.error(`[SearchAPI] Error (${elapsed}ms):`, data.error);
       return { products: [], provider: "searchapi", error: data.error };
     }
 
-    const products: GoogleLensProduct[] = (data.visual_matches || []).map(item => ({
-      position: item.position,
-      title: item.title,
-      link: item.link,
-      source: item.source,
-      price: {
-        value: item.extracted_price,
-        extracted_value: item.extracted_price,
-        currency: item.currency,
-      },
-      thumbnail: item.thumbnail,
-      rating: item.rating,
-      reviews: item.reviews,
-    }));
+    const products: GoogleLensProduct[] = (data.visual_matches || []).map(
+      (item) => ({
+        position: item.position,
+        title: item.title,
+        link: item.link,
+        source: item.source,
+        price: {
+          value: item.extracted_price,
+          extracted_value: item.extracted_price,
+          currency: item.currency,
+        },
+        thumbnail: item.thumbnail,
+        rating: item.rating,
+        reviews: item.reviews,
+      }),
+    );
 
     const productName = data.knowledge_graph?.[0]?.title;
 
-    console.log(`[SearchAPI] Found ${products.length} visual matches in ${elapsed}ms`);
+    console.log(
+      `[SearchAPI] Found ${products.length} visual matches in ${elapsed}ms`,
+    );
     return { products, productName, provider: "searchapi" };
   } catch (error) {
     console.error("[SearchAPI] Request failed:", error);
-    return { products: [], provider: "searchapi", error: "SearchAPI request failed" };
+    return {
+      products: [],
+      provider: "searchapi",
+      error: "SearchAPI request failed",
+    };
   }
 }
 
-async function searchWithGoogleLens(imageUrl: string): Promise<{
+async function searchWithGoogleLens(
+  imageUrl: string,
+  customerKey: string,
+  isPro: boolean,
+): Promise<{
   products: GoogleLensProduct[];
   productName?: string;
   error?: string;
 }> {
   try {
-    const saResult = await searchWithSearchApi(imageUrl);
+    const saResult = await searchWithSearchApi(imageUrl, customerKey, isPro);
     if (!saResult.error && saResult.products.length > 0) {
-      console.log(`[Lens] Using SearchAPI result (${saResult.products.length} products)`);
+      console.log(
+        `[Lens] Using SearchAPI result (${saResult.products.length} products)`,
+      );
       return { products: saResult.products, productName: saResult.productName };
     }
 
-    console.log(`[Lens] SearchAPI ${saResult.error ? "failed: " + saResult.error : "returned 0 products"}, falling back to ScrapingDog`);
+    console.log(
+      `[Lens] SearchAPI ${saResult.error ? "failed: " + saResult.error : "returned 0 products"}, falling back to ScrapingDog`,
+    );
 
-    const sdResult = await searchWithScrapingDog(imageUrl);
+    const sdResult = await searchWithScrapingDog(imageUrl, customerKey, isPro);
     if (!sdResult.error && sdResult.products.length > 0) {
-      console.log(`[Lens] Using ScrapingDog fallback (${sdResult.products.length} products)`);
+      console.log(
+        `[Lens] Using ScrapingDog fallback (${sdResult.products.length} products)`,
+      );
       return { products: sdResult.products, productName: sdResult.productName };
     }
 
     const errorMsg = sdResult.error || saResult.error || "No products found";
-    console.error(`[Lens] Both providers failed. SA: ${saResult.error || "0 products"}, SD: ${sdResult.error || "0 products"}`);
+    console.error(
+      `[Lens] Both providers failed. SA: ${saResult.error || "0 products"}, SD: ${sdResult.error || "0 products"}`,
+    );
     return { products: [], error: errorMsg };
   } catch (error) {
     console.error("[Lens] Unexpected error:", error);
@@ -400,30 +505,147 @@ function calculateMedian(prices: number[]): number {
   if (prices.length === 0) return 0;
   const sorted = [...prices].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  return sorted.length % 2 !== 0
+    ? sorted[mid]
+    : (sorted[mid - 1] + sorted[mid]) / 2;
 }
 
 // --- eBay sold-search helpers ---------------------------------------------
 // Used by /api/ebay-sold-search for retry/auto-broaden cascade.
 
 const EBAY_PRODUCT_CATEGORIES = new Set([
-  "sunglasses","glasses","eyeglasses","goggles",
-  "shoes","shoe","sneakers","sneaker","boots","boot","sandals","sandal","slippers","loafers","heels","clogs","mules","cleats",
-  "jacket","hoodie","sweater","sweatshirt","shirt","blouse","cardigan","blazer","vest","coat","parka","windbreaker","poncho",
-  "pants","jeans","shorts","skirt","leggings","joggers","trousers","dress","romper","jumpsuit","overalls",
-  "watch","watches","bag","handbag","purse","backpack","wallet","belt","scarf","gloves","hat","cap","beanie","visor","headband","tie","bracelet","necklace","ring","earrings",
-  "plush","figure","figurine","doll","toy","funko","lego",
-  "controller","mouse","keyboard","headphones","earbuds","speaker","monitor","console","camera","printer","router","tablet","phone",
-  "sign","lamp","light","clock","mirror","vase","frame","rug","pillow","blanket","towel","candle",
-  "racket","bat","glove","helmet","pads","jersey",
-  "stroller","carseat","carrier","toolbox","cooler","thermos","bottle","mug","cup","pan","skillet","knife",
-  "shake","protein","supplement","vitamins","powder","bars",
-  "vacuum","iron","blender","mixer","toaster","microwave","grill",
+  "sunglasses",
+  "glasses",
+  "eyeglasses",
+  "goggles",
+  "shoes",
+  "shoe",
+  "sneakers",
+  "sneaker",
+  "boots",
+  "boot",
+  "sandals",
+  "sandal",
+  "slippers",
+  "loafers",
+  "heels",
+  "clogs",
+  "mules",
+  "cleats",
+  "jacket",
+  "hoodie",
+  "sweater",
+  "sweatshirt",
+  "shirt",
+  "blouse",
+  "cardigan",
+  "blazer",
+  "vest",
+  "coat",
+  "parka",
+  "windbreaker",
+  "poncho",
+  "pants",
+  "jeans",
+  "shorts",
+  "skirt",
+  "leggings",
+  "joggers",
+  "trousers",
+  "dress",
+  "romper",
+  "jumpsuit",
+  "overalls",
+  "watch",
+  "watches",
+  "bag",
+  "handbag",
+  "purse",
+  "backpack",
+  "wallet",
+  "belt",
+  "scarf",
+  "gloves",
+  "hat",
+  "cap",
+  "beanie",
+  "visor",
+  "headband",
+  "tie",
+  "bracelet",
+  "necklace",
+  "ring",
+  "earrings",
+  "plush",
+  "figure",
+  "figurine",
+  "doll",
+  "toy",
+  "funko",
+  "lego",
+  "controller",
+  "mouse",
+  "keyboard",
+  "headphones",
+  "earbuds",
+  "speaker",
+  "monitor",
+  "console",
+  "camera",
+  "printer",
+  "router",
+  "tablet",
+  "phone",
+  "sign",
+  "lamp",
+  "light",
+  "clock",
+  "mirror",
+  "vase",
+  "frame",
+  "rug",
+  "pillow",
+  "blanket",
+  "towel",
+  "candle",
+  "racket",
+  "bat",
+  "glove",
+  "helmet",
+  "pads",
+  "jersey",
+  "stroller",
+  "carseat",
+  "carrier",
+  "toolbox",
+  "cooler",
+  "thermos",
+  "bottle",
+  "mug",
+  "cup",
+  "pan",
+  "skillet",
+  "knife",
+  "shake",
+  "protein",
+  "supplement",
+  "vitamins",
+  "powder",
+  "bars",
+  "vacuum",
+  "iron",
+  "blender",
+  "mixer",
+  "toaster",
+  "microwave",
+  "grill",
 ]);
 
 function capWordsWithCategory(words: string[], cap: number): string[] {
   if (words.length <= cap) return words;
-  const categoryIdx = words.findIndex((w) => EBAY_PRODUCT_CATEGORIES.has(w.toLowerCase()));
+  const categoryIdx = words.findIndex((w) =>
+    EBAY_PRODUCT_CATEGORIES.has(w.toLowerCase()),
+  );
   if (categoryIdx >= cap) {
     const capped = words.slice(0, cap - 1);
     capped.push(words[categoryIdx]);
@@ -433,25 +655,39 @@ function capWordsWithCategory(words: string[], cap: number): string[] {
 }
 
 function regexCleanQuery(searchQuery: string): string {
-  return (searchQuery
-    .split(/[|·•–—]/)[0] ?? searchQuery)
+  return (searchQuery.split(/[|·•–—]/)[0] ?? searchQuery)
     .replace(/free shipping.*/i, "")
     .replace(/\(.*?\)/g, "")
     .replace(/@\w+/g, "")
     .replace(/https?:\/\/\S+/g, "")
     .replace(/\b(Size|Sz)\s*\d+[\w.]*/gi, "")
     .replace(/\s*-\s*[\w\s]*\/[\w\s/]*$/i, "")
-    .replace(/\s*-\s*(?:Peacoat|Navy|Gold|Silver|Ivory|Coral|Teal|Maroon|Burgundy|Olive|Charcoal|Beige|Tan|Cream)[\w\s/]*$/i, "")
-    .replace(/\b(Adjustable|Premium|Official|Authentic|Genuine|Brand New|NWT|NWOT|NWB|NIB|NWOB|BNIB|BNWT|BNWOT|MIB|Exclusive)\b/gi, "")
+    .replace(
+      /\s*-\s*(?:Peacoat|Navy|Gold|Silver|Ivory|Coral|Teal|Maroon|Burgundy|Olive|Charcoal|Beige|Tan|Cream)[\w\s/]*$/i,
+      "",
+    )
+    .replace(
+      /\b(Adjustable|Premium|Official|Authentic|Genuine|Brand New|NWT|NWOT|NWB|NIB|NWOB|BNIB|BNWT|BNWOT|MIB|Exclusive)\b/gi,
+      "",
+    )
     .replace(/\b(RARE|HTF|MINT|EUC|GUC|VGC|OBO)\b/gi, "")
     .replace(/\b(Fit|Style|Collection|Pack|Bundle|Lot)\b/gi, "")
-    .replace(/\b(Ultra-Lightweight|Lightweight|Ultra-Light|Super Light|Ergonomic|High-Performance|High Performance|Advanced|Professional|Next-Gen|Next Gen)\b/gi, "")
+    .replace(
+      /\b(Ultra-Lightweight|Lightweight|Ultra-Light|Super Light|Ergonomic|High-Performance|High Performance|Advanced|Professional|Next-Gen|Next Gen)\b/gi,
+      "",
+    )
     .replace(/\b(with|and|for|the|in|of|by|to|on|at|from|into)\b/gi, "")
-    .replace(/\b\d+(?:\.\d+)?\s*(?:CPI|DPI|Hz|MHz|GHz|mm|cm|oz|fl|Fl|ML|ml|mg|g|GB|TB|MB|mAh|W|HP|RPM|PSI|FPS|MP|inch|inches|ft|lb|lbs|kg|ct|pk|pc)\b/gi, "")
+    .replace(
+      /\b\d+(?:\.\d+)?\s*(?:CPI|DPI|Hz|MHz|GHz|mm|cm|oz|fl|Fl|ML|ml|mg|g|GB|TB|MB|mAh|W|HP|RPM|PSI|FPS|MP|inch|inches|ft|lb|lbs|kg|ct|pk|pc)\b/gi,
+      "",
+    )
     .replace(/\b\d+(?:\.\d+)?(?:g|oz)\b/gi, "")
     .replace(/\b\d+\s*(?:inch|inches|ft|cm|mm|oz|fl|ml|lb|lbs|kg)\b/gi, "")
     .replace(/\b(Sipbox|Boxed)\b/gi, "")
-    .replace(/\b(Walmart|Amazon|Target|Nordstrom|Mercari|Poshmark|eBay|Costco|Sam's|Kohls|Macy's|JCPenney|Marshalls|TJ\s*Maxx|HomeGoods|Ross)\b/gi, "")
+    .replace(
+      /\b(Walmart|Amazon|Target|Nordstrom|Mercari|Poshmark|eBay|Costco|Sam's|Kohls|Macy's|JCPenney|Marshalls|TJ\s*Maxx|HomeGoods|Ross)\b/gi,
+      "",
+    )
     .replace(/\b(New|Tags|Size|Sz|Step)\b/gi, "")
     .replace(/\b(Jumbo)\b/gi, "")
     .replace(/[\/,&]+/g, " ")
@@ -463,11 +699,36 @@ function regexCleanQuery(searchQuery: string): string {
 function applyBroadFilters(words: string[]): string[] {
   return words
     .filter((w) => !/^\d+(\.\d+)?$/.test(w))
-    .filter((w) => !/^(Men's|Women's|Mens|Womens|Men|Women|Unisex|Boy's|Girl's|Kids|Youth|Adult|Adults|Toddler|Baby|Infant)$/i.test(w))
-    .filter((w) => !/^(Black|White|Red|Blue|Green|Navy|Gold|Silver|Gray|Grey|Pink|Purple|Orange|Brown|Beige|Tan|Cream|Ivory|Coral|Teal|Maroon|Burgundy|Olive|Charcoal|Yellow|Camo|Matte|Powder)$/i.test(w))
-    .filter((w) => !/^(Large|Small|Medium|XL|XXL|XS|XXXL|Long|Short|Tall|Full|Half|Mini|Micro|Mega|Giant|Big|Tiny|Jumbo)$/i.test(w))
-    .filter((w) => !/^(Wireless|Wired|Optical|Mechanical|Programmable|Buttons?|Sensor|Lighting|RGB|LED)$/i.test(w))
-    .filter((w) => !/^(Nutrition|Plan|Power|Elite|Core|Basic|Classic|Original|Standard|Limited|Edition|Special|Deluxe)$/i.test(w))
+    .filter(
+      (w) =>
+        !/^(Men's|Women's|Mens|Womens|Men|Women|Unisex|Boy's|Girl's|Kids|Youth|Adult|Adults|Toddler|Baby|Infant)$/i.test(
+          w,
+        ),
+    )
+    .filter(
+      (w) =>
+        !/^(Black|White|Red|Blue|Green|Navy|Gold|Silver|Gray|Grey|Pink|Purple|Orange|Brown|Beige|Tan|Cream|Ivory|Coral|Teal|Maroon|Burgundy|Olive|Charcoal|Yellow|Camo|Matte|Powder)$/i.test(
+          w,
+        ),
+    )
+    .filter(
+      (w) =>
+        !/^(Large|Small|Medium|XL|XXL|XS|XXXL|Long|Short|Tall|Full|Half|Mini|Micro|Mega|Giant|Big|Tiny|Jumbo)$/i.test(
+          w,
+        ),
+    )
+    .filter(
+      (w) =>
+        !/^(Wireless|Wired|Optical|Mechanical|Programmable|Buttons?|Sensor|Lighting|RGB|LED)$/i.test(
+          w,
+        ),
+    )
+    .filter(
+      (w) =>
+        !/^(Nutrition|Plan|Power|Elite|Core|Basic|Classic|Original|Standard|Limited|Edition|Special|Deluxe)$/i.test(
+          w,
+        ),
+    )
     .filter((w) => !/^(Glossy|Shiny|Clear|Frosted|Tinted)$/i.test(w));
 }
 
@@ -478,13 +739,19 @@ export function buildEbaySearchQuery(
 ): string {
   // AI-cleaned strict path: trust the AI output, just enforce the 8-word safety cap.
   if (!broadSearch && aiCleaned) {
-    let words = aiCleaned.replace(/\s+/g, " ").trim().split(" ").filter((w) => w.length > 0);
+    let words = aiCleaned
+      .replace(/\s+/g, " ")
+      .trim()
+      .split(" ")
+      .filter((w) => w.length > 0);
     words = capWordsWithCategory(words, 8);
     return words.join(" ").slice(0, 80) || rawQuery.trim().slice(0, 80);
   }
 
   // Regex path (fallback when AI skipped/failed, OR for broad searches).
-  let words = regexCleanQuery(rawQuery).split(" ").filter((w) => w.length > 0);
+  let words = regexCleanQuery(rawQuery)
+    .split(" ")
+    .filter((w) => w.length > 0);
   if (broadSearch) {
     words = applyBroadFilters(words);
     words = capWordsWithCategory(words, 5);
@@ -522,7 +789,15 @@ type EbaySearchAttempt =
 async function runEbaySearchAttempt(
   apiKey: string,
   cleanQuery: string,
+  customerKey: string,
+  isPro: boolean,
 ): Promise<EbaySearchAttempt> {
+  // P0-8: per-Pro-customer monthly budget cap.
+  const budgetOk = await checkProviderBudget("searchapi", customerKey, isPro);
+  if (!budgetOk) {
+    return { ok: false, reason: "budget_cap_searchapi" };
+  }
+
   try {
     const params = new URLSearchParams({
       engine: "ebay_search",
@@ -543,7 +818,10 @@ async function runEbaySearchAttempt(
     }
     const data = (await response.json()) as EbayApiData;
     if (data.error) {
-      return { ok: false, reason: `api_error: ${String(data.error).slice(0, 200)}` };
+      return {
+        ok: false,
+        reason: `api_error: ${String(data.error).slice(0, 200)}`,
+      };
     }
     return { ok: true, data };
   } catch (err: unknown) {
@@ -566,7 +844,9 @@ interface SerpApiEbayResult {
   price?: string | { raw?: string; extracted?: number };
   extracted_price?: number;
   condition?: string | { type?: string };
-  shipping?: string | { raw?: string; extracted?: number; extracted_cost?: number };
+  shipping?:
+    | string
+    | { raw?: string; extracted?: number; extracted_cost?: number };
   shipping_cost?: number;
   extracted_shipping_cost?: number;
   link?: string;
@@ -585,7 +865,15 @@ interface SerpApiEbayResponse {
 async function runEbaySerpApiAttempt(
   apiKey: string,
   cleanQuery: string,
+  customerKey: string,
+  isPro: boolean,
 ): Promise<EbaySearchAttempt> {
+  // P0-8: per-Pro-customer monthly budget cap.
+  const budgetOk = await checkProviderBudget("serpapi", customerKey, isPro);
+  if (!budgetOk) {
+    return { ok: false, reason: "budget_cap_serpapi" };
+  }
+
   try {
     const params = new URLSearchParams({
       engine: "ebay",
@@ -609,10 +897,15 @@ async function runEbaySerpApiAttempt(
     }
     const raw = (await response.json()) as SerpApiEbayResponse;
     if (raw.error) {
-      return { ok: false, reason: `serpapi_error: ${String(raw.error).slice(0, 200)}` };
+      return {
+        ok: false,
+        reason: `serpapi_error: ${String(raw.error).slice(0, 200)}`,
+      };
     }
 
-    const organicResults = Array.isArray(raw.organic_results) ? raw.organic_results : [];
+    const organicResults = Array.isArray(raw.organic_results)
+      ? raw.organic_results
+      : [];
 
     // Last-resort: pull a number out of a price string like "$267.54" or
     // "+$1,299.00 / Best Offer" so we don't drop valid listings just because
@@ -629,19 +922,26 @@ async function runEbaySerpApiAttempt(
       const priceStrCandidate =
         typeof r.price === "string"
           ? r.price
-          : typeof r.price === "object" && r.price !== null && typeof r.price.raw === "string"
+          : typeof r.price === "object" &&
+              r.price !== null &&
+              typeof r.price.raw === "string"
             ? r.price.raw
             : "";
       const extractedPrice =
         typeof r.extracted_price === "number" && r.extracted_price > 0
           ? r.extracted_price
-          : typeof r.price === "object" && r.price !== null && typeof r.price.extracted === "number" && r.price.extracted > 0
+          : typeof r.price === "object" &&
+              r.price !== null &&
+              typeof r.price.extracted === "number" &&
+              r.price.extracted > 0
             ? r.price.extracted
             : parsePriceString(priceStrCandidate);
       const priceStr =
         typeof r.price === "string"
           ? r.price
-          : typeof r.price === "object" && r.price !== null && typeof r.price.raw === "string"
+          : typeof r.price === "object" &&
+              r.price !== null &&
+              typeof r.price.raw === "string"
             ? r.price.raw
             : extractedPrice > 0
               ? `$${extractedPrice.toFixed(2)}`
@@ -649,7 +949,9 @@ async function runEbaySerpApiAttempt(
       const conditionStr =
         typeof r.condition === "string"
           ? r.condition
-          : typeof r.condition === "object" && r.condition !== null && typeof r.condition.type === "string"
+          : typeof r.condition === "object" &&
+              r.condition !== null &&
+              typeof r.condition.type === "string"
             ? r.condition.type
             : undefined;
       const extractedShipping =
@@ -712,7 +1014,10 @@ async function runEbaySerpApiAttempt(
       return { ok: false, reason: "serpapi_timeout_18s" };
     }
     const message = err instanceof Error ? err.message : String(err);
-    return { ok: false, reason: `serpapi_fetch_error: ${message.slice(0, 200)}` };
+    return {
+      ok: false,
+      reason: `serpapi_fetch_error: ${message.slice(0, 200)}`,
+    };
   }
 }
 
@@ -739,7 +1044,9 @@ interface EbayCascadeOutcome {
 
 const countUsablePricedResults = (a: EbaySearchAttempt): number => {
   if (!a.ok) return 0;
-  const results = Array.isArray(a.data.organic_results) ? a.data.organic_results : [];
+  const results = Array.isArray(a.data.organic_results)
+    ? a.data.organic_results
+    : [];
   return results.filter(
     (r) => typeof r.extracted_price === "number" && r.extracted_price > 0,
   ).length;
@@ -752,9 +1059,16 @@ async function runEbayWaterfall(
   searchApiKey: string,
   serpApiKey: string | undefined,
   query: string,
+  customerKey: string,
+  isPro: boolean,
 ): Promise<EbayCascadeOutcome> {
   // Step 1: SearchAPI (priority).
-  const searchAttempt = await runEbaySearchAttempt(searchApiKey, query);
+  const searchAttempt = await runEbaySearchAttempt(
+    searchApiKey,
+    query,
+    customerKey,
+    isPro,
+  );
   if (countUsablePricedResults(searchAttempt) > 0) {
     return {
       data: searchAttempt.ok ? searchAttempt.data : null,
@@ -766,7 +1080,7 @@ async function runEbayWaterfall(
 
   // Step 2: SearchAPI didn't yield usable results — try SerpAPI as fallback.
   const serpAttempt: EbaySearchAttempt = serpApiKey
-    ? await runEbaySerpApiAttempt(serpApiKey, query)
+    ? await runEbaySerpApiAttempt(serpApiKey, query, customerKey, isPro)
     : { ok: false, reason: "no_serpapi_key" };
 
   if (countUsablePricedResults(serpAttempt) > 0) {
@@ -796,6 +1110,89 @@ const isCascadeTotalServiceFailure = (outcome: EbayCascadeOutcome): boolean =>
   !outcome.serpReason.startsWith("ok_") &&
   !outcome.searchReason.startsWith("ok_") &&
   outcome.serpReason !== "skipped_searchapi_won";
+
+// P0-8 UX: when the cascade failure is specifically because the per-Pro
+// monthly cap was hit (not a real provider outage), surface that as a
+// distinct response so the client can render a "you're out of scans this
+// month" UI instead of the generic "service error". Detection: any of the
+// reasons starts with "budget_cap_". The hit provider name is encoded after
+// the prefix (e.g. "budget_cap_searchapi").
+function detectBudgetCap(
+  outcome: EbayCascadeOutcome,
+): { provider: ProviderName } | null {
+  const reasons = [outcome.serpReason, outcome.searchReason];
+  for (const r of reasons) {
+    if (r.startsWith("budget_cap_")) {
+      const name = r.slice("budget_cap_".length) as ProviderName;
+      return { provider: name };
+    }
+  }
+  return null;
+}
+
+// First day of next calendar month (UTC), as ISO. The client shows this as
+// a "resets in N days" countdown. Per-customer caps reset at month rollover.
+function nextMonthResetIso(): string {
+  const now = new Date();
+  const nextMonthUtc = Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth() + 1,
+    1,
+    0,
+    0,
+    0,
+    0,
+  );
+  return new Date(nextMonthUtc).toISOString();
+}
+
+// Server cap source-of-truth. Reads the same env-overridable defaults as
+// server/provider-budget.ts so the `rateLimit.cap` value the client shows
+// always matches the cap the server is actually enforcing — even if the
+// owner has bumped a particular cap via env var (e.g. PRO_CAP_SEARCHAPI=2000).
+function getDisplayedCap(provider: ProviderName): number {
+  const envOverrides: Record<ProviderName, string | undefined> = {
+    searchapi: process.env.PRO_CAP_SEARCHAPI,
+    serpapi: process.env.PRO_CAP_SERPAPI,
+  };
+  const defaults: Record<ProviderName, number> = {
+    searchapi: 1000,
+    serpapi: 100,
+  };
+  const raw = envOverrides[provider];
+  if (raw) {
+    const parsed = parseInt(raw, 10);
+    if (Number.isFinite(parsed) && parsed > 0) return parsed;
+  }
+  return defaults[provider];
+}
+
+// P0-8 contract for the client.
+// New-client builds (after the next App Store release) recognize this shape
+// and render a cooldown screen with a "contact us to raise the cap" CTA.
+// Old-client builds ignore the extra `rateLimit` field and fall back to the
+// existing `serviceError: true` UI — so deploying the backend before the
+// new client is fully backward compatible.
+type RateLimitInfo = {
+  cap: number;
+  provider: ProviderName | "scan-with-lens";
+  resetAt: string;
+  isPro: true;
+  contactEmail: string;
+};
+
+const PRO_CONTACT_EMAIL = "pricerpocket@gmail.com";
+
+function buildEbayRateLimitPayload(provider: ProviderName) {
+  const info: RateLimitInfo = {
+    cap: getDisplayedCap(provider),
+    provider,
+    resetAt: nextMonthResetIso(),
+    isPro: true,
+    contactEmail: PRO_CONTACT_EMAIL,
+  };
+  return info;
+}
 
 interface EbayParsedPayload {
   avgSoldPrice: number;
@@ -838,19 +1235,20 @@ function parseEbayResults(data: EbayApiData): {
   const prices = items.map((i) => i.price);
   const sortedPrices = [...prices].sort((a, b) => a - b);
   const mid = Math.floor(sortedPrices.length / 2);
-  const medianSoldPrice = sortedPrices.length === 0
-    ? 0
-    : sortedPrices.length % 2 !== 0
-      ? sortedPrices[mid]
-      : (sortedPrices[mid - 1] + sortedPrices[mid]) / 2;
+  const medianSoldPrice =
+    sortedPrices.length === 0
+      ? 0
+      : sortedPrices.length % 2 !== 0
+        ? sortedPrices[mid]
+        : (sortedPrices[mid - 1] + sortedPrices[mid]) / 2;
 
-  const avgSoldPrice = prices.length > 0
-    ? prices.reduce((a, b) => a + b, 0) / prices.length
-    : 0;
+  const avgSoldPrice =
+    prices.length > 0 ? prices.reduce((a, b) => a + b, 0) / prices.length : 0;
 
   const soldDates = results
     .map((r) => {
-      if (r.extracted_sold_date) return new Date(r.extracted_sold_date + "T00:00:00Z").getTime();
+      if (r.extracted_sold_date)
+        return new Date(r.extracted_sold_date + "T00:00:00Z").getTime();
       if (r.sold_date) {
         const cleaned = r.sold_date.replace(/^Sold\s+/i, "");
         const parsed = new Date(cleaned).getTime();
@@ -865,7 +1263,10 @@ function parseEbayResults(data: EbayApiData): {
   if (soldDates.length >= 2) {
     const oldest = soldDates[0];
     const newest = soldDates[soldDates.length - 1];
-    const monthsSpan = Math.max((newest - oldest) / (1000 * 60 * 60 * 24 * 30.44), 0.5);
+    const monthsSpan = Math.max(
+      (newest - oldest) / (1000 * 60 * 60 * 24 * 30.44),
+      0.5,
+    );
     avgSoldPerMonth = Math.round(soldDates.length / monthsSpan);
   } else if (soldDates.length === 1) {
     avgSoldPerMonth = 1;
@@ -885,28 +1286,61 @@ function parseEbayResults(data: EbayApiData): {
 }
 
 const blockedSources = [
-  'alibaba', 'aliexpress', 'temu', 'wish', 'dhgate', 'banggood',
-  'tiktok', 'shein', 'made-in-china', 'lightinthebox', 'gearbest',
-  'tomtop', 'miniinthebox', 'sammydress', 'rosegal', 'zaful'
+  "alibaba",
+  "aliexpress",
+  "temu",
+  "wish",
+  "dhgate",
+  "banggood",
+  "tiktok",
+  "shein",
+  "made-in-china",
+  "lightinthebox",
+  "gearbest",
+  "tomtop",
+  "miniinthebox",
+  "sammydress",
+  "rosegal",
+  "zaful",
 ];
 
 const isReliableSource = (source: string) => {
-  const lowerSource = (source || '').toLowerCase();
-  return !blockedSources.some(blocked => lowerSource.includes(blocked));
+  const lowerSource = (source || "").toLowerCase();
+  return !blockedSources.some((blocked) => lowerSource.includes(blocked));
 };
 
 const nonProductSources = [
-  'reddit', 'pinterest', 'youtube', 'youtu.be', 'tiktok', 'quora',
-  'facebook', 'instagram', 'twitter', 'x.com', 'tumblr', 'medium',
-  'imgur', 'blogspot', 'wordpress', 'substack', 'flickr', 'vimeo',
-  'linkedin', 'snapchat', 'threads.net', 'discord', 'twitch'
+  "reddit",
+  "pinterest",
+  "youtube",
+  "youtu.be",
+  "tiktok",
+  "quora",
+  "facebook",
+  "instagram",
+  "twitter",
+  "x.com",
+  "tumblr",
+  "medium",
+  "imgur",
+  "blogspot",
+  "wordpress",
+  "substack",
+  "flickr",
+  "vimeo",
+  "linkedin",
+  "snapchat",
+  "threads.net",
+  "discord",
+  "twitch",
 ];
 
 const isProductLikeSource = (source: string) => {
-  const lowerSource = (source || '').toLowerCase();
+  const lowerSource = (source || "").toLowerCase();
   if (!lowerSource) return false;
-  if (blockedSources.some(blocked => lowerSource.includes(blocked))) return false;
-  if (nonProductSources.some(np => lowerSource.includes(np))) return false;
+  if (blockedSources.some((blocked) => lowerSource.includes(blocked)))
+    return false;
+  if (nonProductSources.some((np) => lowerSource.includes(np))) return false;
   return true;
 };
 
@@ -926,7 +1360,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (isRateLimited(deviceId)) {
-        return res.status(429).json({ error: "Too many requests. Please wait a moment and try again." });
+        return res.status(429).json({
+          error: "Too many requests. Please wait a moment and try again.",
+        });
       }
 
       if (!isPro) {
@@ -941,30 +1377,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { imageBase64 } = req.body;
-      
+
       if (!imageBase64) {
         return res.status(400).json({ error: "Image data is required" });
       }
 
       console.log("Uploading image for Google Lens search...");
       const uploadResult = await uploadImageForLens(imageBase64);
-      
+
       if (!uploadResult) {
-        return res.status(500).json({ error: "Failed to prepare image for search" });
+        return res
+          .status(500)
+          .json({ error: "Failed to prepare image for search" });
       }
 
       const { url: imageUrl } = uploadResult;
       supabaseFileName = uploadResult.supabaseFileName;
 
       console.log("Searching with Google Lens...");
-      const lensResult = await searchWithGoogleLens(imageUrl);
+      const lensResult = await searchWithGoogleLens(imageUrl, deviceId, isPro);
+
+      // P0-8 UX: distinguish "Lens couldn't identify the product" from "this
+      // Pro user has used all their monthly Lens scans". The latter must NOT
+      // tell the client to fall back to the text-search path, because the
+      // text-search path uses the same SearchAPI quota that's already gone.
+      const lensBudgetHit =
+        typeof lensResult.error === "string" &&
+        lensResult.error.startsWith("budget_cap_");
+      if (lensBudgetHit) {
+        if (supabaseFileName) deleteSupabaseImage(supabaseFileName);
+        const provider = lensResult.error!.slice(
+          "budget_cap_".length,
+        ) as ProviderName;
+        return res.status(200).json({
+          rateLimit: buildEbayRateLimitPayload(provider),
+        });
+      }
 
       if (lensResult.error || lensResult.products.length === 0) {
         // Lens didn't find anything — clean up the upload, no point keeping it.
         if (supabaseFileName) deleteSupabaseImage(supabaseFileName);
-        return res.status(404).json({ 
+        return res.status(404).json({
           error: "No products found",
-          fallbackToText: true 
+          fallbackToText: true,
         });
       }
 
@@ -977,16 +1432,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const allProducts = lensResult.products.slice(0, 60);
-      
-      const reliableProducts = allProducts.filter(p => isReliableSource(p.source || ''));
-      const pricedProducts = reliableProducts.filter(p => p.price?.value || p.price?.extracted_value);
-      const noPriceProducts = reliableProducts.filter(p => !(p.price?.value || p.price?.extracted_value));
-      
-      console.log(`Breakdown: ${allProducts.length} total, ${pricedProducts.length} with prices, ${noPriceProducts.length} no price (reliable only)`);
-      
+
+      const reliableProducts = allProducts.filter((p) =>
+        isReliableSource(p.source || ""),
+      );
+      const pricedProducts = reliableProducts.filter(
+        (p) => p.price?.value || p.price?.extracted_value,
+      );
+      const noPriceProducts = reliableProducts.filter(
+        (p) => !(p.price?.value || p.price?.extracted_value),
+      );
+
+      console.log(
+        `Breakdown: ${allProducts.length} total, ${pricedProducts.length} with prices, ${noPriceProducts.length} no price (reliable only)`,
+      );
+
       const prices = pricedProducts
-        .map(p => p.price?.extracted_value || p.price?.value || 0)
-        .filter(p => p > 0);
+        .map((p) => p.price?.extracted_value || p.price?.value || 0)
+        .filter((p) => p > 0);
 
       const avgListPrice = calculateMedian(prices);
       const bestBuyNow = prices.length > 0 ? Math.min(...prices) : 0;
@@ -1005,24 +1468,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }));
 
       const remainingSlots = Math.max(0, 30 - pricedListings.length);
-      const noPriceListings = noPriceProducts.slice(0, remainingSlots).map((item, index) => ({
-        id: `lens-np-${index}`,
-        title: item.title || "Unknown Product",
-        imageUrl: item.thumbnail || "",
-        currentPrice: 0,
-        shipping: 0,
-        link: item.link || "",
-        seller: item.source || "",
-        platform: item.source || "Shop",
-        rating: item.rating,
-        reviews: item.reviews,
-      }));
+      const noPriceListings = noPriceProducts
+        .slice(0, remainingSlots)
+        .map((item, index) => ({
+          id: `lens-np-${index}`,
+          title: item.title || "Unknown Product",
+          imageUrl: item.thumbnail || "",
+          currentPrice: 0,
+          shipping: 0,
+          link: item.link || "",
+          seller: item.source || "",
+          platform: item.source || "Shop",
+          rating: item.rating,
+          reviews: item.reviews,
+        }));
 
       const listings = [...pricedListings, ...noPriceListings];
-      console.log(`Returning ${pricedListings.length} priced + ${noPriceListings.length} check-price = ${listings.length} total listings`);
+      console.log(
+        `Returning ${pricedListings.length} priced + ${noPriceListings.length} check-price = ${listings.length} total listings`,
+      );
 
       const knowledgeGraphName = lensResult.productName?.trim();
-      const productLikeListing = listings.find(l => isProductLikeSource(l.seller || l.platform || ''));
+      const productLikeListing = listings.find((l) =>
+        isProductLikeSource(l.seller || l.platform || ""),
+      );
       let productName: string;
       let titleSource: string;
       if (knowledgeGraphName) {
@@ -1046,7 +1515,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalScans = await getGuestScanCount(deviceId);
       } catch {}
 
-      logScanEvent(deviceId, isPro, productName, listings.length, pricedListings.length);
+      logScanEvent(
+        deviceId,
+        isPro,
+        productName,
+        listings.length,
+        pricedListings.length,
+      );
 
       const ebaySeedQuery = titleSource === "fallback" ? "" : productName;
       res.json({
@@ -1082,7 +1557,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to scan product" });
     }
   });
-  
+
   app.post("/api/ebay-sold-search", async (req: Request, res: Response) => {
     try {
       const deviceId = req.headers["x-device-id"] as string | undefined;
@@ -1093,7 +1568,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (isRateLimited(deviceId)) {
-        return res.status(429).json({ error: "Too many requests. Please wait a moment and try again." });
+        return res.status(429).json({
+          error: "Too many requests. Please wait a moment and try again.",
+        });
       }
 
       if (!isPro) {
@@ -1136,7 +1613,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const aiCleaned = broadSearch
         ? null
-        : await cleanQueryWithAI(searchQuery, sanitizedListingTitles);
+        : await cleanQueryWithAI(
+            searchQuery,
+            sanitizedListingTitles,
+            deviceId,
+            isPro,
+          );
 
       const strictQuery = buildEbaySearchQuery(searchQuery, false, aiCleaned);
       const broadQuery = buildEbaySearchQuery(searchQuery, true, null);
@@ -1158,7 +1640,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // SearchAPI-first waterfall: try SearchAPI; only fall back to SerpAPI
       // when SearchAPI fails outright or returns zero usable priced results.
-      const initialOutcome = await runEbayWaterfall(apiKey, serpApiKey, initialQuery);
+      const initialOutcome = await runEbayWaterfall(
+        apiKey,
+        serpApiKey,
+        initialQuery,
+        deviceId,
+        isPro,
+      );
       console.log(
         `eBay sold search initial — via: ${initialOutcome.via ?? "none"} | serpapi: ${initialOutcome.serpReason} | searchapi: ${initialOutcome.searchReason}`,
       );
@@ -1178,6 +1666,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
             parsed.avgSoldPrice,
             `via_${initialOutcome.via} | serpapi: ${initialOutcome.serpReason} | searchapi: ${initialOutcome.searchReason}`,
           );
+          // P0-7: count this against the free-tier lifetime quota the same
+          // way /api/scan-with-lens does. Without this, free users can hit
+          // /api/ebay-sold-search unlimited times because the limit check at
+          // the top of the handler reads a counter that's only ever bumped
+          // by the lens endpoint. Increments only on actual successful
+          // results so a 404 / serviceError doesn't burn a scan.
+          if (!isPro) {
+            incrementGuestScan(deviceId).catch((err) =>
+              console.error("incrementGuestScan failed:", err?.message),
+            );
+          }
           return res.json(parsed.payload);
         }
         // Provider returned usable raw results but downstream parsing dropped
@@ -1186,10 +1685,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // No usable results from either provider. Decide between
-      // serviceError, noResults, and auto-broaden.
+      // budget-cap, serviceError, noResults, and auto-broaden.
+      const initialBudgetCap = detectBudgetCap(initialOutcome);
+      if (initialBudgetCap) {
+        // P0-8 UX: don't disguise a cap hit as a service error. Surface a
+        // structured rateLimit payload so a new-client build can render the
+        // "you're out of scans this month" UX with a contact-support CTA.
+        const combinedReason = `budget_cap_hit | serpapi: ${initialOutcome.serpReason} | searchapi: ${initialOutcome.searchReason}`;
+        console.warn(
+          `eBay sold search budget cap hit (${initialBudgetCap.provider}) for device ${deviceId.slice(0, 12)}…`,
+        );
+        logEbaySearchEvent(
+          deviceId,
+          isPro,
+          initialQuery,
+          !!broadSearch,
+          0,
+          0,
+          combinedReason,
+        );
+        return res.json({
+          ...emptyPayload,
+          // Backward-compat for old client builds: they show the existing
+          // "service error" UI. New builds detect `rateLimit` first.
+          serviceError: true,
+          rateLimit: buildEbayRateLimitPayload(initialBudgetCap.provider),
+        });
+      }
+
       if (isCascadeTotalServiceFailure(initialOutcome)) {
         const combinedReason = `serpapi: ${initialOutcome.serpReason} | searchapi: ${initialOutcome.searchReason}`;
-        console.error(`eBay sold search both providers failed: ${combinedReason}`);
+        console.error(
+          `eBay sold search both providers failed: ${combinedReason}`,
+        );
         logEbaySearchEvent(
           deviceId,
           isPro,
@@ -1214,13 +1742,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
           0,
           `no_results | serpapi: ${initialOutcome.serpReason} | searchapi: ${initialOutcome.searchReason}`,
         );
+        // P0-7: a real "no results" response still consumed paid provider
+        // calls and used a free-tier search slot. Count it.
+        if (!isPro) {
+          incrementGuestScan(deviceId).catch((err) =>
+            console.error("incrementGuestScan failed:", err?.message),
+          );
+        }
         return res.json({ ...emptyPayload, noResults: true });
       }
 
       // Strict-zero path: auto-broaden via a second SearchAPI-first
       // waterfall using the broadened query.
-      console.log(`eBay sold search auto-broadening: "${strictQuery}" → "${broadQuery}"`);
-      const broadOutcome = await runEbayWaterfall(apiKey, serpApiKey, broadQuery);
+      console.log(
+        `eBay sold search auto-broadening: "${strictQuery}" → "${broadQuery}"`,
+      );
+      const broadOutcome = await runEbayWaterfall(
+        apiKey,
+        serpApiKey,
+        broadQuery,
+        deviceId,
+        isPro,
+      );
       console.log(
         `eBay auto-broaden — via: ${broadOutcome.via ?? "none"} | serpapi: ${broadOutcome.serpReason} | searchapi: ${broadOutcome.searchReason}`,
       );
@@ -1240,6 +1783,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             parsed.avgSoldPrice,
             `broadened_via_${broadOutcome.via} | serpapi: ${broadOutcome.serpReason} | searchapi: ${broadOutcome.searchReason}`,
           );
+          // P0-7: see comment at the strict-results branch above.
+          if (!isPro) {
+            incrementGuestScan(deviceId).catch((err) =>
+              console.error("incrementGuestScan failed:", err?.message),
+            );
+          }
           return res.json({
             ...parsed.payload,
             broadenedFromStrict: true,
@@ -1248,11 +1797,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Broaden also failed. Decide noResults vs serviceError.
+      // Broaden also failed. Decide budget-cap vs noResults vs serviceError.
+      const broadBudgetCap = detectBudgetCap(broadOutcome);
+      if (broadBudgetCap) {
+        const combinedReason = `auto_broaden_budget_cap_hit | serpapi: ${broadOutcome.serpReason} | searchapi: ${broadOutcome.searchReason}`;
+        console.warn(
+          `eBay auto-broaden budget cap hit (${broadBudgetCap.provider}) for device ${deviceId.slice(0, 12)}…`,
+        );
+        logEbaySearchEvent(
+          deviceId,
+          isPro,
+          broadQuery,
+          true,
+          0,
+          0,
+          combinedReason,
+        );
+        return res.json({
+          ...emptyPayload,
+          serviceError: true,
+          rateLimit: buildEbayRateLimitPayload(broadBudgetCap.provider),
+        });
+      }
+
       if (isCascadeTotalServiceFailure(broadOutcome)) {
         const combinedReason = `auto_broaden_failed | serpapi: ${broadOutcome.serpReason} | searchapi: ${broadOutcome.searchReason}`;
         console.warn(`eBay auto-broaden failed: ${combinedReason}`);
-        logEbaySearchEvent(deviceId, isPro, broadQuery, true, 0, 0, combinedReason);
+        logEbaySearchEvent(
+          deviceId,
+          isPro,
+          broadQuery,
+          true,
+          0,
+          0,
+          combinedReason,
+        );
         return res.json({ ...emptyPayload, serviceError: true });
       }
 
@@ -1265,21 +1844,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         0,
         `no_results_after_broaden | serpapi: ${broadOutcome.serpReason} | searchapi: ${broadOutcome.searchReason}`,
       );
+      // P0-7: see comment at the strict-results branch above. Auto-broaden
+      // ran, so this consumed up to 4 paid provider calls — definitely worth
+      // counting against the free-tier quota.
+      if (!isPro) {
+        incrementGuestScan(deviceId).catch((err) =>
+          console.error("incrementGuestScan failed:", err?.message),
+        );
+      }
       return res.json({ ...emptyPayload, noResults: true });
     } catch (error) {
       console.error("eBay sold search error:", error);
       // Best-effort analytics for unhandled exceptions so failure rate is
       // visible — pulls device/query info from the request if available.
       try {
-        const deviceId = (req.headers["x-device-id"] as string | undefined) || "unknown";
+        const deviceId =
+          (req.headers["x-device-id"] as string | undefined) || "unknown";
         const isPro = req.headers["x-is-pro"] === "true";
         const rawQuery =
           typeof req.body?.searchQuery === "string"
             ? req.body.searchQuery.slice(0, 200)
             : "(unknown)";
         const isBroad = !!req.body?.broadSearch;
-        const reason =
-          error instanceof Error ? error.message : String(error);
+        const reason = error instanceof Error ? error.message : String(error);
         logEbaySearchEvent(
           deviceId,
           isPro,
@@ -1296,24 +1883,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/device-stats/:deviceId", async (req: Request, res: Response) => {
-    try {
-      const deviceId = req.params.deviceId;
-      if (typeof deviceId !== "string" || !deviceId) {
-        return res.status(400).json({ error: "Missing deviceId" });
+  app.get(
+    "/api/device-stats/:deviceId",
+    async (req: Request, res: Response) => {
+      try {
+        const deviceId = req.params.deviceId;
+        if (typeof deviceId !== "string" || !deviceId) {
+          return res.status(400).json({ error: "Missing deviceId" });
+        }
+        if (isRateLimited(deviceId)) {
+          return res.status(429).json({
+            error: "Too many requests. Please wait a moment and try again.",
+          });
+        }
+        const tzOffsetStr = req.headers["x-timezone-offset"] as
+          | string
+          | undefined;
+        const tzOffsetMinutes = tzOffsetStr ? parseInt(tzOffsetStr, 10) : 0;
+        const stats = await getDeviceStats(
+          deviceId,
+          isNaN(tzOffsetMinutes) ? 0 : tzOffsetMinutes,
+        );
+        res.json(stats);
+      } catch (error) {
+        console.error("Device stats error:", error);
+        res.status(500).json({ error: "Failed to fetch device stats" });
       }
-      if (isRateLimited(deviceId)) {
-        return res.status(429).json({ error: "Too many requests. Please wait a moment and try again." });
-      }
-      const tzOffsetStr = req.headers["x-timezone-offset"] as string | undefined;
-      const tzOffsetMinutes = tzOffsetStr ? parseInt(tzOffsetStr, 10) : 0;
-      const stats = await getDeviceStats(deviceId, isNaN(tzOffsetMinutes) ? 0 : tzOffsetMinutes);
-      res.json(stats);
-    } catch (error) {
-      console.error("Device stats error:", error);
-      res.status(500).json({ error: "Failed to fetch device stats" });
-    }
-  });
+    },
+  );
 
   const isValidDeviceId = (id: unknown): id is string =>
     typeof id === "string" && /^[A-Za-z0-9_-]{8,128}$/.test(id);
@@ -1342,9 +1939,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/inventory/:deviceId", async (req: Request, res: Response) => {
     try {
       const { deviceId } = req.params;
-      if (!isValidDeviceId(deviceId)) return res.status(400).json({ error: "Invalid deviceId" });
+      if (!isValidDeviceId(deviceId))
+        return res.status(400).json({ error: "Invalid deviceId" });
       if (isInventoryRateLimited(deviceId)) {
-        return res.status(429).json({ error: "Too many requests. Please wait a moment and try again." });
+        return res.status(429).json({
+          error: "Too many requests. Please wait a moment and try again.",
+        });
       }
       const items = await listInventory(deviceId);
       res.json({ items });
@@ -1357,9 +1957,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/inventory/:deviceId", async (req: Request, res: Response) => {
     try {
       const { deviceId } = req.params;
-      if (!isValidDeviceId(deviceId)) return res.status(400).json({ error: "Invalid deviceId" });
+      if (!isValidDeviceId(deviceId))
+        return res.status(400).json({ error: "Invalid deviceId" });
       if (isInventoryRateLimited(deviceId)) {
-        return res.status(429).json({ error: "Too many requests. Please wait a moment and try again." });
+        return res.status(429).json({
+          error: "Too many requests. Please wait a moment and try again.",
+        });
       }
       const {
         id,
@@ -1397,7 +2000,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         soldAt: typeof soldAt === "string" ? soldAt : null,
         sourceScanId: typeof sourceScanId === "string" ? sourceScanId : null,
       });
-      if (!created) return res.status(500).json({ error: "Failed to create item" });
+      if (!created)
+        return res.status(500).json({ error: "Failed to create item" });
       res.json({ item: created });
     } catch (error) {
       console.error("Create inventory error:", error);
@@ -1405,74 +2009,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/inventory/:deviceId/:itemId", async (req: Request, res: Response) => {
-    try {
-      const deviceId = req.params.deviceId;
-      const itemId = req.params.itemId;
-      if (!isValidDeviceId(deviceId) || typeof itemId !== "string" || !itemId) {
-        return res.status(400).json({ error: "Invalid identifiers" });
-      }
-      if (isInventoryRateLimited(deviceId)) {
-        return res.status(429).json({ error: "Too many requests. Please wait a moment and try again." });
-      }
-      const { productName, imageUrl, purchasePrice, notes, soldPrice, soldAt } = req.body || {};
-      const updates: Parameters<typeof updateInventoryItemRow>[2] = {};
-      if (productName !== undefined) {
-        const cleanedName = sanitizeInventoryName(productName);
-        if (!cleanedName) return res.status(400).json({ error: "Invalid productName" });
-        updates.productName = cleanedName;
-      }
-      if (imageUrl !== undefined) updates.imageUrl = imageUrl === null ? null : String(imageUrl);
-      if (purchasePrice !== undefined) {
-        const p = Number(purchasePrice);
-        if (!isFinite(p) || p < 0) return res.status(400).json({ error: "Invalid purchasePrice" });
-        updates.purchasePrice = p;
-      }
-      if (notes !== undefined) updates.notes = notes === null ? null : String(notes);
-      if (soldPrice !== undefined) {
-        if (soldPrice === null) {
-          updates.soldPrice = null;
-          updates.soldAt = null;
-        } else {
-          const p = Number(soldPrice);
-          if (!isFinite(p) || p < 0) return res.status(400).json({ error: "Invalid soldPrice" });
-          updates.soldPrice = p;
-          updates.soldAt = typeof soldAt === "string" ? soldAt : new Date().toISOString();
+  app.patch(
+    "/api/inventory/:deviceId/:itemId",
+    async (req: Request, res: Response) => {
+      try {
+        const deviceId = req.params.deviceId;
+        const itemId = req.params.itemId;
+        if (
+          !isValidDeviceId(deviceId) ||
+          typeof itemId !== "string" ||
+          !itemId
+        ) {
+          return res.status(400).json({ error: "Invalid identifiers" });
         }
-      } else if (soldAt !== undefined) {
-        updates.soldAt = soldAt === null ? null : String(soldAt);
+        if (isInventoryRateLimited(deviceId)) {
+          return res.status(429).json({
+            error: "Too many requests. Please wait a moment and try again.",
+          });
+        }
+        const {
+          productName,
+          imageUrl,
+          purchasePrice,
+          notes,
+          soldPrice,
+          soldAt,
+        } = req.body || {};
+        const updates: Parameters<typeof updateInventoryItemRow>[2] = {};
+        if (productName !== undefined) {
+          const cleanedName = sanitizeInventoryName(productName);
+          if (!cleanedName)
+            return res.status(400).json({ error: "Invalid productName" });
+          updates.productName = cleanedName;
+        }
+        if (imageUrl !== undefined)
+          updates.imageUrl = imageUrl === null ? null : String(imageUrl);
+        if (purchasePrice !== undefined) {
+          const p = Number(purchasePrice);
+          if (!isFinite(p) || p < 0)
+            return res.status(400).json({ error: "Invalid purchasePrice" });
+          updates.purchasePrice = p;
+        }
+        if (notes !== undefined)
+          updates.notes = notes === null ? null : String(notes);
+        if (soldPrice !== undefined) {
+          if (soldPrice === null) {
+            updates.soldPrice = null;
+            updates.soldAt = null;
+          } else {
+            const p = Number(soldPrice);
+            if (!isFinite(p) || p < 0)
+              return res.status(400).json({ error: "Invalid soldPrice" });
+            updates.soldPrice = p;
+            updates.soldAt =
+              typeof soldAt === "string" ? soldAt : new Date().toISOString();
+          }
+        } else if (soldAt !== undefined) {
+          updates.soldAt = soldAt === null ? null : String(soldAt);
+        }
+        const updated = await updateInventoryItemRow(deviceId, itemId, updates);
+        if (!updated) return res.status(404).json({ error: "Item not found" });
+        res.json({ item: updated });
+      } catch (error) {
+        console.error("Update inventory error:", error);
+        res.status(500).json({ error: "Failed to update inventory item" });
       }
-      const updated = await updateInventoryItemRow(deviceId, itemId, updates);
-      if (!updated) return res.status(404).json({ error: "Item not found" });
-      res.json({ item: updated });
-    } catch (error) {
-      console.error("Update inventory error:", error);
-      res.status(500).json({ error: "Failed to update inventory item" });
-    }
-  });
+    },
+  );
 
-  app.delete("/api/inventory/:deviceId/:itemId", async (req: Request, res: Response) => {
-    try {
-      const deviceId = req.params.deviceId;
-      const itemId = req.params.itemId;
-      if (!isValidDeviceId(deviceId) || typeof itemId !== "string" || !itemId) {
-        return res.status(400).json({ error: "Invalid identifiers" });
+  app.delete(
+    "/api/inventory/:deviceId/:itemId",
+    async (req: Request, res: Response) => {
+      try {
+        const deviceId = req.params.deviceId;
+        const itemId = req.params.itemId;
+        if (
+          !isValidDeviceId(deviceId) ||
+          typeof itemId !== "string" ||
+          !itemId
+        ) {
+          return res.status(400).json({ error: "Invalid identifiers" });
+        }
+        if (isInventoryRateLimited(deviceId)) {
+          return res.status(429).json({
+            error: "Too many requests. Please wait a moment and try again.",
+          });
+        }
+        const ok = await deleteInventoryItem(deviceId, itemId);
+        if (!ok)
+          return res
+            .status(500)
+            .json({ error: "Failed to delete inventory item" });
+        res.json({ ok: true });
+        // Fire-and-forget: the deleted item's photo is no longer pinned by
+        // inventory; if it's also outside the recent-10 window, prune cleans
+        // it up from Supabase Storage.
+        pruneDeviceScanImages(deviceId);
+      } catch (error) {
+        console.error("Delete inventory error:", error);
+        res.status(500).json({ error: "Failed to delete inventory item" });
       }
-      if (isInventoryRateLimited(deviceId)) {
-        return res.status(429).json({ error: "Too many requests. Please wait a moment and try again." });
-      }
-      const ok = await deleteInventoryItem(deviceId, itemId);
-      if (!ok) return res.status(500).json({ error: "Failed to delete inventory item" });
-      res.json({ ok: true });
-      // Fire-and-forget: the deleted item's photo is no longer pinned by
-      // inventory; if it's also outside the recent-10 window, prune cleans
-      // it up from Supabase Storage.
-      pruneDeviceScanImages(deviceId);
-    } catch (error) {
-      console.error("Delete inventory error:", error);
-      res.status(500).json({ error: "Failed to delete inventory item" });
-    }
-  });
+    },
+  );
 
   const httpServer = createServer(app);
 

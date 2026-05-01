@@ -41,3 +41,7 @@ app-example
 # generated native folders
 /ios
 /android
+
+# server build output (from `npm run server:build`)
+server_dist/
+

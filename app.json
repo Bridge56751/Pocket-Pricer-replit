@@ -18,7 +18,10 @@
           { "SKAdNetworkIdentifier": "mj797d8u6f.skadnetwork" },
           { "SKAdNetworkIdentifier": "gta9lk7ez23.skadnetwork" },
           { "SKAdNetworkIdentifier": "v9wttpbfk9.skadnetwork" }
-        ]
+        ],
+        "NSAppTransportSecurity": {
+          "NSAllowsLocalNetworking": true
+        }
       }
     },
     "android": {

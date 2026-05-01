@@ -1,5 +1,7 @@
+import "./env-loader";
 import express from "express";
 import type { Request, Response, NextFunction } from "express";
+import helmet from "helmet";
 import { registerRoutes } from "./routes";
 import { ensureEbaySearchEventsSchema } from "./supabase";
 import * as fs from "fs";
@@ -8,32 +10,77 @@ import * as path from "path";
 const app = express();
 const log = console.log;
 
+// P1-6: don't leak the framework / version in response headers.
+app.disable("x-powered-by");
+
 declare module "http" {
   interface IncomingMessage {
     rawBody: unknown;
   }
 }
 
+// P1-6: standard security headers via helmet.
+//
+// CSP is tuned for the landing-page template (server/templates/landing-page.html)
+// which inlines styles + scripts and pulls qr-code-styling from unpkg.com.
+// Without these allowances, helmet's strict default CSP would break the page.
+// The /api/* surface doesn't need CSP — it returns JSON, not HTML — so the
+// permissive parts only affect the public landing/legal pages.
+//
+// SECURITY_REVIEW.md P2-13 flags the unpkg.com script as needing SRI; that's
+// a separate follow-up. For now we at least scope CSP so the script can't be
+// substituted from anywhere else.
+function setupSecurityHeaders(app: express.Application) {
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'", "https://unpkg.com"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          imgSrc: ["'self'", "data:", "https:"],
+          connectSrc: ["'self'", "https:"],
+          fontSrc: ["'self'", "data:", "https:"],
+          objectSrc: ["'none'"],
+          frameAncestors: ["'none'"],
+        },
+      },
+      // We're not iframed by anyone we trust; disabling COEP avoids breaking
+      // the landing page's cross-origin script load.
+      crossOriginEmbedderPolicy: false,
+    }),
+  );
+}
+
 function setupCors(app: express.Application) {
   app.use((req, res, next) => {
     const origins = new Set<string>();
 
+    // Replit-managed origins (production + Replit's dev tunnel).
     if (process.env.REPLIT_DEV_DOMAIN) {
       origins.add(`https://${process.env.REPLIT_DEV_DOMAIN}`);
     }
-
     if (process.env.REPLIT_DOMAINS) {
       process.env.REPLIT_DOMAINS.split(",").forEach((d) => {
         origins.add(`https://${d.trim()}`);
       });
     }
 
+    // P1-6: explicit production origins so the allowlist works even if the
+    // Replit env vars are missing for some reason.
+    origins.add("https://pocketpricerapp.com");
+    origins.add("https://pocket-pricer.replit.app");
+    origins.add("https://pocket-pricer.com"); // marketing site
+
     const origin = req.header("origin");
 
-    // Allow localhost origins for Expo web development (any port)
+    // P1-6: only reflect localhost origins in non-production. In prod, a
+    // localhost origin is either an attacker probing or a misconfigured
+    // user-side tool — never a legitimate caller of pocketpricerapp.com.
     const isLocalhost =
-      origin?.startsWith("http://localhost:") ||
-      origin?.startsWith("http://127.0.0.1:");
+      process.env.NODE_ENV !== "production" &&
+      (origin?.startsWith("http://localhost:") ||
+        origin?.startsWith("http://127.0.0.1:"));
 
     if (origin && (origins.has(origin) || isLocalhost)) {
       res.header("Access-Control-Allow-Origin", origin);
@@ -41,8 +88,16 @@ function setupCors(app: express.Application) {
         "Access-Control-Allow-Methods",
         "GET, POST, PUT, DELETE, OPTIONS",
       );
-      res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Device-Id, X-Is-Pro, X-Timezone-Offset");
-      res.header("Access-Control-Allow-Credentials", "true");
+      // P1-6: dropped X-Is-Pro from the allow-list — it's a client-trusted
+      // claim that gets removed entirely in the P0-1 fix. Until then, don't
+      // advertise it as a supported header.
+      res.header(
+        "Access-Control-Allow-Headers",
+        "Content-Type, Authorization, X-Device-Id, X-Timezone-Offset",
+      );
+      // P1-6: dropped Access-Control-Allow-Credentials. The API doesn't use
+      // cookies (everything's header-based), and combining credentials with
+      // origin reflection is the primary CSRF-amplification footgun.
     }
 
     if (req.method === "OPTIONS") {
@@ -190,7 +245,12 @@ function configureExpoAndLanding(app: express.Application) {
       return next();
     }
 
-    if (req.path !== "/" && req.path !== "/manifest" && req.path !== "/privacy" && req.path !== "/terms") {
+    if (
+      req.path !== "/" &&
+      req.path !== "/manifest" &&
+      req.path !== "/privacy" &&
+      req.path !== "/terms"
+    ) {
       return next();
     }
 
@@ -249,6 +309,7 @@ function setupErrorHandler(app: express.Application) {
 }
 
 (async () => {
+  setupSecurityHeaders(app);
   setupCors(app);
   setupBodyParsing(app);
   setupRequestLogging(app);

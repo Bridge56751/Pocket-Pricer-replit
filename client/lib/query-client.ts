@@ -5,15 +5,23 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
  * @returns {string} The API base URL
  */
 export function getApiUrl(): string {
-  let host = process.env.EXPO_PUBLIC_DOMAIN;
+  // Defaults: localhost:5050 in dev (so `npm run expo:dev:local` works without
+  // any env-var setup on a fresh clone — port 5050 because macOS AirPlay
+  // squats on 5000), pocketpricerapp.com in production (defense-in-depth so a
+  // misconfigured EAS build profile doesn't crash the app). Override either
+  // by setting EXPO_PUBLIC_DOMAIN.
+  const host =
+    process.env.EXPO_PUBLIC_DOMAIN ||
+    (__DEV__ ? "localhost:5050" : "pocketpricerapp.com");
 
-  if (!host) {
-    throw new Error("EXPO_PUBLIC_DOMAIN is not set");
-  }
+  // Localhost runs HTTP (no TLS in local dev). iOS allows this because
+  // app.json grants NSAppTransportSecurity → NSAllowsLocalNetworking.
+  // Everything else uses HTTPS.
+  const isLocalhost =
+    host.startsWith("localhost") || host.startsWith("127.0.0.1");
+  const scheme = isLocalhost ? "http" : "https";
 
-  let url = new URL(`https://${host}`);
-
-  return url.href;
+  return new URL(`${scheme}://${host}`).href;
 }
 
 async function throwIfResNotOk(res: Response) {
