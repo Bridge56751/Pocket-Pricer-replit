@@ -16,6 +16,36 @@ import {
 } from "./supabase";
 import { cleanQueryWithAI } from "./gemini";
 import { checkProviderBudget } from "./provider-budget";
+import { verifyProViaRevenueCat } from "./revenuecat";
+
+/**
+ * Group C Part B / P0-1: get the authoritative Pro status for this request.
+ *
+ * Default behavior (legacy, what production runs today): trust the
+ * X-Is-Pro header set by the client. Bypassable in 30s with curl, see
+ * SECURITY_REVIEW.md P0-1.
+ *
+ * When VERIFY_PRO_VIA_RC=true is set in the environment: ignore the
+ * header entirely and query RevenueCat REST instead. This is the safe
+ * end-state that closes the X-Is-Pro spoof loophole.
+ *
+ * The env-flag gate exists so we can deploy this code dark, then flip
+ * the flag in Replit Secrets when adoption of the PR #2 client release
+ * is high enough that holdouts won't be bricked. See
+ * docs/CHANGELOG_GROUP_C_BACKEND.md for the full deploy + rollback
+ * playbook. Unset the env var → instant rollback to legacy behavior,
+ * no code revert needed.
+ */
+async function getIsPro(req: Request): Promise<boolean> {
+  if (process.env.VERIFY_PRO_VIA_RC === "true") {
+    const deviceId = req.headers["x-device-id"] as string | undefined;
+    if (!deviceId) return false;
+    return await verifyProViaRevenueCat(deviceId);
+  }
+  // Legacy: trust the client header. Kept until the flag is permanently
+  // flipped + verified, then we can delete this branch in a follow-up PR.
+  return req.headers["x-is-pro"] === "true";
+}
 
 const FREE_LIFETIME_SEARCHES = 3;
 const RATE_LIMIT_MAX = 20;
@@ -1374,7 +1404,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     let supabaseFileName: string | null = null;
     try {
       const deviceId = req.headers["x-device-id"] as string | undefined;
-      const isPro = req.headers["x-is-pro"] === "true";
+      // P0-1: when VERIFY_PRO_VIA_RC=true, this verifies via RevenueCat
+      // REST instead of trusting the client header. See getIsPro() above.
+      const isPro = await getIsPro(req);
 
       if (!deviceId) {
         return res.status(400).json({ error: "Device ID is required" });
@@ -1582,7 +1614,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/ebay-sold-search", async (req: Request, res: Response) => {
     try {
       const deviceId = req.headers["x-device-id"] as string | undefined;
-      const isPro = req.headers["x-is-pro"] === "true";
+      // P0-1: when VERIFY_PRO_VIA_RC=true, this verifies via RevenueCat
+      // REST instead of trusting the client header. See getIsPro() above.
+      const isPro = await getIsPro(req);
 
       if (!deviceId) {
         return res.status(400).json({ error: "Device ID is required" });
@@ -1881,6 +1915,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const deviceId =
           (req.headers["x-device-id"] as string | undefined) || "unknown";
+        // Best-effort analytics in an error handler — intentionally use
+        // the unverified client header here. Adding a synchronous RC
+        // roundtrip in an error path would risk masking the original
+        // exception. The `is_pro` column on this analytics row is purely
+        // informational (not used for entitlement decisions).
         const isPro = req.headers["x-is-pro"] === "true";
         const rawQuery =
           typeof req.body?.searchQuery === "string"
