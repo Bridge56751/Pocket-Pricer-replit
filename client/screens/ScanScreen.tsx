@@ -1,5 +1,13 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
-import { View, StyleSheet, Pressable, Text, ScrollView, Image, Platform } from "react-native";
+import {
+  View,
+  StyleSheet,
+  Pressable,
+  Text,
+  ScrollView,
+  Image,
+  Platform,
+} from "react-native";
 import { FallbackImage } from "@/components/FallbackImage";
 import { useTabBarFadeOnScroll } from "@/hooks/useTabBarFadeOnScroll";
 import { useTabBarVisibility } from "@/contexts/TabBarVisibilityContext";
@@ -7,7 +15,13 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as StoreReview from "expo-store-review";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
-import { useNavigation, useFocusEffect, useRoute, RouteProp, CommonActions } from "@react-navigation/native";
+import {
+  useNavigation,
+  useFocusEffect,
+  useRoute,
+  RouteProp,
+  CommonActions,
+} from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
@@ -31,9 +45,13 @@ import { getApiUrl } from "@/lib/query-client";
 import { storeImage } from "@/lib/image-store";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRevenueCat } from "@/contexts/RevenueCatContext";
-import type { SearchHistoryItem } from "@/types/product";
-import type { RootStackParamList, CapturedPhoto } from "@/navigation/RootStackNavigator";
+import type { RateLimitInfo, SearchHistoryItem } from "@/types/product";
+import type {
+  RootStackParamList,
+  CapturedPhoto,
+} from "@/navigation/RootStackNavigator";
 import type { MainTabParamList } from "@/navigation/MainTabNavigator";
+import { ProCapReachedModal } from "@/components/ProCapReachedModal";
 
 type ScanScreenRouteProp = RouteProp<MainTabParamList, "Home">;
 
@@ -43,7 +61,15 @@ const SCAN_STEPS = [
   { label: "Finding best prices...", icon: "dollar-sign" as const },
 ];
 
-function ScanningImage({ uri, style, containerStyle }: { uri: string; style: any; containerStyle?: any }) {
+function ScanningImage({
+  uri,
+  style,
+  containerStyle,
+}: {
+  uri: string;
+  style: any;
+  containerStyle?: any;
+}) {
   const shimmerTranslate = useSharedValue(-1);
   const glowOpacity = useSharedValue(0);
 
@@ -51,15 +77,15 @@ function ScanningImage({ uri, style, containerStyle }: { uri: string; style: any
     shimmerTranslate.value = withRepeat(
       withTiming(1, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
       -1,
-      false
+      false,
     );
     glowOpacity.value = withRepeat(
       withSequence(
         withTiming(0.8, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
-        withTiming(0.2, { duration: 1200, easing: Easing.inOut(Easing.ease) })
+        withTiming(0.2, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
       ),
       -1,
-      false
+      false,
     );
   }, []);
 
@@ -113,7 +139,17 @@ function ScanningImage({ uri, style, containerStyle }: { uri: string; style: any
   );
 }
 
-function AnimatedProgressBar({ step, totalSteps, color, trackColor }: { step: number; totalSteps: number; color: string; trackColor: string }) {
+function AnimatedProgressBar({
+  step,
+  totalSteps,
+  color,
+  trackColor,
+}: {
+  step: number;
+  totalSteps: number;
+  color: string;
+  trackColor: string;
+}) {
   const progress = useSharedValue(0);
 
   useEffect(() => {
@@ -126,9 +162,15 @@ function AnimatedProgressBar({ step, totalSteps, color, trackColor }: { step: nu
   }));
 
   return (
-    <View style={[styles.scanOverlayProgressBar, { backgroundColor: trackColor }]}>
+    <View
+      style={[styles.scanOverlayProgressBar, { backgroundColor: trackColor }]}
+    >
       <Animated.View
-        style={[styles.scanOverlayProgressFill, { backgroundColor: color }, animatedStyle]}
+        style={[
+          styles.scanOverlayProgressFill,
+          { backgroundColor: color },
+          animatedStyle,
+        ]}
       />
     </View>
   );
@@ -144,7 +186,8 @@ function formatTimeAgo(dateString: string): string {
 
   if (diffMins < 1) return "just now";
   if (diffMins < 60) return `${diffMins} min ago`;
-  if (diffHours < 24) return `about ${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
+  if (diffHours < 24)
+    return `about ${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
   if (diffDays === 1) return "yesterday";
   return `${diffDays} days ago`;
 }
@@ -155,10 +198,16 @@ export default function ScanScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const { theme, colors } = useDesignTokens();
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<ScanScreenRouteProp>();
 
-  const { getDeviceId, getScansUsed, setScansUsed: persistScansUsed, incrementScans } = useAuth();
+  const {
+    getDeviceId,
+    getScansUsed,
+    setScansUsed: persistScansUsed,
+    incrementScans,
+  } = useAuth();
   const { isPro, isReady: rcReady } = useRevenueCat();
   const queryClient = useQueryClient();
   const tabBarFadeHandler = useTabBarFadeOnScroll();
@@ -174,16 +223,24 @@ export default function ScanScreen() {
     }, []),
   );
 
-  
   const [recentScans, setRecentScans] = useState<SearchHistoryItem[]>([]);
   const [scansUsed, setScansUsed] = useState(0);
   const [cachedDeviceId, setCachedDeviceId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analyzingProgress, setAnalyzingProgress] = useState("");
-  const [analyzingCount, setAnalyzingCount] = useState({ current: 0, total: 0 });
+  const [analyzingCount, setAnalyzingCount] = useState({
+    current: 0,
+    total: 0,
+  });
   const [currentStep, setCurrentStep] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // Group C / P0-8 UX: when /api/scan-with-lens returns a structured
+  // rateLimit field (Pro user has hit a per-customer monthly cap on
+  // SearchAPI / ScrapingDog), surface a cooldown modal explaining the
+  // reset date + a contact-support release valve. Backend contract is
+  // shared with /api/ebay-sold-search via the RateLimitInfo type.
+  const [proCapHit, setProCapHit] = useState<RateLimitInfo | null>(null);
   const [scannedPhotoUri, setScannedPhotoUri] = useState<string | null>(null);
 
   useEffect(() => {
@@ -222,11 +279,21 @@ export default function ScanScreen() {
       const timeout = setTimeout(() => controller.abort(), 8000);
       try {
         const res = await fetch(
-          new URL(`/api/device-stats/${cachedDeviceId}`, getApiUrl()).toString(),
-          { headers: { "X-Timezone-Offset": String(tzOffset) }, signal: controller.signal }
+          new URL(
+            `/api/device-stats/${cachedDeviceId}`,
+            getApiUrl(),
+          ).toString(),
+          {
+            headers: { "X-Timezone-Offset": String(tzOffset) },
+            signal: controller.signal,
+          },
         );
         if (!res.ok) return null;
-        return res.json() as Promise<{ memberDays: number; scansToday: number; totalScans: number }>;
+        return res.json() as Promise<{
+          memberDays: number;
+          scansToday: number;
+          totalScans: number;
+        }>;
       } catch {
         return null;
       } finally {
@@ -238,221 +305,284 @@ export default function ScanScreen() {
     retry: 1,
   });
 
-  const processPhotos = useCallback(async (photos: CapturedPhoto[], addToInventory: boolean = false) => {
-    if (photos.length === 0 || processingRef.current) return;
-    
-    processingRef.current = true;
-    setIsAnalyzing(true);
-    setErrorMessage(null);
-    setScannedPhotoUri(photos[0].uri);
-    setCurrentStep(0);
-    setAnalyzingCount({ current: 1, total: 3 });
-    setAnalyzingProgress(SCAN_STEPS[0].label);
-    
-    try {
-      if (rcReady && !isPro) {
-        const scansUsed = await getScansUsed();
-        if (scansUsed >= FREE_SCAN_LIMIT) {
-          setIsAnalyzing(false);
-          setAnalyzingProgress("");
-          processingRef.current = false;
-          navigation.navigate("Paywall");
-          return;
-        }
-      }
+  const processPhotos = useCallback(
+    async (photos: CapturedPhoto[], addToInventory: boolean = false) => {
+      if (photos.length === 0 || processingRef.current) return;
 
-      setCurrentStep(1);
-      setAnalyzingProgress(SCAN_STEPS[1].label);
-      setAnalyzingCount({ current: 2, total: 3 });
-      
-      let results: any = null;
-      let productInfo: any = null;
-      let usedLens = false;
+      processingRef.current = true;
+      setIsAnalyzing(true);
+      setErrorMessage(null);
+      setScannedPhotoUri(photos[0].uri);
+      setCurrentStep(0);
+      setAnalyzingCount({ current: 1, total: 3 });
+      setAnalyzingProgress(SCAN_STEPS[0].label);
 
-      const lensController = new AbortController();
-      const lensTimeoutId = setTimeout(() => lensController.abort(), 25000);
       try {
-        const deviceId = await getDeviceId();
-        const scanHeaders: Record<string, string> = {
-          "Content-Type": "application/json",
-          "X-Device-Id": deviceId,
-          "X-Is-Pro": isPro ? "true" : "false",
-        };
-        const lensResponse = await fetch(
-          new URL("/api/scan-with-lens", getApiUrl()).toString(),
-          {
-            method: "POST",
-            headers: scanHeaders,
-            body: JSON.stringify({ imageBase64: `data:image/jpeg;base64,${photos[0].base64}` }),
-            signal: lensController.signal,
-          }
-        );
-        
-        if (lensResponse.status === 403) {
-          const lensData = await lensResponse.json();
-          if (lensData.limitReached) {
+        if (rcReady && !isPro) {
+          const scansUsed = await getScansUsed();
+          if (scansUsed >= FREE_SCAN_LIMIT) {
             setIsAnalyzing(false);
             setAnalyzingProgress("");
+            processingRef.current = false;
             navigation.navigate("Paywall");
             return;
           }
         }
 
-        if (lensResponse.ok) {
-          results = await lensResponse.json();
-          usedLens = true;
-          productInfo = {
-            name: results.productName || results.query,
-            brand: "",
-            category: "",
-            description: results.productDescription || "",
+        setCurrentStep(1);
+        setAnalyzingProgress(SCAN_STEPS[1].label);
+        setAnalyzingCount({ current: 2, total: 3 });
+
+        let results: any = null;
+        let productInfo: any = null;
+        let usedLens = false;
+
+        const lensController = new AbortController();
+        const lensTimeoutId = setTimeout(() => lensController.abort(), 25000);
+        try {
+          const deviceId = await getDeviceId();
+          const scanHeaders: Record<string, string> = {
+            "Content-Type": "application/json",
+            "X-Device-Id": deviceId,
+            "X-Is-Pro": isPro ? "true" : "false",
           };
+          const lensResponse = await fetch(
+            new URL("/api/scan-with-lens", getApiUrl()).toString(),
+            {
+              method: "POST",
+              headers: scanHeaders,
+              body: JSON.stringify({
+                imageBase64: `data:image/jpeg;base64,${photos[0].base64}`,
+              }),
+              signal: lensController.signal,
+            },
+          );
+
+          if (lensResponse.status === 403) {
+            const lensData = await lensResponse.json();
+            if (lensData.limitReached) {
+              setIsAnalyzing(false);
+              setAnalyzingProgress("");
+              navigation.navigate("Paywall");
+              return;
+            }
+          }
+
+          if (lensResponse.ok) {
+            results = await lensResponse.json();
+            // P0-8 UX: a Pro user who hit a per-customer monthly cap on the
+            // Lens provider gets back a 200 response with `rateLimit`
+            // populated and `serviceError: true` (so old client builds keep
+            // their existing UX). New builds (this one) detect rateLimit
+            // and render the cooldown modal instead of falling through to
+            // the generic "Could not identify the product" error.
+            if (results?.rateLimit && typeof results.rateLimit === "object") {
+              setIsAnalyzing(false);
+              setAnalyzingProgress("");
+              setProCapHit(results.rateLimit as RateLimitInfo);
+              return;
+            }
+            usedLens = true;
+            productInfo = {
+              name: results.productName || results.query,
+              brand: "",
+              category: "",
+              description: results.productDescription || "",
+            };
+          }
+        } catch (lensError: any) {
+          if (lensError?.name === "AbortError") {
+            setIsAnalyzing(false);
+            setAnalyzingProgress("");
+            setErrorMessage(
+              "Connection lost. Please check your internet and try again.",
+            );
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            return;
+          }
+          console.log("Lens search failed:", lensError);
+        } finally {
+          clearTimeout(lensTimeoutId);
         }
-      } catch (lensError: any) {
-        if (lensError?.name === "AbortError") {
+
+        if (!results || !results.listings?.length) {
           setIsAnalyzing(false);
           setAnalyzingProgress("");
-          setErrorMessage("Connection lost. Please check your internet and try again.");
+          processingRef.current = false;
+          setErrorMessage(
+            "Could not identify the product. Please try again with a clearer photo of the product or packaging.",
+          );
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
           return;
         }
-        console.log("Lens search failed:", lensError);
-      } finally {
-        clearTimeout(lensTimeoutId);
-      }
 
-      if (!results || !results.listings?.length) {
+        const scannedImageId = storeImage(
+          `data:image/jpeg;base64,${photos[0].base64}`,
+        );
+        const enrichedResults = {
+          ...results,
+          scannedImageId,
+          productInfo,
+          usedLens,
+        };
+
+        const queryString =
+          typeof results.query === "string"
+            ? results.query
+            : typeof productInfo?.name === "string"
+              ? productInfo.name
+              : "Visual Search";
+
+        const historyItem: SearchHistoryItem = {
+          id: Date.now().toString(),
+          query: queryString,
+          // Persist the hosted URL of the user's actual scan photo so recent-
+          // scan thumbnails survive app restarts (the in-memory image-store
+          // doesn't). Falls back to the scraped product image at render time
+          // when this isn't set (e.g. older scans, or fallback upload host).
+          thumbnailUrl:
+            typeof results.scannedImageUrl === "string" &&
+            results.scannedImageUrl
+              ? results.scannedImageUrl
+              : undefined,
+          product: results.listings?.[0] || null,
+          searchedAt: new Date().toISOString(),
+          results: enrichedResults,
+        };
+
         setIsAnalyzing(false);
         setAnalyzingProgress("");
+        setScannedPhotoUri(null);
         processingRef.current = false;
-        setErrorMessage("Could not identify the product. Please try again with a clearer photo of the product or packaging.");
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        return;
-      }
 
-      const scannedImageId = storeImage(`data:image/jpeg;base64,${photos[0].base64}`);
-      const enrichedResults = {
-        ...results,
-        scannedImageId,
-        productInfo,
-        usedLens,
-      };
-
-      const queryString = typeof results.query === 'string' 
-        ? results.query 
-        : (typeof productInfo?.name === 'string' ? productInfo.name : "Visual Search");
-      
-      const historyItem: SearchHistoryItem = {
-        id: Date.now().toString(),
-        query: queryString,
-        // Persist the hosted URL of the user's actual scan photo so recent-
-        // scan thumbnails survive app restarts (the in-memory image-store
-        // doesn't). Falls back to the scraped product image at render time
-        // when this isn't set (e.g. older scans, or fallback upload host).
-        thumbnailUrl: typeof results.scannedImageUrl === "string" && results.scannedImageUrl
-          ? results.scannedImageUrl
-          : undefined,
-        product: results.listings?.[0] || null,
-        searchedAt: new Date().toISOString(),
-        results: enrichedResults,
-      };
-
-      setIsAnalyzing(false);
-      setAnalyzingProgress("");
-      setScannedPhotoUri(null);
-      processingRef.current = false;
-
-      let newScanCount = 0;
-      if (!isPro) {
-        const serverCount = results.totalScans;
-        if (typeof serverCount === "number" && serverCount > 0) {
-          await persistScansUsed(serverCount);
-          newScanCount = serverCount;
-        } else {
-          newScanCount = await incrementScans().catch(() => 0);
+        let newScanCount = 0;
+        if (!isPro) {
+          const serverCount = results.totalScans;
+          if (typeof serverCount === "number" && serverCount > 0) {
+            await persistScansUsed(serverCount);
+            newScanCount = serverCount;
+          } else {
+            newScanCount = await incrementScans().catch(() => 0);
+          }
+          setScansUsed(newScanCount);
         }
-        setScansUsed(newScanCount);
-      }
 
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 1,
-          routes: [
-            { name: "MainTabs" },
-            { name: "SearchResults", params: { results: enrichedResults, addToInventory } },
-          ],
-        })
-      );
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 1,
+            routes: [
+              { name: "MainTabs" },
+              {
+                name: "SearchResults",
+                params: { results: enrichedResults, addToInventory },
+              },
+            ],
+          }),
+        );
 
-      addSearchHistory(historyItem)
-        .then(() => loadRecentScans())
-        .catch((err) => {
-          if (__DEV__) console.warn("ScanScreen: failed to save scan to history", err);
-          loadRecentScans();
-        });
-      queryClient.invalidateQueries({ queryKey: ["/api/device-stats"] });
+        addSearchHistory(historyItem)
+          .then(() => loadRecentScans())
+          .catch((err) => {
+            if (__DEV__)
+              console.warn("ScanScreen: failed to save scan to history", err);
+            loadRecentScans();
+          });
+        queryClient.invalidateQueries({ queryKey: ["/api/device-stats"] });
 
-      if (Platform.OS !== "web") {
-        (async () => {
-          try {
-            const Constants = await import("expo-constants");
-            const isExpoGo = Constants.default?.appOwnership === "expo";
-            if (!isExpoGo) {
-              const appsFlyer = await import("react-native-appsflyer");
-              appsFlyer.default.logEvent(
-                "af_search",
-                { af_search_string: queryString },
-                () => {},
-                () => {}
+        if (Platform.OS !== "web") {
+          (async () => {
+            try {
+              const Constants = await import("expo-constants");
+              const isExpoGo = Constants.default?.appOwnership === "expo";
+              if (!isExpoGo) {
+                const appsFlyer = await import("react-native-appsflyer");
+                appsFlyer.default.logEvent(
+                  "af_search",
+                  { af_search_string: queryString },
+                  () => {},
+                  () => {},
+                );
+              }
+            } catch {}
+          })();
+        }
+
+        if (newScanCount >= 5 && Platform.OS !== "web") {
+          (async () => {
+            try {
+              const alreadyPrompted = await AsyncStorage.getItem(
+                "@pocket_pricer_rating_prompted",
               );
-            }
-          } catch {}
-        })();
+              if (alreadyPrompted === "true") return;
+              await AsyncStorage.setItem(
+                "@pocket_pricer_rating_prompted",
+                "true",
+              );
+              const isAvailable = await StoreReview.isAvailableAsync();
+              if (isAvailable) {
+                setTimeout(() => {
+                  StoreReview.requestReview().catch(() => {});
+                }, 2000);
+              }
+            } catch {}
+          })();
+        }
+      } catch (error) {
+        console.error("Processing failed:", error);
+        setIsAnalyzing(false);
+        setAnalyzingProgress("");
+        const errorMsg =
+          error instanceof Error
+            ? error.message
+            : "Something went wrong. Please try again.";
+        if (
+          errorMsg.includes("401") ||
+          errorMsg.includes("Not authenticated")
+        ) {
+          setErrorMessage("Authentication error. Please try again.");
+        } else if (errorMsg.includes("429") || errorMsg.includes("rate")) {
+          setErrorMessage(
+            "Too many requests. Please wait a moment and try again.",
+          );
+        } else if (errorMsg.includes("500")) {
+          setErrorMessage("Server error. Please try again later.");
+        } else {
+          setErrorMessage(errorMsg);
+        }
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      } finally {
+        processingRef.current = false;
       }
-
-      if (newScanCount >= 5 && Platform.OS !== "web") {
-        (async () => {
-          try {
-            const alreadyPrompted = await AsyncStorage.getItem("@pocket_pricer_rating_prompted");
-            if (alreadyPrompted === "true") return;
-            await AsyncStorage.setItem("@pocket_pricer_rating_prompted", "true");
-            const isAvailable = await StoreReview.isAvailableAsync();
-            if (isAvailable) {
-              setTimeout(() => { StoreReview.requestReview().catch(() => {}); }, 2000);
-            }
-          } catch {}
-        })();
-      }
-      
-    } catch (error) {
-      console.error("Processing failed:", error);
-      setIsAnalyzing(false);
-      setAnalyzingProgress("");
-      const errorMsg = error instanceof Error ? error.message : "Something went wrong. Please try again.";
-      if (errorMsg.includes("401") || errorMsg.includes("Not authenticated")) {
-        setErrorMessage("Authentication error. Please try again.");
-      } else if (errorMsg.includes("429") || errorMsg.includes("rate")) {
-        setErrorMessage("Too many requests. Please wait a moment and try again.");
-      } else if (errorMsg.includes("500")) {
-        setErrorMessage("Server error. Please try again later.");
-      } else {
-        setErrorMessage(errorMsg);
-      }
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-    } finally {
-      processingRef.current = false;
-    }
-  }, [loadRecentScans, navigation, rcReady, isPro, getScansUsed, persistScansUsed, incrementScans, getDeviceId]);
+    },
+    [
+      loadRecentScans,
+      navigation,
+      rcReady,
+      isPro,
+      getScansUsed,
+      persistScansUsed,
+      incrementScans,
+      getDeviceId,
+    ],
+  );
 
   useEffect(() => {
     const photosToProcess = route.params?.photosToProcess;
     const addToInventoryFlag = route.params?.addToInventory ?? false;
     if (photosToProcess && photosToProcess.length > 0) {
-      navigation.setParams({ photosToProcess: undefined, addToInventory: undefined });
+      navigation.setParams({
+        photosToProcess: undefined,
+        addToInventory: undefined,
+      });
       processPhotos(photosToProcess, addToInventoryFlag);
     }
-  }, [route.params?.photosToProcess, route.params?.addToInventory, processPhotos, navigation]);
+  }, [
+    route.params?.photosToProcess,
+    route.params?.addToInventory,
+    processPhotos,
+    navigation,
+  ]);
 
   const checkAndNavigate = useCallback(async () => {
     if (!rcReady) return;
@@ -466,7 +596,7 @@ export default function ScanScreen() {
   useFocusEffect(
     useCallback(() => {
       loadRecentScans();
-    }, [loadRecentScans])
+    }, [loadRecentScans]),
   );
 
   const rcReadyRef = useRef(false);
@@ -492,7 +622,7 @@ export default function ScanScreen() {
 
   const handleViewScan = (scan: SearchHistoryItem) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
+
     if (scan.results) {
       navigation.dispatch(
         CommonActions.reset({
@@ -501,7 +631,7 @@ export default function ScanScreen() {
             { name: "MainTabs" },
             { name: "SearchResults", params: { results: scan.results } },
           ],
-        })
+        }),
       );
     }
   };
@@ -523,216 +653,321 @@ export default function ScanScreen() {
         scrollEventThrottle={16}
       >
         <LinearGradient
-            colors={["#0A3622", "#0A3622", "#14532D", "#1A6B3C"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0, y: 1 }}
-            style={[styles.heroCard, { paddingTop: insets.top + 16, paddingBottom: isPro ? 16 : 24 }]}
-          >
+          colors={["#0A3622", "#0A3622", "#14532D", "#1A6B3C"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={[
+            styles.heroCard,
+            { paddingTop: insets.top + 16, paddingBottom: isPro ? 16 : 24 },
+          ]}
+        >
           <View style={styles.header}>
             <View style={styles.headerLeft}>
-              <Feather name="tag" size={20} color="#FFFFFF" style={{ transform: [{ scaleX: -1 }] }} />
+              <Feather
+                name="tag"
+                size={20}
+                color="#FFFFFF"
+                style={{ transform: [{ scaleX: -1 }] }}
+              />
               <Text style={[styles.appName, { color: "#FFFFFF" }]}>
                 Pocket Pricer
               </Text>
             </View>
           </View>
 
-            <Text style={styles.heroTitle}>
-              Scan & Price
-            </Text>
-            <Text style={styles.heroDescription}>
-              Point your camera at any product to get instant market pricing and sales data
-            </Text>
+          <Text style={styles.heroTitle}>Scan & Price</Text>
+          <Text style={styles.heroDescription}>
+            Point your camera at any product to get instant market pricing and
+            sales data
+          </Text>
 
-            <View style={styles.metricsRow}>
-              <View style={styles.metricCard}>
-                <Text style={styles.metricLabel}>TOTAL SCANS</Text>
-                <View style={styles.metricValueRow}>
-                  <Text style={styles.metricValue}>
-                    {deviceStats ? (deviceStats.totalScans || 0).toLocaleString() : "--"}
-                  </Text>
-                </View>
-                <Text style={styles.metricSub}>lifetime</Text>
+          <View style={styles.metricsRow}>
+            <View style={styles.metricCard}>
+              <Text style={styles.metricLabel}>TOTAL SCANS</Text>
+              <View style={styles.metricValueRow}>
+                <Text style={styles.metricValue}>
+                  {deviceStats
+                    ? (deviceStats.totalScans || 0).toLocaleString()
+                    : "--"}
+                </Text>
               </View>
-              <View style={styles.metricCard}>
-                <Text style={styles.metricLabel}>TODAY</Text>
-                <View style={styles.metricValueRow}>
-                  <Text style={styles.metricValue}>
-                    {deviceStats ? (deviceStats.scansToday || 0) : "--"}
-                  </Text>
-                </View>
-                <Text style={styles.metricSub}>scans</Text>
-              </View>
-              <View style={styles.metricCard}>
-                <Text style={styles.metricLabel}>MEMBER</Text>
-                <View style={styles.metricValueRow}>
-                  <Text style={styles.metricValue}>
-                    {deviceStats ? (() => {
-                      const days = deviceStats.memberDays || 0;
-                      if (days < 30) return days;
-                      if (days < 365) return Math.floor(days / 30);
-                      return (days / 365).toFixed(1).replace(/\.0$/, "");
-                    })() : "--"}
-                  </Text>
-                  <Text style={styles.metricUnit}>
-                    {deviceStats ? (() => {
-                      const days = deviceStats.memberDays || 0;
-                      if (days < 30) return "d";
-                      if (days < 365) return "mo";
-                      return "yr";
-                    })() : ""}
-                  </Text>
-                </View>
-                <Text style={styles.metricSub}>since joined</Text>
-              </View>
+              <Text style={styles.metricSub}>lifetime</Text>
             </View>
-
-            <View style={styles.scanButtonRow}>
-              <Pressable
-                onPress={() => handleScanProduct("camera")}
-                style={({ pressed }) => [styles.scanButtonPressable, { opacity: pressed ? 0.9 : 1 }]}
-              >
-                <View style={styles.scanButton}>
-                  <View style={styles.scanButtonLeft}>
-                    <Feather name="camera" size={20} color="#14532D" />
-                    <Text style={styles.scanButtonText}>Scan Product</Text>
-                  </View>
-                  {isPro ? (
-                    <LinearGradient
-                      colors={["#F5D87A", "#D4A926", "#E8C84A"]}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={styles.scanButtonBadge}
-                    >
-                      <Feather name="star" size={11} color="#3D2E00" />
-                      <Text style={[styles.scanButtonBadgeText, { color: "#3D2E00" }]}>PRO</Text>
-                    </LinearGradient>
-                  ) : (
-                    <Text style={styles.scanButtonCount}>
-                      {scansUsed >= FREE_SCAN_LIMIT
-                        ? "0 scans left"
-                        : `${FREE_SCAN_LIMIT - scansUsed} scan${FREE_SCAN_LIMIT - scansUsed === 1 ? "" : "s"} left`}
-                    </Text>
-                  )}
-                </View>
-              </Pressable>
-              <Pressable
-                onPress={() => handleScanProduct("library")}
-                accessibilityLabel="Choose photo from library"
-                style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}
-                testID="button-scan-from-library"
-              >
-                <View style={styles.libraryTile}>
-                  <Feather name="image" size={22} color="#14532D" />
-                </View>
-              </Pressable>
+            <View style={styles.metricCard}>
+              <Text style={styles.metricLabel}>TODAY</Text>
+              <View style={styles.metricValueRow}>
+                <Text style={styles.metricValue}>
+                  {deviceStats ? deviceStats.scansToday || 0 : "--"}
+                </Text>
+              </View>
+              <Text style={styles.metricSub}>scans</Text>
             </View>
+            <View style={styles.metricCard}>
+              <Text style={styles.metricLabel}>MEMBER</Text>
+              <View style={styles.metricValueRow}>
+                <Text style={styles.metricValue}>
+                  {deviceStats
+                    ? (() => {
+                        const days = deviceStats.memberDays || 0;
+                        if (days < 30) return days;
+                        if (days < 365) return Math.floor(days / 30);
+                        return (days / 365).toFixed(1).replace(/\.0$/, "");
+                      })()
+                    : "--"}
+                </Text>
+                <Text style={styles.metricUnit}>
+                  {deviceStats
+                    ? (() => {
+                        const days = deviceStats.memberDays || 0;
+                        if (days < 30) return "d";
+                        if (days < 365) return "mo";
+                        return "yr";
+                      })()
+                    : ""}
+                </Text>
+              </View>
+              <Text style={styles.metricSub}>since joined</Text>
+            </View>
+          </View>
 
-            {isPro ? null : (
-              <Pressable
-                onPress={() => navigation.navigate("Paywall", { context: "scan" })}
-                style={({ pressed }) => [styles.proUpsellCard, { opacity: pressed ? 0.9 : 1 }]}
-              >
-                <View style={styles.proUpsellLeft}>
+          <View style={styles.scanButtonRow}>
+            <Pressable
+              onPress={() => handleScanProduct("camera")}
+              style={({ pressed }) => [
+                styles.scanButtonPressable,
+                { opacity: pressed ? 0.9 : 1 },
+              ]}
+            >
+              <View style={styles.scanButton}>
+                <View style={styles.scanButtonLeft}>
+                  <Feather name="camera" size={20} color="#14532D" />
+                  <Text style={styles.scanButtonText}>Scan Product</Text>
+                </View>
+                {isPro ? (
                   <LinearGradient
-                    colors={["#F5D87A", "#D4A926", "#E8C84A", "#D4A926"]}
+                    colors={["#F5D87A", "#D4A926", "#E8C84A"]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
-                    style={styles.proUpsellBadge}
+                    style={styles.scanButtonBadge}
                   >
                     <Feather name="star" size={11} color="#3D2E00" />
-                    <Text style={styles.proUpsellBadgeText}>PRO</Text>
+                    <Text
+                      style={[styles.scanButtonBadgeText, { color: "#3D2E00" }]}
+                    >
+                      PRO
+                    </Text>
                   </LinearGradient>
-                  <Text style={styles.proUpsellTitle}>Unlimited scans, sales prices & Buy Score</Text>
-                  <Text style={styles.proUpsellSub}>3-day free trial · as low as $4.99/mo</Text>
-                </View>
-                <Feather name="chevron-right" size={18} color="rgba(255,255,255,0.4)" />
-              </Pressable>
-            )}
-          </LinearGradient>
+                ) : (
+                  <Text style={styles.scanButtonCount}>
+                    {scansUsed >= FREE_SCAN_LIMIT
+                      ? "0 scans left"
+                      : `${FREE_SCAN_LIMIT - scansUsed} scan${FREE_SCAN_LIMIT - scansUsed === 1 ? "" : "s"} left`}
+                  </Text>
+                )}
+              </View>
+            </Pressable>
+            <Pressable
+              onPress={() => handleScanProduct("library")}
+              accessibilityLabel="Choose photo from library"
+              style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1 }]}
+              testID="button-scan-from-library"
+            >
+              <View style={styles.libraryTile}>
+                <Feather name="image" size={22} color="#14532D" />
+              </View>
+            </Pressable>
+          </View>
+
+          {isPro ? null : (
+            <Pressable
+              onPress={() =>
+                navigation.navigate("Paywall", { context: "scan" })
+              }
+              style={({ pressed }) => [
+                styles.proUpsellCard,
+                { opacity: pressed ? 0.9 : 1 },
+              ]}
+            >
+              <View style={styles.proUpsellLeft}>
+                <LinearGradient
+                  colors={["#F5D87A", "#D4A926", "#E8C84A", "#D4A926"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.proUpsellBadge}
+                >
+                  <Feather name="star" size={11} color="#3D2E00" />
+                  <Text style={styles.proUpsellBadgeText}>PRO</Text>
+                </LinearGradient>
+                <Text style={styles.proUpsellTitle}>
+                  Unlimited scans, sales prices & Buy Score
+                </Text>
+                <Text style={styles.proUpsellSub}>
+                  3-day free trial · as low as $4.99/mo
+                </Text>
+              </View>
+              <Feather
+                name="chevron-right"
+                size={18}
+                color="rgba(255,255,255,0.4)"
+              />
+            </Pressable>
+          )}
+        </LinearGradient>
 
         <View style={styles.belowHeroContent}>
-        <View style={styles.sectionHeader}>
-          <Feather name="clock" size={18} color={theme.colors.primary} />
-          <Text style={[styles.sectionTitle, { color: theme.colors.foreground }]}>
-            Recent Scans
-          </Text>
-        </View>
+          <View style={styles.sectionHeader}>
+            <Feather name="clock" size={18} color={theme.colors.primary} />
+            <Text
+              style={[styles.sectionTitle, { color: theme.colors.foreground }]}
+            >
+              Recent Scans
+            </Text>
+          </View>
 
-        {isLoading ? (
-          <View style={styles.loadingContainer}>
-            <SkeletonLoader count={3} type="card" />
-          </View>
-        ) : displayedScans.length === 0 ? (
-          <View style={[styles.emptyState, { backgroundColor: theme.colors.card }]}>
-            <Feather name="camera" size={48} color={theme.colors.mutedForeground} />
-            <Text style={[styles.emptyTitle, { color: theme.colors.foreground }]}>
-              No scans yet
-            </Text>
-            <Text style={[styles.emptyDescription, { color: theme.colors.mutedForeground }]}>
-              Scan a product to see its value
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.scansList}>
-            {displayedScans.map((scan, index) => (
-              <Animated.View 
-                key={scan.id} 
-                entering={FadeInDown.delay(index * 50).duration(300)}
+          {isLoading ? (
+            <View style={styles.loadingContainer}>
+              <SkeletonLoader count={3} type="card" />
+            </View>
+          ) : displayedScans.length === 0 ? (
+            <View
+              style={[
+                styles.emptyState,
+                { backgroundColor: theme.colors.card },
+              ]}
+            >
+              <Feather
+                name="camera"
+                size={48}
+                color={theme.colors.mutedForeground}
+              />
+              <Text
+                style={[styles.emptyTitle, { color: theme.colors.foreground }]}
               >
-                <Pressable
-                  onPress={() => handleViewScan(scan)}
-                  style={({ pressed }) => [
-                    styles.scanCard,
-                    { backgroundColor: theme.colors.card, opacity: pressed ? 0.8 : 1 }
-                  ]}
+                No scans yet
+              </Text>
+              <Text
+                style={[
+                  styles.emptyDescription,
+                  { color: theme.colors.mutedForeground },
+                ]}
+              >
+                Scan a product to see its value
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.scansList}>
+              {displayedScans.map((scan, index) => (
+                <Animated.View
+                  key={scan.id}
+                  entering={FadeInDown.delay(index * 50).duration(300)}
                 >
-                  <View style={styles.scanImageContainer}>
-                    <FallbackImage
-                      primaryUri={scan.thumbnailUrl}
-                      fallbackUri={scan.results?.listings?.[0]?.imageUrl}
-                      style={styles.scanImage}
-                      contentFit="cover"
-                      emptyPlaceholder={
-                        <View style={[styles.scanImagePlaceholder, { backgroundColor: theme.colors.muted }]}>
-                          <Feather name="package" size={24} color={theme.colors.mutedForeground} />
-                        </View>
-                      }
-                    />
-                  </View>
-                  <View style={styles.scanInfo}>
-                    <Text 
-                      style={[styles.scanTitle, { color: theme.colors.foreground }]}
-                      numberOfLines={1}
-                    >
-                      {(typeof scan.results?.productInfo === 'object' ? scan.results?.productInfo?.name : null) 
-                        || scan.product?.title 
-                        || (typeof scan.query === 'string' ? scan.query : 'Product')}
-                    </Text>
-                    <View style={styles.scanMeta}>
-                      <Text style={[styles.scanPrice, { color: theme.colors.primary }]}>
-                        ${(Number(scan.avgPrice || scan.results?.avgListPrice) || 0).toFixed(0)}
+                  <Pressable
+                    onPress={() => handleViewScan(scan)}
+                    style={({ pressed }) => [
+                      styles.scanCard,
+                      {
+                        backgroundColor: theme.colors.card,
+                        opacity: pressed ? 0.8 : 1,
+                      },
+                    ]}
+                  >
+                    <View style={styles.scanImageContainer}>
+                      <FallbackImage
+                        primaryUri={scan.thumbnailUrl}
+                        fallbackUri={scan.results?.listings?.[0]?.imageUrl}
+                        style={styles.scanImage}
+                        contentFit="cover"
+                        emptyPlaceholder={
+                          <View
+                            style={[
+                              styles.scanImagePlaceholder,
+                              { backgroundColor: theme.colors.muted },
+                            ]}
+                          >
+                            <Feather
+                              name="package"
+                              size={24}
+                              color={theme.colors.mutedForeground}
+                            />
+                          </View>
+                        }
+                      />
+                    </View>
+                    <View style={styles.scanInfo}>
+                      <Text
+                        style={[
+                          styles.scanTitle,
+                          { color: theme.colors.foreground },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {(typeof scan.results?.productInfo === "object"
+                          ? scan.results?.productInfo?.name
+                          : null) ||
+                          scan.product?.title ||
+                          (typeof scan.query === "string"
+                            ? scan.query
+                            : "Product")}
                       </Text>
-                      <View style={styles.scanTime}>
-                        <Feather name="clock" size={12} color={theme.colors.mutedForeground} />
-                        <Text style={[styles.scanTimeText, { color: theme.colors.mutedForeground }]}>
-                          {formatTimeAgo(scan.searchedAt)}
+                      <View style={styles.scanMeta}>
+                        <Text
+                          style={[
+                            styles.scanPrice,
+                            { color: theme.colors.primary },
+                          ]}
+                        >
+                          $
+                          {(
+                            Number(
+                              scan.avgPrice || scan.results?.avgListPrice,
+                            ) || 0
+                          ).toFixed(0)}
                         </Text>
+                        <View style={styles.scanTime}>
+                          <Feather
+                            name="clock"
+                            size={12}
+                            color={theme.colors.mutedForeground}
+                          />
+                          <Text
+                            style={[
+                              styles.scanTimeText,
+                              { color: theme.colors.mutedForeground },
+                            ]}
+                          >
+                            {formatTimeAgo(scan.searchedAt)}
+                          </Text>
+                        </View>
                       </View>
                     </View>
-                  </View>
-                  <Feather name="chevron-right" size={20} color={theme.colors.mutedForeground} />
-                </Pressable>
-              </Animated.View>
-            ))}
-          </View>
-        )}
+                    <Feather
+                      name="chevron-right"
+                      size={20}
+                      color={theme.colors.mutedForeground}
+                    />
+                  </Pressable>
+                </Animated.View>
+              ))}
+            </View>
+          )}
         </View>
       </Animated.ScrollView>
-      
+
       {isAnalyzing ? (
-        <View style={[styles.scanOverlay, { backgroundColor: theme.colors.background }]}>
-          <View style={{ paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20, flex: 1, paddingHorizontal: 24 }}>
+        <View
+          style={[
+            styles.scanOverlay,
+            { backgroundColor: theme.colors.background },
+          ]}
+        >
+          <View
+            style={{
+              paddingTop: insets.top + 20,
+              paddingBottom: insets.bottom + 20,
+              flex: 1,
+              paddingHorizontal: 24,
+            }}
+          >
             {scannedPhotoUri ? (
               <ScanningImage
                 uri={scannedPhotoUri}
@@ -741,10 +976,20 @@ export default function ScanScreen() {
               />
             ) : null}
             <View style={styles.scanOverlayContent}>
-              <Text style={[styles.scanOverlayTitle, { color: theme.colors.foreground }]}>
+              <Text
+                style={[
+                  styles.scanOverlayTitle,
+                  { color: theme.colors.foreground },
+                ]}
+              >
                 Scanning product
               </Text>
-              <Text style={[styles.scanStepText, { color: theme.colors.mutedForeground }]}>
+              <Text
+                style={[
+                  styles.scanStepText,
+                  { color: theme.colors.mutedForeground },
+                ]}
+              >
                 {SCAN_STEPS[Math.min(currentStep, SCAN_STEPS.length - 1)].label}
               </Text>
               <AnimatedProgressBar
@@ -759,34 +1004,69 @@ export default function ScanScreen() {
       ) : null}
 
       {errorMessage ? (
-        <View style={[styles.scanOverlay, { backgroundColor: theme.colors.background }]}>
-          <View style={{ paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20, flex: 1, paddingHorizontal: 24 }}>
+        <View
+          style={[
+            styles.scanOverlay,
+            { backgroundColor: theme.colors.background },
+          ]}
+        >
+          <View
+            style={{
+              paddingTop: insets.top + 20,
+              paddingBottom: insets.bottom + 20,
+              flex: 1,
+              paddingHorizontal: 24,
+            }}
+          >
             {scannedPhotoUri ? (
-              <View style={[styles.scanOverlayImageContainer, styles.scanOverlayImageError]}>
+              <View
+                style={[
+                  styles.scanOverlayImageContainer,
+                  styles.scanOverlayImageError,
+                ]}
+              >
                 <Image
                   source={{ uri: scannedPhotoUri }}
                   style={styles.scanOverlayImage}
                   resizeMode="cover"
                 />
                 <View style={styles.scanErrorIconContainer}>
-                  <Feather name="alert-circle" size={24} color={theme.colors.danger} />
+                  <Feather
+                    name="alert-circle"
+                    size={24}
+                    color={theme.colors.danger}
+                  />
                 </View>
               </View>
             ) : null}
             <View style={styles.scanOverlayContent}>
-              <Text style={[styles.scanErrorTitle, { color: theme.colors.foreground }]}>
+              <Text
+                style={[
+                  styles.scanErrorTitle,
+                  { color: theme.colors.foreground },
+                ]}
+              >
                 Scan failed
               </Text>
-              <Text style={[styles.scanErrorMessage, { color: theme.colors.mutedForeground }]}>
+              <Text
+                style={[
+                  styles.scanErrorMessage,
+                  { color: theme.colors.mutedForeground },
+                ]}
+              >
                 {errorMessage}
               </Text>
               <Pressable
                 onPress={() => {
                   setErrorMessage(null);
                   setScannedPhotoUri(null);
-                  navigation.navigate("CameraScan", { source: lastScanSourceRef.current });
+                  navigation.navigate("CameraScan", {
+                    source: lastScanSourceRef.current,
+                  });
                 }}
-                style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1, width: "100%" }]}
+                style={({ pressed }) => [
+                  { opacity: pressed ? 0.9 : 1, width: "100%" },
+                ]}
               >
                 <LinearGradient
                   colors={["#EF4444", "#DC2626", "#B91C1C"]}
@@ -805,10 +1085,18 @@ export default function ScanScreen() {
                 }}
                 style={({ pressed }) => [
                   styles.scanErrorBackButton,
-                  { backgroundColor: theme.colors.muted, opacity: pressed ? 0.7 : 1 }
+                  {
+                    backgroundColor: theme.colors.muted,
+                    opacity: pressed ? 0.7 : 1,
+                  },
                 ]}
               >
-                <Text style={[styles.scanErrorBackText, { color: theme.colors.foreground }]}>
+                <Text
+                  style={[
+                    styles.scanErrorBackText,
+                    { color: theme.colors.foreground },
+                  ]}
+                >
                   Go back
                 </Text>
               </Pressable>
@@ -816,6 +1104,12 @@ export default function ScanScreen() {
           </View>
         </View>
       ) : null}
+
+      <ProCapReachedModal
+        visible={proCapHit !== null}
+        rateLimit={proCapHit}
+        onClose={() => setProCapHit(null)}
+      />
     </View>
   );
 }
@@ -836,8 +1130,7 @@ const styles = StyleSheet.create({
     flex: 1,
     zIndex: 1,
   },
-  content: {
-  },
+  content: {},
   header: {
     flexDirection: "row",
     alignItems: "center",

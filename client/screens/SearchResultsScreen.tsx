@@ -1,8 +1,32 @@
-import React, { useState, useMemo, useCallback, useRef, useEffect } from "react";
-import { View, StyleSheet, Pressable, Text, Linking, TextInput, ActivityIndicator, ScrollView, Keyboard, Animated as RNAnimated, Platform } from "react-native";
+import React, {
+  useState,
+  useMemo,
+  useCallback,
+  useRef,
+  useEffect,
+} from "react";
+import {
+  View,
+  StyleSheet,
+  Pressable,
+  Text,
+  Linking,
+  TextInput,
+  ActivityIndicator,
+  ScrollView,
+  Keyboard,
+  Animated as RNAnimated,
+  Platform,
+  Alert,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { useRoute, RouteProp, useNavigation, CommonActions } from "@react-navigation/native";
+import {
+  useRoute,
+  RouteProp,
+  useNavigation,
+  CommonActions,
+} from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
@@ -17,10 +41,20 @@ import { getApiUrl } from "@/lib/query-client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRevenueCat } from "@/contexts/RevenueCatContext";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
-import type { EbaySoldData, EbaySoldItem, ListingItem, SearchResultsData } from "@/types/product";
-import { addInventoryItem, cleanInventoryName, parsePurchasePrice } from "@/lib/storage";
+import type {
+  EbaySoldData,
+  EbaySoldItem,
+  ListingItem,
+  RateLimitInfo,
+  SearchResultsData,
+} from "@/types/product";
+import {
+  addInventoryItem,
+  cleanInventoryName,
+  parsePurchasePrice,
+} from "@/lib/storage";
 import { PurchasePriceSheet } from "@/components/PurchasePriceSheet";
-import { Alert } from "react-native";
+import { ProCapReachedModal } from "@/components/ProCapReachedModal";
 
 function generateInventoryId(): string {
   return `inv_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -32,19 +66,22 @@ export default function SearchResultsScreen() {
   const insets = useSafeAreaInsets();
   const { theme, colors } = useDesignTokens();
   const route = useRoute<SearchResultsRouteProp>();
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
-  const results = route.params?.results ?? {
-    query: "",
-    totalListings: 0,
-    avgListPrice: 0,
-    avgSalePrice: null,
-    soldCount: 0,
-    bestBuyNow: 0,
-    topSalePrice: null,
-    listings: [],
-  } as SearchResultsData;
-  
+  const results =
+    route.params?.results ??
+    ({
+      query: "",
+      totalListings: 0,
+      avgListPrice: 0,
+      avgSalePrice: null,
+      soldCount: 0,
+      bestBuyNow: 0,
+      topSalePrice: null,
+      listings: [],
+    } as SearchResultsData);
+
   const scannedImageUri = useMemo(() => {
     if (results.scannedImageId) {
       return getImage(results.scannedImageId);
@@ -74,7 +111,9 @@ export default function SearchResultsScreen() {
 
   const [savingToInventory, setSavingToInventory] = useState(false);
   const [pricePromptVisible, setPricePromptVisible] = useState(false);
-  const [displayName, setDisplayName] = useState(() => cleanInventoryName(rawName));
+  const [displayName, setDisplayName] = useState(() =>
+    cleanInventoryName(rawName),
+  );
 
   useEffect(() => {
     setDisplayName(cleanInventoryName(rawName));
@@ -86,6 +125,12 @@ export default function SearchResultsScreen() {
   const [broadSoldData, setBroadSoldData] = useState<EbaySoldData | null>(null);
   const [ebaySoldLoading, setEbaySoldLoading] = useState(false);
   const [ebaySoldError, setEbaySoldError] = useState<string | null>(null);
+  // Group C / P0-8 UX: when the server says we hit a per-Pro monthly cap,
+  // surface a cooldown modal instead of the generic "Couldn't reach our
+  // pricing service" message. Backend contract is in
+  // server/routes.ts > buildEbayRateLimitPayload + the matching client
+  // type RateLimitInfo in client/types/product.ts.
+  const [proCapHit, setProCapHit] = useState<RateLimitInfo | null>(null);
   const [showEbaySold, setShowEbaySold] = useState(false);
   const [brokenImages, setBrokenImages] = useState<Set<string>>(new Set());
   const [calcExpanded, setCalcExpanded] = useState(true);
@@ -114,20 +159,26 @@ export default function SearchResultsScreen() {
     if (savingToInventory) return;
     const deviceId = await getDeviceId();
     if (!deviceId) {
-      Alert.alert("Couldn't add item", "Device not ready. Please try again in a moment.");
+      Alert.alert(
+        "Couldn't add item",
+        "Device not ready. Please try again in a moment.",
+      );
       return;
     }
     const price = parsePurchasePrice(purchasePrice);
     if (price === null) {
       Alert.alert(
         "Invalid price",
-        "Enter what you actually paid (a number like 12.50, or 0 for a free find)."
+        "Enter what you actually paid (a number like 12.50, or 0 for a free find).",
       );
       return;
     }
     const productName = displayName.trim();
     if (!productName) {
-      Alert.alert("Name required", "Please enter a name for this item before saving.");
+      Alert.alert(
+        "Name required",
+        "Please enter a name for this item before saving.",
+      );
       return;
     }
     // Prefer the hosted Supabase URL of the user's actual scan photo so
@@ -135,9 +186,7 @@ export default function SearchResultsScreen() {
     // with hundreds of KB of base64). Fall back to the scraped product image
     // if the hosted URL isn't available (e.g. fallback upload host was used).
     const imageUrl =
-      results.scannedImageUrl ||
-      results.listings?.[0]?.imageUrl ||
-      "";
+      results.scannedImageUrl || results.listings?.[0]?.imageUrl || "";
 
     setSavingToInventory(true);
     const created = await addInventoryItem(deviceId, {
@@ -153,7 +202,7 @@ export default function SearchResultsScreen() {
     if (!created) {
       Alert.alert(
         "Couldn't save item",
-        "Please check your connection and try again."
+        "Please check your connection and try again.",
       );
       return;
     }
@@ -166,7 +215,7 @@ export default function SearchResultsScreen() {
       CommonActions.reset({
         index: 0,
         routes: [{ name: "MainTabs", params: { screen: "Inventory" } }],
-      })
+      }),
     );
   }, [
     savingToInventory,
@@ -212,7 +261,7 @@ export default function SearchResultsScreen() {
         CommonActions.reset({
           index: 0,
           routes: [{ name: "MainTabs", params: { screen: "Inventory" } }],
-        })
+        }),
       );
       return;
     }
@@ -227,7 +276,7 @@ export default function SearchResultsScreen() {
 
   const suggestedPrice = Number(results.avgListPrice) || 0;
   const EBAY_FEE_RATE = 0.13;
-  
+
   const calculateProfit = () => {
     const purchase = parseFloat(purchasePrice) || 0;
     const selling = parseFloat(sellingPrice) || suggestedPrice;
@@ -236,7 +285,7 @@ export default function SearchResultsScreen() {
     const margin = selling > 0 ? Math.round((profit / selling) * 100) : 0;
     return { ebayFees, profit, selling, purchase, margin };
   };
-  
+
   const { ebayFees, profit, selling, purchase, margin } = calculateProfit();
 
   const getMarginLabel = (m: number) => {
@@ -250,7 +299,10 @@ export default function SearchResultsScreen() {
     if (!ebaySoldData || !showEbaySold) return null;
 
     const purchase = parseFloat(purchasePrice) || 0;
-    const sellPrice = parseFloat(sellingPrice) || ebaySoldData.medianSoldPrice || suggestedPrice;
+    const sellPrice =
+      parseFloat(sellingPrice) ||
+      ebaySoldData.medianSoldPrice ||
+      suggestedPrice;
     const fees = sellPrice * EBAY_FEE_RATE;
     const netProfit = sellPrice - purchase - fees;
     const monthlySold = ebaySoldData.avgSoldPerMonth || 0;
@@ -298,7 +350,9 @@ export default function SearchResultsScreen() {
       }
     }
 
-    const raw = Math.round(Math.max(0, Math.min(100, profitScore + demandScore)));
+    const raw = Math.round(
+      Math.max(0, Math.min(100, profitScore + demandScore)),
+    );
     return raw;
   }, [ebaySoldData, showEbaySold, purchasePrice, sellingPrice, suggestedPrice]);
 
@@ -329,22 +383,33 @@ export default function SearchResultsScreen() {
 
   const allListings = Array.isArray(results.listings) ? results.listings : [];
 
-  const sortOptions = ["Best Match", "eBay Listings", "Price: Low to High", "Price: High to Low"];
+  const sortOptions = [
+    "Best Match",
+    "eBay Listings",
+    "Price: Low to High",
+    "Price: High to Low",
+  ];
 
   const sortedListings = useMemo(() => {
     if (sortOption === "Best Match") return [...allListings];
     if (sortOption === "eBay Listings") {
-      return allListings.filter(item =>
-        (item.platform || "").toLowerCase().includes("ebay")
+      return allListings.filter((item) =>
+        (item.platform || "").toLowerCase().includes("ebay"),
       );
     }
-    const priced = allListings.filter(item => item.currentPrice > 0);
-    const noPrice = allListings.filter(item => item.currentPrice <= 0);
+    const priced = allListings.filter((item) => item.currentPrice > 0);
+    const noPrice = allListings.filter((item) => item.currentPrice <= 0);
     switch (sortOption) {
       case "Price: Low to High":
-        return [...priced.sort((a, b) => a.currentPrice - b.currentPrice), ...noPrice];
+        return [
+          ...priced.sort((a, b) => a.currentPrice - b.currentPrice),
+          ...noPrice,
+        ];
       case "Price: High to Low":
-        return [...priced.sort((a, b) => b.currentPrice - a.currentPrice), ...noPrice];
+        return [
+          ...priced.sort((a, b) => b.currentPrice - a.currentPrice),
+          ...noPrice,
+        ];
       default:
         return [...allListings];
     }
@@ -366,7 +431,7 @@ export default function SearchResultsScreen() {
           { name: "MainTabs" },
           { name: "CameraScan", params: { source: "camera" } },
         ],
-      })
+      }),
     );
   };
 
@@ -423,7 +488,8 @@ export default function SearchResultsScreen() {
         listingTitles?: string[];
       } = { searchQuery: productName };
       if (broad) body.broadSearch = true;
-      if (!broad && listingTitles.length > 0) body.listingTitles = listingTitles;
+      if (!broad && listingTitles.length > 0)
+        body.listingTitles = listingTitles;
       const res = await fetch(url, {
         method: "POST",
         headers: {
@@ -444,10 +510,22 @@ export default function SearchResultsScreen() {
       }
       const raw = await res.json();
 
+      // P0-8 UX: check rateLimit FIRST, before falling into serviceError.
+      // The backend includes BOTH `rateLimit` and `serviceError: true` on a
+      // cap-hit so old client builds keep showing the existing UI. New
+      // builds (this one) detect rateLimit and render the proper cooldown
+      // modal with a contact-support release valve.
+      if (raw.rateLimit && typeof raw.rateLimit === "object") {
+        setProCapHit(raw.rateLimit as RateLimitInfo);
+        return;
+      }
+
       // Service-level failure (SearchAPI failed twice) — surface a retry
       // affordance instead of a fake "no results" empty state.
       if (raw.serviceError) {
-        setEbaySoldError("Couldn't reach our pricing service. Tap to try again.");
+        setEbaySoldError(
+          "Couldn't reach our pricing service. Tap to try again.",
+        );
         return;
       }
 
@@ -458,11 +536,13 @@ export default function SearchResultsScreen() {
         highPrice: Number(raw.highPrice) || 0,
         totalSold: Number(raw.totalSold) || 0,
         avgSoldPerMonth: Number(raw.avgSoldPerMonth) || 0,
-        items: Array.isArray(raw.items) ? raw.items.map((item: any) => ({
-          ...item,
-          price: Number(item.price) || 0,
-          id: item.id || String(Math.random()),
-        })) : [],
+        items: Array.isArray(raw.items)
+          ? raw.items.map((item: any) => ({
+              ...item,
+              price: Number(item.price) || 0,
+              id: item.id || String(Math.random()),
+            }))
+          : [],
         noResults: !!raw.noResults,
         isBroadSearch: !!raw.isBroadSearch,
         broadenedFromStrict: !!raw.broadenedFromStrict,
@@ -494,7 +574,9 @@ export default function SearchResultsScreen() {
       setShowEbaySold(true);
     } catch (err: any) {
       if (err?.name === "AbortError") {
-        setEbaySoldError("Connection lost. Please check your internet and try again.");
+        setEbaySoldError(
+          "Connection lost. Please check your internet and try again.",
+        );
       } else {
         setEbaySoldError(err.message || "Failed to load sales data");
       }
@@ -506,14 +588,20 @@ export default function SearchResultsScreen() {
 
   const handleListOnEbay = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const productName = typeof results.productInfo === 'object' ? results.productInfo?.name : null;
-    const queryStr = typeof results.query === 'string' ? results.query : 'product';
+    const productName =
+      typeof results.productInfo === "object"
+        ? results.productInfo?.name
+        : null;
+    const queryStr =
+      typeof results.query === "string" ? results.query : "product";
     const searchQuery = encodeURIComponent(productName || queryStr);
-    await Linking.openURL(`https://www.ebay.com/sl/sell?keyword=${searchQuery}`);
+    await Linking.openURL(
+      `https://www.ebay.com/sl/sell?keyword=${searchQuery}`,
+    );
   };
 
   const handleImageError = (itemId: string) => {
-    setBrokenImages(prev => {
+    setBrokenImages((prev) => {
       const next = new Set(prev);
       next.add(itemId);
       return next;
@@ -521,7 +609,8 @@ export default function SearchResultsScreen() {
   };
 
   const renderSoldImage = (item: EbaySoldItem) => {
-    const hasImage = item.imageUrl?.trim().length > 0 && !brokenImages.has(item.id);
+    const hasImage =
+      item.imageUrl?.trim().length > 0 && !brokenImages.has(item.id);
     if (hasImage) {
       return (
         <Image
@@ -533,9 +622,26 @@ export default function SearchResultsScreen() {
       );
     }
     return (
-      <View style={[styles.listingImage, styles.imagePlaceholder, { backgroundColor: theme.colors.muted }]}>
-        <Feather name="shopping-bag" size={28} color={theme.colors.mutedForeground} />
-        <Text style={[styles.imagePlaceholderText, { color: theme.colors.mutedForeground }]}>Photo unavailable</Text>
+      <View
+        style={[
+          styles.listingImage,
+          styles.imagePlaceholder,
+          { backgroundColor: theme.colors.muted },
+        ]}
+      >
+        <Feather
+          name="shopping-bag"
+          size={28}
+          color={theme.colors.mutedForeground}
+        />
+        <Text
+          style={[
+            styles.imagePlaceholderText,
+            { color: theme.colors.mutedForeground },
+          ]}
+        >
+          Photo unavailable
+        </Text>
       </View>
     );
   };
@@ -564,8 +670,14 @@ export default function SearchResultsScreen() {
     return "Shop";
   };
 
-  const renderListing = ({ item, index }: { item: ListingItem; index: number }) => (
-    <Animated.View 
+  const renderListing = ({
+    item,
+    index,
+  }: {
+    item: ListingItem;
+    index: number;
+  }) => (
+    <Animated.View
       entering={FadeInDown.delay(Math.min(index, 6) * 50).duration(300)}
       style={[styles.listingCard, { backgroundColor: theme.colors.card }]}
     >
@@ -575,10 +687,17 @@ export default function SearchResultsScreen() {
         contentFit="cover"
       />
       <View style={styles.listingContent}>
-        <View style={[styles.ebayBadge, { backgroundColor: getPlatformColor(item.platform || item.seller) }]}>
-          <Text style={styles.ebayBadgeText}>{getPlatformName(item.platform, item.seller)}</Text>
+        <View
+          style={[
+            styles.ebayBadge,
+            { backgroundColor: getPlatformColor(item.platform || item.seller) },
+          ]}
+        >
+          <Text style={styles.ebayBadgeText}>
+            {getPlatformName(item.platform, item.seller)}
+          </Text>
         </View>
-        <Text 
+        <Text
           style={[styles.listingTitle, { color: theme.colors.foreground }]}
           numberOfLines={2}
         >
@@ -587,17 +706,29 @@ export default function SearchResultsScreen() {
         <View style={styles.priceRow}>
           {item.currentPrice > 0 ? (
             <>
-              <Text style={[styles.currentPrice, { color: theme.colors.foreground }]}>
+              <Text
+                style={[
+                  styles.currentPrice,
+                  { color: theme.colors.foreground },
+                ]}
+              >
                 ${(Number(item.currentPrice) || 0).toFixed(2)}
               </Text>
               {item.originalPrice ? (
-                <Text style={[styles.originalPrice, { color: theme.colors.mutedForeground }]}>
+                <Text
+                  style={[
+                    styles.originalPrice,
+                    { color: theme.colors.mutedForeground },
+                  ]}
+                >
                   ${(Number(item.originalPrice) || 0).toFixed(2)}
                 </Text>
               ) : null}
             </>
           ) : (
-            <Text style={[styles.currentPrice, { color: theme.colors.primary }]}>
+            <Text
+              style={[styles.currentPrice, { color: theme.colors.primary }]}
+            >
               Price unlisted
             </Text>
           )}
@@ -606,11 +737,17 @@ export default function SearchResultsScreen() {
           onPress={() => handleViewListing(item.link)}
           style={({ pressed }) => [
             styles.viewButton,
-            { backgroundColor: theme.colors.muted, opacity: pressed ? 0.7 : 1 }
+            { backgroundColor: theme.colors.muted, opacity: pressed ? 0.7 : 1 },
           ]}
         >
-          <Feather name="external-link" size={14} color={theme.colors.foreground} />
-          <Text style={[styles.viewButtonText, { color: theme.colors.foreground }]}>
+          <Feather
+            name="external-link"
+            size={14}
+            color={theme.colors.foreground}
+          />
+          <Text
+            style={[styles.viewButtonText, { color: theme.colors.foreground }]}
+          >
             View Listing
           </Text>
         </Pressable>
@@ -636,18 +773,20 @@ export default function SearchResultsScreen() {
         }}
       >
         <Pressable onPress={handleGoBack} hitSlop={8}>
-          <View style={{
-            width: 50,
-            height: 44,
-            borderRadius: 22,
-            borderWidth: 1,
-            borderColor: "rgba(255,255,255,0.6)",
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 1 },
-            shadowOpacity: 0.15,
-            shadowRadius: 3,
-            overflow: "hidden",
-          }}>
+          <View
+            style={{
+              width: 50,
+              height: 44,
+              borderRadius: 22,
+              borderWidth: 1,
+              borderColor: "rgba(255,255,255,0.6)",
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: 0.15,
+              shadowRadius: 3,
+              overflow: "hidden",
+            }}
+          >
             <BlurView
               intensity={50}
               tint="light"
@@ -658,10 +797,14 @@ export default function SearchResultsScreen() {
               }}
             >
               <View style={{ width: 28, height: 28 }}>
-                <RNAnimated.View style={{ position: "absolute", opacity: headerWhiteOpacity }}>
+                <RNAnimated.View
+                  style={{ position: "absolute", opacity: headerWhiteOpacity }}
+                >
                   <Feather name="arrow-left" size={28} color="#FFFFFF" />
                 </RNAnimated.View>
-                <RNAnimated.View style={{ position: "absolute", opacity: headerDarkOpacity }}>
+                <RNAnimated.View
+                  style={{ position: "absolute", opacity: headerDarkOpacity }}
+                >
                   <Feather name="arrow-left" size={28} color="#111827" />
                 </RNAnimated.View>
               </View>
@@ -675,7 +818,10 @@ export default function SearchResultsScreen() {
               fontSize: 17,
               fontWeight: "700",
               color: "#FFFFFF",
-              opacity: RNAnimated.multiply(headerTitleOpacity, headerWhiteOpacity),
+              opacity: RNAnimated.multiply(
+                headerTitleOpacity,
+                headerWhiteOpacity,
+              ),
             }}
           >
             Scan Result
@@ -687,7 +833,10 @@ export default function SearchResultsScreen() {
               fontSize: 17,
               fontWeight: "700",
               color: "#111827",
-              opacity: RNAnimated.multiply(headerTitleOpacity, headerDarkOpacity),
+              opacity: RNAnimated.multiply(
+                headerTitleOpacity,
+                headerDarkOpacity,
+              ),
             }}
           >
             Scan Result
@@ -699,14 +848,14 @@ export default function SearchResultsScreen() {
         style={styles.list}
         contentContainerStyle={[
           styles.listContent,
-          { paddingTop: 0, paddingBottom: 100 }
+          { paddingTop: 0, paddingBottom: 100 },
         ]}
         scrollIndicatorInsets={{ bottom: insets.bottom }}
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
         onScroll={RNAnimated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: true }
+          { useNativeDriver: true },
         )}
         scrollEventThrottle={16}
         data={sortedListings}
@@ -718,7 +867,10 @@ export default function SearchResultsScreen() {
               locations={[0, 0.05, 0.5, 1]}
               start={{ x: 0, y: 0 }}
               end={{ x: 0, y: 1 }}
-              style={[styles.heroSection, { paddingTop: insets.top + CUSTOM_HEADER_HEIGHT + 8 }]}
+              style={[
+                styles.heroSection,
+                { paddingTop: insets.top + CUSTOM_HEADER_HEIGHT + 8 },
+              ]}
             >
               {scannedImageUri ? (
                 <View style={styles.productCard}>
@@ -745,657 +897,1243 @@ export default function SearchResultsScreen() {
 
               <View style={styles.suggestedPriceRow}>
                 <View>
-                  <Text style={styles.suggestedPriceLabelUpper}>SUGGESTED LISTING PRICE</Text>
-                  <Text style={styles.suggestedPriceBig}>${(Number(results.avgListPrice) || 0).toFixed(0)}</Text>
+                  <Text style={styles.suggestedPriceLabelUpper}>
+                    SUGGESTED LISTING PRICE
+                  </Text>
+                  <Text style={styles.suggestedPriceBig}>
+                    ${(Number(results.avgListPrice) || 0).toFixed(0)}
+                  </Text>
                 </View>
               </View>
 
-              <Text style={[styles.calculatorNote, { color: "rgba(255,255,255,0.5)", marginTop: 4, marginBottom: 8 }]}>
+              <Text
+                style={[
+                  styles.calculatorNote,
+                  {
+                    color: "rgba(255,255,255,0.5)",
+                    marginTop: 4,
+                    marginBottom: 8,
+                  },
+                ]}
+              >
                 Based on {results.totalListings || 0} active listings
               </Text>
-
             </LinearGradient>
 
             <View style={styles.lightSection}>
-
               <View style={styles.calculatorCard}>
-                <Pressable onPress={() => setCalcExpanded(prev => !prev)} style={styles.calcHeaderRow}>
+                <Pressable
+                  onPress={() => setCalcExpanded((prev) => !prev)}
+                  style={styles.calcHeaderRow}
+                >
                   <View style={styles.calculatorHeader}>
                     <Feather name="dollar-sign" size={18} color="#047857" />
-                    <Text style={styles.calculatorTitleText}>Profit Calculator</Text>
+                    <Text style={styles.calculatorTitleText}>
+                      Profit Calculator
+                    </Text>
                   </View>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 8,
+                    }}
+                  >
                     {!calcExpanded && selling > 0 ? (
-                      <Text style={{ fontSize: 15, fontWeight: "700", color: profit >= 0 ? "#047857" : "#EF4444" }}>
+                      <Text
+                        style={{
+                          fontSize: 15,
+                          fontWeight: "700",
+                          color: profit >= 0 ? "#047857" : "#EF4444",
+                        }}
+                      >
                         {profit >= 0 ? "+" : ""}${profit.toFixed(2)}
                       </Text>
                     ) : profit > 0 ? (
                       <View style={styles.marginBadge}>
-                        <Text style={styles.marginBadgeText}>{getMarginLabel(margin)}</Text>
+                        <Text style={styles.marginBadgeText}>
+                          {getMarginLabel(margin)}
+                        </Text>
                       </View>
                     ) : null}
-                    <Feather name={calcExpanded ? "chevron-up" : "chevron-down"} size={20} color="#9CA3AF" />
+                    <Feather
+                      name={calcExpanded ? "chevron-up" : "chevron-down"}
+                      size={20}
+                      color="#9CA3AF"
+                    />
                   </View>
                 </Pressable>
 
                 {calcExpanded ? (
                   <>
-                <View style={styles.calcDividerThin} />
+                    <View style={styles.calcDividerThin} />
 
-                <View style={styles.calculatorRow}>
-                  <View style={styles.labelWithHint}>
-                    <Text style={styles.calcLabel}>Your Selling Price</Text>
-                    <Pressable onPress={useSuggestedPrice} style={styles.suggestedHint}>
-                      <Feather name="corner-down-right" size={12} color="#047857" />
-                      <Text style={styles.calcSuggestedText}>
-                        Use suggested: ${suggestedPrice.toFixed(0)}
-                      </Text>
-                    </Pressable>
-                  </View>
-                  <View style={styles.calcInputBox}>
-                    <Text style={styles.calcInputDollar}>$</Text>
-                    <TextInput
-                      style={styles.calcInputValue}
-                      value={sellingPrice}
-                      onChangeText={setSellingPrice}
-                      placeholder={suggestedPrice.toFixed(0)}
-                      placeholderTextColor="#9CA3AF"
-                      keyboardType="decimal-pad"
-                      returnKeyType="done"
-                      onSubmitEditing={() => Keyboard.dismiss()}
-                    />
-                  </View>
-                </View>
-
-                <View style={styles.calcDividerThin} />
-
-                <View style={styles.calculatorRow}>
-                  <Text style={styles.calcLabel}>Your Purchase Price</Text>
-                  <View style={styles.calcInputBox}>
-                    <Text style={styles.calcInputDollar}>$</Text>
-                    <TextInput
-                      style={styles.calcInputValue}
-                      value={purchasePrice}
-                      onChangeText={setPurchasePrice}
-                      placeholder="0"
-                      placeholderTextColor="#9CA3AF"
-                      keyboardType="decimal-pad"
-                      returnKeyType="done"
-                      onSubmitEditing={() => Keyboard.dismiss()}
-                    />
-                  </View>
-                </View>
-
-                <View style={styles.calcDividerThin} />
-
-                <View style={styles.calculatorRow}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                    <Text style={styles.calcLabel}>Est. Fees</Text>
-                    <View style={styles.feesPill}>
-                      <Text style={styles.feesPillText}>~13%</Text>
+                    <View style={styles.calculatorRow}>
+                      <View style={styles.labelWithHint}>
+                        <Text style={styles.calcLabel}>Your Selling Price</Text>
+                        <Pressable
+                          onPress={useSuggestedPrice}
+                          style={styles.suggestedHint}
+                        >
+                          <Feather
+                            name="corner-down-right"
+                            size={12}
+                            color="#047857"
+                          />
+                          <Text style={styles.calcSuggestedText}>
+                            Use suggested: ${suggestedPrice.toFixed(0)}
+                          </Text>
+                        </Pressable>
+                      </View>
+                      <View style={styles.calcInputBox}>
+                        <Text style={styles.calcInputDollar}>$</Text>
+                        <TextInput
+                          style={styles.calcInputValue}
+                          value={sellingPrice}
+                          onChangeText={setSellingPrice}
+                          placeholder={suggestedPrice.toFixed(0)}
+                          placeholderTextColor="#9CA3AF"
+                          keyboardType="decimal-pad"
+                          returnKeyType="done"
+                          onSubmitEditing={() => Keyboard.dismiss()}
+                        />
+                      </View>
                     </View>
-                  </View>
-                  <Text style={styles.calcFeesValue}>-${ebayFees.toFixed(2)}</Text>
-                </View>
 
-                <View style={styles.calcDividerThin} />
+                    <View style={styles.calcDividerThin} />
 
-                <View style={[styles.profitRow, { backgroundColor: profit > 0 ? "#ECFDF5" : "#FEF2F2" }]}>
-                  <View>
-                    <Text style={[styles.profitLabel, { color: profit > 0 ? "#047857" : "#EF4444" }]}>
-                      Estimated eBay Profit
-                    </Text>
-                    <Text style={{ fontSize: 11, color: "#6B7280", marginTop: 1 }}>
-                      After eBay fees · before shipping
-                    </Text>
-                  </View>
-                  <View style={{ alignItems: "flex-end" }}>
-                    <Text style={[
-                      styles.profitValue, 
-                      { color: profit > 0 ? "#047857" : "#EF4444" }
-                    ]}>
-                      {profit >= 0 ? '+' : ''}${profit.toFixed(2)}
-                    </Text>
-                    {profit > 0 ? (
-                      <Text style={{ fontSize: 12, color: "#047857", marginTop: 1 }}>
-                        {margin}% margin
+                    <View style={styles.calculatorRow}>
+                      <Text style={styles.calcLabel}>Your Purchase Price</Text>
+                      <View style={styles.calcInputBox}>
+                        <Text style={styles.calcInputDollar}>$</Text>
+                        <TextInput
+                          style={styles.calcInputValue}
+                          value={purchasePrice}
+                          onChangeText={setPurchasePrice}
+                          placeholder="0"
+                          placeholderTextColor="#9CA3AF"
+                          keyboardType="decimal-pad"
+                          returnKeyType="done"
+                          onSubmitEditing={() => Keyboard.dismiss()}
+                        />
+                      </View>
+                    </View>
+
+                    <View style={styles.calcDividerThin} />
+
+                    <View style={styles.calculatorRow}>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 6,
+                        }}
+                      >
+                        <Text style={styles.calcLabel}>Est. Fees</Text>
+                        <View style={styles.feesPill}>
+                          <Text style={styles.feesPillText}>~13%</Text>
+                        </View>
+                      </View>
+                      <Text style={styles.calcFeesValue}>
+                        -${ebayFees.toFixed(2)}
                       </Text>
-                    ) : null}
-                  </View>
-                </View>
+                    </View>
+
+                    <View style={styles.calcDividerThin} />
+
+                    <View
+                      style={[
+                        styles.profitRow,
+                        { backgroundColor: profit > 0 ? "#ECFDF5" : "#FEF2F2" },
+                      ]}
+                    >
+                      <View>
+                        <Text
+                          style={[
+                            styles.profitLabel,
+                            { color: profit > 0 ? "#047857" : "#EF4444" },
+                          ]}
+                        >
+                          Estimated eBay Profit
+                        </Text>
+                        <Text
+                          style={{
+                            fontSize: 11,
+                            color: "#6B7280",
+                            marginTop: 1,
+                          }}
+                        >
+                          After eBay fees · before shipping
+                        </Text>
+                      </View>
+                      <View style={{ alignItems: "flex-end" }}>
+                        <Text
+                          style={[
+                            styles.profitValue,
+                            { color: profit > 0 ? "#047857" : "#EF4444" },
+                          ]}
+                        >
+                          {profit >= 0 ? "+" : ""}${profit.toFixed(2)}
+                        </Text>
+                        {profit > 0 ? (
+                          <Text
+                            style={{
+                              fontSize: 12,
+                              color: "#047857",
+                              marginTop: 1,
+                            }}
+                          >
+                            {margin}% margin
+                          </Text>
+                        ) : null}
+                      </View>
+                    </View>
                   </>
                 ) : null}
               </View>
 
-            <View style={styles.belowHeroContent}>
-            <Pressable
-              testID="button-ebay-sold-search"
-              onPress={() => handleEbaySoldSearch()}
-              disabled={ebaySoldLoading}
-              style={({ pressed }) => [
-                rcReady && !isPro && !ebaySoldData ? styles.salesIntelCardWrapper : styles.ebaySoldButtonPro,
-                { opacity: pressed ? 0.7 : 1 }
-              ]}
-            >
-              {ebaySoldLoading ? (
-                <ActivityIndicator size="small" color="#F0D264" />
-              ) : rcReady && !isPro && !ebaySoldData ? (
-                <View style={styles.salesIntelCard}>
-                  <View style={styles.salesIntelCardTitleRow}>
-                    <Text style={styles.salesIntelCardTitle}>Sales Intelligence</Text>
-                    <LinearGradient
-                      colors={["#F5D87A", "#D4A926", "#E8C84A"]}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={styles.salesIntelCardProPill}
-                    >
-                      <Feather name="star" size={9} color="#3D2E00" />
-                      <Text style={styles.salesIntelCardProPillText}>PRO</Text>
-                    </LinearGradient>
-                  </View>
-
-                  <View style={styles.blurredMetricsContainer}>
-                    <View style={styles.blurredMetricsRow}>
-                      <View style={styles.blurredMetricBox}>
-                        <Text style={styles.blurredMetricLabel}>Avg Sold</Text>
-                        <View style={styles.redactedBar}>
-                          <View style={[styles.redactedBlock, { width: 48 }]} />
-                        </View>
-                      </View>
-                      <View style={styles.blurredMetricBox}>
-                        <Text style={styles.blurredMetricLabel}>Buy Score</Text>
-                        <View style={styles.redactedBar}>
-                          <View style={[styles.redactedBlock, { width: 42 }]} />
-                        </View>
-                      </View>
-                      <View style={styles.blurredMetricBox}>
-                        <Text style={styles.blurredMetricLabel}>Sold/mo</Text>
-                        <View style={styles.redactedBar}>
-                          <View style={[styles.redactedBlock, { width: 28 }]} />
-                        </View>
-                      </View>
-                    </View>
-                  </View>
-
-                  <View style={styles.salesIntelCtaRow}>
-                    <Feather name="lock" size={14} color="#047857" />
-                    <Text style={styles.salesIntelCtaText}>See eBay Sales Data</Text>
-                    <Feather name="chevron-right" size={16} color="#047857" />
-                  </View>
-                </View>
-              ) : (
-                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", flex: 1, gap: 10 }}>
-                  <Feather name="trending-up" size={18} color="#F0D264" />
-                  <Text style={styles.ebaySoldButtonTextPro}>
-                    {ebaySoldData ? (showEbaySold ? "Hide Sales Data" : "Show Sales Data") : "See eBay Sales Data"}
-                  </Text>
-                  <LinearGradient
-                    colors={["#F5D87A", "#D4A926", "#E8C84A"]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={{ flexDirection: "row", alignItems: "center", gap: 3, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}
-                  >
-                    <Feather name="star" size={10} color="#3D2E00" />
-                    <Text style={{ fontSize: 10, fontWeight: "800", color: "#3D2E00" }}>PRO</Text>
-                  </LinearGradient>
-                </View>
-              )}
-            </Pressable>
-
-            {ebaySoldError ? (
-              <Text style={[styles.ebaySoldErrorText, { color: theme.colors.danger }]}>
-                {ebaySoldError}
-              </Text>
-            ) : null}
-
-            {ebaySoldData && showEbaySold && ebaySoldData.noResults && !broadSoldData ? (
-              <View style={styles.advancedSearchContainer}>
-                <View style={styles.salesIntelHeader}>
-                  <View style={styles.salesIntelLeft}>
-                    <Text style={styles.salesIntelLabel}>PRO FEATURE</Text>
-                    <Text style={styles.salesIntelTitle}>Sales Intelligence</Text>
-                  </View>
-                  <LinearGradient
-                    colors={["#F5D87A", "#D4A926", "#E8C84A"]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.salesIntelBadge}
-                  >
-                    <Feather name="star" size={10} color="#3D2E00" />
-                    <Text style={styles.salesIntelBadgeText}>PRO</Text>
-                  </LinearGradient>
-                </View>
-                <View style={[styles.ebaySoldSummary, { backgroundColor: theme.colors.card }]}>
-                  <View style={styles.noResultsEmptyState}>
-                    <View style={styles.noResultsIconCircle}>
-                      <Feather name="package" size={28} color="#047857" />
-                    </View>
-                    <Text style={[styles.noResultsTitle, { color: theme.colors.foreground }]}>
-                      No Exact Matches Yet
-                    </Text>
-                    <Text style={[styles.noResultsDescription, { color: theme.colors.mutedForeground }]}>
-                      We didn't find recent sold listings for this exact product. Try broadening your search to discover similar items.
-                    </Text>
-                    <Pressable
-                      testID="button-broad-ebay-search"
-                      style={styles.broadSearchButton}
-                      onPress={() => handleEbaySoldSearch(true)}
-                      disabled={ebaySoldLoading}
-                    >
-                      {ebaySoldLoading ? (
-                        <ActivityIndicator size="small" color="#FFFFFF" />
-                      ) : (
-                        <>
-                          <Feather name="search" size={16} color="#FFFFFF" />
-                          <Text style={styles.broadSearchButtonText}>Search Similar Items</Text>
-                        </>
-                      )}
-                    </Pressable>
-                  </View>
-                </View>
-              </View>
-            ) : null}
-
-            {ebaySoldData && showEbaySold && ebaySoldData.noResults && broadSoldData && broadSoldData.noResults ? (
-              <View style={styles.advancedSearchContainer}>
-                <View style={styles.salesIntelHeader}>
-                  <View style={styles.salesIntelLeft}>
-                    <Text style={styles.salesIntelLabel}>PRO FEATURE</Text>
-                    <Text style={styles.salesIntelTitle}>Sales Intelligence</Text>
-                  </View>
-                  <LinearGradient
-                    colors={["#F5D87A", "#D4A926", "#E8C84A"]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.salesIntelBadge}
-                  >
-                    <Feather name="star" size={10} color="#3D2E00" />
-                    <Text style={styles.salesIntelBadgeText}>PRO</Text>
-                  </LinearGradient>
-                </View>
-                <View style={[styles.ebaySoldSummary, { backgroundColor: theme.colors.card }]}>
-                  <View style={styles.ebaySoldSummaryHeader}>
-                    <Feather name="info" size={18} color="#047857" />
-                    <Text style={[styles.ebaySoldSummaryTitle, { color: theme.colors.foreground }]}>
-                      No Similar Items Found
-                    </Text>
-                  </View>
-                  <Text style={[styles.ebaySoldSummarySubtitle, { color: theme.colors.mutedForeground }]}>
-                    No sold listings were found for similar items either. This product may be very niche or new to the market.
-                  </Text>
-                </View>
-              </View>
-            ) : null}
-
-            {ebaySoldData && showEbaySold && !ebaySoldData.noResults && buyScore !== null ? (
-              <View style={styles.advancedSearchContainer}>
-                <View style={styles.salesIntelHeader}>
-                  <View style={styles.salesIntelLeft}>
-                    <Text style={styles.salesIntelLabel}>PRO FEATURE</Text>
-                    <Text style={styles.salesIntelTitle}>Sales Intelligence</Text>
-                  </View>
-                  <LinearGradient
-                    colors={["#F5D87A", "#D4A926", "#E8C84A"]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.salesIntelBadge}
-                  >
-                    <Feather name="star" size={10} color="#3D2E00" />
-                    <Text style={styles.salesIntelBadgeText}>PRO</Text>
-                  </LinearGradient>
-                </View>
-
-                <Animated.View
-                  entering={FadeInDown.duration(400)}
-                  style={[styles.buyScoreCard, { backgroundColor: theme.colors.card }]}
+              <View style={styles.belowHeroContent}>
+                <Pressable
+                  testID="button-ebay-sold-search"
+                  onPress={() => handleEbaySoldSearch()}
+                  disabled={ebaySoldLoading}
+                  style={({ pressed }) => [
+                    rcReady && !isPro && !ebaySoldData
+                      ? styles.salesIntelCardWrapper
+                      : styles.ebaySoldButtonPro,
+                    { opacity: pressed ? 0.7 : 1 },
+                  ]}
                 >
-                  <View style={styles.buyScoreHeader}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.buyScoreSectionLabel}>
-                        BUY SCORE
-                      </Text>
-                      <Text style={[styles.buyScoreHint, { color: theme.colors.mutedForeground }]}>
-                        {parseFloat(purchasePrice) > 0 ? "Based on your cost, demand & market data" : "Enter your purchase price for a precise score"}
-                      </Text>
-                    </View>
-                    <View style={styles.buyScoreNumberContainer}>
-                      <Text style={[styles.buyScoreValue, { color: getBuyScoreColor(buyScore) }]}>
-                        {buyScore}
-                      </Text>
-                      <Text style={[styles.buyScoreOutOf, { color: theme.colors.mutedForeground }]}>/100</Text>
-                    </View>
-                  </View>
+                  {ebaySoldLoading ? (
+                    <ActivityIndicator size="small" color="#F0D264" />
+                  ) : rcReady && !isPro && !ebaySoldData ? (
+                    <View style={styles.salesIntelCard}>
+                      <View style={styles.salesIntelCardTitleRow}>
+                        <Text style={styles.salesIntelCardTitle}>
+                          Sales Intelligence
+                        </Text>
+                        <LinearGradient
+                          colors={["#F5D87A", "#D4A926", "#E8C84A"]}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 1 }}
+                          style={styles.salesIntelCardProPill}
+                        >
+                          <Feather name="star" size={9} color="#3D2E00" />
+                          <Text style={styles.salesIntelCardProPillText}>
+                            PRO
+                          </Text>
+                        </LinearGradient>
+                      </View>
 
-                  <View style={styles.meterContainer}>
-                    <View style={[styles.meterTrack, { backgroundColor: theme.colors.muted }]}>
-                      <View style={[styles.meterSegment, styles.meterRed]} />
-                      <View style={[styles.meterSegment, styles.meterYellow]} />
-                      <View style={[styles.meterSegment, styles.meterGreen, { borderTopRightRadius: 7, borderBottomRightRadius: 7 }]} />
+                      <View style={styles.blurredMetricsContainer}>
+                        <View style={styles.blurredMetricsRow}>
+                          <View style={styles.blurredMetricBox}>
+                            <Text style={styles.blurredMetricLabel}>
+                              Avg Sold
+                            </Text>
+                            <View style={styles.redactedBar}>
+                              <View
+                                style={[styles.redactedBlock, { width: 48 }]}
+                              />
+                            </View>
+                          </View>
+                          <View style={styles.blurredMetricBox}>
+                            <Text style={styles.blurredMetricLabel}>
+                              Buy Score
+                            </Text>
+                            <View style={styles.redactedBar}>
+                              <View
+                                style={[styles.redactedBlock, { width: 42 }]}
+                              />
+                            </View>
+                          </View>
+                          <View style={styles.blurredMetricBox}>
+                            <Text style={styles.blurredMetricLabel}>
+                              Sold/mo
+                            </Text>
+                            <View style={styles.redactedBar}>
+                              <View
+                                style={[styles.redactedBlock, { width: 28 }]}
+                              />
+                            </View>
+                          </View>
+                        </View>
+                      </View>
+
+                      <View style={styles.salesIntelCtaRow}>
+                        <Feather name="lock" size={14} color="#047857" />
+                        <Text style={styles.salesIntelCtaText}>
+                          See eBay Sales Data
+                        </Text>
+                        <Feather
+                          name="chevron-right"
+                          size={16}
+                          color="#047857"
+                        />
+                      </View>
+                    </View>
+                  ) : (
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flex: 1,
+                        gap: 10,
+                      }}
+                    >
+                      <Feather name="trending-up" size={18} color="#F0D264" />
+                      <Text style={styles.ebaySoldButtonTextPro}>
+                        {ebaySoldData
+                          ? showEbaySold
+                            ? "Hide Sales Data"
+                            : "Show Sales Data"
+                          : "See eBay Sales Data"}
+                      </Text>
+                      <LinearGradient
+                        colors={["#F5D87A", "#D4A926", "#E8C84A"]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 3,
+                          paddingHorizontal: 8,
+                          paddingVertical: 3,
+                          borderRadius: 6,
+                        }}
+                      >
+                        <Feather name="star" size={10} color="#3D2E00" />
+                        <Text
+                          style={{
+                            fontSize: 10,
+                            fontWeight: "800",
+                            color: "#3D2E00",
+                          }}
+                        >
+                          PRO
+                        </Text>
+                      </LinearGradient>
+                    </View>
+                  )}
+                </Pressable>
+
+                {ebaySoldError ? (
+                  <Text
+                    style={[
+                      styles.ebaySoldErrorText,
+                      { color: theme.colors.danger },
+                    ]}
+                  >
+                    {ebaySoldError}
+                  </Text>
+                ) : null}
+
+                {ebaySoldData &&
+                showEbaySold &&
+                ebaySoldData.noResults &&
+                !broadSoldData ? (
+                  <View style={styles.advancedSearchContainer}>
+                    <View style={styles.salesIntelHeader}>
+                      <View style={styles.salesIntelLeft}>
+                        <Text style={styles.salesIntelLabel}>PRO FEATURE</Text>
+                        <Text style={styles.salesIntelTitle}>
+                          Sales Intelligence
+                        </Text>
+                      </View>
+                      <LinearGradient
+                        colors={["#F5D87A", "#D4A926", "#E8C84A"]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.salesIntelBadge}
+                      >
+                        <Feather name="star" size={10} color="#3D2E00" />
+                        <Text style={styles.salesIntelBadgeText}>PRO</Text>
+                      </LinearGradient>
                     </View>
                     <View
                       style={[
-                        styles.meterIndicator,
-                        { left: `${Math.max(1, Math.min(98, buyScore))}%`, borderColor: getBuyScoreColor(buyScore) }
+                        styles.ebaySoldSummary,
+                        { backgroundColor: theme.colors.card },
                       ]}
-                    />
-                  </View>
-
-                  <View style={styles.meterLabels}>
-                    <Text style={[styles.meterLabelText, { color: theme.colors.mutedForeground }]}>Avoid</Text>
-                    <Text style={[styles.meterLabelText, { color: theme.colors.mutedForeground }]}>Risky</Text>
-                    <Text style={[styles.meterLabelText, { color: theme.colors.mutedForeground }]}>Fair</Text>
-                    <Text style={[styles.meterLabelText, { color: theme.colors.mutedForeground }]}>Good</Text>
-                    <Text style={[styles.meterLabelText, { color: theme.colors.mutedForeground }]}>Strong</Text>
-                  </View>
-
-                  <View style={[styles.buyScoreLabelRow, { backgroundColor: getBuyScoreColor(buyScore) + '20' }]}>
-                    <Feather
-                      name={buyScore >= 60 ? "thumbs-up" : buyScore >= 40 ? "minus" : "thumbs-down"}
-                      size={16}
-                      color={getBuyScoreColor(buyScore)}
-                    />
-                    <Text style={[styles.buyScoreLabelText, { color: getBuyScoreColor(buyScore) }]}>
-                      {getBuyScoreLabel(buyScore)}
-                    </Text>
-                  </View>
-                </Animated.View>
-
-                <View style={[styles.ebaySoldSummary, { backgroundColor: theme.colors.card }]}>
-                  <View style={styles.ebaySoldSummaryHeader}>
-                    <View style={styles.ebaySoldSummaryHeaderLeft}>
-                      <Feather name="trending-up" size={18} color="#047857" />
-                      <Text style={[styles.ebaySoldSummaryTitle, { color: theme.colors.foreground }]}>
-                        eBay Sales Summary
-                      </Text>
+                    >
+                      <View style={styles.noResultsEmptyState}>
+                        <View style={styles.noResultsIconCircle}>
+                          <Feather name="package" size={28} color="#047857" />
+                        </View>
+                        <Text
+                          style={[
+                            styles.noResultsTitle,
+                            { color: theme.colors.foreground },
+                          ]}
+                        >
+                          No Exact Matches Yet
+                        </Text>
+                        <Text
+                          style={[
+                            styles.noResultsDescription,
+                            { color: theme.colors.mutedForeground },
+                          ]}
+                        >
+                          We didn't find recent sold listings for this exact
+                          product. Try broadening your search to discover
+                          similar items.
+                        </Text>
+                        <Pressable
+                          testID="button-broad-ebay-search"
+                          style={styles.broadSearchButton}
+                          onPress={() => handleEbaySoldSearch(true)}
+                          disabled={ebaySoldLoading}
+                        >
+                          {ebaySoldLoading ? (
+                            <ActivityIndicator size="small" color="#FFFFFF" />
+                          ) : (
+                            <>
+                              <Feather
+                                name="search"
+                                size={16}
+                                color="#FFFFFF"
+                              />
+                              <Text style={styles.broadSearchButtonText}>
+                                Search Similar Items
+                              </Text>
+                            </>
+                          )}
+                        </Pressable>
+                      </View>
                     </View>
                   </View>
-                  <Text style={[styles.ebaySoldMatchCount, { color: theme.colors.mutedForeground }]}>
-                    {(ebaySoldData.totalSold || 0).toLocaleString()} sold {ebaySoldData.totalSold === 1 ? "match" : "matches"}
-                  </Text>
+                ) : null}
 
-                  <View style={styles.ebaySoldStatsRow}>
-                    <View style={styles.ebaySoldStat}>
-                      <Text style={[styles.ebaySoldStatLabel, { color: theme.colors.mutedForeground }]}>
-                        AVG SOLD
-                      </Text>
-                      <Text style={[styles.ebaySoldStatValue, { color: theme.colors.foreground }]} numberOfLines={1} adjustsFontSizeToFit>
-                        ${(ebaySoldData.avgSoldPrice || 0).toFixed(0)}
-                      </Text>
-                      <Text style={[styles.ebaySoldStatSub, { color: theme.colors.mutedForeground }]}>
-                        mean price
-                      </Text>
+                {ebaySoldData &&
+                showEbaySold &&
+                ebaySoldData.noResults &&
+                broadSoldData &&
+                broadSoldData.noResults ? (
+                  <View style={styles.advancedSearchContainer}>
+                    <View style={styles.salesIntelHeader}>
+                      <View style={styles.salesIntelLeft}>
+                        <Text style={styles.salesIntelLabel}>PRO FEATURE</Text>
+                        <Text style={styles.salesIntelTitle}>
+                          Sales Intelligence
+                        </Text>
+                      </View>
+                      <LinearGradient
+                        colors={["#F5D87A", "#D4A926", "#E8C84A"]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.salesIntelBadge}
+                      >
+                        <Feather name="star" size={10} color="#3D2E00" />
+                        <Text style={styles.salesIntelBadgeText}>PRO</Text>
+                      </LinearGradient>
                     </View>
-                    <View style={[styles.ebaySoldStatDivider, { backgroundColor: theme.colors.border }]} />
-                    <View style={styles.ebaySoldStat}>
-                      <Text style={[styles.ebaySoldStatLabel, { color: theme.colors.mutedForeground }]}>
-                        MEDIAN
-                      </Text>
-                      <Text style={[styles.ebaySoldStatValue, { color: theme.colors.foreground }]} numberOfLines={1} adjustsFontSizeToFit>
-                        ${(ebaySoldData.medianSoldPrice || 0).toFixed(0)}
-                      </Text>
-                      <Text style={[styles.ebaySoldStatSub, { color: theme.colors.mutedForeground }]}>
-                        midpoint
-                      </Text>
-                    </View>
-                    <View style={[styles.ebaySoldStatDivider, { backgroundColor: theme.colors.border }]} />
-                    <View style={styles.ebaySoldStat}>
-                      <Text style={[styles.ebaySoldStatLabel, { color: theme.colors.mutedForeground }]}>
-                        RANGE
-                      </Text>
-                      <Text style={[styles.ebaySoldStatValue, { color: theme.colors.foreground }]} numberOfLines={1} adjustsFontSizeToFit>
-                        ${(ebaySoldData.lowPrice || 0).toFixed(0)}-${(ebaySoldData.highPrice || 0).toFixed(0)}
-                      </Text>
-                      <Text style={[styles.ebaySoldStatSub, { color: theme.colors.mutedForeground }]}>
-                        low to high
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={[styles.avgPerMonthRow, { borderTopWidth: 1, borderTopColor: theme.colors.border }]}>
-                    <Feather
-                      name="activity"
-                      size={16}
-                      color={theme.colors.mutedForeground}
-                    />
-                    <Text style={[styles.avgPerMonthLabel, { color: theme.colors.mutedForeground }]}>
-                      Avg sold per month
-                    </Text>
-                    <Text style={[styles.avgPerMonthValue, { color: (ebaySoldData.avgSoldPerMonth || 0) >= 30 ? "#22C55E" : (ebaySoldData.avgSoldPerMonth || 0) >= 10 ? "#F59E0B" : "#047857" }]}>
-                      ~{(ebaySoldData.avgSoldPerMonth || 0) > 0 ? (ebaySoldData.avgSoldPerMonth || 0).toLocaleString() : "0"}
-                    </Text>
-                    <Text style={[styles.avgPerMonthUnit, { color: theme.colors.mutedForeground }]}>
-                      / mo
-                    </Text>
-                  </View>
-                </View>
-
-                <Text style={[styles.advancedSectionTitle, { color: "#111827" }]}>
-                  Recent eBay Sales ({(ebaySoldData.items || []).length})
-                </Text>
-
-                {(ebaySoldData.items || []).slice(0, 20).map((item, index) => (
-                  <Animated.View
-                    key={item.id}
-                    entering={FadeInDown.delay(Math.min(index, 5) * 40).duration(250)}
-                    style={[styles.listingCard, { backgroundColor: theme.colors.card }]}
-                  >
-                    {renderSoldImage(item)}
-                    <View style={styles.listingContent}>
-                      <View style={[styles.ebayBadge, { backgroundColor: "#047857" }]}>
-                        <Text style={styles.ebayBadgeText}>SOLD</Text>
+                    <View
+                      style={[
+                        styles.ebaySoldSummary,
+                        { backgroundColor: theme.colors.card },
+                      ]}
+                    >
+                      <View style={styles.ebaySoldSummaryHeader}>
+                        <Feather name="info" size={18} color="#047857" />
+                        <Text
+                          style={[
+                            styles.ebaySoldSummaryTitle,
+                            { color: theme.colors.foreground },
+                          ]}
+                        >
+                          No Similar Items Found
+                        </Text>
                       </View>
                       <Text
-                        style={[styles.listingTitle, { color: theme.colors.foreground }]}
-                        numberOfLines={2}
-                      >
-                        {item.title}
-                      </Text>
-                      <View style={styles.priceRow}>
-                        <Text style={[styles.currentPrice, { color: theme.colors.foreground }]}>
-                          ${(Number(item.price) || 0).toFixed(2)}
-                        </Text>
-                        {item.condition ? (
-                          <Text style={[styles.ebaySoldCondition, { color: theme.colors.mutedForeground }]}>
-                            {item.condition}
-                          </Text>
-                        ) : null}
-                      </View>
-                      {item.soldDate ? (
-                        <Text style={[styles.ebaySoldDate, { color: theme.colors.mutedForeground }]}>
-                          {item.soldDate.startsWith("Sold") ? item.soldDate : `Sold ${item.soldDate}`}
-                        </Text>
-                      ) : null}
-                      <Pressable
-                        onPress={() => handleViewListing(item.link)}
-                        style={({ pressed }) => [
-                          styles.viewButton,
-                          { backgroundColor: theme.colors.muted, opacity: pressed ? 0.7 : 1 }
+                        style={[
+                          styles.ebaySoldSummarySubtitle,
+                          { color: theme.colors.mutedForeground },
                         ]}
                       >
-                        <Feather name="external-link" size={14} color={theme.colors.foreground} />
-                        <Text style={[styles.viewButtonText, { color: theme.colors.foreground }]}>
-                          View Listing
+                        No sold listings were found for similar items either.
+                        This product may be very niche or new to the market.
+                      </Text>
+                    </View>
+                  </View>
+                ) : null}
+
+                {ebaySoldData &&
+                showEbaySold &&
+                !ebaySoldData.noResults &&
+                buyScore !== null ? (
+                  <View style={styles.advancedSearchContainer}>
+                    <View style={styles.salesIntelHeader}>
+                      <View style={styles.salesIntelLeft}>
+                        <Text style={styles.salesIntelLabel}>PRO FEATURE</Text>
+                        <Text style={styles.salesIntelTitle}>
+                          Sales Intelligence
                         </Text>
-                      </Pressable>
+                      </View>
+                      <LinearGradient
+                        colors={["#F5D87A", "#D4A926", "#E8C84A"]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.salesIntelBadge}
+                      >
+                        <Feather name="star" size={10} color="#3D2E00" />
+                        <Text style={styles.salesIntelBadgeText}>PRO</Text>
+                      </LinearGradient>
                     </View>
-                  </Animated.View>
-                ))}
 
-                <View style={{ height: 8 }} />
-              </View>
-            ) : null}
+                    <Animated.View
+                      entering={FadeInDown.duration(400)}
+                      style={[
+                        styles.buyScoreCard,
+                        { backgroundColor: theme.colors.card },
+                      ]}
+                    >
+                      <View style={styles.buyScoreHeader}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.buyScoreSectionLabel}>
+                            BUY SCORE
+                          </Text>
+                          <Text
+                            style={[
+                              styles.buyScoreHint,
+                              { color: theme.colors.mutedForeground },
+                            ]}
+                          >
+                            {parseFloat(purchasePrice) > 0
+                              ? "Based on your cost, demand & market data"
+                              : "Enter your purchase price for a precise score"}
+                          </Text>
+                        </View>
+                        <View style={styles.buyScoreNumberContainer}>
+                          <Text
+                            style={[
+                              styles.buyScoreValue,
+                              { color: getBuyScoreColor(buyScore) },
+                            ]}
+                          >
+                            {buyScore}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.buyScoreOutOf,
+                              { color: theme.colors.mutedForeground },
+                            ]}
+                          >
+                            /100
+                          </Text>
+                        </View>
+                      </View>
 
-            {broadSoldData && showEbaySold && !broadSoldData.noResults ? (
-              <View style={styles.advancedSearchContainer}>
-                <View style={styles.salesIntelHeader}>
-                  <View style={styles.salesIntelLeft}>
-                    <Text style={styles.salesIntelLabel}>PRO FEATURE</Text>
-                    <Text style={styles.salesIntelTitle}>Sales Intelligence</Text>
-                  </View>
-                  <LinearGradient
-                    colors={["#F5D87A", "#D4A926", "#E8C84A"]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.salesIntelBadge}
-                  >
-                    <Feather name="star" size={10} color="#3D2E00" />
-                    <Text style={styles.salesIntelBadgeText}>PRO</Text>
-                  </LinearGradient>
-                </View>
+                      <View style={styles.meterContainer}>
+                        <View
+                          style={[
+                            styles.meterTrack,
+                            { backgroundColor: theme.colors.muted },
+                          ]}
+                        >
+                          <View
+                            style={[styles.meterSegment, styles.meterRed]}
+                          />
+                          <View
+                            style={[styles.meterSegment, styles.meterYellow]}
+                          />
+                          <View
+                            style={[
+                              styles.meterSegment,
+                              styles.meterGreen,
+                              {
+                                borderTopRightRadius: 7,
+                                borderBottomRightRadius: 7,
+                              },
+                            ]}
+                          />
+                        </View>
+                        <View
+                          style={[
+                            styles.meterIndicator,
+                            {
+                              left: `${Math.max(1, Math.min(98, buyScore))}%`,
+                              borderColor: getBuyScoreColor(buyScore),
+                            },
+                          ]}
+                        />
+                      </View>
 
-                <View style={styles.broadDisclaimerRow}>
-                  <Feather name="info" size={14} color={theme.colors.mutedForeground} />
-                  <Text style={[styles.broadDisclaimerText, { color: theme.colors.mutedForeground }]}>
-                    Based on similar items — prices may vary from exact product
-                  </Text>
-                </View>
+                      <View style={styles.meterLabels}>
+                        <Text
+                          style={[
+                            styles.meterLabelText,
+                            { color: theme.colors.mutedForeground },
+                          ]}
+                        >
+                          Avoid
+                        </Text>
+                        <Text
+                          style={[
+                            styles.meterLabelText,
+                            { color: theme.colors.mutedForeground },
+                          ]}
+                        >
+                          Risky
+                        </Text>
+                        <Text
+                          style={[
+                            styles.meterLabelText,
+                            { color: theme.colors.mutedForeground },
+                          ]}
+                        >
+                          Fair
+                        </Text>
+                        <Text
+                          style={[
+                            styles.meterLabelText,
+                            { color: theme.colors.mutedForeground },
+                          ]}
+                        >
+                          Good
+                        </Text>
+                        <Text
+                          style={[
+                            styles.meterLabelText,
+                            { color: theme.colors.mutedForeground },
+                          ]}
+                        >
+                          Strong
+                        </Text>
+                      </View>
 
-                <View style={[styles.ebaySoldSummary, { backgroundColor: theme.colors.card }]}>
-                  <Text style={[styles.ebaySoldSummarySubtitle, { color: theme.colors.mutedForeground, marginBottom: 12 }]}>
-                    {(broadSoldData.totalSold || 0).toLocaleString()} similar sold {broadSoldData.totalSold === 1 ? "listing" : "listings"} found
-                  </Text>
+                      <View
+                        style={[
+                          styles.buyScoreLabelRow,
+                          {
+                            backgroundColor: getBuyScoreColor(buyScore) + "20",
+                          },
+                        ]}
+                      >
+                        <Feather
+                          name={
+                            buyScore >= 60
+                              ? "thumbs-up"
+                              : buyScore >= 40
+                                ? "minus"
+                                : "thumbs-down"
+                          }
+                          size={16}
+                          color={getBuyScoreColor(buyScore)}
+                        />
+                        <Text
+                          style={[
+                            styles.buyScoreLabelText,
+                            { color: getBuyScoreColor(buyScore) },
+                          ]}
+                        >
+                          {getBuyScoreLabel(buyScore)}
+                        </Text>
+                      </View>
+                    </Animated.View>
 
-                  <View style={styles.ebaySoldStatsRow}>
-                    <View style={styles.ebaySoldStat}>
-                      <Text style={[styles.ebaySoldStatLabel, { color: theme.colors.mutedForeground }]}>
-                        AVG SOLD
-                      </Text>
-                      <Text style={[styles.ebaySoldStatValue, { color: theme.colors.foreground }]} numberOfLines={1} adjustsFontSizeToFit>
-                        ${(broadSoldData.avgSoldPrice || 0).toFixed(0)}
-                      </Text>
-                      <Text style={[styles.ebaySoldStatSub, { color: theme.colors.mutedForeground }]}>
-                        mean price
-                      </Text>
-                    </View>
-                    <View style={[styles.ebaySoldStatDivider, { backgroundColor: theme.colors.border }]} />
-                    <View style={styles.ebaySoldStat}>
-                      <Text style={[styles.ebaySoldStatLabel, { color: theme.colors.mutedForeground }]}>
-                        MEDIAN
-                      </Text>
-                      <Text style={[styles.ebaySoldStatValue, { color: theme.colors.foreground }]} numberOfLines={1} adjustsFontSizeToFit>
-                        ${(broadSoldData.medianSoldPrice || 0).toFixed(0)}
-                      </Text>
-                      <Text style={[styles.ebaySoldStatSub, { color: theme.colors.mutedForeground }]}>
-                        midpoint
-                      </Text>
-                    </View>
-                    <View style={[styles.ebaySoldStatDivider, { backgroundColor: theme.colors.border }]} />
-                    <View style={styles.ebaySoldStat}>
-                      <Text style={[styles.ebaySoldStatLabel, { color: theme.colors.mutedForeground }]}>
-                        RANGE
-                      </Text>
-                      <Text style={[styles.ebaySoldStatValue, { color: theme.colors.foreground }]} numberOfLines={1} adjustsFontSizeToFit>
-                        ${(broadSoldData.lowPrice || 0).toFixed(0)}-${(broadSoldData.highPrice || 0).toFixed(0)}
-                      </Text>
-                      <Text style={[styles.ebaySoldStatSub, { color: theme.colors.mutedForeground }]}>
-                        low to high
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-
-                <Text style={[styles.advancedSectionTitle, { color: "#111827" }]}>
-                  Similar Sales ({(broadSoldData.items || []).length})
-                </Text>
-
-                {(broadSoldData.items || []).slice(0, 15).map((item, index) => (
-                  <Animated.View
-                    key={`broad-${item.id}`}
-                    entering={FadeInDown.delay(Math.min(index, 5) * 40).duration(250)}
-                    style={[styles.listingCard, { backgroundColor: theme.colors.card }]}
-                  >
-                    {renderSoldImage(item)}
-                    <View style={styles.listingContent}>
-                      <View style={[styles.ebayBadge, { backgroundColor: "#F59E0B" }]}>
-                        <Text style={styles.ebayBadgeText}>SIMILAR</Text>
+                    <View
+                      style={[
+                        styles.ebaySoldSummary,
+                        { backgroundColor: theme.colors.card },
+                      ]}
+                    >
+                      <View style={styles.ebaySoldSummaryHeader}>
+                        <View style={styles.ebaySoldSummaryHeaderLeft}>
+                          <Feather
+                            name="trending-up"
+                            size={18}
+                            color="#047857"
+                          />
+                          <Text
+                            style={[
+                              styles.ebaySoldSummaryTitle,
+                              { color: theme.colors.foreground },
+                            ]}
+                          >
+                            eBay Sales Summary
+                          </Text>
+                        </View>
                       </View>
                       <Text
-                        style={[styles.listingTitle, { color: theme.colors.foreground }]}
-                        numberOfLines={2}
-                      >
-                        {item.title}
-                      </Text>
-                      <View style={styles.priceRow}>
-                        <Text style={[styles.currentPrice, { color: theme.colors.foreground }]}>
-                          ${(Number(item.price) || 0).toFixed(2)}
-                        </Text>
-                        {item.condition ? (
-                          <Text style={[styles.ebaySoldCondition, { color: theme.colors.mutedForeground }]}>
-                            {item.condition}
-                          </Text>
-                        ) : null}
-                      </View>
-                      {item.soldDate ? (
-                        <Text style={[styles.ebaySoldDate, { color: theme.colors.mutedForeground }]}>
-                          {item.soldDate.startsWith("Sold") ? item.soldDate : `Sold ${item.soldDate}`}
-                        </Text>
-                      ) : null}
-                      <Pressable
-                        onPress={() => handleViewListing(item.link)}
-                        style={({ pressed }) => [
-                          styles.viewButton,
-                          { backgroundColor: theme.colors.muted, opacity: pressed ? 0.7 : 1 }
+                        style={[
+                          styles.ebaySoldMatchCount,
+                          { color: theme.colors.mutedForeground },
                         ]}
                       >
-                        <Feather name="external-link" size={14} color={theme.colors.foreground} />
-                        <Text style={[styles.viewButtonText, { color: theme.colors.foreground }]}>
-                          View Listing
+                        {(ebaySoldData.totalSold || 0).toLocaleString()} sold{" "}
+                        {ebaySoldData.totalSold === 1 ? "match" : "matches"}
+                      </Text>
+
+                      <View style={styles.ebaySoldStatsRow}>
+                        <View style={styles.ebaySoldStat}>
+                          <Text
+                            style={[
+                              styles.ebaySoldStatLabel,
+                              { color: theme.colors.mutedForeground },
+                            ]}
+                          >
+                            AVG SOLD
+                          </Text>
+                          <Text
+                            style={[
+                              styles.ebaySoldStatValue,
+                              { color: theme.colors.foreground },
+                            ]}
+                            numberOfLines={1}
+                            adjustsFontSizeToFit
+                          >
+                            ${(ebaySoldData.avgSoldPrice || 0).toFixed(0)}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.ebaySoldStatSub,
+                              { color: theme.colors.mutedForeground },
+                            ]}
+                          >
+                            mean price
+                          </Text>
+                        </View>
+                        <View
+                          style={[
+                            styles.ebaySoldStatDivider,
+                            { backgroundColor: theme.colors.border },
+                          ]}
+                        />
+                        <View style={styles.ebaySoldStat}>
+                          <Text
+                            style={[
+                              styles.ebaySoldStatLabel,
+                              { color: theme.colors.mutedForeground },
+                            ]}
+                          >
+                            MEDIAN
+                          </Text>
+                          <Text
+                            style={[
+                              styles.ebaySoldStatValue,
+                              { color: theme.colors.foreground },
+                            ]}
+                            numberOfLines={1}
+                            adjustsFontSizeToFit
+                          >
+                            ${(ebaySoldData.medianSoldPrice || 0).toFixed(0)}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.ebaySoldStatSub,
+                              { color: theme.colors.mutedForeground },
+                            ]}
+                          >
+                            midpoint
+                          </Text>
+                        </View>
+                        <View
+                          style={[
+                            styles.ebaySoldStatDivider,
+                            { backgroundColor: theme.colors.border },
+                          ]}
+                        />
+                        <View style={styles.ebaySoldStat}>
+                          <Text
+                            style={[
+                              styles.ebaySoldStatLabel,
+                              { color: theme.colors.mutedForeground },
+                            ]}
+                          >
+                            RANGE
+                          </Text>
+                          <Text
+                            style={[
+                              styles.ebaySoldStatValue,
+                              { color: theme.colors.foreground },
+                            ]}
+                            numberOfLines={1}
+                            adjustsFontSizeToFit
+                          >
+                            ${(ebaySoldData.lowPrice || 0).toFixed(0)}-$
+                            {(ebaySoldData.highPrice || 0).toFixed(0)}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.ebaySoldStatSub,
+                              { color: theme.colors.mutedForeground },
+                            ]}
+                          >
+                            low to high
+                          </Text>
+                        </View>
+                      </View>
+
+                      <View
+                        style={[
+                          styles.avgPerMonthRow,
+                          {
+                            borderTopWidth: 1,
+                            borderTopColor: theme.colors.border,
+                          },
+                        ]}
+                      >
+                        <Feather
+                          name="activity"
+                          size={16}
+                          color={theme.colors.mutedForeground}
+                        />
+                        <Text
+                          style={[
+                            styles.avgPerMonthLabel,
+                            { color: theme.colors.mutedForeground },
+                          ]}
+                        >
+                          Avg sold per month
                         </Text>
-                      </Pressable>
+                        <Text
+                          style={[
+                            styles.avgPerMonthValue,
+                            {
+                              color:
+                                (ebaySoldData.avgSoldPerMonth || 0) >= 30
+                                  ? "#22C55E"
+                                  : (ebaySoldData.avgSoldPerMonth || 0) >= 10
+                                    ? "#F59E0B"
+                                    : "#047857",
+                            },
+                          ]}
+                        >
+                          ~
+                          {(ebaySoldData.avgSoldPerMonth || 0) > 0
+                            ? (
+                                ebaySoldData.avgSoldPerMonth || 0
+                              ).toLocaleString()
+                            : "0"}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.avgPerMonthUnit,
+                            { color: theme.colors.mutedForeground },
+                          ]}
+                        >
+                          / mo
+                        </Text>
+                      </View>
                     </View>
-                  </Animated.View>
-                ))}
 
-                <View style={{ height: 8 }} />
-              </View>
-            ) : null}
-
-            </View>
-
-            <View style={styles.belowHeroContent}>
-              <Text style={[styles.sectionTitle, { color: "#111827" }]}>
-                Active Listings ({allListings.length})
-              </Text>
-            </View>
-
-            {allListings.length > 0 ? (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={styles.sortContainerFull}
-                contentContainerStyle={styles.sortContentFull}
-              >
-                {sortOptions.map((option) => (
-                  <Pressable
-                    key={option}
-                    testID={`button-sort-${option.toLowerCase().replace(/[: ]/g, "-")}`}
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      setSortOption(option);
-                    }}
-                    style={[
-                      styles.sortChip,
-                      {
-                        backgroundColor: sortOption === option ? "#14532D" : "#F3F4F6",
-                        borderColor: sortOption === option ? "#14532D" : "#E5E7EB",
-                      },
-                    ]}
-                  >
                     <Text
                       style={[
-                        styles.sortChipText,
+                        styles.advancedSectionTitle,
+                        { color: "#111827" },
+                      ]}
+                    >
+                      Recent eBay Sales ({(ebaySoldData.items || []).length})
+                    </Text>
+
+                    {(ebaySoldData.items || [])
+                      .slice(0, 20)
+                      .map((item, index) => (
+                        <Animated.View
+                          key={item.id}
+                          entering={FadeInDown.delay(
+                            Math.min(index, 5) * 40,
+                          ).duration(250)}
+                          style={[
+                            styles.listingCard,
+                            { backgroundColor: theme.colors.card },
+                          ]}
+                        >
+                          {renderSoldImage(item)}
+                          <View style={styles.listingContent}>
+                            <View
+                              style={[
+                                styles.ebayBadge,
+                                { backgroundColor: "#047857" },
+                              ]}
+                            >
+                              <Text style={styles.ebayBadgeText}>SOLD</Text>
+                            </View>
+                            <Text
+                              style={[
+                                styles.listingTitle,
+                                { color: theme.colors.foreground },
+                              ]}
+                              numberOfLines={2}
+                            >
+                              {item.title}
+                            </Text>
+                            <View style={styles.priceRow}>
+                              <Text
+                                style={[
+                                  styles.currentPrice,
+                                  { color: theme.colors.foreground },
+                                ]}
+                              >
+                                ${(Number(item.price) || 0).toFixed(2)}
+                              </Text>
+                              {item.condition ? (
+                                <Text
+                                  style={[
+                                    styles.ebaySoldCondition,
+                                    { color: theme.colors.mutedForeground },
+                                  ]}
+                                >
+                                  {item.condition}
+                                </Text>
+                              ) : null}
+                            </View>
+                            {item.soldDate ? (
+                              <Text
+                                style={[
+                                  styles.ebaySoldDate,
+                                  { color: theme.colors.mutedForeground },
+                                ]}
+                              >
+                                {item.soldDate.startsWith("Sold")
+                                  ? item.soldDate
+                                  : `Sold ${item.soldDate}`}
+                              </Text>
+                            ) : null}
+                            <Pressable
+                              onPress={() => handleViewListing(item.link)}
+                              style={({ pressed }) => [
+                                styles.viewButton,
+                                {
+                                  backgroundColor: theme.colors.muted,
+                                  opacity: pressed ? 0.7 : 1,
+                                },
+                              ]}
+                            >
+                              <Feather
+                                name="external-link"
+                                size={14}
+                                color={theme.colors.foreground}
+                              />
+                              <Text
+                                style={[
+                                  styles.viewButtonText,
+                                  { color: theme.colors.foreground },
+                                ]}
+                              >
+                                View Listing
+                              </Text>
+                            </Pressable>
+                          </View>
+                        </Animated.View>
+                      ))}
+
+                    <View style={{ height: 8 }} />
+                  </View>
+                ) : null}
+
+                {broadSoldData && showEbaySold && !broadSoldData.noResults ? (
+                  <View style={styles.advancedSearchContainer}>
+                    <View style={styles.salesIntelHeader}>
+                      <View style={styles.salesIntelLeft}>
+                        <Text style={styles.salesIntelLabel}>PRO FEATURE</Text>
+                        <Text style={styles.salesIntelTitle}>
+                          Sales Intelligence
+                        </Text>
+                      </View>
+                      <LinearGradient
+                        colors={["#F5D87A", "#D4A926", "#E8C84A"]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.salesIntelBadge}
+                      >
+                        <Feather name="star" size={10} color="#3D2E00" />
+                        <Text style={styles.salesIntelBadgeText}>PRO</Text>
+                      </LinearGradient>
+                    </View>
+
+                    <View style={styles.broadDisclaimerRow}>
+                      <Feather
+                        name="info"
+                        size={14}
+                        color={theme.colors.mutedForeground}
+                      />
+                      <Text
+                        style={[
+                          styles.broadDisclaimerText,
+                          { color: theme.colors.mutedForeground },
+                        ]}
+                      >
+                        Based on similar items — prices may vary from exact
+                        product
+                      </Text>
+                    </View>
+
+                    <View
+                      style={[
+                        styles.ebaySoldSummary,
+                        { backgroundColor: theme.colors.card },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.ebaySoldSummarySubtitle,
+                          {
+                            color: theme.colors.mutedForeground,
+                            marginBottom: 12,
+                          },
+                        ]}
+                      >
+                        {(broadSoldData.totalSold || 0).toLocaleString()}{" "}
+                        similar sold{" "}
+                        {broadSoldData.totalSold === 1 ? "listing" : "listings"}{" "}
+                        found
+                      </Text>
+
+                      <View style={styles.ebaySoldStatsRow}>
+                        <View style={styles.ebaySoldStat}>
+                          <Text
+                            style={[
+                              styles.ebaySoldStatLabel,
+                              { color: theme.colors.mutedForeground },
+                            ]}
+                          >
+                            AVG SOLD
+                          </Text>
+                          <Text
+                            style={[
+                              styles.ebaySoldStatValue,
+                              { color: theme.colors.foreground },
+                            ]}
+                            numberOfLines={1}
+                            adjustsFontSizeToFit
+                          >
+                            ${(broadSoldData.avgSoldPrice || 0).toFixed(0)}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.ebaySoldStatSub,
+                              { color: theme.colors.mutedForeground },
+                            ]}
+                          >
+                            mean price
+                          </Text>
+                        </View>
+                        <View
+                          style={[
+                            styles.ebaySoldStatDivider,
+                            { backgroundColor: theme.colors.border },
+                          ]}
+                        />
+                        <View style={styles.ebaySoldStat}>
+                          <Text
+                            style={[
+                              styles.ebaySoldStatLabel,
+                              { color: theme.colors.mutedForeground },
+                            ]}
+                          >
+                            MEDIAN
+                          </Text>
+                          <Text
+                            style={[
+                              styles.ebaySoldStatValue,
+                              { color: theme.colors.foreground },
+                            ]}
+                            numberOfLines={1}
+                            adjustsFontSizeToFit
+                          >
+                            ${(broadSoldData.medianSoldPrice || 0).toFixed(0)}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.ebaySoldStatSub,
+                              { color: theme.colors.mutedForeground },
+                            ]}
+                          >
+                            midpoint
+                          </Text>
+                        </View>
+                        <View
+                          style={[
+                            styles.ebaySoldStatDivider,
+                            { backgroundColor: theme.colors.border },
+                          ]}
+                        />
+                        <View style={styles.ebaySoldStat}>
+                          <Text
+                            style={[
+                              styles.ebaySoldStatLabel,
+                              { color: theme.colors.mutedForeground },
+                            ]}
+                          >
+                            RANGE
+                          </Text>
+                          <Text
+                            style={[
+                              styles.ebaySoldStatValue,
+                              { color: theme.colors.foreground },
+                            ]}
+                            numberOfLines={1}
+                            adjustsFontSizeToFit
+                          >
+                            ${(broadSoldData.lowPrice || 0).toFixed(0)}-$
+                            {(broadSoldData.highPrice || 0).toFixed(0)}
+                          </Text>
+                          <Text
+                            style={[
+                              styles.ebaySoldStatSub,
+                              { color: theme.colors.mutedForeground },
+                            ]}
+                          >
+                            low to high
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+
+                    <Text
+                      style={[
+                        styles.advancedSectionTitle,
+                        { color: "#111827" },
+                      ]}
+                    >
+                      Similar Sales ({(broadSoldData.items || []).length})
+                    </Text>
+
+                    {(broadSoldData.items || [])
+                      .slice(0, 15)
+                      .map((item, index) => (
+                        <Animated.View
+                          key={`broad-${item.id}`}
+                          entering={FadeInDown.delay(
+                            Math.min(index, 5) * 40,
+                          ).duration(250)}
+                          style={[
+                            styles.listingCard,
+                            { backgroundColor: theme.colors.card },
+                          ]}
+                        >
+                          {renderSoldImage(item)}
+                          <View style={styles.listingContent}>
+                            <View
+                              style={[
+                                styles.ebayBadge,
+                                { backgroundColor: "#F59E0B" },
+                              ]}
+                            >
+                              <Text style={styles.ebayBadgeText}>SIMILAR</Text>
+                            </View>
+                            <Text
+                              style={[
+                                styles.listingTitle,
+                                { color: theme.colors.foreground },
+                              ]}
+                              numberOfLines={2}
+                            >
+                              {item.title}
+                            </Text>
+                            <View style={styles.priceRow}>
+                              <Text
+                                style={[
+                                  styles.currentPrice,
+                                  { color: theme.colors.foreground },
+                                ]}
+                              >
+                                ${(Number(item.price) || 0).toFixed(2)}
+                              </Text>
+                              {item.condition ? (
+                                <Text
+                                  style={[
+                                    styles.ebaySoldCondition,
+                                    { color: theme.colors.mutedForeground },
+                                  ]}
+                                >
+                                  {item.condition}
+                                </Text>
+                              ) : null}
+                            </View>
+                            {item.soldDate ? (
+                              <Text
+                                style={[
+                                  styles.ebaySoldDate,
+                                  { color: theme.colors.mutedForeground },
+                                ]}
+                              >
+                                {item.soldDate.startsWith("Sold")
+                                  ? item.soldDate
+                                  : `Sold ${item.soldDate}`}
+                              </Text>
+                            ) : null}
+                            <Pressable
+                              onPress={() => handleViewListing(item.link)}
+                              style={({ pressed }) => [
+                                styles.viewButton,
+                                {
+                                  backgroundColor: theme.colors.muted,
+                                  opacity: pressed ? 0.7 : 1,
+                                },
+                              ]}
+                            >
+                              <Feather
+                                name="external-link"
+                                size={14}
+                                color={theme.colors.foreground}
+                              />
+                              <Text
+                                style={[
+                                  styles.viewButtonText,
+                                  { color: theme.colors.foreground },
+                                ]}
+                              >
+                                View Listing
+                              </Text>
+                            </Pressable>
+                          </View>
+                        </Animated.View>
+                      ))}
+
+                    <View style={{ height: 8 }} />
+                  </View>
+                ) : null}
+              </View>
+
+              <View style={styles.belowHeroContent}>
+                <Text style={[styles.sectionTitle, { color: "#111827" }]}>
+                  Active Listings ({allListings.length})
+                </Text>
+              </View>
+
+              {allListings.length > 0 ? (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.sortContainerFull}
+                  contentContainerStyle={styles.sortContentFull}
+                >
+                  {sortOptions.map((option) => (
+                    <Pressable
+                      key={option}
+                      testID={`button-sort-${option.toLowerCase().replace(/[: ]/g, "-")}`}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setSortOption(option);
+                      }}
+                      style={[
+                        styles.sortChip,
                         {
-                          color: sortOption === option ? "#FFFFFF" : "#6B7280",
+                          backgroundColor:
+                            sortOption === option ? "#14532D" : "#F3F4F6",
+                          borderColor:
+                            sortOption === option ? "#14532D" : "#E5E7EB",
                         },
                       ]}
                     >
-                      {option}
-                    </Text>
-                  </Pressable>
-                ))}
-              </ScrollView>
-            ) : null}
-
+                      <Text
+                        style={[
+                          styles.sortChipText,
+                          {
+                            color:
+                              sortOption === option ? "#FFFFFF" : "#6B7280",
+                          },
+                        ]}
+                      >
+                        {option}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              ) : null}
             </View>
           </View>
         }
@@ -1422,16 +2160,23 @@ export default function SearchResultsScreen() {
                 savingToInventory || !displayName.trim()
                   ? 0.5
                   : pressed
-                  ? 0.85
-                  : 1,
+                    ? 0.85
+                    : 1,
             },
           ]}
           testID="button-add-to-inventory"
         >
           {savingToInventory ? (
-            <ActivityIndicator size="small" color={colors.light.primaryForeground} />
+            <ActivityIndicator
+              size="small"
+              color={colors.light.primaryForeground}
+            />
           ) : (
-            <Feather name="plus" size={18} color={colors.light.primaryForeground} />
+            <Feather
+              name="plus"
+              size={18}
+              color={colors.light.primaryForeground}
+            />
           )}
           <Text style={styles.newSearchText}>
             {savingToInventory ? "Saving..." : "Add to Inventory"}
@@ -1449,10 +2194,20 @@ export default function SearchResultsScreen() {
             },
           ]}
         >
-          <Feather name="search" size={18} color={colors.light.primaryForeground} />
+          <Feather
+            name="search"
+            size={18}
+            color={colors.light.primaryForeground}
+          />
           <Text style={styles.newSearchText}>New Search</Text>
         </Pressable>
       )}
+
+      <ProCapReachedModal
+        visible={proCapHit !== null}
+        rateLimit={proCapHit}
+        onClose={() => setProCapHit(null)}
+      />
 
       <PurchasePriceSheet
         visible={pricePromptVisible}

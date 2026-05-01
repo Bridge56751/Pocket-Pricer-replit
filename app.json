@@ -2,16 +2,28 @@
   "expo": {
     "name": "Pocket Pricer",
     "slug": "ebay-profit-estimator",
-    "version": "1.5.1",
+    "version": "1.5.2",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "ebayprofit",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/57fc812c-773c-4672-8516-d5305a730b77",
+      "fallbackToCacheTimeout": 0
+    },
+    "extra": {
+      "eas": {
+        "projectId": "57fc812c-773c-4672-8516-d5305a730b77"
+      }
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.ebayprofit.app",
-      "buildNumber": "72",
+      "buildNumber": "73",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "SKAdNetworkItems": [
@@ -30,7 +42,7 @@
         "foregroundImage": "./assets/images/icon.png"
       },
       "package": "com.ebayprofit.app",
-      "versionCode": 4,
+      "versionCode": 5,
       "googleServicesFile": "./google-services.json",
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
