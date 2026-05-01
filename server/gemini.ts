@@ -1,3 +1,5 @@
+import { checkProviderBudget } from "./provider-budget";
+
 interface GeminiPart {
   text: string;
 }
@@ -63,6 +65,8 @@ Output: Crocs Classic Clog`;
 export async function cleanQueryWithAI(
   rawQuery: string,
   listingTitles?: string[],
+  customerKey?: string,
+  isPro?: boolean,
 ): Promise<string | null> {
   const baseUrl = process.env.AI_INTEGRATIONS_GEMINI_BASE_URL;
   const apiKey = process.env.AI_INTEGRATIONS_GEMINI_API_KEY;
@@ -70,6 +74,18 @@ export async function cleanQueryWithAI(
   if (!baseUrl || !apiKey) {
     console.log("AI query cleaning skipped: env vars not set");
     return null;
+  }
+
+  // P0-8: per-Pro-customer monthly budget cap.
+  // customerKey + isPro are optional for backward compatibility (callers
+  // that don't provide them get cap-checked as if they were a free user,
+  // which means the call always proceeds — same as before this change).
+  if (customerKey && isPro) {
+    const budgetOk = await checkProviderBudget("gemini", customerKey, isPro);
+    if (!budgetOk) {
+      console.log("AI query cleaning skipped: monthly cap reached");
+      return null;
+    }
   }
 
   const sanitizedTitles = Array.isArray(listingTitles)
@@ -80,9 +96,10 @@ export async function cleanQueryWithAI(
         .slice(0, 5)
     : [];
 
-  const userMessage = sanitizedTitles.length > 0
-    ? `Product name: ${rawQuery}\nListing titles:\n${sanitizedTitles.map((t) => `- ${t}`).join("\n")}`
-    : rawQuery;
+  const userMessage =
+    sanitizedTitles.length > 0
+      ? `Product name: ${rawQuery}\nListing titles:\n${sanitizedTitles.map((t) => `- ${t}`).join("\n")}`
+      : rawQuery;
 
   try {
     const url = `${baseUrl}/models/gemini-2.5-flash:generateContent`;
@@ -106,7 +123,9 @@ export async function cleanQueryWithAI(
 
     if (!response.ok) {
       const errText = await response.text();
-      console.log(`AI query cleaning HTTP ${response.status}: ${errText.slice(0, 200)}`);
+      console.log(
+        `AI query cleaning HTTP ${response.status}: ${errText.slice(0, 200)}`,
+      );
       return null;
     }
 
@@ -120,7 +139,9 @@ export async function cleanQueryWithAI(
 
     const wordCount = cleaned.split(/\s+/).length;
     if (wordCount < 2) {
-      console.log(`AI query cleaning too broad (single word): "${cleaned}" — falling back to regex`);
+      console.log(
+        `AI query cleaning too broad (single word): "${cleaned}" — falling back to regex`,
+      );
       return null;
     }
 
