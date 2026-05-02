@@ -748,6 +748,12 @@ function AddItemModal({
   const [price, setPrice] = useState("");
   const [productName, setProductName] = useState("");
   const [saving, setSaving] = useState(false);
+  // Single-flight guard + timeout handle for the deferred CameraScan
+  // navigation in launchScanFlow. Prevents (a) double-taps from queueing
+  // multiple navigations and (b) a stale timeout from firing after the
+  // modal has been dismissed for some other reason.
+  const launchPendingRef = useRef(false);
+  const launchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   React.useEffect(() => {
     if (!visible) return;
@@ -757,6 +763,17 @@ function AddItemModal({
     setProductName("");
     setSaving(false);
   }, [visible]);
+
+  React.useEffect(
+    () => () => {
+      if (launchTimeoutRef.current !== null) {
+        clearTimeout(launchTimeoutRef.current);
+        launchTimeoutRef.current = null;
+      }
+      launchPendingRef.current = false;
+    },
+    [],
+  );
 
   React.useEffect(() => {
     if (!visible || mode !== "recent") return;
@@ -775,14 +792,26 @@ function AddItemModal({
   }, [visible, mode]);
 
   const launchScanFlow = (source: "camera" | "library") => {
+    // Single-flight: ignore subsequent taps while a launch is already pending.
+    if (launchPendingRef.current) return;
+    launchPendingRef.current = true;
+
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
     onClose();
-    // Defer the navigation so the modal close animation can start cleanly.
-    setTimeout(() => {
+    // Wait for the bottom sheet's close animation (CLOSE_DURATION = 220ms in
+    // useSheetDragToDismiss) PLUS iOS's native RN-Modal dismiss animation
+    // (~250-300ms) to fully complete before pushing CameraScan. iOS will not
+    // present a UIImagePickerController over an active modal — if we navigate
+    // too early, the picker pops up briefly then gets killed when the sheet
+    // finishes dismissing, leaving CameraScanScreen stuck on the
+    // "Opening camera..." spinner forever.
+    launchTimeoutRef.current = setTimeout(() => {
+      launchTimeoutRef.current = null;
+      launchPendingRef.current = false;
       navigation.navigate("CameraScan", { source, addToInventory: true });
-    }, 50);
+    }, 320);
   };
 
   const handleSelect = (scan: SearchHistoryItem) => {
