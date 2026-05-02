@@ -16,7 +16,32 @@ const STORAGE_KEYS = {
   INVENTORY: "@ebay_profit/inventory",
   INVENTORY_MIGRATED: "@ebay_profit/inventory_migrated_v1",
   USER_SETTINGS: "@ebay_profit/user_settings",
+  INVENTORY_CACHE_PREFIX: "@ebay_profit/inventory_cache_v1:",
 };
+
+function inventoryCacheKey(deviceId: string): string {
+  return `${STORAGE_KEYS.INVENTORY_CACHE_PREFIX}${deviceId}`;
+}
+
+export async function getCachedInventory(deviceId: string): Promise<InventoryItem[] | null> {
+  if (!deviceId) return null;
+  try {
+    const raw = await AsyncStorage.getItem(inventoryCacheKey(deviceId));
+    if (!raw) return null;
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return null;
+    return parsed as InventoryItem[];
+  } catch {
+    return null;
+  }
+}
+
+export function setCachedInventory(deviceId: string, items: InventoryItem[]): void {
+  if (!deviceId) return;
+  AsyncStorage.setItem(inventoryCacheKey(deviceId), JSON.stringify(items)).catch((err) => {
+    console.warn("Failed to cache inventory:", err);
+  });
+}
 
 interface InventoryRowResponse {
   id: string;

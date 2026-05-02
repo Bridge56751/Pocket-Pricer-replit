@@ -36,6 +36,8 @@ import {
   cleanInventoryName,
   parsePurchasePrice,
   INVENTORY_NAME_MAX_LENGTH,
+  getCachedInventory,
+  setCachedInventory,
 } from "@/lib/storage";
 import type { InventoryItem, SearchHistoryItem } from "@/types/product";
 import { PurchasePriceSheetContent } from "@/components/PurchasePriceSheet";
@@ -88,6 +90,14 @@ export default function InventoryScreen() {
   const [loadError, setLoadError] = useState(false);
   const [initError, setInitError] = useState(false);
   const [initAttempt, setInitAttempt] = useState(0);
+  // Tracks whether we've finished checking the local cache for this device.
+  // While false, treat the items array as "we don't know yet" so the metric
+  // tiles don't briefly render misleading "$0" values before cache hydration
+  // resolves.
+  const [cacheChecked, setCacheChecked] = useState(false);
+  // True iff the cache lookup returned at least one item — used to drive the
+  // skeleton state on the metric tiles and filter chips.
+  const [hasCachedData, setHasCachedData] = useState(false);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -97,10 +107,29 @@ export default function InventoryScreen() {
         const id = await getDeviceId();
         if (cancelled) return;
         setDeviceId(id);
+        // Seed from local cache before the network fetch so returning users
+        // see their previously saved metrics within ~50ms even on a cold
+        // launch with no network. Fire-and-forget on errors — the network
+        // fetch in loadItems() is the source of truth.
+        try {
+          const cached = await getCachedInventory(id);
+          if (cancelled) return;
+          if (cached && cached.length > 0) {
+            setItems(cached);
+            setHasCachedData(true);
+          }
+        } catch {
+          // ignore — treat as no cache
+        } finally {
+          if (!cancelled) setCacheChecked(true);
+        }
         await migrateLocalInventoryToCloud(id);
       } catch (err) {
         console.error("Failed to init inventory device id:", err);
-        if (!cancelled) setInitError(true);
+        if (!cancelled) {
+          setInitError(true);
+          setCacheChecked(true);
+        }
       }
     })();
     return () => {
@@ -147,6 +176,10 @@ export default function InventoryScreen() {
       setItems(data);
       setLoadError(false);
       lastFetchedAtRef.current = Date.now();
+      // Persist the latest server snapshot so a future cold launch can
+      // hydrate instantly. Fire-and-forget — never block the UI on this.
+      setCachedInventory(deviceId, data);
+      setHasCachedData(data.length > 0);
     } catch {
       // Keep existing items on failure — wiping the list on a transient
       // network error is worse than showing slightly stale data.
@@ -168,6 +201,8 @@ export default function InventoryScreen() {
       // Stamp the dedupe clock so the next focus event won't re-fetch the
       // same data we just pulled here.
       lastFetchedAtRef.current = Date.now();
+      setCachedInventory(deviceId, data);
+      setHasCachedData(data.length > 0);
     } catch {
       // Swallow — pill simply hides; user can retry the action.
     } finally {
@@ -199,6 +234,24 @@ export default function InventoryScreen() {
     if (filter === "stock") return items.filter(i => i.soldPrice === undefined);
     return items.filter(i => i.soldPrice !== undefined);
   }, [items, filter]);
+
+  // Show the skeleton on metric tiles / filter chips while we genuinely
+  // don't know what to display: the cache check hasn't finished yet, OR it
+  // finished with no cached data and the network fetch is still running and
+  // hasn't yet errored. Once we have ANY data on screen (cached or fresh),
+  // or the load finishes/errors with nothing cached, we let the real numbers
+  // (or the error empty state) show.
+  const metricsLoading =
+    items.length === 0 &&
+    !hasCachedData &&
+    !loadError &&
+    !initError &&
+    (!cacheChecked || loadingItems);
+
+  // True when we're showing cached data but the most recent network fetch
+  // failed — surfaces the "Showing saved data" pill so users know the
+  // figures may be stale.
+  const showingStaleData = loadError && items.length > 0;
 
   const handleDelete = (item: InventoryItem) => {
     Alert.alert(
@@ -282,26 +335,34 @@ export default function InventoryScreen() {
           <View style={styles.metricsRow}>
             <View style={styles.metricCard}>
               <Text style={styles.metricLabel} numberOfLines={1}>SPENT</Text>
-              <Text
-                style={styles.metricValue}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={0.6}
-              >
-                {formatCurrency(metrics.spent)}
-              </Text>
+              {metricsLoading ? (
+                <View style={styles.metricSkeleton} testID="skeleton-metric-spent" />
+              ) : (
+                <Text
+                  style={styles.metricValue}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.6}
+                >
+                  {formatCurrency(metrics.spent)}
+                </Text>
+              )}
               <Text style={styles.metricSub}>All inventory cost</Text>
             </View>
             <View style={styles.metricCard}>
               <Text style={styles.metricLabel} numberOfLines={1}>SOLD</Text>
-              <Text
-                style={styles.metricValue}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={0.6}
-              >
-                {formatCurrency(metrics.soldRevenue)}
-              </Text>
+              {metricsLoading ? (
+                <View style={styles.metricSkeleton} testID="skeleton-metric-sold" />
+              ) : (
+                <Text
+                  style={styles.metricValue}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.6}
+                >
+                  {formatCurrency(metrics.soldRevenue)}
+                </Text>
+              )}
               <Text style={styles.metricSub}>Revenue from sold</Text>
             </View>
             <View style={styles.metricCard}>
@@ -321,17 +382,21 @@ export default function InventoryScreen() {
               >
                 GROSS PROFIT
               </Text>
-              <Text
-                style={[
-                  styles.metricValue,
-                  { color: metrics.profit >= 0 ? "#4ADE80" : "#F87171" },
-                ]}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={0.6}
-              >
-                {formatCurrency(metrics.profit)}
-              </Text>
+              {metricsLoading ? (
+                <View style={styles.metricSkeleton} testID="skeleton-metric-profit" />
+              ) : (
+                <Text
+                  style={[
+                    styles.metricValue,
+                    { color: metrics.profit >= 0 ? "#4ADE80" : "#F87171" },
+                  ]}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.6}
+                >
+                  {formatCurrency(metrics.profit)}
+                </Text>
+              )}
               <Text style={styles.metricSub}>On items sold</Text>
             </View>
           </View>
@@ -370,10 +435,11 @@ export default function InventoryScreen() {
           <View style={styles.toggleRow}>
             {(["stock", "sold"] as FilterMode[]).map((mode) => {
               const active = filter === mode;
-              const label =
-                mode === "stock"
-                  ? `In Stock (${metrics.inStockCount})`
-                  : `Sold (${metrics.soldCount})`;
+              const baseLabel = mode === "stock" ? "In Stock" : "Sold";
+              const count = mode === "stock" ? metrics.inStockCount : metrics.soldCount;
+              // While metricsLoading is true, drop the count so the chip
+              // doesn't read "(0)" before we know the real number.
+              const label = metricsLoading ? baseLabel : `${baseLabel} (${count})`;
               return (
                 <Pressable
                   key={mode}
@@ -413,6 +479,25 @@ export default function InventoryScreen() {
                 Syncing…
               </Text>
             </View>
+          ) : null}
+
+          {showingStaleData && !reconciling ? (
+            <Pressable
+              onPress={() => loadItems({ force: true })}
+              style={[
+                styles.syncPill,
+                {
+                  backgroundColor: "#FEF3C7",
+                  borderColor: "#FCD34D",
+                },
+              ]}
+              testID="status-inventory-stale"
+            >
+              <Feather name="cloud-off" size={14} color="#92400E" />
+              <Text style={[styles.syncPillText, { color: "#92400E" }]}>
+                Showing saved data — tap to retry
+              </Text>
+            </Pressable>
           ) : null}
 
           {(initError || loadError) && items.length === 0 ? (
@@ -1535,6 +1620,13 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "800",
     color: "#4ADE80",
+  },
+  metricSkeleton: {
+    height: 22,
+    width: "70%",
+    borderRadius: 6,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    marginVertical: 3,
   },
   metricSub: {
     fontSize: 11,
