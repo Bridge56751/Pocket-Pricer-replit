@@ -764,6 +764,19 @@ function AddItemModal({
     setSaving(false);
   }, [visible]);
 
+  React.useEffect(() => {
+    // Clear any pending CameraScan navigation when the modal is hidden
+    // (and on unmount). Covers the case where the sheet is dismissed for
+    // any reason other than the user picking Take Photo / Choose from
+    // Library, so a stale timeout can't fire and navigate unexpectedly.
+    if (visible) return;
+    if (launchTimeoutRef.current !== null) {
+      clearTimeout(launchTimeoutRef.current);
+      launchTimeoutRef.current = null;
+    }
+    launchPendingRef.current = false;
+  }, [visible]);
+
   React.useEffect(
     () => () => {
       if (launchTimeoutRef.current !== null) {
