@@ -60,6 +60,29 @@ function generateInventoryId(): string {
   return `inv_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+// Builds a CommonActions.reset payload that lands on the Inventory tab inside
+// MainTabs. We can't use the `params: { screen: "Inventory" }` shorthand here
+// because that shorthand only works for navigation.navigate(...). On a parent
+// CommonActions.reset(...), React Navigation drops it and falls back to
+// MainTabs's `initialRouteName="Home"`, which is why the back arrow on the
+// inventory-add Scan Result was kicking the user to the Home tab. Building an
+// explicit nested navigator state forces Inventory to be the active tab when
+// MainTabs remounts.
+function buildResetToInventoryAction() {
+  return CommonActions.reset({
+    index: 0,
+    routes: [
+      {
+        name: "MainTabs",
+        state: {
+          index: 0,
+          routes: [{ name: "Inventory" }],
+        },
+      },
+    ],
+  });
+}
+
 type SearchResultsRouteProp = RouteProp<RootStackParamList, "SearchResults">;
 
 export default function SearchResultsScreen() {
@@ -219,12 +242,7 @@ export default function SearchResultsScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
 
-    navigation.dispatch(
-      CommonActions.reset({
-        index: 0,
-        routes: [{ name: "MainTabs", params: { screen: "Inventory" } }],
-      }),
-    );
+    navigation.dispatch(buildResetToInventoryAction());
   }, [
     savingToInventory,
     getDeviceId,
@@ -265,12 +283,7 @@ export default function SearchResultsScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
     if (addToInventoryMode) {
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [{ name: "MainTabs", params: { screen: "Inventory" } }],
-        }),
-      );
+      navigation.dispatch(buildResetToInventoryAction());
       return;
     }
     if (navigation.canGoBack()) {
