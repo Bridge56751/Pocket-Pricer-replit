@@ -207,6 +207,14 @@ export default function SearchResultsScreen() {
       return;
     }
 
+    // Close the price sheet BEFORE dispatching the navigation reset.
+    // PurchasePriceSheet is a React Native <Modal>, which is portaled above
+    // every screen. If we leave it visible while resetting to the Inventory
+    // tab, the modal stays mounted on top of the new screen and its backdrop
+    // intercepts every tap, leaving the user stranded. Setting visible=false
+    // here lets the modal unmount before the new screen takes over.
+    setPricePromptVisible(false);
+
     if (Platform.OS !== "web") {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
@@ -758,91 +766,6 @@ export default function SearchResultsScreen() {
   return (
     <View style={[styles.container]}>
       <View style={styles.topOverscrollBg} />
-
-      <View
-        style={{
-          position: "absolute",
-          top: insets.top,
-          left: 0,
-          right: 0,
-          height: CUSTOM_HEADER_HEIGHT,
-          flexDirection: "row",
-          alignItems: "center",
-          paddingHorizontal: 16,
-          zIndex: 2,
-        }}
-      >
-        <Pressable onPress={handleGoBack} hitSlop={8}>
-          <View
-            style={{
-              width: 50,
-              height: 44,
-              borderRadius: 22,
-              borderWidth: 1,
-              borderColor: "rgba(255,255,255,0.6)",
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 1 },
-              shadowOpacity: 0.15,
-              shadowRadius: 3,
-              overflow: "hidden",
-            }}
-          >
-            <BlurView
-              intensity={50}
-              tint="light"
-              style={{
-                flex: 1,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <View style={{ width: 28, height: 28 }}>
-                <RNAnimated.View
-                  style={{ position: "absolute", opacity: headerWhiteOpacity }}
-                >
-                  <Feather name="arrow-left" size={28} color="#FFFFFF" />
-                </RNAnimated.View>
-                <RNAnimated.View
-                  style={{ position: "absolute", opacity: headerDarkOpacity }}
-                >
-                  <Feather name="arrow-left" size={28} color="#111827" />
-                </RNAnimated.View>
-              </View>
-            </BlurView>
-          </View>
-        </Pressable>
-        <View style={{ flex: 1, marginRight: 32 }}>
-          <RNAnimated.Text
-            style={{
-              textAlign: "center",
-              fontSize: 17,
-              fontWeight: "700",
-              color: "#FFFFFF",
-              opacity: RNAnimated.multiply(
-                headerTitleOpacity,
-                headerWhiteOpacity,
-              ),
-            }}
-          >
-            Scan Result
-          </RNAnimated.Text>
-          <RNAnimated.Text
-            style={{
-              position: "absolute",
-              alignSelf: "center",
-              fontSize: 17,
-              fontWeight: "700",
-              color: "#111827",
-              opacity: RNAnimated.multiply(
-                headerTitleOpacity,
-                headerDarkOpacity,
-              ),
-            }}
-          >
-            Scan Result
-          </RNAnimated.Text>
-        </View>
-      </View>
 
       <RNAnimated.FlatList
         style={styles.list}
@@ -2146,6 +2069,106 @@ export default function SearchResultsScreen() {
           </View>
         }
       />
+
+      {/*
+        The Scan Result header is rendered AFTER the FlatList intentionally.
+        It's an absolute overlay anchored to the top with zIndex: 2, but on
+        iOS the native FlatList (rendered as a sibling without zIndex) was
+        winning the touch routing for the header area, so the back-arrow
+        Pressable was visually present but completely untappable. Rendering
+        the header AFTER the FlatList in JSX makes it both visually and
+        touch-wise on top, regardless of how zIndex is honored at the
+        native layer.
+      */}
+      <View
+        pointerEvents="box-none"
+        style={{
+          position: "absolute",
+          top: insets.top,
+          left: 0,
+          right: 0,
+          height: CUSTOM_HEADER_HEIGHT,
+          flexDirection: "row",
+          alignItems: "center",
+          paddingHorizontal: 16,
+          zIndex: 2,
+        }}
+      >
+        <Pressable
+          onPress={handleGoBack}
+          hitSlop={12}
+          testID="button-scan-result-back"
+        >
+          <View
+            style={{
+              width: 50,
+              height: 44,
+              borderRadius: 22,
+              borderWidth: 1,
+              borderColor: "rgba(255,255,255,0.6)",
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: 0.15,
+              shadowRadius: 3,
+              overflow: "hidden",
+            }}
+          >
+            <BlurView
+              intensity={50}
+              tint="light"
+              style={{
+                flex: 1,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <View style={{ width: 28, height: 28 }}>
+                <RNAnimated.View
+                  style={{ position: "absolute", opacity: headerWhiteOpacity }}
+                >
+                  <Feather name="arrow-left" size={28} color="#FFFFFF" />
+                </RNAnimated.View>
+                <RNAnimated.View
+                  style={{ position: "absolute", opacity: headerDarkOpacity }}
+                >
+                  <Feather name="arrow-left" size={28} color="#111827" />
+                </RNAnimated.View>
+              </View>
+            </BlurView>
+          </View>
+        </Pressable>
+        <View pointerEvents="none" style={{ flex: 1, marginRight: 32 }}>
+          <RNAnimated.Text
+            style={{
+              textAlign: "center",
+              fontSize: 17,
+              fontWeight: "700",
+              color: "#FFFFFF",
+              opacity: RNAnimated.multiply(
+                headerTitleOpacity,
+                headerWhiteOpacity,
+              ),
+            }}
+          >
+            Scan Result
+          </RNAnimated.Text>
+          <RNAnimated.Text
+            style={{
+              position: "absolute",
+              alignSelf: "center",
+              fontSize: 17,
+              fontWeight: "700",
+              color: "#111827",
+              opacity: RNAnimated.multiply(
+                headerTitleOpacity,
+                headerDarkOpacity,
+              ),
+            }}
+          >
+            Scan Result
+          </RNAnimated.Text>
+        </View>
+      </View>
 
       {addToInventoryMode ? (
         <Pressable
