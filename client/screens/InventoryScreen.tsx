@@ -749,9 +749,9 @@ function AddItemModal({
   const [productName, setProductName] = useState("");
   const [saving, setSaving] = useState(false);
   // Single-flight guard + timeout handle for the deferred CameraScan
-  // navigation in launchScanFlow. Prevents (a) double-taps from queueing
-  // multiple navigations and (b) a stale timeout from firing after the
-  // modal has been dismissed for some other reason.
+  // navigation in launchScanFlow. Prevents double-taps from queueing
+  // multiple navigations, and lets us clear the pending timeout on
+  // unmount so it can't fire against a torn-down component.
   const launchPendingRef = useRef(false);
   const launchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -764,21 +764,13 @@ function AddItemModal({
     setSaving(false);
   }, [visible]);
 
-  React.useEffect(() => {
-    // Clear any pending CameraScan navigation when the modal is hidden
-    // (and on unmount). Covers the case where the sheet is dismissed for
-    // any reason other than the user picking Take Photo / Choose from
-    // Library, so a stale timeout can't fire and navigate unexpectedly.
-    if (visible) return;
-    if (launchTimeoutRef.current !== null) {
-      clearTimeout(launchTimeoutRef.current);
-      launchTimeoutRef.current = null;
-    }
-    launchPendingRef.current = false;
-  }, [visible]);
-
   React.useEffect(
     () => () => {
+      // Clear any pending CameraScan navigation on unmount. NOTE: do NOT
+      // hook this to `visible`, because `launchScanFlow` calls `onClose()`
+      // (which flips visible=false) before its own 320ms timeout fires —
+      // a visible-watching cleanup would cancel the very navigation we
+      // just scheduled.
       if (launchTimeoutRef.current !== null) {
         clearTimeout(launchTimeoutRef.current);
         launchTimeoutRef.current = null;
