@@ -51,7 +51,18 @@ type FilterMode = "stock" | "sold";
 // preview, and the info-modal copy in lockstep — bump this in one place if
 // the rate ever changes.
 const INVENTORY_FEE_RATE = 0.13;
-const INVENTORY_NET_MULTIPLIER = 1 - INVENTORY_FEE_RATE;
+
+// Round to whole cents so every display surface (top tile, sold card,
+// Mark Sold preview, "Est. fees" line) agrees down to the penny. Without
+// this, mixing the two algebraically-equivalent forms (sold*0.87 - cost
+// vs sold - sold*0.13 - cost) can disagree by 1¢ on certain inputs.
+function calcEstimatedFees(soldPrice: number): number {
+  return Math.round(soldPrice * INVENTORY_FEE_RATE * 100) / 100;
+}
+
+function calcProfit(soldPrice: number, purchasePrice: number): number {
+  return Math.round((soldPrice - calcEstimatedFees(soldPrice) - purchasePrice) * 100) / 100;
+}
 
 function formatCurrency(value: number): string {
   if (!isFinite(value)) return "$0";
@@ -233,8 +244,12 @@ export default function InventoryScreen() {
     const sold = items.filter(i => i.soldPrice !== undefined);
     const spent = items.reduce((sum, i) => sum + (i.purchasePrice || 0), 0);
     const soldRevenue = sold.reduce((sum, i) => sum + (i.soldPrice || 0), 0);
-    const soldCost = sold.reduce((sum, i) => sum + (i.purchasePrice || 0), 0);
-    const profit = soldRevenue * INVENTORY_NET_MULTIPLIER - soldCost;
+    // Sum per-item profit (not aggregate-then-multiply) so the tile equals
+    // the sum of every card's displayed profit to the cent.
+    const profit = sold.reduce(
+      (sum, i) => sum + calcProfit(i.soldPrice || 0, i.purchasePrice || 0),
+      0,
+    );
     return { spent, soldRevenue, profit, inStockCount: inStock.length, soldCount: sold.length };
   }, [items]);
 
@@ -674,8 +689,8 @@ function InventoryCard({
 }) {
   const { theme } = useDesignTokens();
   const isSold = item.soldPrice !== undefined;
-  const estimatedFees = isSold ? (item.soldPrice || 0) * INVENTORY_FEE_RATE : 0;
-  const profit = isSold ? (item.soldPrice || 0) - estimatedFees - item.purchasePrice : 0;
+  const estimatedFees = isSold ? calcEstimatedFees(item.soldPrice || 0) : 0;
+  const profit = isSold ? calcProfit(item.soldPrice || 0, item.purchasePrice) : 0;
   // Inventory item thumbnails are 3rd-party URLs (SearchAPI, freeimage.host,
   // imgbb) that can expire or 404 over time. Track load failures so we can
   // show the package fallback icon instead of an empty/broken tile. Reset
@@ -1261,7 +1276,7 @@ function MarkSoldModal({
   };
 
   const profit = item
-    ? parseFloat(price || "0") * INVENTORY_NET_MULTIPLIER - item.purchasePrice
+    ? calcProfit(parseFloat(price || "0"), item.purchasePrice)
     : 0;
   const showProfit = !!price && !isNaN(parseFloat(price));
 
