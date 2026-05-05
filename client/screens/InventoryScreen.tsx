@@ -45,6 +45,14 @@ import { useSheetDragToDismiss } from "@/hooks/useSheetDragToDismiss";
 
 type FilterMode = "stock" | "sold";
 
+// Flat estimate applied to every "Profit" figure on the Inventory tab. Models
+// eBay's ~13% selling fee plus a small allowance for basic shipping costs.
+// Using a single constant keeps the metric tile, per-item card, mark-sold
+// preview, and the info-modal copy in lockstep — bump this in one place if
+// the rate ever changes.
+const INVENTORY_FEE_RATE = 0.13;
+const INVENTORY_NET_MULTIPLIER = 1 - INVENTORY_FEE_RATE;
+
 function formatCurrency(value: number): string {
   if (!isFinite(value)) return "$0";
   const sign = value < 0 ? "-" : "";
@@ -226,7 +234,7 @@ export default function InventoryScreen() {
     const spent = items.reduce((sum, i) => sum + (i.purchasePrice || 0), 0);
     const soldRevenue = sold.reduce((sum, i) => sum + (i.soldPrice || 0), 0);
     const soldCost = sold.reduce((sum, i) => sum + (i.purchasePrice || 0), 0);
-    const profit = soldRevenue - soldCost;
+    const profit = soldRevenue * INVENTORY_NET_MULTIPLIER - soldCost;
     return { spent, soldRevenue, profit, inStockCount: inStock.length, soldCount: sold.length };
   }, [items]);
 
@@ -380,7 +388,7 @@ export default function InventoryScreen() {
                 adjustsFontSizeToFit
                 minimumFontScale={0.8}
               >
-                GROSS PROFIT
+                PROFIT
               </Text>
               {metricsLoading ? (
                 <View style={styles.metricSkeleton} testID="skeleton-metric-profit" />
@@ -608,7 +616,7 @@ export default function InventoryScreen() {
               <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1 }}>
                 <Feather name="info" size={18} color={theme.colors.primary} />
                 <Text style={[styles.modalTitle, { color: theme.colors.foreground, marginBottom: 0 }]}>
-                  How gross profit works
+                  How profit is calculated
                 </Text>
               </View>
               <Pressable
@@ -626,7 +634,7 @@ export default function InventoryScreen() {
               </Pressable>
             </View>
             <Text style={[styles.modalSub, { color: theme.colors.mutedForeground, marginTop: 12, marginBottom: 0 }]}>
-              Only counts items you've actually sold — unsold stock isn't a loss. Doesn't subtract platform fees or shipping, so your take-home will be a bit lower.
+              We deduct 13% to estimate eBay fees and basic shipping. Your actual take-home will vary by platform.
             </Text>
           </View>
         </View>
@@ -666,7 +674,9 @@ function InventoryCard({
 }) {
   const { theme } = useDesignTokens();
   const isSold = item.soldPrice !== undefined;
-  const profit = isSold ? (item.soldPrice || 0) - item.purchasePrice : 0;
+  const profit = isSold
+    ? (item.soldPrice || 0) * INVENTORY_NET_MULTIPLIER - item.purchasePrice
+    : 0;
   // Inventory item thumbnails are 3rd-party URLs (SearchAPI, freeimage.host,
   // imgbb) that can expire or 404 over time. Track load failures so we can
   // show the package fallback icon instead of an empty/broken tile. Reset
@@ -1245,7 +1255,9 @@ function MarkSoldModal({
     onSaved();
   };
 
-  const profit = item ? parseFloat(price || "0") - item.purchasePrice : 0;
+  const profit = item
+    ? parseFloat(price || "0") * INVENTORY_NET_MULTIPLIER - item.purchasePrice
+    : 0;
   const showProfit = !!price && !isNaN(parseFloat(price));
 
   return (
