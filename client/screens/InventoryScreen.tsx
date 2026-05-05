@@ -634,7 +634,7 @@ export default function InventoryScreen() {
               </Pressable>
             </View>
             <Text style={[styles.modalSub, { color: theme.colors.mutedForeground, marginTop: 12, marginBottom: 0 }]}>
-              We deduct 13% to estimate eBay fees and basic shipping. Your actual take-home will vary by platform.
+              We deduct {Math.round(INVENTORY_FEE_RATE * 100)}% to estimate eBay fees and basic shipping. Your actual take-home will vary by platform.
             </Text>
           </View>
         </View>
