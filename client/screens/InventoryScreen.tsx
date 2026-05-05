@@ -674,9 +674,8 @@ function InventoryCard({
 }) {
   const { theme } = useDesignTokens();
   const isSold = item.soldPrice !== undefined;
-  const profit = isSold
-    ? (item.soldPrice || 0) * INVENTORY_NET_MULTIPLIER - item.purchasePrice
-    : 0;
+  const estimatedFees = isSold ? (item.soldPrice || 0) * INVENTORY_FEE_RATE : 0;
+  const profit = isSold ? (item.soldPrice || 0) - estimatedFees - item.purchasePrice : 0;
   // Inventory item thumbnails are 3rd-party URLs (SearchAPI, freeimage.host,
   // imgbb) that can expire or 404 over time. Track load failures so we can
   // show the package fallback icon instead of an empty/broken tile. Reset
@@ -763,6 +762,12 @@ function InventoryCard({
                 </Text>
               </View>
             </View>
+            <Text
+              style={[styles.cardFeeNote, { color: theme.colors.mutedForeground }]}
+              testID={`text-est-fees-${item.id}`}
+            >
+              Est. fees −{formatCurrency(estimatedFees)}
+            </Text>
             <View style={[styles.soldBadge, { backgroundColor: "#DCFCE7", alignSelf: "flex-start" }]}>
               <Feather name="check" size={12} color="#047857" />
               <Text style={[styles.soldBadgeText, { color: "#047857" }]}>Sold</Text>
@@ -1753,6 +1758,11 @@ const styles = StyleSheet.create({
   cardPriceValue: {
     fontSize: 14,
     fontWeight: "700",
+  },
+  cardFeeNote: {
+    fontSize: 11,
+    fontWeight: "500",
+    marginTop: 4,
   },
   cardHeaderRow: {
     flexDirection: "row",
