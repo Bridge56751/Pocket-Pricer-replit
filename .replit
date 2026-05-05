@@ -83,6 +83,7 @@ defaultBucketID = "replit-objstore-7a381cbe-aa87-4d8f-a4e7-ab55e4546f7a"
 EXPO_PUBLIC_REVENUECAT_API_KEY = "appl_HofCsoaVBOUStbnRzQxJWHOmdii"
 FREEIMAGE_API_KEY = "6d207e02198a847aa98d0a2a901485a5"
 IMGBB_API_KEY = "b4e0e3a7e5e0c4b2d6a8f9c1e3b5d7a9"
+CI = "1"
 
 [userenv.production]
 EXPO_PUBLIC_DOMAIN = "pocketpricerapp.com"
