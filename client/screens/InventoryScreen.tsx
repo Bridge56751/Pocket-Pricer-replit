@@ -627,30 +627,27 @@ export default function InventoryScreen() {
         <View style={styles.modalBackdrop}>
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setProfitInfoOpen(false)} />
           <View style={[styles.modalCard, { backgroundColor: theme.colors.background }]}>
-            <View style={styles.profitInfoHeader}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1 }}>
-                <Feather name="info" size={18} color={theme.colors.primary} />
-                <Text style={[styles.modalTitle, { color: theme.colors.foreground, marginBottom: 0 }]}>
-                  How profit is calculated
-                </Text>
-              </View>
-              <Pressable
-                onPress={() => setProfitInfoOpen(false)}
-                hitSlop={12}
-                accessibilityRole="button"
-                accessibilityLabel="Close"
-                style={({ pressed }) => [
-                  styles.profitInfoClose,
-                  { backgroundColor: theme.colors.muted, opacity: pressed ? 0.7 : 1 },
-                ]}
-                testID="button-close-profit-info"
-              >
-                <Feather name="x" size={18} color={theme.colors.mutedForeground} />
-              </Pressable>
+            <View style={styles.profitInfoTitleRow}>
+              <Feather name="info" size={20} color={theme.colors.primary} />
+              <Text style={[styles.profitInfoTitle, { color: theme.colors.foreground }]}>
+                How profit is calculated
+              </Text>
             </View>
-            <Text style={[styles.modalSub, { color: theme.colors.mutedForeground, marginTop: 12, marginBottom: 0 }]}>
+            <Text style={[styles.profitInfoBody, { color: theme.colors.foreground }]}>
               We deduct {Math.round(INVENTORY_FEE_RATE * 100)}% to estimate eBay fees and basic shipping. Your actual take-home will vary by platform.
             </Text>
+            <Pressable
+              onPress={() => setProfitInfoOpen(false)}
+              accessibilityRole="button"
+              accessibilityLabel="Close"
+              style={({ pressed }) => [
+                styles.profitInfoButton,
+                { backgroundColor: theme.colors.primary, opacity: pressed ? 0.85 : 1 },
+              ]}
+              testID="button-close-profit-info"
+            >
+              <Text style={styles.profitInfoButtonText}>Got it</Text>
+            </Pressable>
           </View>
         </View>
       </Modal>
@@ -1867,17 +1864,37 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     padding: 22,
   },
-  profitInfoHeader: {
+  profitInfoTitleRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 10,
+    marginBottom: 14,
   },
-  profitInfoClose: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+  profitInfoTitle: {
+    fontSize: 22,
+    fontWeight: "800",
+    letterSpacing: -0.3,
+    lineHeight: 28,
+    flex: 1,
+  },
+  profitInfoBody: {
+    fontSize: 15,
+    fontWeight: "500",
+    lineHeight: 22,
+    letterSpacing: -0.1,
+    marginBottom: 22,
+  },
+  profitInfoButton: {
+    height: 48,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
+  },
+  profitInfoButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "700",
+    letterSpacing: -0.1,
   },
   modalTitle: {
     fontSize: 20,
