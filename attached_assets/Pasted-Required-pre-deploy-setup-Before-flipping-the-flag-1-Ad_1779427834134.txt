@@ -1,0 +1,27 @@
+Required pre-deploy setup
+Before flipping the flag:
+1. Add REVENUECAT_REST_SECRET to Replit Secrets. Get from RevenueCat dashboard → Project Settings → API keys → Secret keys. Starts with sk_. go here https://app.revenuecat.com/projects/e1533c84/api-keys
+2. Verify alias coverage in RC dashboard — most active subscribers should now show both their anonymous ID ($RCAnonymousID:...) and their device_id (hw_...).
+Deploy + rollout flow
+Because of the feature flag, the deploy itself is risk-free:
+1. Merge this PR → Replit autodeploys (or click Redeploy). Code is live but VERIFY_PRO_VIA_RC is unset → legacy header-trust path still in use, no behavioral change.
+2. Smoke-test prod still works as before (existing Pro user opens app, Pro features work).
+3. Add REVENUECAT_REST_SECRET to Replit Secrets (still no behavioral change since the flag is off).
+4. Add VERIFY_PRO_VIA_RC=true to Replit Secrets + Redeploy → cutover to RC-verified path is live.
+5. Watch logs for ~30 min. Look for [rc] lines. Spot-check a Pro user's experience.
+6. If anything breaks → unset VERIFY_PRO_VIA_RC + Redeploy → instant rollback. No code revert needed.
+Why the feature flag (vs. always-on)
+This is the highest-risk PR in the entire roadmap. The 20% of users who haven't updated past app v1.5.2+ have no device_id alias in RevenueCat. If we cut over without a kill-switch and an unforeseen issue surfaces, Pro features break for paying subscribers. The flag lets us:
+* Deploy the code dark, then flip when ready
+* Roll back in 30 seconds if anything goes wrong
+* Iterate on the implementation without re-deploying for code-only changes
+What this PR does NOT close
+device_id spoofing — an attacker who somehow obtains a real Pro user's device_id (e.g. via friend-sharing) can still impersonate them by sending that device_id in the X-Device-Id header. The proper fix is JWT auth (SECURITY_REVIEW.md P0-2), queued for a later phase. This PR specifically closes the X-Is-Pro header spoofing loophole.
+Branch base
+This branch was originally cut from group-c-client-and-ota-release (PR #2), which has since merged into main. The diff in this PR now shows only the new RC verification work cleanly against main.
+Smoke-test checklist (post-deploy, after flipping the flag)
+*  [rc] log lines appear in Replit deploy logs as Pro requests come in
+*  No [rc] REVENUECAT_REST_SECRET not set errors
+*  No spike in 'My Pro stopped working' support emails
+*  Spot-check one known Pro user via curl with their device_id to confirm RC lookup returns Pro
+*  Test rateLimit response when both providers blocked (existing behavior preserved)
