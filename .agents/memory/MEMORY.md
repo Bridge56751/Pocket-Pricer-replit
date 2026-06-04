@@ -1,2 +1,2 @@
 - [RevenueCat Pro-verify flag](revenuecat-pro-verify-flag.md) — never enable VERIFY_PRO_VIA_RC before client device_id aliasing is adopted; fail-closed 404s brick all paying users.
-- [POST "received: 0" aborts](proxy-keepalive-received-zero.md) — prod-only body-parser aborts on large POSTs = proxy keep-alive race; raise server.keepAliveTimeout/headersTimeout.
+- [Edge drops large POST bodies](edge-large-post-body-rejection.md) — prod-only "received: 0" aborts = Replit edge rejecting large POST bodies; fix by client-direct-upload (Supabase signed URL) + tiny URL body, not keep-alive timeouts.

@@ -54,9 +54,14 @@ const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 // after each save). Give them their own, more generous limit so a power
 // reseller can't get throttled by their own scan activity.
 const INVENTORY_RATE_LIMIT_MAX = 60;
+// Minting a signed upload URL is the first half of every scan. Give it its own
+// bucket (matching the scan cap) so a single scan doesn't consume two units of
+// the scan limiter and effectively halve a user's throughput.
+const UPLOAD_URL_RATE_LIMIT_MAX = 20;
 
 const rateLimitMap = new Map<string, number[]>();
 const inventoryRateLimitMap = new Map<string, number[]>();
+const uploadUrlRateLimitMap = new Map<string, number[]>();
 
 function checkRateLimit(
   map: Map<string, number[]>,
@@ -87,10 +92,22 @@ function isInventoryRateLimited(deviceId: string): boolean {
   );
 }
 
+function isUploadUrlRateLimited(deviceId: string): boolean {
+  return checkRateLimit(
+    uploadUrlRateLimitMap,
+    deviceId,
+    UPLOAD_URL_RATE_LIMIT_MAX,
+  );
+}
+
 setInterval(
   () => {
     const now = Date.now();
-    for (const map of [rateLimitMap, inventoryRateLimitMap]) {
+    for (const map of [
+      rateLimitMap,
+      inventoryRateLimitMap,
+      uploadUrlRateLimitMap,
+    ]) {
       for (const [key, timestamps] of map) {
         const recent = timestamps.filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
         if (recent.length === 0) {
@@ -1400,6 +1417,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.error("Failed to init scan-images bucket:", err?.message);
   });
 
+  // Mint a short-lived Supabase signed upload URL so the client can upload the
+  // scan image DIRECTLY to Supabase Storage (bypassing the deployment edge,
+  // which rejects large POST bodies). The client then sends only the tiny
+  // public URL to /api/scan-with-lens. Uses the server's service-role key;
+  // signed upload URLs bypass RLS, so no client credential or bucket policy
+  // is required.
+  app.post("/api/scan-upload-url", async (req: Request, res: Response) => {
+    try {
+      const deviceId = req.headers["x-device-id"] as string | undefined;
+      if (!deviceId) {
+        return res.status(400).json({ error: "Device ID is required" });
+      }
+      if (isUploadUrlRateLimited(deviceId)) {
+        return res.status(429).json({
+          error: "Too many requests. Please wait a moment and try again.",
+        });
+      }
+      if (!supabase) {
+        return res.status(503).json({ error: "Upload service unavailable" });
+      }
+      const rawExt =
+        typeof req.body?.ext === "string" ? req.body.ext.toLowerCase() : "jpg";
+      const ext = /^[a-z0-9]{1,5}$/.test(rawExt)
+        ? rawExt.replace("jpeg", "jpg")
+        : "jpg";
+      const fileName = `${Date.now()}-${Math.random()
+        .toString(36)
+        .substring(2, 11)}.${ext}`;
+      const { data, error } = await supabase.storage
+        .from("scan-images")
+        .createSignedUploadUrl(fileName);
+      if (error || !data?.signedUrl) {
+        console.error("createSignedUploadUrl error:", error?.message);
+        return res.status(502).json({ error: "Could not create upload URL" });
+      }
+      const { data: pub } = supabase.storage
+        .from("scan-images")
+        .getPublicUrl(fileName);
+      if (!pub?.publicUrl) {
+        return res.status(502).json({ error: "Could not resolve public URL" });
+      }
+      return res.json({
+        signedUrl: data.signedUrl,
+        path: fileName,
+        publicUrl: pub.publicUrl,
+      });
+    } catch (err) {
+      console.error("scan-upload-url error:", err);
+      return res.status(500).json({ error: "Failed to create upload URL" });
+    }
+  });
+
   app.post("/api/scan-with-lens", async (req: Request, res: Response) => {
     let supabaseFileName: string | null = null;
     try {
@@ -1429,23 +1498,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const { imageBase64 } = req.body;
+      const { imageBase64, imageUrl: providedImageUrl } = req.body;
 
-      if (!imageBase64) {
+      if (!imageBase64 && !providedImageUrl) {
         return res.status(400).json({ error: "Image data is required" });
       }
 
-      console.log("Uploading image for Google Lens search...");
-      const uploadResult = await uploadImageForLens(imageBase64);
+      let imageUrl: string;
+      if (typeof providedImageUrl === "string" && providedImageUrl.trim()) {
+        // The client uploaded the photo directly to image storage and sent us
+        // only the hosted URL. This keeps the request body tiny so it isn't
+        // rejected by the deployment edge's request-size limit (large base64
+        // bodies get a 403 before ever reaching this handler). If the URL is in
+        // our own Supabase scan-images bucket, recover the file name so the
+        // image is tracked/pruned exactly like a server-side upload.
+        imageUrl = providedImageUrl.trim();
+        // SECURITY: only grant tracking/prune (delete) authority when the URL
+        // is unambiguously in OUR Supabase scan-images bucket. Otherwise an
+        // attacker could pass any URL containing "/scan-images/" (or a
+        // traversal payload) and make the no-results/error cleanup path delete
+        // an arbitrary object. Require the exact public prefix and a safe,
+        // single-segment filename. Any other URL is treated as a plain external
+        // image with NO delete authority (supabaseFileName stays null).
+        const supabaseBase = (process.env.SUPABASE_URL || "").replace(
+          /\/+$/,
+          "",
+        );
+        const publicPrefix = supabaseBase
+          ? `${supabaseBase}/storage/v1/object/public/scan-images/`
+          : "";
+        if (publicPrefix && imageUrl.startsWith(publicPrefix)) {
+          const candidate = imageUrl
+            .slice(publicPrefix.length)
+            .split("?")[0]
+            .split("#")[0];
+          supabaseFileName = /^[A-Za-z0-9._-]+$/.test(candidate)
+            ? candidate
+            : null;
+        }
+      } else {
+        console.log("Uploading image for Google Lens search...");
+        const uploadResult = await uploadImageForLens(imageBase64);
 
-      if (!uploadResult) {
-        return res
-          .status(500)
-          .json({ error: "Failed to prepare image for search" });
+        if (!uploadResult) {
+          return res
+            .status(500)
+            .json({ error: "Failed to prepare image for search" });
+        }
+
+        imageUrl = uploadResult.url;
+        supabaseFileName = uploadResult.supabaseFileName;
       }
-
-      const { url: imageUrl } = uploadResult;
-      supabaseFileName = uploadResult.supabaseFileName;
 
       console.log("Searching with Google Lens...");
       const lensResult = await searchWithGoogleLens(imageUrl, deviceId, isPro);

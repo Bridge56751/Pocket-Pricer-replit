@@ -42,6 +42,7 @@ import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { SkeletonLoader } from "@/components/SkeletonLoader";
 import { getSearchHistory, addSearchHistory } from "@/lib/storage";
 import { getApiUrl } from "@/lib/query-client";
+import * as FileSystem from "expo-file-system/legacy";
 import { storeImage } from "@/lib/image-store";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRevenueCat } from "@/contexts/RevenueCatContext";
@@ -54,6 +55,48 @@ import type { MainTabParamList } from "@/navigation/MainTabNavigator";
 import { ProCapReachedModal } from "@/components/ProCapReachedModal";
 
 type ScanScreenRouteProp = RouteProp<MainTabParamList, "Home">;
+
+// Upload the scan image directly to Supabase Storage (via a short-lived signed
+// upload URL minted by the server) and return its public URL. Large base64 POST
+// bodies are rejected by the deployment edge before reaching the server, so we
+// send only the tiny URL to /api/scan-with-lens. Returns null on any failure
+// (e.g. web, where direct binary upload isn't supported) so callers can fall
+// back to sending base64.
+async function uploadScanImage(
+  uri: string,
+  deviceId: string,
+): Promise<string | null> {
+  if (Platform.OS === "web") return null;
+  try {
+    const resp = await fetch(
+      new URL("/api/scan-upload-url", getApiUrl()).toString(),
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Device-Id": deviceId,
+        },
+        body: JSON.stringify({ ext: "jpg" }),
+      },
+    );
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    if (!data?.signedUrl || !data?.publicUrl) return null;
+    const uploadRes = await FileSystem.uploadAsync(data.signedUrl, uri, {
+      httpMethod: "PUT",
+      uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
+      headers: {
+        "content-type": "image/jpeg",
+        "x-upsert": "false",
+        "cache-control": "max-age=3600",
+      },
+    });
+    if (uploadRes.status < 200 || uploadRes.status >= 300) return null;
+    return data.publicUrl as string;
+  } catch {
+    return null;
+  }
+}
 
 const SCAN_STEPS = [
   { label: "Uploading image...", icon: "upload" as const },
@@ -346,14 +389,20 @@ export default function ScanScreen() {
             "X-Device-Id": deviceId,
             "X-Is-Pro": isPro ? "true" : "false",
           };
+          // Upload the image straight to Supabase Storage and send only the
+          // URL. Large base64 POST bodies are rejected by the deployment edge
+          // before reaching the server; a tiny URL body avoids that. Falls
+          // back to base64 if the direct upload fails (e.g. on web).
+          const uploadedUrl = await uploadScanImage(photos[0].uri, deviceId);
+          const scanBody = uploadedUrl
+            ? { imageUrl: uploadedUrl }
+            : { imageBase64: `data:image/jpeg;base64,${photos[0].base64}` };
           const lensResponse = await fetch(
             new URL("/api/scan-with-lens", getApiUrl()).toString(),
             {
               method: "POST",
               headers: scanHeaders,
-              body: JSON.stringify({
-                imageBase64: `data:image/jpeg;base64,${photos[0].base64}`,
-              }),
+              body: JSON.stringify(scanBody),
               signal: lensController.signal,
             },
           );
