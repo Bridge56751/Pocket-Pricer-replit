@@ -1,0 +1,1 @@
+- [RevenueCat Pro-verify flag](revenuecat-pro-verify-flag.md) — never enable VERIFY_PRO_VIA_RC before client device_id aliasing is adopted; fail-closed 404s brick all paying users.
