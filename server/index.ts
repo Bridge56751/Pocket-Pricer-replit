@@ -326,6 +326,18 @@ function setupErrorHandler(app: express.Application) {
     console.error("ensureEbaySearchEventsSchema unhandled:", err?.message);
   });
 
+  // Behind the Replit deployment edge (a reverse proxy), the proxy keeps
+  // persistent keep-alive connections open to this origin and reuses them for
+  // subsequent requests. Node's default server.keepAliveTimeout is only 5s, so
+  // the proxy can dispatch a request (e.g. a scan upload) onto a socket that
+  // Node is simultaneously closing. The body then never lands and Express logs
+  // "BadRequestError: request aborted (received: 0)" — which is exactly the
+  // production scan failure. Keep our keep-alive window comfortably above the
+  // proxy's idle timeout, and headersTimeout strictly above keepAliveTimeout
+  // (a Node requirement, else headers can be cut off mid-stream).
+  server.keepAliveTimeout = 75_000;
+  server.headersTimeout = 80_000;
+
   const port = parseInt(process.env.PORT || "5000", 10);
   server.listen(
     {

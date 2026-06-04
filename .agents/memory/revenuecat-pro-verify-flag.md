@@ -17,8 +17,8 @@ is adopted by ~all active Pro users.
 404 for existing Pro subscribers. The verify path is **fail-closed**: 404 / timeout / 5xx /
 network error all return `false` (not Pro). So flipping the flag early downgrades every
 paying user to free → they hit the 3-scan lifetime limit → get paywalled despite paying.
-This is exactly what happened (flag flipped ~2 weeks before being caught); symptom surfaced
-as "scan failed / try again" and paying-user churn.
+This has happened in practice (flag flipped well before the aliasing release was adopted);
+symptom surfaced as "scan failed / try again" and paying-user churn.
 
 **How to recover / apply:** Instant rollback = delete the `VERIFY_PRO_VIA_RC` secret and
 redeploy; `getIsPro()` reverts to the header path with no code change. When debugging
