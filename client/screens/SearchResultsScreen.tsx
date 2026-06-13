@@ -106,11 +106,19 @@ export default function SearchResultsScreen() {
     } as SearchResultsData);
 
   const scannedImageUri = useMemo(() => {
+    // Fresh scans keep the full-res photo in an in-memory store keyed by
+    // scannedImageId. That store is wiped on app reload/restart, so for any
+    // previous scan getImage() returns undefined. Fall back to the durable
+    // hosted URL (scannedImageUrl) that we persist on every history item so
+    // the user's photo reappears when they reopen an earlier scan.
     if (results.scannedImageId) {
-      return getImage(results.scannedImageId);
+      const local = getImage(results.scannedImageId);
+      if (local) return local;
     }
     const resultsAny = results as SearchResultsData;
-    return resultsAny.scannedImageUri;
+    return (
+      resultsAny.scannedImageUri || resultsAny.scannedImageUrl || undefined
+    );
   }, [results.scannedImageId, results]);
 
   const { getDeviceId, getScansUsed } = useAuth();
