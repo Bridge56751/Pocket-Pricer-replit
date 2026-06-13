@@ -77,7 +77,7 @@ outputType = "console"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npm run expo:dev"
+args = "EXPO_OFFLINE=1 npm run expo:dev"
 
 [objectStorage]
 defaultBucketID = "replit-objstore-7a381cbe-aa87-4d8f-a4e7-ab55e4546f7a"
