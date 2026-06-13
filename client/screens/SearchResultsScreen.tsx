@@ -18,6 +18,7 @@ import {
   Animated as RNAnimated,
   Platform,
   Alert,
+  Modal,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -46,10 +47,12 @@ import type {
   EbaySoldItem,
   ListingItem,
   RateLimitInfo,
+  SearchHistoryItem,
   SearchResultsData,
 } from "@/types/product";
 import {
   addInventoryItem,
+  addSearchHistory,
   cleanInventoryName,
   parsePurchasePrice,
 } from "@/lib/storage";
@@ -162,6 +165,13 @@ export default function SearchResultsScreen() {
   // server/routes.ts > buildEbayRateLimitPayload + the matching client
   // type RateLimitInfo in client/types/product.ts.
   const [proCapHit, setProCapHit] = useState<RateLimitInfo | null>(null);
+  // "Correct a wrong scan" flow: a free-text box + re-research that combines
+  // the user's notes with the saved photo (server-side via Gemini) and returns
+  // fresh results. This re-research is free (no scan consumed).
+  const [refineModalVisible, setRefineModalVisible] = useState(false);
+  const [refineText, setRefineText] = useState("");
+  const [refineLoading, setRefineLoading] = useState(false);
+  const [refineError, setRefineError] = useState<string | null>(null);
   const [showEbaySold, setShowEbaySold] = useState(false);
   const [brokenImages, setBrokenImages] = useState<Set<string>>(new Set());
   const [calcExpanded, setCalcExpanded] = useState(true);
@@ -615,6 +625,107 @@ export default function SearchResultsScreen() {
     }
   };
 
+  // Submit the user's correction: send their typed details + the saved photo
+  // URL to /api/refine-scan. The server combines them via Gemini and re-runs
+  // the SearchAPI research, returning the same shape as a normal scan. On
+  // success we replace the screen with the corrected results (keeping the
+  // user's photo) and record it in history. This never costs a free scan.
+  const handleRefineSubmit = async () => {
+    const details = refineText.trim();
+    if (details.length === 0 || refineLoading) return;
+    Keyboard.dismiss();
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setRefineLoading(true);
+    setRefineError(null);
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 45000);
+    try {
+      const deviceId = await getDeviceId();
+      const url = new URL("/api/refine-scan", getApiUrl());
+      const imageUrl = results.scannedImageUrl || undefined;
+
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Device-Id": deviceId,
+          "X-Is-Pro": isPro ? "true" : "false",
+        },
+        body: JSON.stringify({ userDetails: details, imageUrl }),
+        signal: controller.signal,
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Re-search failed");
+      }
+
+      const raw = await res.json();
+
+      if (raw.rateLimit && typeof raw.rateLimit === "object") {
+        setRefineModalVisible(false);
+        setProCapHit(raw.rateLimit as RateLimitInfo);
+        return;
+      }
+
+      if (raw.serviceError) {
+        setRefineError(
+          "Couldn't reach our pricing service. Please try again.",
+        );
+        return;
+      }
+
+      if (raw.noResults || !raw.productName || !raw.listings?.length) {
+        setRefineError("Couldn't find a better match. Try adding more detail.");
+        return;
+      }
+
+      const merged: SearchResultsData = {
+        ...(raw as SearchResultsData),
+        // Preserve the user's photo across the correction.
+        scannedImageId: results.scannedImageId,
+        scannedImageUrl:
+          (raw as SearchResultsData).scannedImageUrl ??
+          results.scannedImageUrl ??
+          null,
+        scannedImageUri: results.scannedImageUri,
+      };
+
+      try {
+        const historyItem: SearchHistoryItem = {
+          id: Date.now().toString(),
+          query: typeof merged.query === "string" ? merged.query : "Product",
+          thumbnailUrl:
+            typeof merged.scannedImageUrl === "string" && merged.scannedImageUrl
+              ? merged.scannedImageUrl
+              : undefined,
+          product: merged.listings?.[0] || null,
+          searchedAt: new Date().toISOString(),
+          results: merged,
+          avgPrice: merged.avgListPrice,
+          bestPrice: merged.bestBuyNow,
+          totalListings: merged.totalListings,
+        };
+        await addSearchHistory(historyItem);
+      } catch {}
+
+      setRefineModalVisible(false);
+      setRefineText("");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      navigation.replace("SearchResults", { results: merged });
+    } catch (err: any) {
+      setRefineError(
+        err?.name === "AbortError"
+          ? "Re-search timed out. Please try again."
+          : err?.message || "Re-search failed. Please try again.",
+      );
+    } finally {
+      clearTimeout(timeoutId);
+      setRefineLoading(false);
+    }
+  };
+
   const handleListOnEbay = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const productName =
@@ -837,6 +948,28 @@ export default function SearchResultsScreen() {
                     {displayName.trim() || "Unidentified item"}
                   </Text>
                 </View>
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setRefineError(null);
+                    setRefineModalVisible(true);
+                  }}
+                  style={({ pressed }) => [
+                    styles.refineEntry,
+                    pressed && { opacity: 0.6 },
+                  ]}
+                  hitSlop={8}
+                  testID="button-refine-scan"
+                >
+                  <Feather
+                    name="edit-3"
+                    size={13}
+                    color="rgba(255,255,255,0.9)"
+                  />
+                  <Text style={styles.refineEntryText}>
+                    Not the right item? Add details
+                  </Text>
+                </Pressable>
               </View>
 
               <View style={styles.suggestedPriceRow}>
@@ -2247,6 +2380,85 @@ export default function SearchResultsScreen() {
         </Pressable>
       )}
 
+      <Modal
+        visible={refineModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => {
+          if (!refineLoading) setRefineModalVisible(false);
+        }}
+      >
+        <Pressable
+          style={styles.refineBackdrop}
+          onPress={() => {
+            if (!refineLoading) {
+              Keyboard.dismiss();
+              setRefineModalVisible(false);
+            }
+          }}
+        >
+          <Pressable style={styles.refineCard} onPress={() => {}}>
+            <Text style={styles.refineTitle}>Add details</Text>
+            <Text style={styles.refineSubtitle}>
+              Tell us what this item actually is and we'll research it again — for
+              free. Your photo is used too.
+            </Text>
+
+            <TextInput
+              style={styles.refineInput}
+              value={refineText}
+              onChangeText={(t) => {
+                setRefineText(t);
+                if (refineError) setRefineError(null);
+              }}
+              placeholder="e.g. Nike Air Max 90, size 10, white"
+              placeholderTextColor="#9CA3AF"
+              multiline
+              maxLength={500}
+              editable={!refineLoading}
+              autoFocus
+              testID="input-refine-details"
+            />
+
+            {refineError ? (
+              <Text style={styles.refineErrorText}>{refineError}</Text>
+            ) : null}
+
+            {refineLoading ? (
+              <View style={styles.refineLoadingRow}>
+                <ActivityIndicator color="#047857" />
+                <Text style={styles.refineLoadingText}>Researching…</Text>
+              </View>
+            ) : (
+              <View style={styles.refineButtonRow}>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.refineCancelBtn,
+                    pressed && { opacity: 0.6 },
+                  ]}
+                  onPress={() => setRefineModalVisible(false)}
+                  testID="button-refine-cancel"
+                >
+                  <Text style={styles.refineCancelText}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.refineSubmitBtn,
+                    refineText.trim().length === 0 && styles.refineSubmitDisabled,
+                    pressed && { opacity: 0.85 },
+                  ]}
+                  onPress={handleRefineSubmit}
+                  disabled={refineText.trim().length === 0}
+                  testID="button-refine-submit"
+                >
+                  <Text style={styles.refineSubmitText}>Re-research</Text>
+                </Pressable>
+              </View>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       <ProCapReachedModal
         visible={proCapHit !== null}
         rateLimit={proCapHit}
@@ -2352,6 +2564,107 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#FFFFFF",
     lineHeight: 28,
+  },
+  refineEntry: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 10,
+    alignSelf: "flex-start",
+  },
+  refineEntryText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "rgba(255,255,255,0.9)",
+    textDecorationLine: "underline",
+  },
+  refineBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  refineCard: {
+    width: "100%",
+    maxWidth: 420,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 22,
+  },
+  refineTitle: {
+    fontSize: 19,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 6,
+  },
+  refineSubtitle: {
+    fontSize: 14,
+    color: "#6B7280",
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  refineInput: {
+    minHeight: 88,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 15,
+    color: "#111827",
+    backgroundColor: "#F9FAFB",
+    textAlignVertical: "top",
+  },
+  refineErrorText: {
+    marginTop: 10,
+    fontSize: 13,
+    color: "#DC2626",
+  },
+  refineLoadingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    marginTop: 20,
+  },
+  refineLoadingText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#047857",
+  },
+  refineButtonRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 20,
+  },
+  refineCancelBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F3F4F6",
+  },
+  refineCancelText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#374151",
+  },
+  refineSubmitBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#047857",
+  },
+  refineSubmitDisabled: {
+    backgroundColor: "#A7C9BC",
+  },
+  refineSubmitText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#FFFFFF",
   },
   heroNameInput: {
     flex: 1,
