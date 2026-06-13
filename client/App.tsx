@@ -1,10 +1,8 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { StyleSheet, Platform } from "react-native";
-import { NavigationContainer } from "@react-navigation/native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
 import * as Updates from "expo-updates";
 import {
@@ -25,10 +23,12 @@ import { AppContent } from "@/components/AppContent";
 
 SplashScreen.preventAutoHideAsync();
 
+const STARTUP_OTA_TIMEOUT_MS = 5000;
+
 /**
- * Check for an OTA update silently in the background and apply it on next
- * launch. Runs once on app boot. Errors are swallowed — an OTA-server
- * outage shouldn't break the app.
+ * Check for an OTA update before showing the app. If a newer compatible update
+ * is available, download it and immediately reload into it so fresh installs
+ * don't run an old embedded bundle until the user manually restarts.
  *
  * Why this matters: paired with the eas.json channel config + the app.json
  * `updates.url` setting, this lets us ship JS-only changes (text fixes,
@@ -36,30 +36,39 @@ SplashScreen.preventAutoHideAsync();
  * for new rateLimit shapes) without going through App Store review again.
  *
  * Behavior:
- *  - In Expo Go / development: `Updates.checkForUpdateAsync()` is a no-op
- *    (the dev client doesn't honor OTA channels). Safe to leave running.
+ *  - In Expo Go / development / web-like disabled-update contexts: skip.
  *  - In a TestFlight / App Store / Play Store build: checks the configured
  *    EAS Update channel for a matching `runtimeVersion` (currently keyed
  *    on app.json's `version` per the `appVersion` policy). If a newer
- *    update exists, it's downloaded in the background and applied on the
- *    NEXT app launch (we deliberately don't `reloadAsync()` mid-session to
- *    avoid yanking the UI out from under an active user).
+ *    update exists, it is downloaded and launched before the old UI renders.
  */
-async function checkForOtaUpdate() {
-  if (__DEV__) return; // Dev builds don't ship OTA
+async function applyStartupOtaUpdate(
+  shouldContinue: () => boolean,
+): Promise<"ready" | "reloading"> {
+  if (__DEV__ || Platform.OS === "web" || !Updates.isEnabled) return "ready";
+
   try {
     const update = await Updates.checkForUpdateAsync();
-    if (update.isAvailable) {
-      await Updates.fetchUpdateAsync();
-      // Update will apply on next launch. We do NOT call Updates.reloadAsync()
-      // here — that would interrupt the user mid-session.
+    if (!shouldContinue()) return "ready";
+
+    if (!update.isAvailable) return "ready";
+
+    const fetchResult = await Updates.fetchUpdateAsync();
+    if (!shouldContinue()) return "ready";
+
+    if (fetchResult.isNew) {
+      await Updates.reloadAsync();
+      return "reloading";
     }
   } catch (err) {
-    console.log("OTA check failed:", err);
+    console.log("Startup OTA check failed:", err);
   }
+
+  return "ready";
 }
 
 export default function App() {
+  const [startupOtaReady, setStartupOtaReady] = useState(false);
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
     Inter_600SemiBold,
@@ -67,12 +76,49 @@ export default function App() {
   });
 
   useEffect(() => {
-    if (fontsLoaded || fontError) {
+    if ((fontsLoaded || fontError) && startupOtaReady) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, fontError]);
+  }, [fontsLoaded, fontError, startupOtaReady]);
 
   useEffect(() => {
+    let active = true;
+    let timedOut = false;
+
+    const timeout = setTimeout(() => {
+      timedOut = true;
+      if (active) {
+        console.log(
+          `Startup OTA check timed out after ${STARTUP_OTA_TIMEOUT_MS}ms; continuing with embedded bundle`,
+        );
+        setStartupOtaReady(true);
+      }
+    }, STARTUP_OTA_TIMEOUT_MS);
+
+    const finish = () => {
+      if (!active || timedOut) return;
+      clearTimeout(timeout);
+      setStartupOtaReady(true);
+    };
+
+    applyStartupOtaUpdate(() => active && !timedOut)
+      .then((result) => {
+        if (result !== "reloading") finish();
+      })
+      .catch((err) => {
+        console.log("Startup OTA gate failed:", err);
+        finish();
+      });
+
+    return () => {
+      active = false;
+      clearTimeout(timeout);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!startupOtaReady) return;
+
     const initFacebookSDK = async () => {
       if (Platform.OS === "web") return;
       try {
@@ -155,10 +201,9 @@ export default function App() {
     initFacebookSDK();
     initFirebaseAnalytics();
     initAppsFlyer();
-    checkForOtaUpdate();
-  }, []);
+  }, [startupOtaReady]);
 
-  if (!fontsLoaded && !fontError) {
+  if (!startupOtaReady || (!fontsLoaded && !fontError)) {
     return null;
   }
 
