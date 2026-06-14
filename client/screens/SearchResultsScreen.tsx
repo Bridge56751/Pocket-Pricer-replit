@@ -15,6 +15,7 @@ import {
   ActivityIndicator,
   ScrollView,
   Keyboard,
+  KeyboardAvoidingView,
   Animated as RNAnimated,
   Platform,
   Alert,
@@ -948,32 +949,10 @@ export default function SearchResultsScreen() {
                     {displayName.trim() || "Unidentified item"}
                   </Text>
                 </View>
-                <Pressable
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setRefineError(null);
-                    setRefineModalVisible(true);
-                  }}
-                  style={({ pressed }) => [
-                    styles.refineEntry,
-                    pressed && { opacity: 0.6 },
-                  ]}
-                  hitSlop={8}
-                  testID="button-refine-scan"
-                >
-                  <Feather
-                    name="edit-3"
-                    size={13}
-                    color="rgba(255,255,255,0.9)"
-                  />
-                  <Text style={styles.refineEntryText}>
-                    Not the right item? Add details
-                  </Text>
-                </Pressable>
               </View>
 
               <View style={styles.suggestedPriceRow}>
-                <View>
+                <View style={styles.suggestedPriceCol}>
                   <Text style={styles.suggestedPriceLabelUpper}>
                     SUGGESTED LISTING PRICE
                   </Text>
@@ -981,6 +960,22 @@ export default function SearchResultsScreen() {
                     ${(Number(results.avgListPrice) || 0).toFixed(0)}
                   </Text>
                 </View>
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setRefineError(null);
+                    setRefineModalVisible(true);
+                  }}
+                  style={({ pressed }) => [
+                    styles.refineButton,
+                    pressed && { opacity: 0.7 },
+                  ]}
+                  hitSlop={8}
+                  testID="button-refine-scan"
+                >
+                  <Feather name="edit-3" size={15} color="#FFFFFF" />
+                  <Text style={styles.refineButtonText}>Add details</Text>
+                </Pressable>
               </View>
 
               <Text
@@ -2388,6 +2383,10 @@ export default function SearchResultsScreen() {
           if (!refineLoading) setRefineModalVisible(false);
         }}
       >
+        <KeyboardAvoidingView
+          style={styles.refineKav}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
         <Pressable
           style={styles.refineBackdrop}
           onPress={() => {
@@ -2397,7 +2396,10 @@ export default function SearchResultsScreen() {
             }
           }}
         >
-          <Pressable style={styles.refineCard} onPress={() => {}}>
+          <Pressable
+            style={styles.refineCard}
+            onPress={() => Keyboard.dismiss()}
+          >
             <Text style={styles.refineTitle}>Add details</Text>
             <Text style={styles.refineSubtitle}>
               Tell us what this item actually is and we'll research it again — for
@@ -2436,7 +2438,10 @@ export default function SearchResultsScreen() {
                     styles.refineCancelBtn,
                     pressed && { opacity: 0.6 },
                   ]}
-                  onPress={() => setRefineModalVisible(false)}
+                  onPress={() => {
+                    Keyboard.dismiss();
+                    setRefineModalVisible(false);
+                  }}
                   testID="button-refine-cancel"
                 >
                   <Text style={styles.refineCancelText}>Cancel</Text>
@@ -2457,6 +2462,7 @@ export default function SearchResultsScreen() {
             )}
           </Pressable>
         </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
 
       <ProCapReachedModal
@@ -2565,18 +2571,26 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     lineHeight: 28,
   },
-  refineEntry: {
+  refineButton: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    marginTop: 10,
-    alignSelf: "flex-start",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.16)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.28)",
+    marginBottom: 6,
+    flexShrink: 0,
   },
-  refineEntryText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "rgba(255,255,255,0.9)",
-    textDecorationLine: "underline",
+  refineButtonText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  refineKav: {
+    flex: 1,
   },
   refineBackdrop: {
     flex: 1,
@@ -2680,11 +2694,15 @@ const styles = StyleSheet.create({
     borderBottomColor: "rgba(255,255,255,0.4)",
     paddingBottom: 4,
   },
+  suggestedPriceCol: {
+    flexShrink: 1,
+  },
   suggestedPriceRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-end",
     marginTop: 8,
+    gap: 12,
   },
   suggestedPriceLabelUpper: {
     fontSize: 12,
