@@ -155,3 +155,134 @@ export async function cleanQueryWithAI(
     return null;
   }
 }
+
+const PRODUCT_ID_PROMPT = `You are a product identification expert helping a reseller fix a mis-identified scan. You are given a photo of a product AND the user's own notes describing what the item actually is. The user's notes are authoritative — when they conflict with the photo, trust the notes.
+
+Identify the exact product and output the single best concise search query (brand + model/number + product type) to find this item on shopping sites and eBay.
+
+Rules:
+- Aim for 3-6 keywords. Hard cap: 8 words.
+- Keep model numbers and hyphenated names exactly (e.g. "WH-1000XM5", "Air Max 90").
+- Combine clues from BOTH the photo and the user's notes.
+- Remove colors, sizes, conditions (NWT, NIB, etc.), retailer names, and marketing words.
+- Return ONLY the search query, nothing else. No quotes, no explanation, no commentary.`;
+
+// Download a hosted image and return it as base64 for Gemini inline_data.
+// Returns null on any failure (bad URL, non-image, too large, timeout) so the
+// caller can degrade to a text-only identification.
+async function fetchImageAsBase64(
+  imageUrl: string,
+): Promise<{ data: string; mimeType: string } | null> {
+  try {
+    const resp = await fetch(imageUrl, { signal: AbortSignal.timeout(10000) });
+    if (!resp.ok) return null;
+    const contentType = (resp.headers.get("content-type") || "image/jpeg")
+      .split(";")[0]
+      .trim();
+    if (!contentType.startsWith("image/")) return null;
+    const buf = Buffer.from(await resp.arrayBuffer());
+    // Guard against oversized payloads (Gemini inline_data + our own memory).
+    if (buf.length === 0 || buf.length > 8 * 1024 * 1024) return null;
+    return { data: buf.toString("base64"), mimeType: contentType };
+  } catch {
+    return null;
+  }
+}
+
+// Multimodal product identification: combines the user's saved scan photo with
+// the free-text correction they typed, and asks Gemini 2.5 Flash for a clean,
+// accurate product search query. This is the only step that can use the photo
+// AND text together — Google Lens (image-only) and SearchAPI text search can't.
+// The returned query then drives the regular SearchAPI research. Returns null
+// when identification is unusable so the caller can fall back to the raw text.
+export async function identifyProductFromImageAndText(
+  imageUrl: string,
+  userDetails: string,
+  customerKey?: string,
+  isPro?: boolean,
+): Promise<string | null> {
+  const baseUrl = process.env.AI_INTEGRATIONS_GEMINI_BASE_URL;
+  const apiKey = process.env.AI_INTEGRATIONS_GEMINI_API_KEY;
+
+  if (!baseUrl || !apiKey) {
+    console.log("AI product identification skipped: env vars not set");
+    return null;
+  }
+
+  // P0-8: per-Pro-customer monthly budget cap (same guard as cleanQueryWithAI).
+  if (customerKey && isPro) {
+    const budgetOk = await checkProviderBudget("gemini", customerKey, isPro);
+    if (!budgetOk) {
+      console.log("AI product identification skipped: monthly cap reached");
+      return null;
+    }
+  }
+
+  const details = (userDetails || "").replace(/\s+/g, " ").trim().slice(0, 500);
+  if (!details) return null;
+
+  const image = imageUrl ? await fetchImageAsBase64(imageUrl) : null;
+
+  const parts: (
+    | { text: string }
+    | { inline_data: { mime_type: string; data: string } }
+  )[] = [];
+  if (image) {
+    parts.push({
+      inline_data: { mime_type: image.mimeType, data: image.data },
+    });
+    parts.push({ text: `User's notes about this product: ${details}` });
+  } else {
+    parts.push({
+      text: `Identify this product from the user's notes only (no photo available): ${details}`,
+    });
+  }
+
+  try {
+    const url = `${baseUrl}/models/gemini-2.5-flash:generateContent`;
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey,
+      },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: PRODUCT_ID_PROMPT }] },
+        contents: [{ role: "user", parts }],
+        generationConfig: {
+          maxOutputTokens: 256,
+          temperature: 0,
+        },
+      }),
+      signal: AbortSignal.timeout(20000),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.log(
+        `AI product identification HTTP ${response.status}: ${errText.slice(0, 200)}`,
+      );
+      return null;
+    }
+
+    const data: GeminiResponse = await response.json();
+    const cleaned = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+
+    if (!cleaned || cleaned.length < 3 || cleaned.length > 100) {
+      console.log(
+        `AI product identification returned unusable result: "${cleaned}"`,
+      );
+      return null;
+    }
+
+    console.log(
+      `AI product identification: photo=${image ? "yes" : "no"} + "${details.slice(0, 60)}" → "${cleaned}"`,
+    );
+    return cleaned;
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.log(`AI product identification failed: ${message}`);
+    return null;
+  }
+}

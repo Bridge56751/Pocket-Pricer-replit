@@ -1,2 +1,3 @@
 - [RevenueCat Pro-verify flag](revenuecat-pro-verify-flag.md) — never enable VERIFY_PRO_VIA_RC before client device_id aliasing is adopted; fail-closed 404s brick all paying users.
 - [Edge drops large POST bodies](edge-large-post-body-rejection.md) — prod-only "received: 0" aborts = Replit edge rejecting large POST bodies; fix by client-direct-upload (Supabase signed URL) + tiny URL body, not keep-alive timeouts.
+- [Expo dev server login-prompt stall](expo-dev-server-login-prompt.md) — Expo Go "loads then times out" = `expo start` wedged on login prompt; fix with EXPO_OFFLINE=1 (NOT CI=1, which kills hot-reload) + free stale port 8081.

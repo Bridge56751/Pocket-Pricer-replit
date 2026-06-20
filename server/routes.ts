@@ -14,7 +14,7 @@ import {
   insertScanImage,
   pruneDeviceScanImages,
 } from "./supabase";
-import { cleanQueryWithAI } from "./gemini";
+import { cleanQueryWithAI, identifyProductFromImageAndText } from "./gemini";
 import { checkProviderBudget } from "./provider-budget";
 import { verifyProViaRevenueCat } from "./revenuecat";
 
@@ -545,6 +545,116 @@ async function searchWithGoogleLens(
   } catch (error) {
     console.error("[Lens] Unexpected error:", error);
     return { products: [], error: "Search failed" };
+  }
+}
+
+interface SearchApiShoppingResponse {
+  shopping_results?: {
+    position?: number;
+    title?: string;
+    link?: string;
+    product_link?: string;
+    seller?: string;
+    source?: string;
+    price?: string;
+    extracted_price?: number;
+    currency?: string;
+    thumbnail?: string;
+    rating?: number;
+    reviews?: number;
+  }[];
+  error?: string;
+}
+
+// Text-based product search via SearchAPI's Google Shopping engine. Used by the
+// "correct a wrong scan" flow: Google Lens is image-only and can't be steered
+// by the corrected query, so once Gemini produces a corrected product identity
+// we research retail listings/prices from text here. Mirrors the LensResult
+// shape so the refine endpoint can reuse the same listing-building logic.
+async function searchShoppingByQuery(
+  query: string,
+  customerKey: string,
+  isPro: boolean,
+): Promise<LensResult> {
+  const apiKey = process.env.SEARCHAPI_API_KEY;
+  if (!apiKey) {
+    return {
+      products: [],
+      provider: "searchapi",
+      error: "SearchAPI key not configured",
+    };
+  }
+
+  // P0-8: per-Pro-customer monthly budget cap.
+  const budgetOk = await checkProviderBudget("searchapi", customerKey, isPro);
+  if (!budgetOk) {
+    return { products: [], provider: "searchapi", error: "budget_cap_searchapi" };
+  }
+
+  try {
+    const startTime = Date.now();
+    const params = new URLSearchParams({
+      engine: "google_shopping",
+      q: query,
+      hl: "en",
+      gl: "us",
+      api_key: apiKey,
+    });
+
+    const response = await fetch(
+      `https://www.searchapi.io/api/v1/search?${params.toString()}`,
+      { signal: AbortSignal.timeout(20000) },
+    );
+    const elapsed = Date.now() - startTime;
+
+    if (!response.ok) {
+      console.error(`[SearchAPI Shopping] HTTP ${response.status} (${elapsed}ms)`);
+      return {
+        products: [],
+        provider: "searchapi",
+        error: `HTTP ${response.status}`,
+      };
+    }
+
+    const data = (await response.json()) as SearchApiShoppingResponse;
+
+    if (data.error) {
+      console.error(`[SearchAPI Shopping] Error (${elapsed}ms):`, data.error);
+      return { products: [], provider: "searchapi", error: data.error };
+    }
+
+    const products: GoogleLensProduct[] = (data.shopping_results || []).map(
+      (item, index) => {
+        const parsed = item.extracted_price == null ? parsePrice(item.price) : {};
+        const priceValue = item.extracted_price ?? parsed.value;
+        return {
+          position: item.position ?? index + 1,
+          title: item.title,
+          link: item.link || item.product_link,
+          source: item.seller || item.source,
+          price: {
+            value: priceValue,
+            extracted_value: priceValue,
+            currency: item.currency ?? parsed.currency ?? "USD",
+          },
+          thumbnail: item.thumbnail,
+          rating: item.rating,
+          reviews: item.reviews,
+        };
+      },
+    );
+
+    console.log(
+      `[SearchAPI Shopping] "${query}" → ${products.length} results (${elapsed}ms)`,
+    );
+    return { products, provider: "searchapi" };
+  } catch (error) {
+    console.error("[SearchAPI Shopping] Request failed:", error);
+    return {
+      products: [],
+      provider: "searchapi",
+      error: "SearchAPI shopping request failed",
+    };
   }
 }
 
@@ -1711,6 +1821,196 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (supabaseFileName) deleteSupabaseImage(supabaseFileName);
       console.error("Lens scan error:", error);
       res.status(500).json({ error: "Failed to scan product" });
+    }
+  });
+
+  // "Correct a wrong scan" — when Lens mis-identified a product, the user types
+  // what it actually is. We combine that free text with their saved scan photo
+  // via Gemini (multimodal) to get a corrected product identity, then research
+  // retail listings/prices from text via SearchAPI Google Shopping. This path
+  // is deliberately FREE: it never increments the guest scan counter, so a
+  // correction doesn't cost the user one of their 3 free lifetime scans. Rate
+  // limiting and Pro per-customer provider budgets still apply.
+  app.post("/api/refine-scan", async (req: Request, res: Response) => {
+    try {
+      const deviceId = req.headers["x-device-id"] as string | undefined;
+      const isPro = await getIsPro(req);
+
+      if (!deviceId) {
+        return res.status(400).json({ error: "Device ID is required" });
+      }
+
+      if (isRateLimited(deviceId)) {
+        return res.status(429).json({
+          error: "Too many requests. Please wait a moment and try again.",
+        });
+      }
+
+      const { imageUrl: providedImageUrl, userDetails } = req.body;
+
+      if (typeof userDetails !== "string" || userDetails.trim().length === 0) {
+        return res.status(400).json({ error: "Details are required" });
+      }
+      if (userDetails.length > 500) {
+        return res.status(400).json({ error: "Details are too long" });
+      }
+
+      // SSRF guard: only fetch images that are unambiguously in OUR own
+      // Supabase scan-images bucket. Any other URL is ignored (identification
+      // falls back to the user's text alone) so we never let a caller make the
+      // server fetch an arbitrary URL.
+      let safeImageUrl: string | null = null;
+      if (typeof providedImageUrl === "string" && providedImageUrl.trim()) {
+        const supabaseBase = (process.env.SUPABASE_URL || "").replace(
+          /\/+$/,
+          "",
+        );
+        const publicPrefix = supabaseBase
+          ? `${supabaseBase}/storage/v1/object/public/scan-images/`
+          : "";
+        if (publicPrefix && providedImageUrl.trim().startsWith(publicPrefix)) {
+          safeImageUrl = providedImageUrl.trim();
+        }
+      }
+
+      const correctedQuery = await identifyProductFromImageAndText(
+        safeImageUrl || "",
+        userDetails,
+        deviceId,
+        isPro,
+      );
+
+      // Fall back to the user's own words when AI identification is unusable.
+      const effectiveQuery = (correctedQuery || userDetails)
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 120);
+
+      if (!effectiveQuery) {
+        return res
+          .status(404)
+          .json({ error: "Couldn't identify the product", noResults: true });
+      }
+
+      const shopResult = await searchShoppingByQuery(
+        effectiveQuery,
+        deviceId,
+        isPro,
+      );
+
+      const budgetHit =
+        typeof shopResult.error === "string" &&
+        shopResult.error.startsWith("budget_cap_");
+      if (budgetHit) {
+        const provider = shopResult.error!.slice(
+          "budget_cap_".length,
+        ) as DisplayedProviderName;
+        return res.status(200).json({
+          rateLimit: buildEbayRateLimitPayload(provider),
+        });
+      }
+
+      // Provider failed outright (timeout, HTTP error, missing key, etc.).
+      // Mirror /api/scan-with-lens: surface a service error so the client can
+      // show a retry affordance instead of a silent empty success.
+      if (shopResult.error) {
+        return res
+          .status(200)
+          .json({ serviceError: true, refined: true, totalScans: 0 });
+      }
+
+      const allProducts = shopResult.products.slice(0, 60);
+      const reliableProducts = allProducts.filter((p) =>
+        isReliableSource(p.source || ""),
+      );
+      const pricedProducts = reliableProducts.filter(
+        (p) => p.price?.value || p.price?.extracted_value,
+      );
+      const noPriceProducts = reliableProducts.filter(
+        (p) => !(p.price?.value || p.price?.extracted_value),
+      );
+
+      const prices = pricedProducts
+        .map((p) => p.price?.extracted_value || p.price?.value || 0)
+        .filter((p) => p > 0);
+      const avgListPrice = calculateMedian(prices);
+      const bestBuyNow = prices.length > 0 ? Math.min(...prices) : 0;
+
+      const pricedListings = pricedProducts.map((item, index) => ({
+        id: `refine-${index}`,
+        title: item.title || "Unknown Product",
+        imageUrl: item.thumbnail || "",
+        currentPrice: item.price?.extracted_value || item.price?.value || 0,
+        shipping: 0,
+        link: item.link || "",
+        seller: item.source || "",
+        platform: item.source || "Shop",
+        rating: item.rating,
+        reviews: item.reviews,
+      }));
+
+      const remainingSlots = Math.max(0, 30 - pricedListings.length);
+      const noPriceListings = noPriceProducts
+        .slice(0, remainingSlots)
+        .map((item, index) => ({
+          id: `refine-np-${index}`,
+          title: item.title || "Unknown Product",
+          imageUrl: item.thumbnail || "",
+          currentPrice: 0,
+          shipping: 0,
+          link: item.link || "",
+          seller: item.source || "",
+          platform: item.source || "Shop",
+          rating: item.rating,
+          reviews: item.reviews,
+        }));
+
+      const listings = [...pricedListings, ...noPriceListings];
+      const productName = effectiveQuery;
+
+      // Provider responded successfully but yielded nothing usable. Signal a
+      // real "no results" so the client can prompt for more detail rather than
+      // replacing the screen with an empty success payload.
+      if (listings.length === 0) {
+        return res
+          .status(200)
+          .json({ noResults: true, refined: true, productName, totalScans: 0 });
+      }
+
+      // FREE re-research: intentionally NOT calling incrementGuestScan here.
+      let totalScans = 0;
+      try {
+        totalScans = await getGuestScanCount(deviceId);
+      } catch {}
+
+      logScanEvent(
+        deviceId,
+        isPro,
+        productName,
+        listings.length,
+        pricedListings.length,
+      );
+
+      return res.json({
+        query: productName,
+        productName,
+        productInfo: { name: productName },
+        totalListings: listings.length,
+        avgListPrice,
+        avgSalePrice: null,
+        soldCount: 0,
+        bestBuyNow,
+        topSalePrice: null,
+        listings,
+        usedLens: true,
+        totalScans,
+        refined: true,
+        // Echo the user's photo back so the corrected results screen keeps it.
+        scannedImageUrl: safeImageUrl,
+      });
+    } catch (error) {
+      console.error("Refine scan error:", error);
+      res.status(500).json({ error: "Failed to refine scan" });
     }
   });
 
