@@ -1,10 +1,15 @@
 import React from "react";
 import { Platform, Pressable, StyleSheet, View } from "react-native";
-import { BottomTabBar, createBottomTabNavigator, type BottomTabBarProps } from "@react-navigation/bottom-tabs";
+import {
+  BottomTabBar,
+  createBottomTabNavigator,
+  type BottomTabBarProps,
+} from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import ScanScreen from "@/screens/ScanScreen";
 import InventoryScreen from "@/screens/InventoryScreen";
@@ -19,11 +24,13 @@ import type { CapturedPhoto } from "@/navigation/RootStackNavigator";
 const FREE_SCAN_LIMIT = 3;
 
 export type MainTabParamList = {
-  Home: {
-    photosToProcess?: CapturedPhoto[];
-    prefillQuery?: string;
-    addToInventory?: boolean;
-  } | undefined;
+  Home:
+    | {
+        photosToProcess?: CapturedPhoto[];
+        prefillQuery?: string;
+        addToInventory?: boolean;
+      }
+    | undefined;
   Calculator: undefined;
   Camera: undefined;
   Inventory: undefined;
@@ -36,9 +43,11 @@ function CameraTabPlaceholder() {
   return <View />;
 }
 
-function AnimatedTabBar(props: BottomTabBarProps) {
+function AnimatedTabBar({
+  tabBarHeight,
+  ...props
+}: BottomTabBarProps & { tabBarHeight: number }) {
   const { opacity } = useTabBarVisibility();
-  const tabBarHeight = Platform.select({ ios: 88, android: 64, default: 64 }) ?? 64;
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
     transform: [{ translateY: (1 - opacity.value) * (tabBarHeight + 40) }],
@@ -106,6 +115,11 @@ export default function MainTabNavigator({ navigation }: any) {
   const { theme } = useDesignTokens();
   const { isPro, isReady: rcReady } = useRevenueCat();
   const { getScansUsed } = useAuth();
+  const insets = useSafeAreaInsets();
+  const androidBottomInset = Platform.OS === "android" ? insets.bottom : 0;
+  const baseTabBarHeight =
+    Platform.select({ ios: 88, android: 64, default: 64 }) ?? 64;
+  const tabBarHeight = baseTabBarHeight + androidBottomInset;
 
   const openCamera = async () => {
     if (rcReady && !isPro) {
@@ -122,7 +136,9 @@ export default function MainTabNavigator({ navigation }: any) {
   return (
     <Tab.Navigator
       initialRouteName="Home"
-      tabBar={(props) => <AnimatedTabBar {...props} />}
+      tabBar={(props) => (
+        <AnimatedTabBar {...props} tabBarHeight={tabBarHeight} />
+      )}
       screenOptions={{
         headerShown: false,
         tabBarShowLabel: true,
@@ -141,8 +157,9 @@ export default function MainTabNavigator({ navigation }: any) {
           backgroundColor: theme.colors.background,
           borderTopColor: "#047857",
           borderTopWidth: 2,
-          height: Platform.select({ ios: 88, android: 64, default: 64 }),
+          height: tabBarHeight,
           paddingTop: 6,
+          paddingBottom: androidBottomInset,
           elevation: 0,
         },
       }}
@@ -162,7 +179,12 @@ export default function MainTabNavigator({ navigation }: any) {
         options={{
           tabBarLabel: "Calculator",
           tabBarIcon: ({ color, size, focused }) => (
-            <TabIcon name="percent" color={color} size={size} focused={focused} />
+            <TabIcon
+              name="percent"
+              color={color}
+              size={size}
+              focused={focused}
+            />
           ),
         }}
       />
@@ -188,7 +210,12 @@ export default function MainTabNavigator({ navigation }: any) {
         component={InventoryScreen}
         options={{
           tabBarIcon: ({ color, size, focused }) => (
-            <TabIcon name="package" color={color} size={size} focused={focused} />
+            <TabIcon
+              name="package"
+              color={color}
+              size={size}
+              focused={focused}
+            />
           ),
         }}
       />
@@ -197,7 +224,12 @@ export default function MainTabNavigator({ navigation }: any) {
         component={ProfileScreen}
         options={{
           tabBarIcon: ({ color, size, focused }) => (
-            <TabIcon name="settings" color={color} size={size} focused={focused} />
+            <TabIcon
+              name="settings"
+              color={color}
+              size={size}
+              focused={focused}
+            />
           ),
         }}
       />
