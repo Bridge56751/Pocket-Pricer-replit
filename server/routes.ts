@@ -17,6 +17,7 @@ import {
 import { cleanQueryWithAI, identifyProductFromImageAndText } from "./gemini";
 import { checkProviderBudget } from "./provider-budget";
 import { verifyProViaRevenueCat } from "./revenuecat";
+import { FREE_SCAN_LIMIT } from "../shared/scan-limits";
 
 /**
  * Group C Part B / P0-1: get the authoritative Pro status for this request.
@@ -47,7 +48,6 @@ async function getIsPro(req: Request): Promise<boolean> {
   return req.headers["x-is-pro"] === "true";
 }
 
-const FREE_LIFETIME_SEARCHES = 3;
 const RATE_LIMIT_MAX = 20;
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 // Inventory ops are bursty (e.g., bulk-adding multiple flips with a refresh
@@ -1599,7 +1599,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!isPro) {
         const guestCount = await getGuestScanCount(deviceId);
-        if (guestCount >= FREE_LIFETIME_SEARCHES) {
+        if (guestCount >= FREE_SCAN_LIMIT) {
           return res.status(403).json({
             error: "Free scan limit reached",
             limitReached: true,
@@ -2033,7 +2033,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!isPro) {
         const guestCount = await getGuestScanCount(deviceId);
-        if (guestCount >= FREE_LIFETIME_SEARCHES) {
+        if (guestCount >= FREE_SCAN_LIMIT) {
           return res.status(403).json({
             error: "Free scan limit reached",
             limitReached: true,

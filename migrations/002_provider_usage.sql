@@ -11,7 +11,7 @@
 -- writing a different string into the same column.
 --
 -- Free users are NOT counted here — they're already bounded by the
--- FREE_LIFETIME_SEARCHES = 3 cap in routes.ts. This table only exists to
+-- the shared lifetime scan allowance in routes.ts. This table only exists to
 -- prevent a single Pro subscriber from draining the entire monthly plan
 -- budget for a paid provider.
 --

@@ -19,7 +19,7 @@ import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { useTabBarVisibility } from "@/contexts/TabBarVisibilityContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRevenueCat } from "@/contexts/RevenueCatContext";
-import { FREE_SCAN_LIMIT } from "@/constants/scan-limits";
+import { FREE_SCAN_LIMIT } from "@shared/scan-limits";
 import type { CapturedPhoto } from "@/navigation/RootStackNavigator";
 
 export type MainTabParamList = {

@@ -42,6 +42,7 @@ import { getImage } from "@/lib/image-store";
 import { getApiUrl } from "@/lib/query-client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRevenueCat } from "@/contexts/RevenueCatContext";
+import { FREE_SCAN_LIMIT } from "@shared/scan-limits";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import type {
   EbaySoldData,
@@ -459,7 +460,7 @@ export default function SearchResultsScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     if (rcReady && !isPro) {
       const scansUsed = await getScansUsed();
-      if (scansUsed >= 3) {
+      if (scansUsed >= FREE_SCAN_LIMIT) {
         navigation.navigate("Paywall");
         return;
       }

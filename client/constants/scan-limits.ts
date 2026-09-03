@@ -1,1 +1,0 @@
-export const FREE_SCAN_LIMIT = 10;

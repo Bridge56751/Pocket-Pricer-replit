@@ -46,7 +46,7 @@ import * as FileSystem from "expo-file-system/legacy";
 import { storeImage } from "@/lib/image-store";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRevenueCat } from "@/contexts/RevenueCatContext";
-import { FREE_SCAN_LIMIT } from "@/constants/scan-limits";
+import { FREE_SCAN_LIMIT } from "@shared/scan-limits";
 import type { RateLimitInfo, SearchHistoryItem } from "@/types/product";
 import type {
   RootStackParamList,

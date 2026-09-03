@@ -9,7 +9,7 @@
  * device IDs after P0-1 ships). Worst-case math is in EXECUTIVE_BRIEF.md
  * "Problem 3" / ARCHITECTURE_RECOMMENDATIONS.md Section 1.
  *
- * Free users are bounded by FREE_LIFETIME_SEARCHES = 3 (in routes.ts), so
+ * Free users are bounded by the shared lifetime scan allowance in routes.ts, so
  * this module deliberately doesn't enforce per-Free caps — the lifetime cap
  * already does that job, and counting free-tier calls in this table would
  * just be noise.
@@ -101,8 +101,8 @@ const failOpen = true;
  * Atomically increments the (customer, provider, month) counter and returns
  * `true` if the call should proceed, `false` if the cap is exceeded.
  *
- * Free users always return `true` — they're bounded elsewhere by
- * FREE_LIFETIME_SEARCHES.
+ * Free users always return `true` — they're bounded elsewhere by the shared
+ * lifetime scan allowance.
  *
  * On infrastructure failure: returns `true` (fail-open). See module-level
  * docstring for the rationale.
