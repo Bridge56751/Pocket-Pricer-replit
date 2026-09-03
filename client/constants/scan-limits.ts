@@ -1,9 +1,9 @@
-import { FREE_SCAN_LIMIT } from "@shared/scan-limits";
+import { FREE_SCAN_LIMIT, hasReachedFreeScanLimit } from "@shared/scan-limits";
 
 export { FREE_SCAN_LIMIT };
 
 export function canUseFreeScan(scansUsed: number, isPro: boolean): boolean {
-  return isPro || scansUsed < FREE_SCAN_LIMIT;
+  return isPro || !hasReachedFreeScanLimit(scansUsed);
 }
 
 export function getFreeScansRemaining(scansUsed: number): number {

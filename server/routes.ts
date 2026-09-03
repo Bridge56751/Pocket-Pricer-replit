@@ -17,7 +17,7 @@ import {
 import { cleanQueryWithAI, identifyProductFromImageAndText } from "./gemini";
 import { checkProviderBudget } from "./provider-budget";
 import { verifyProViaRevenueCat } from "./revenuecat";
-import { FREE_SCAN_LIMIT } from "../shared/scan-limits";
+import { hasReachedFreeScanLimit } from "../shared/scan-limits";
 
 /**
  * Group C Part B / P0-1: get the authoritative Pro status for this request.
@@ -1599,7 +1599,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!isPro) {
         const guestCount = await getGuestScanCount(deviceId);
-        if (guestCount >= FREE_SCAN_LIMIT) {
+        if (hasReachedFreeScanLimit(guestCount)) {
           return res.status(403).json({
             error: "Free scan limit reached",
             limitReached: true,
@@ -1829,7 +1829,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // via Gemini (multimodal) to get a corrected product identity, then research
   // retail listings/prices from text via SearchAPI Google Shopping. This path
   // is deliberately FREE: it never increments the guest scan counter, so a
-  // correction doesn't cost the user one of their 3 free lifetime scans. Rate
+  // correction doesn't cost the user one of their free lifetime scans. Rate
   // limiting and Pro per-customer provider budgets still apply.
   app.post("/api/refine-scan", async (req: Request, res: Response) => {
     try {
@@ -2033,7 +2033,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!isPro) {
         const guestCount = await getGuestScanCount(deviceId);
-        if (guestCount >= FREE_SCAN_LIMIT) {
+        if (hasReachedFreeScanLimit(guestCount)) {
           return res.status(403).json({
             error: "Free scan limit reached",
             limitReached: true,

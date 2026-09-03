@@ -112,7 +112,7 @@ export async function checkProviderBudget(
   customerKey: string,
   isPro: boolean,
 ): Promise<boolean> {
-  // Free users: don't count, don't cap. The lifetime-3-scans rule in
+  // Free users: don't count, don't cap. The shared lifetime scan limit in
   // /api/scan-with-lens + /api/ebay-sold-search already bounds them.
   if (!isPro) return true;
 
