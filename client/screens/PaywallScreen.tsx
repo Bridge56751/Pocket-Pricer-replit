@@ -81,6 +81,7 @@ export default function PaywallScreen() {
     isPro,
     isReady: rcReady,
     customerInfo,
+    offeringsDebug,
   } = useRevenueCat();
   const [isLoading, setIsLoading] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
@@ -94,6 +95,7 @@ export default function PaywallScreen() {
 
   const packagesLoading = !rcReady || packages.length === 0;
   const showError = offeringsTimedOut && packagesLoading;
+  const isExpoGoUnavailable = offeringsDebug.includes("Expo Go");
   const orderedPackages = [...packages].sort((a, b) => {
     const order: Record<PlanKind, number> = {
       weekly: 0,
@@ -328,16 +330,28 @@ export default function PaywallScreen() {
           <Text style={styles.sectionLabel}>
             {isPro ? "UPDATE YOUR PLAN" : "CHOOSE YOUR PLAN"}
           </Text>
-          {showError ? (
+          {showError || isExpoGoUnavailable ? (
             <View style={styles.statusCard}>
-              <Feather name="wifi-off" size={22} color="#B84D37" />
-              <Text style={styles.statusTitle}>Plans could not load</Text>
-              <Text style={styles.statusText}>
-                Check your connection and try again.
+              <Feather
+                name={isExpoGoUnavailable ? "smartphone" : "wifi-off"}
+                size={22}
+                color="#B84D37"
+              />
+              <Text style={styles.statusTitle}>
+                {isExpoGoUnavailable
+                  ? "Open a test build to view plans"
+                  : "Plans could not load"}
               </Text>
-              <Pressable onPress={handleRetry} style={styles.retry}>
-                <Text style={styles.retryText}>Try again</Text>
-              </Pressable>
+              <Text style={styles.statusText}>
+                {isExpoGoUnavailable
+                  ? "RevenueCat pricing and checkout are unavailable inside Expo Go. Use TestFlight or a development build."
+                  : "Check your connection and try again."}
+              </Text>
+              {!isExpoGoUnavailable ? (
+                <Pressable onPress={handleRetry} style={styles.retry}>
+                  <Text style={styles.retryText}>Try again</Text>
+                </Pressable>
+              ) : null}
             </View>
           ) : packagesLoading ? (
             <View style={styles.skeletonWrap}>

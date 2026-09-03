@@ -21,7 +21,15 @@ interface OnboardingScreenProps {
   isReplay?: boolean;
 }
 
-function ProgressBar({ current, total, light }: { current: number; total: number; light?: boolean }) {
+function ProgressBar({
+  current,
+  total,
+  light,
+}: {
+  current: number;
+  total: number;
+  light?: boolean;
+}) {
   return (
     <View style={progressStyles.bar}>
       {Array.from({ length: total }).map((_, i) => (
@@ -30,9 +38,12 @@ function ProgressBar({ current, total, light }: { current: number; total: number
           style={[
             progressStyles.segment,
             {
-              backgroundColor: i <= current
-                ? "#047857"
-                : light ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.2)",
+              backgroundColor:
+                i <= current
+                  ? "#047857"
+                  : light
+                    ? "rgba(0,0,0,0.1)"
+                    : "rgba(255,255,255,0.2)",
             },
           ]}
         />
@@ -56,19 +67,39 @@ const progressStyles = StyleSheet.create({
 function HeroStep() {
   return (
     <View style={heroStyles.container}>
-      <Animated.View entering={FadeInUp.delay(150).duration(600).easing(Easing.out(Easing.quad))} style={heroStyles.iconWrap}>
+      <Animated.View
+        entering={FadeInUp.delay(150)
+          .duration(600)
+          .easing(Easing.out(Easing.quad))}
+        style={heroStyles.iconWrap}
+      >
         <View style={heroStyles.iconSquare}>
-          <Feather name="tag" size={32} color="#10B981" style={{ transform: [{ scaleX: -1 }] }} />
+          <Feather
+            name="tag"
+            size={32}
+            color="#10B981"
+            style={{ transform: [{ scaleX: -1 }] }}
+          />
         </View>
       </Animated.View>
 
-      <Animated.View entering={FadeInUp.delay(350).duration(600).easing(Easing.out(Easing.quad))}>
+      <Animated.View
+        entering={FadeInUp.delay(350)
+          .duration(600)
+          .easing(Easing.out(Easing.quad))}
+      >
         <Text style={heroStyles.title}>
-          Stop guessing.{"\n"}<Text style={heroStyles.titleGreen}>Start knowing.</Text>
+          Stop guessing.{"\n"}
+          <Text style={heroStyles.titleGreen}>Start knowing.</Text>
         </Text>
       </Animated.View>
 
-      <Animated.Text entering={FadeInUp.delay(500).duration(600).easing(Easing.out(Easing.quad))} style={heroStyles.subtitle}>
+      <Animated.Text
+        entering={FadeInUp.delay(500)
+          .duration(600)
+          .easing(Easing.out(Easing.quad))}
+        style={heroStyles.subtitle}
+      >
         The smarter way to find profitable items — before you buy them.
       </Animated.Text>
     </View>
@@ -151,21 +182,40 @@ interface QuestionStepProps {
 function QuestionStep({ selectedCategories, onToggle }: QuestionStepProps) {
   return (
     <View style={questionStyles.container}>
-      <Animated.Text entering={FadeInUp.delay(150).duration(600).easing(Easing.out(Easing.quad))} style={questionStyles.label}>
+      <Animated.Text
+        entering={FadeInUp.delay(150)
+          .duration(600)
+          .easing(Easing.out(Easing.quad))}
+        style={questionStyles.label}
+      >
         QUICK QUESTION
       </Animated.Text>
 
-      <Animated.View entering={FadeInUp.delay(300).duration(600).easing(Easing.out(Easing.quad))}>
+      <Animated.View
+        entering={FadeInUp.delay(300)
+          .duration(600)
+          .easing(Easing.out(Easing.quad))}
+      >
         <Text style={questionStyles.title}>
           What do you{"\n"}mainly resell?
         </Text>
       </Animated.View>
 
-      <Animated.Text entering={FadeInUp.delay(450).duration(600).easing(Easing.out(Easing.quad))} style={questionStyles.subtitle}>
+      <Animated.Text
+        entering={FadeInUp.delay(450)
+          .duration(600)
+          .easing(Easing.out(Easing.quad))}
+        style={questionStyles.subtitle}
+      >
         Select all that apply
       </Animated.Text>
 
-      <Animated.View entering={FadeInUp.delay(600).duration(600).easing(Easing.out(Easing.quad))} style={questionStyles.cardList}>
+      <Animated.View
+        entering={FadeInUp.delay(600)
+          .duration(600)
+          .easing(Easing.out(Easing.quad))}
+        style={questionStyles.cardList}
+      >
         {CATEGORIES.map((cat) => {
           const isSelected = selectedCategories.includes(cat.id);
           return (
@@ -184,10 +234,12 @@ function QuestionStep({ selectedCategories, onToggle }: QuestionStepProps) {
                 <Text style={questionStyles.cardTitle}>{cat.title}</Text>
                 <Text style={questionStyles.cardSubtitle}>{cat.subtitle}</Text>
               </View>
-              <View style={[
-                questionStyles.checkCircle,
-                isSelected ? questionStyles.checkCircleSelected : null,
-              ]}>
+              <View
+                style={[
+                  questionStyles.checkCircle,
+                  isSelected ? questionStyles.checkCircleSelected : null,
+                ]}
+              >
                 {isSelected ? (
                   <Feather name="check" size={14} color="#FFFFFF" />
                 ) : null}
@@ -285,8 +337,8 @@ const questionStyles = StyleSheet.create({
 const PRO_FEATURES = [
   {
     icon: "camera" as const,
-    title: "Unlimited scans",
-    description: "No daily cap — scan everything you find",
+    title: "Expanded photo scanning",
+    description: "Research more finds with Pocket Pricer Pro",
   },
   {
     icon: "trending-up" as const,
@@ -307,61 +359,72 @@ function ProTrialStep() {
       contentContainerStyle={proStyles.container}
       showsVerticalScrollIndicator={false}
     >
-      <Animated.View entering={FadeInUp.delay(150).duration(600).easing(Easing.out(Easing.quad))} style={proStyles.iconWrap}>
-        <LinearGradient
-          colors={["#F5D87A", "#D4A926", "#E8C84A", "#D4A926"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={proStyles.iconCircle}
-        >
-          <Feather name="tag" size={30} color="#3D2E00" style={{ transform: [{ scaleX: -1 }] }} />
-        </LinearGradient>
+      <Animated.View
+        entering={FadeInUp.delay(150)
+          .duration(500)
+          .easing(Easing.out(Easing.quad))}
+        style={proStyles.hero}
+      >
+        <View style={proStyles.heroCopy}>
+          <Text style={proStyles.kicker}>POCKET PRICER PRO</Text>
+          <Text style={proStyles.title}>
+            Your edge,{"\n"}
+            <Text style={proStyles.titleGreen}>from day one.</Text>
+          </Text>
+          <Text style={proStyles.subtitle}>
+            Make confident buys with better research, real sold-price comps, and
+            clear profit math.
+          </Text>
+        </View>
+        <View style={proStyles.tagArtwork}>
+          <View style={proStyles.tagHole} />
+          <Feather name="dollar-sign" size={38} color="#F7E6A6" />
+        </View>
       </Animated.View>
 
-      <Animated.View entering={FadeInUp.delay(300).duration(600).easing(Easing.out(Easing.quad))}>
-        <LinearGradient
-          colors={["#F5D87A", "#D4A926", "#E8C84A", "#D4A926"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={proStyles.proBadge}
-        >
-          <Feather name="star" size={13} color="#3D2E00" />
-          <Text style={proStyles.proBadgeText}>POCKET PRICER PRO</Text>
-        </LinearGradient>
-      </Animated.View>
-
-      <Animated.View entering={FadeInUp.delay(450).duration(600).easing(Easing.out(Easing.quad))}>
-        <Text style={proStyles.title}>
-          You're ready.{"\n"}<Text style={proStyles.titleGreen}>Let's flip smarter.</Text>
-        </Text>
-      </Animated.View>
-
-      <Animated.Text entering={FadeInUp.delay(600).duration(600).easing(Easing.out(Easing.quad))} style={proStyles.subtitle}>
-        Unlock everything you need to find profitable items with confidence.
-      </Animated.Text>
-
-      <Animated.View entering={FadeInUp.delay(750).duration(600).easing(Easing.out(Easing.quad))} style={proStyles.featureList}>
+      <Animated.View
+        entering={FadeInUp.delay(350)
+          .duration(500)
+          .easing(Easing.out(Easing.quad))}
+        style={proStyles.valueCard}
+      >
+        <View style={proStyles.valueHeader}>
+          <View style={proStyles.valueIcon}>
+            <Feather name="award" size={17} color="#F5D66E" />
+          </View>
+          <Text style={proStyles.valueTitle}>The pocket advantage</Text>
+        </View>
         {PRO_FEATURES.map((feat) => (
-          <View key={feat.title} style={proStyles.featureCard}>
-            <View style={proStyles.featureIconWrap}>
-              <Feather name={feat.icon} size={20} color="#047857" />
+          <View key={feat.title} style={proStyles.featureRow}>
+            <View style={proStyles.featureCheck}>
+              <Feather name="check" size={13} color="#06452F" />
             </View>
             <View style={proStyles.featureTextWrap}>
               <Text style={proStyles.featureTitle}>{feat.title}</Text>
-              <Text style={proStyles.featureDescription}>{feat.description}</Text>
-            </View>
-            <View style={proStyles.featureCheck}>
-              <Feather name="check" size={14} color="#FFFFFF" />
+              <Text style={proStyles.featureDescription}>
+                {feat.description}
+              </Text>
             </View>
           </View>
         ))}
       </Animated.View>
 
-      <Animated.View entering={FadeInUp.delay(900).duration(600).easing(Easing.out(Easing.quad))} style={proStyles.trialInfo}>
-        <Feather name="lock" size={16} color="#10B981" />
-        <View>
-          <Text style={proStyles.trialTitle}>Try free for 3 days</Text>
-          <Text style={proStyles.trialSubtitle}>No charge until day 4 · Cancel anytime</Text>
+      <Animated.View
+        entering={FadeInUp.delay(550)
+          .duration(500)
+          .easing(Easing.out(Easing.quad))}
+        style={proStyles.planNote}
+      >
+        <View style={proStyles.planNoteIcon}>
+          <Feather name="shield" size={17} color="#B78016" />
+        </View>
+        <View style={proStyles.planNoteCopy}>
+          <Text style={proStyles.planNoteTitle}>
+            Choose what fits your hustle
+          </Text>
+          <Text style={proStyles.planNoteText}>
+            Continue to see available plans and localized store pricing.
+          </Text>
         </View>
       </Animated.View>
     </ScrollView>
@@ -369,131 +432,149 @@ function ProTrialStep() {
 }
 
 const proStyles = StyleSheet.create({
-  scroll: {
-    flex: 1,
-  },
+  scroll: { flex: 1 },
   container: {
-    alignItems: "center",
-    paddingHorizontal: 24,
-    paddingTop: 8,
-    paddingBottom: 8,
+    paddingHorizontal: 18,
+    paddingTop: 10,
+    paddingBottom: 16,
   },
-  iconWrap: {
-    marginBottom: 14,
-  },
-  iconCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    alignItems: "center",
+  hero: {
+    minHeight: 205,
+    borderRadius: 24,
+    backgroundColor: "#EAF2E7",
+    padding: 22,
+    overflow: "hidden",
     justifyContent: "center",
   },
-  proBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 16,
-    paddingVertical: 7,
-    borderRadius: 20,
-    marginBottom: 14,
-  },
-  proBadgeText: {
-    fontSize: 12,
+  heroCopy: { width: "70%", zIndex: 2 },
+  kicker: {
+    color: "#A06E10",
+    fontSize: 10,
     fontWeight: "800",
-    letterSpacing: 1.5,
-    color: "#3D2E00",
+    letterSpacing: 1.2,
+    marginBottom: 9,
   },
   title: {
-    fontSize: 28,
+    fontSize: 31,
     fontWeight: "800",
-    color: "#FFFFFF",
-    textAlign: "center",
-    lineHeight: 36,
+    color: "#063E2C",
+    lineHeight: 34,
+    letterSpacing: -1,
+  },
+  titleGreen: { color: "#007451" },
+  subtitle: {
+    color: "#49685D",
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 10,
+  },
+  tagArtwork: {
+    position: "absolute",
+    right: 18,
+    top: 51,
+    width: 84,
+    height: 111,
+    borderRadius: 20,
+    backgroundColor: "#008256",
+    transform: [{ rotate: "24deg" }],
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tagHole: {
+    position: "absolute",
+    top: 11,
+    left: 12,
+    width: 15,
+    height: 15,
+    borderRadius: 8,
+    backgroundColor: "#EAF2E7",
+    borderWidth: 3,
+    borderColor: "#07513A",
+  },
+  valueCard: {
+    borderRadius: 22,
+    backgroundColor: "#00583C",
+    padding: 19,
+    marginTop: 14,
+  },
+  valueHeader: {
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 8,
   },
-  titleGreen: {
-    color: "#10B981",
-  },
-  subtitle: {
-    fontSize: 15,
-    fontWeight: "400",
-    color: "rgba(255,255,255,0.5)",
-    textAlign: "center",
-    lineHeight: 22,
-    marginBottom: 24,
-    paddingHorizontal: 8,
-  },
-  featureList: {
-    alignSelf: "stretch",
-    gap: 10,
-    marginBottom: 16,
-  },
-  featureCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.06)",
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
-  },
-  featureIconWrap: {
-    width: 40,
-    height: 40,
+  valueIcon: {
+    width: 31,
+    height: 31,
     borderRadius: 10,
-    backgroundColor: "rgba(4,120,87,0.15)",
+    backgroundColor: "rgba(255,255,255,.13)",
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 14,
+    marginRight: 10,
   },
-  featureTextWrap: {
-    flex: 1,
+  valueTitle: {
+    color: "#FFF8E5",
+    fontSize: 17,
+    fontWeight: "800",
   },
+  featureRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 11,
+  },
+  featureTextWrap: { flex: 1 },
   featureTitle: {
-    fontSize: 16,
+    color: "#F9F8EB",
+    fontSize: 13,
     fontWeight: "700",
-    color: "#FFFFFF",
-    marginBottom: 2,
   },
   featureDescription: {
-    fontSize: 13,
-    fontWeight: "400",
-    color: "rgba(255,255,255,0.55)",
+    color: "#B9D6C8",
+    fontSize: 11,
+    lineHeight: 15,
+    marginTop: 1,
   },
   featureCheck: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: "#047857",
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "#F7E7A9",
     alignItems: "center",
     justifyContent: "center",
-    marginLeft: 10,
+    marginRight: 11,
   },
-  trialInfo: {
+  planNote: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    alignSelf: "stretch",
-    backgroundColor: "rgba(16,185,129,0.08)",
-    borderRadius: 14,
-    padding: 16,
+    backgroundColor: "#FFF9E9",
+    borderRadius: 17,
+    padding: 15,
     borderWidth: 1,
-    borderColor: "rgba(16,185,129,0.15)",
+    borderColor: "#E8D7A7",
+    marginTop: 14,
   },
-  trialTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#10B981",
-    marginBottom: 2,
+  planNoteIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: "#F7E7A9",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 11,
   },
-  trialSubtitle: {
-    fontSize: 12,
-    fontWeight: "400",
-    color: "rgba(255,255,255,0.45)",
+  planNoteCopy: { flex: 1 },
+  planNoteTitle: { color: "#123B2D", fontSize: 14, fontWeight: "800" },
+  planNoteText: {
+    color: "#71877B",
+    fontSize: 11,
+    lineHeight: 15,
+    marginTop: 2,
   },
 });
 
-export default function OnboardingScreen({ onComplete, onStartTrial }: OnboardingScreenProps) {
+export default function OnboardingScreen({
+  onComplete,
+  onStartTrial,
+}: OnboardingScreenProps) {
   const insets = useSafeAreaInsets();
   const [stepIndex, setStepIndex] = useState(0);
   const [transitioning, setTransitioning] = useState(false);
@@ -502,6 +583,7 @@ export default function OnboardingScreen({ onComplete, onStartTrial }: Onboardin
   const currentStep = STEPS[stepIndex];
   const isLastStep = stepIndex === STEPS.length - 1;
   const isQuestionStep = currentStep === "question";
+  const isLightStep = isQuestionStep || isLastStep;
 
   const handleComplete = async () => {
     await AsyncStorage.setItem(ONBOARDING_COMPLETE_KEY, "true");
@@ -539,15 +621,14 @@ export default function OnboardingScreen({ onComplete, onStartTrial }: Onboardin
     }, 50);
   };
 
-  const buttonLabel = currentStep === "hero"
-    ? "Get Started"
-    : "Continue";
+  const buttonLabel = currentStep === "hero" ? "Get Started" : "Continue";
 
-  const isButtonDisabled = currentStep === "question" && selectedCategories.length === 0;
+  const isButtonDisabled =
+    currentStep === "question" && selectedCategories.length === 0;
 
   const toggleCategory = (id: string) => {
     setSelectedCategories((prev) =>
-      prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id],
     );
   };
 
@@ -556,20 +637,40 @@ export default function OnboardingScreen({ onComplete, onStartTrial }: Onboardin
       <View style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
         {stepIndex > 0 ? (
           <Pressable onPress={goBack} hitSlop={12} style={styles.backBtn}>
-            <Feather name="arrow-left" size={22} color={isQuestionStep ? "#6B7280" : "rgba(255,255,255,0.5)"} />
+            <Feather
+              name="arrow-left"
+              size={22}
+              color={isLightStep ? "#527065" : "rgba(255,255,255,0.5)"}
+            />
           </Pressable>
         ) : (
           <View style={styles.backBtn} />
         )}
         <View style={styles.progressWrap}>
-          <ProgressBar current={stepIndex} total={STEPS.length} light={isQuestionStep} />
+          <ProgressBar
+            current={stepIndex}
+            total={STEPS.length}
+            light={isLightStep}
+          />
         </View>
-        <Pressable onPress={handleComplete} hitSlop={12} style={[
-          styles.skipBtn,
-          isQuestionStep ? styles.skipBtnLight : styles.skipBtnDark,
-        ]}>
-          <Text style={[styles.skipText, isQuestionStep ? styles.skipTextLight : null]}>Skip</Text>
-          <Feather name="arrow-right" size={14} color={isQuestionStep ? "#6B7280" : "rgba(255,255,255,0.4)"} />
+        <Pressable
+          onPress={handleComplete}
+          hitSlop={12}
+          style={[
+            styles.skipBtn,
+            isLightStep ? styles.skipBtnLight : styles.skipBtnDark,
+          ]}
+        >
+          <Text
+            style={[styles.skipText, isLightStep ? styles.skipTextLight : null]}
+          >
+            Skip
+          </Text>
+          <Feather
+            name="arrow-right"
+            size={14}
+            color={isLightStep ? "#527065" : "rgba(255,255,255,0.4)"}
+          />
         </Pressable>
       </View>
 
@@ -577,14 +678,19 @@ export default function OnboardingScreen({ onComplete, onStartTrial }: Onboardin
         {currentStep === "hero" ? (
           <HeroStep />
         ) : currentStep === "question" ? (
-          <QuestionStep selectedCategories={selectedCategories} onToggle={toggleCategory} />
+          <QuestionStep
+            selectedCategories={selectedCategories}
+            onToggle={toggleCategory}
+          />
         ) : (
           <ProTrialStep />
         )}
       </View>
 
       <Animated.View
-        entering={FadeInDown.delay(400).duration(600).easing(Easing.out(Easing.quad))}
+        entering={FadeInDown.delay(400)
+          .duration(600)
+          .easing(Easing.out(Easing.quad))}
         style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}
       >
         {isLastStep ? (
@@ -597,14 +703,14 @@ export default function OnboardingScreen({ onComplete, onStartTrial }: Onboardin
               ]}
             >
               <LinearGradient
-                colors={["#F5D87A", "#D4A926", "#E8C84A", "#D4A926"]}
+                colors={["#006E49", "#004C35"]}
                 start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.ctaGold}
+                end={{ x: 1, y: 1 }}
+                style={styles.ctaPro}
               >
-                <Feather name="star" size={16} color="#3D2E00" />
-                <Text style={styles.ctaGoldText}>Start Free Trial</Text>
-                <Feather name="arrow-right" size={18} color="#3D2E00" />
+                <Feather name="shield" size={17} color="#F8D96C" />
+                <Text style={styles.ctaProText}>View Pro Plans</Text>
+                <Feather name="arrow-right" size={18} color="#FFF9E8" />
               </LinearGradient>
             </Pressable>
             <Pressable
@@ -627,11 +733,18 @@ export default function OnboardingScreen({ onComplete, onStartTrial }: Onboardin
               { opacity: isButtonDisabled ? 0.4 : pressed ? 0.85 : 1 },
             ]}
           >
-            <View style={[
-              styles.ctaOutline,
-              isQuestionStep ? styles.ctaOutlineLight : null,
-            ]}>
-              <Text style={[styles.ctaText, isQuestionStep ? styles.ctaTextLight : null]}>
+            <View
+              style={[
+                styles.ctaOutline,
+                isQuestionStep ? styles.ctaOutlineLight : null,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.ctaText,
+                  isQuestionStep ? styles.ctaTextLight : null,
+                ]}
+              >
                 {buttonLabel}
               </Text>
               <Feather
@@ -646,9 +759,14 @@ export default function OnboardingScreen({ onComplete, onStartTrial }: Onboardin
     </>
   );
 
-  if (isQuestionStep) {
+  if (isLightStep) {
     return (
-      <View style={[styles.container, styles.containerLight]}>
+      <View
+        style={[
+          styles.container,
+          isLastStep ? styles.containerPro : styles.containerLight,
+        ]}
+      >
         {content}
       </View>
     );
@@ -683,6 +801,9 @@ const styles = StyleSheet.create({
   },
   containerLight: {
     backgroundColor: "#F9FAFB",
+  },
+  containerPro: {
+    backgroundColor: "#F7F5ED",
   },
   topBar: {
     flexDirection: "row",
@@ -757,7 +878,7 @@ const styles = StyleSheet.create({
   ctaTextLight: {
     color: "#111827",
   },
-  ctaGold: {
+  ctaPro: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -765,10 +886,10 @@ const styles = StyleSheet.create({
     gap: 8,
     borderRadius: 16,
   },
-  ctaGoldText: {
+  ctaProText: {
     fontSize: 18,
     fontWeight: "800",
-    color: "#3D2E00",
+    color: "#FFF9E8",
   },
   skipTrialBtn: {
     marginTop: 14,
@@ -777,6 +898,6 @@ const styles = StyleSheet.create({
   skipTrialText: {
     fontSize: 15,
     fontWeight: "500",
-    color: "rgba(255,255,255,0.35)",
+    color: "#527065",
   },
 });

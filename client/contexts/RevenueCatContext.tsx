@@ -95,6 +95,7 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
   const [offeringsDebug, setOfferingsDebug] = useState<string>("");
+  const purchasesAvailableRef = React.useRef<boolean | null>(null);
 
   useEffect(() => {
     initRevenueCat();
@@ -104,6 +105,10 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
     try {
       if (Platform.OS === "web") {
         console.log("RevenueCat: Web platform - using mock mode");
+        purchasesAvailableRef.current = false;
+        setOfferingsDebug(
+          "Subscriptions are only available in the iOS and Android app.",
+        );
         setIsReady(true);
         return;
       }
@@ -112,19 +117,29 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
       const isExpoGo = Constants.default?.appOwnership === "expo";
       if (isExpoGo) {
         console.log("RevenueCat: Expo Go detected - using mock mode");
+        purchasesAvailableRef.current = false;
+        setOfferingsDebug(
+          "RevenueCat pricing is unavailable in Expo Go. Use a development or TestFlight build to test subscriptions.",
+        );
         setIsReady(true);
         return;
       }
 
       if (!REVENUECAT_API_KEY) {
         console.warn("RevenueCat API key not configured");
+        purchasesAvailableRef.current = false;
+        setOfferingsDebug("Subscription pricing is not configured.");
         setIsReady(true);
         return;
       }
 
       Purchases.setLogLevel(LOG_LEVEL.ERROR);
 
-      await Purchases.configure({ apiKey: REVENUECAT_API_KEY });
+      const alreadyConfigured = await Purchases.isConfigured();
+      if (!alreadyConfigured) {
+        await Purchases.configure({ apiKey: REVENUECAT_API_KEY });
+      }
+      purchasesAvailableRef.current = true;
 
       // Group C / P0-1A: alias the user's anonymous RevenueCat ID to their
       // device_id immediately after configure(). This is what enables the
@@ -179,11 +194,20 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
       setIsReady(true);
     } catch (error) {
       console.error("RevenueCat init error:", error);
+      purchasesAvailableRef.current = false;
+      setOfferingsDebug("Subscription pricing could not be initialized.");
       setIsReady(true);
     }
   };
 
   const loadOfferings = async (retryCount = 0) => {
+    if (purchasesAvailableRef.current !== true) {
+      console.log(
+        "RevenueCat: Skipping offerings because purchases are unavailable",
+      );
+      return;
+    }
+
     try {
       console.log("RevenueCat: Loading offerings, attempt", retryCount + 1);
       const offerings = await Purchases.getOfferings();
@@ -355,7 +379,11 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
 
   const reloadOfferings = async () => {
     setOfferingsDebug("Reloading...");
-    await loadOfferings(0);
+    if (purchasesAvailableRef.current === true) {
+      await loadOfferings(0);
+      return;
+    }
+    await initRevenueCat();
   };
 
   return (
