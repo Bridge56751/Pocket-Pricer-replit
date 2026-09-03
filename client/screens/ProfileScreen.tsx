@@ -20,6 +20,8 @@ import { FREE_SCAN_LIMIT } from "@shared/scan-limits";
 import { resetOnboarding } from "@/screens/OnboardingScreen";
 import { triggerOnboardingReplay } from "@/components/AppContent";
 import { clearSearchHistory, clearFavorites } from "@/lib/storage";
+import { FREE_SCAN_LIMIT } from "@/constants/scan-limits";
+import { getProfileAllowanceText } from "@/constants/scan-limits";
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
@@ -123,8 +125,6 @@ export default function ProfileScreen() {
     }
   };
 
-  const freeScansRemaining = Math.max(0, FREE_SCAN_LIMIT - scansUsed);
-
   return (
     <View style={styles.outerContainer}>
       <Animated.ScrollView
@@ -209,9 +209,7 @@ export default function ProfileScreen() {
                 </View>
               </View>
               <Text style={styles.heroCardSubtitle}>
-                {freeScansRemaining > 0
-                  ? `${freeScansRemaining} free scan${freeScansRemaining === 1 ? "" : "s"} remaining`
-                  : "You've used all your free scans"}
+                {getProfileAllowanceText(scansUsed)}
               </Text>
               <Pressable
                 onPress={handleUpgrade}

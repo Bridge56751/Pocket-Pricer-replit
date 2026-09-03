@@ -21,6 +21,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRevenueCat } from "@/contexts/RevenueCatContext";
 import { FREE_SCAN_LIMIT } from "@shared/scan-limits";
 import type { CapturedPhoto } from "@/navigation/RootStackNavigator";
+import { FREE_SCAN_LIMIT } from "@/constants/scan-limits";
+import { canUseFreeScan } from "@/constants/scan-limits";
 
 export type MainTabParamList = {
   Home:
@@ -123,7 +125,7 @@ export default function MainTabNavigator({ navigation }: any) {
   const openCamera = async () => {
     if (rcReady && !isPro) {
       const scansUsed = await getScansUsed();
-      if (scansUsed >= FREE_SCAN_LIMIT) {
+      if (!canUseFreeScan(scansUsed, isPro)) {
         navigation.navigate("Paywall");
         return;
       }

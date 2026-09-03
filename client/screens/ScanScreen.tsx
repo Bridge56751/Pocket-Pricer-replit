@@ -54,6 +54,7 @@ import type {
 } from "@/navigation/RootStackNavigator";
 import type { MainTabParamList } from "@/navigation/MainTabNavigator";
 import { ProCapReachedModal } from "@/components/ProCapReachedModal";
+import { FREE_SCAN_LIMIT } from "@/constants/scan-limits";
 
 type ScanScreenRouteProp = RouteProp<MainTabParamList, "Home">;
 
@@ -362,7 +363,7 @@ export default function ScanScreen() {
       try {
         if (rcReady && !isPro) {
           const scansUsed = await getScansUsed();
-          if (scansUsed >= FREE_SCAN_LIMIT) {
+          if (!canUseFreeScan(scansUsed, isPro)) {
             setIsAnalyzing(false);
             setAnalyzingProgress("");
             processingRef.current = false;
@@ -636,7 +637,7 @@ export default function ScanScreen() {
     if (!rcReady) return;
     const count = await getScansUsed();
     setScansUsed(count);
-    if (!isPro && count >= FREE_SCAN_LIMIT) {
+    if (!canUseFreeScan(count, isPro)) {
       navigation.navigate("Paywall");
     }
   }, [rcReady, isPro, getScansUsed, navigation]);
@@ -658,7 +659,7 @@ export default function ScanScreen() {
   const handleScanProduct = async (source: "camera" | "library" = "camera") => {
     if (rcReady && !isPro) {
       const scansUsed = await getScansUsed();
-      if (scansUsed >= FREE_SCAN_LIMIT) {
+      if (!canUseFreeScan(scansUsed, isPro)) {
         navigation.navigate("Paywall");
         return;
       }
@@ -807,9 +808,7 @@ export default function ScanScreen() {
                   </LinearGradient>
                 ) : (
                   <Text style={styles.scanButtonCount}>
-                    {scansUsed >= FREE_SCAN_LIMIT
-                      ? "0 scans left"
-                      : `${FREE_SCAN_LIMIT - scansUsed} scan${FREE_SCAN_LIMIT - scansUsed === 1 ? "" : "s"} left`}
+                    {getScanButtonAllowanceText(scansUsed)}
                   </Text>
                 )}
               </View>
