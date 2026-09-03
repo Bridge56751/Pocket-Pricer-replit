@@ -22,10 +22,18 @@ import {
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RouteProp } from "@react-navigation/native";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
-import type { PurchasesPackage } from "react-native-purchases";
 
 import { useRevenueCat } from "@/contexts/RevenueCatContext";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
+import {
+  isActiveStoreProduct,
+  planDescription,
+  planKind,
+  planName,
+  planPeriod,
+  renewalDisclosure,
+  type PlanKind,
+} from "./paywall-terms";
 
 const PRIVACY_URL =
   "https://pocket-pricer.com/pocket-pricer-privacy-policy-v5.html";
@@ -56,78 +64,6 @@ const BENEFITS = [
     "Track buys, sold items, and every margin.",
   ],
 ] as const;
-
-type PlanKind =
-  | "weekly"
-  | "monthly"
-  | "yearly"
-  | "multiMonth"
-  | "lifetime"
-  | "other";
-
-const planKind = (pkg: PurchasesPackage): PlanKind => {
-  const period = pkg.product.subscriptionPeriod;
-  if (period === "P1W") return "weekly";
-  if (period === "P1M") return "monthly";
-  if (period === "P1Y") return "yearly";
-  if (period && /^P(2|3|6)M$/.test(period)) return "multiMonth";
-
-  if (pkg.packageType === "WEEKLY") return "weekly";
-  if (pkg.packageType === "MONTHLY") return "monthly";
-  if (pkg.packageType === "ANNUAL") return "yearly";
-  if (
-    pkg.packageType === "TWO_MONTH" ||
-    pkg.packageType === "THREE_MONTH" ||
-    pkg.packageType === "SIX_MONTH"
-  ) {
-    return "multiMonth";
-  }
-  if (pkg.packageType === "LIFETIME") return "lifetime";
-  return "other";
-};
-
-const monthCount = (pkg: PurchasesPackage): number | null => {
-  const match = pkg.product.subscriptionPeriod?.match(/^P(\d+)M$/);
-  return match ? Number(match[1]) : null;
-};
-
-const planName = (pkg: PurchasesPackage, kind: PlanKind) => {
-  if (kind === "weekly") return "Weekly";
-  if (kind === "monthly") return "Monthly";
-  if (kind === "yearly") return "Annual";
-  if (kind === "multiMonth") {
-    const months = monthCount(pkg);
-    return months ? `${months}-Month` : "Multi-month";
-  }
-  if (kind === "lifetime") return "Lifetime";
-  return pkg.product.title || "Pocket Pricer Pro";
-};
-
-const planPeriod = (pkg: PurchasesPackage, kind: PlanKind): string | null => {
-  if (kind === "weekly") return "week";
-  if (kind === "yearly") return "year";
-  if (kind === "monthly") return "month";
-  if (kind === "multiMonth") {
-    const months = monthCount(pkg);
-    return months ? `${months} months` : "billing period";
-  }
-  if (kind === "lifetime") return "one-time";
-  return null;
-};
-
-const planDescription = (pkg: PurchasesPackage, kind: PlanKind) => {
-  if (kind === "yearly") return "Full Pro access for 12 months";
-  if (kind === "monthly") return "Full Pro access for 1 month";
-  if (kind === "weekly") return "Full Pro access for 7 days";
-  if (kind === "multiMonth") {
-    const months = monthCount(pkg);
-    return months
-      ? `Full Pro access for ${months} months`
-      : "Full Pro access for the selected term";
-  }
-  if (kind === "lifetime") return "One-time purchase";
-  return pkg.product.description || "Pocket Pricer Pro access";
-};
 
 export default function PaywallScreen() {
   const insets = useSafeAreaInsets();
@@ -173,7 +109,7 @@ export default function PaywallScreen() {
     customerInfo?.activeSubscriptions ?? [],
   );
   const currentPackage = packages.find((pkg) =>
-    activeSubscriptionIds.has(pkg.product.identifier),
+    isActiveStoreProduct(pkg, activeSubscriptionIds),
   );
   const defaultPkg =
     currentPackage ??
@@ -183,13 +119,9 @@ export default function PaywallScreen() {
     orderedPackages[0];
   const activePkg =
     packages.find((pkg) => pkg.identifier === selectedIdentifier) ?? defaultPkg;
-  const activeKind = activePkg ? planKind(activePkg) : "monthly";
-  const activePeriod = activePkg ? planPeriod(activePkg, activeKind) : null;
   const activeIsCurrent = Boolean(
-    activePkg && activeSubscriptionIds.has(activePkg.product.identifier),
+    activePkg && isActiveStoreProduct(activePkg, activeSubscriptionIds),
   );
-  const activeIsAutoRenewing =
-    activePkg?.product.productType === "AUTO_RENEWABLE_SUBSCRIPTION";
   const monthlyPkg = packages.find((pkg) => planKind(pkg) === "monthly");
   const yearlyPkg = packages.find((pkg) => planKind(pkg) === "yearly");
 
@@ -307,21 +239,7 @@ export default function PaywallScreen() {
         ? "Price with\nproof."
         : "Know the\nnumber.";
   const selectedPrice = activePkg?.product.priceString;
-  const renewalDisclosure = (() => {
-    if (!activePkg || !selectedPrice) {
-      return "Subscription details will be shown when plans are available. Manage subscriptions in your device account settings.";
-    }
-
-    const productName =
-      activePkg.product.title || planName(activePkg, activeKind);
-    if (!activeIsAutoRenewing || !activePeriod) {
-      return `${productName}: ${selectedPrice}. The App Store or Google Play will show the complete billing terms before you confirm.`;
-    }
-    if (Platform.OS === "ios") {
-      return `${productName} renews automatically at ${selectedPrice} per ${activePeriod} unless canceled at least 24 hours before the end of the current period. Manage subscriptions in your Apple ID settings.`;
-    }
-    return `${productName} renews automatically at ${selectedPrice} per ${activePeriod} unless canceled in Google Play before renewal. Manage subscriptions in Google Play.`;
-  })();
+  const selectedRenewalDisclosure = renewalDisclosure(activePkg, Platform.OS);
 
   return (
     <View style={styles.container}>
@@ -438,8 +356,9 @@ export default function PaywallScreen() {
                 const period = planPeriod(pkg, kind);
                 const selected = activePkg?.identifier === pkg.identifier;
                 const bestValue = kind === "yearly" && annualSaving !== null;
-                const isCurrent = activeSubscriptionIds.has(
-                  pkg.product.identifier,
+                const isCurrent = isActiveStoreProduct(
+                  pkg,
+                  activeSubscriptionIds,
                 );
                 return (
                   <View key={pkg.identifier} style={styles.planSlot}>
@@ -598,7 +517,7 @@ export default function PaywallScreen() {
               <Text style={styles.link}>Privacy</Text>
             </Pressable>
           </View>
-          <Text style={styles.legal}>{renewalDisclosure}</Text>
+          <Text style={styles.legal}>{selectedRenewalDisclosure}</Text>
         </Animated.View>
       </ScrollView>
     </View>
