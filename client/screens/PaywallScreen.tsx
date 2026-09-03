@@ -80,6 +80,7 @@ export default function PaywallScreen() {
     reloadOfferings,
     isPro,
     isReady: rcReady,
+    purchasesAvailable,
     customerInfo,
     offeringsDebug,
   } = useRevenueCat();
@@ -95,6 +96,7 @@ export default function PaywallScreen() {
 
   const packagesLoading = !rcReady || packages.length === 0;
   const showError = offeringsTimedOut && packagesLoading;
+  const isStoreUnavailable = rcReady && !purchasesAvailable;
   const isExpoGoUnavailable = offeringsDebug.includes("Expo Go");
   const orderedPackages = [...packages].sort((a, b) => {
     const order: Record<PlanKind, number> = {
@@ -107,11 +109,16 @@ export default function PaywallScreen() {
     };
     return order[planKind(a)] - order[planKind(b)];
   });
-  const activeSubscriptionIds = new Set(
-    customerInfo?.activeSubscriptions ?? [],
+  const activeProductIds = new Set(customerInfo?.activeSubscriptions ?? []);
+  Object.values(customerInfo?.entitlements.active ?? {}).forEach(
+    (entitlement) => {
+      if (entitlement.productIdentifier) {
+        activeProductIds.add(entitlement.productIdentifier);
+      }
+    },
   );
   const currentPackage = packages.find((pkg) =>
-    isActiveStoreProduct(pkg, activeSubscriptionIds),
+    isActiveStoreProduct(pkg, activeProductIds),
   );
   const defaultPkg =
     currentPackage ??
@@ -122,7 +129,7 @@ export default function PaywallScreen() {
   const activePkg =
     packages.find((pkg) => pkg.identifier === selectedIdentifier) ?? defaultPkg;
   const activeIsCurrent = Boolean(
-    activePkg && isActiveStoreProduct(activePkg, activeSubscriptionIds),
+    activePkg && isActiveStoreProduct(activePkg, activeProductIds),
   );
   const monthlyPkg = packages.find((pkg) => planKind(pkg) === "monthly");
   const yearlyPkg = packages.find((pkg) => planKind(pkg) === "yearly");
@@ -193,7 +200,11 @@ export default function PaywallScreen() {
       if (result.success) {
         try {
           const appsFlyer = await import("react-native-appsflyer");
-          appsFlyer.default.logEvent("af_start_trial", {
+          const eventName =
+            activePkg.product.productCategory === "NON_SUBSCRIPTION"
+              ? "af_purchase"
+              : "af_subscribe";
+          appsFlyer.default.logEvent(eventName, {
             af_revenue: activePkg.product.price,
             af_currency: activePkg.product.currencyCode,
             af_order_id: `subscription_${Date.now()}`,
@@ -330,24 +341,27 @@ export default function PaywallScreen() {
           <Text style={styles.sectionLabel}>
             {isPro ? "UPDATE YOUR PLAN" : "CHOOSE YOUR PLAN"}
           </Text>
-          {showError || isExpoGoUnavailable ? (
+          {showError || isStoreUnavailable ? (
             <View style={styles.statusCard}>
               <Feather
-                name={isExpoGoUnavailable ? "smartphone" : "wifi-off"}
+                name={isStoreUnavailable ? "smartphone" : "wifi-off"}
                 size={22}
                 color="#B84D37"
               />
               <Text style={styles.statusTitle}>
-                {isExpoGoUnavailable
+                {isStoreUnavailable
                   ? "Open a test build to view plans"
                   : "Plans could not load"}
               </Text>
               <Text style={styles.statusText}>
-                {isExpoGoUnavailable
-                  ? "RevenueCat pricing and checkout are unavailable inside Expo Go. Use TestFlight or a development build."
+                {isStoreUnavailable
+                  ? isExpoGoUnavailable
+                    ? "RevenueCat pricing and checkout are unavailable inside Expo Go. Use TestFlight or a development build."
+                    : offeringsDebug ||
+                      "Subscriptions are unavailable in this environment."
                   : "Check your connection and try again."}
               </Text>
-              {!isExpoGoUnavailable ? (
+              {!isStoreUnavailable ? (
                 <Pressable onPress={handleRetry} style={styles.retry}>
                   <Text style={styles.retryText}>Try again</Text>
                 </Pressable>
@@ -370,10 +384,7 @@ export default function PaywallScreen() {
                 const period = planPeriod(pkg, kind);
                 const selected = activePkg?.identifier === pkg.identifier;
                 const bestValue = kind === "yearly" && annualSaving !== null;
-                const isCurrent = isActiveStoreProduct(
-                  pkg,
-                  activeSubscriptionIds,
-                );
+                const isCurrent = isActiveStoreProduct(pkg, activeProductIds);
                 return (
                   <View key={pkg.identifier} style={styles.planSlot}>
                     {(bestValue || (index === 1 && !yearlyPkg)) && (
@@ -505,13 +516,20 @@ export default function PaywallScreen() {
             <Pressable
               accessibilityRole="button"
               onPress={handleRestore}
-              disabled={isLoading || isRestoring}
+              disabled={isLoading || isRestoring || !purchasesAvailable}
               hitSlop={8}
             >
               {isRestoring ? (
                 <ActivityIndicator size="small" color="#006E49" />
               ) : (
-                <Text style={styles.link}>Restore purchase</Text>
+                <Text
+                  style={[
+                    styles.link,
+                    !purchasesAvailable && styles.linkDisabled,
+                  ]}
+                >
+                  Restore purchase
+                </Text>
               )}
             </Pressable>
             <Text style={styles.dot}>·</Text>
@@ -844,6 +862,7 @@ const styles = StyleSheet.create({
     marginTop: 21,
   },
   link: { color: "#176148", fontSize: 12, fontWeight: "700" },
+  linkDisabled: { color: "#A1B2A8" },
   dot: { color: "#A1B2A8" },
   legal: {
     textAlign: "center",

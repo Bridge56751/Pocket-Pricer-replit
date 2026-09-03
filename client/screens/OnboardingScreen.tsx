@@ -221,6 +221,9 @@ function QuestionStep({ selectedCategories, onToggle }: QuestionStepProps) {
           return (
             <Pressable
               key={cat.id}
+              accessibilityRole="checkbox"
+              accessibilityLabel={`${cat.title}. ${cat.subtitle}`}
+              accessibilityState={{ checked: isSelected }}
               onPress={() => onToggle(cat.id)}
               style={[
                 questionStyles.card,
@@ -636,7 +639,13 @@ export default function OnboardingScreen({
     <>
       <View style={[styles.topBar, { paddingTop: insets.top + 8 }]}>
         {stepIndex > 0 ? (
-          <Pressable onPress={goBack} hitSlop={12} style={styles.backBtn}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+            onPress={goBack}
+            hitSlop={12}
+            style={styles.backBtn}
+          >
             <Feather
               name="arrow-left"
               size={22}
@@ -654,6 +663,8 @@ export default function OnboardingScreen({
           />
         </View>
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Skip onboarding"
           onPress={handleComplete}
           hitSlop={12}
           style={[
@@ -696,6 +707,8 @@ export default function OnboardingScreen({
         {isLastStep ? (
           <>
             <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="View Pocket Pricer Pro plans"
               onPress={handleFinishOnboarding}
               style={({ pressed }) => [
                 styles.ctaButton,
@@ -714,6 +727,8 @@ export default function OnboardingScreen({
               </LinearGradient>
             </Pressable>
             <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Start without Pocket Pricer Pro"
               onPress={handleComplete}
               hitSlop={12}
               style={({ pressed }) => [
@@ -726,6 +741,9 @@ export default function OnboardingScreen({
           </>
         ) : (
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={buttonLabel}
+            accessibilityState={{ disabled: isButtonDisabled }}
             onPress={goNext}
             disabled={isButtonDisabled}
             style={({ pressed }) => [

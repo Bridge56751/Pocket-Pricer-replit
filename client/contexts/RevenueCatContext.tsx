@@ -22,6 +22,14 @@ const REVENUECAT_API_KEY =
   Platform.OS === "android"
     ? ANDROID_REVENUECAT_API_KEY
     : IOS_REVENUECAT_API_KEY;
+const PRO_ENTITLEMENT_IDS = ["Pocket Pricer Pro", "pro", "Pro"] as const;
+
+const hasActiveProEntitlement = (info: CustomerInfo | null) => {
+  if (!info) return false;
+  return PRO_ENTITLEMENT_IDS.some(
+    (identifier) => identifier in info.entitlements.active,
+  );
+};
 
 // Group C / P0-1A: read the same device ID AuthContext stores so we can
 // alias it onto the user's RevenueCat subscriber record. This MUST mirror
@@ -72,6 +80,7 @@ const getOrCreateDeviceId = async (): Promise<string> => {
 
 interface RevenueCatContextType {
   isReady: boolean;
+  purchasesAvailable: boolean;
   customerInfo: CustomerInfo | null;
   packages: PurchasesPackage[];
   isPro: boolean;
@@ -95,10 +104,23 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
   const [packages, setPackages] = useState<PurchasesPackage[]>([]);
   const [offeringsDebug, setOfferingsDebug] = useState<string>("");
+  const [purchasesAvailable, setPurchasesAvailable] = useState(false);
   const purchasesAvailableRef = React.useRef<boolean | null>(null);
+  const offeringsRetryTimerRef = React.useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
+  const offeringsRequestIdRef = React.useRef(0);
 
   useEffect(() => {
     initRevenueCat();
+    return () => {
+      offeringsRequestIdRef.current += 1;
+      if (offeringsRetryTimerRef.current) {
+        clearTimeout(offeringsRetryTimerRef.current);
+      }
+    };
+    // RevenueCat must initialize exactly once for this provider instance.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const initRevenueCat = async () => {
@@ -106,6 +128,7 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
       if (Platform.OS === "web") {
         console.log("RevenueCat: Web platform - using mock mode");
         purchasesAvailableRef.current = false;
+        setPurchasesAvailable(false);
         setOfferingsDebug(
           "Subscriptions are only available in the iOS and Android app.",
         );
@@ -118,6 +141,7 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
       if (isExpoGo) {
         console.log("RevenueCat: Expo Go detected - using mock mode");
         purchasesAvailableRef.current = false;
+        setPurchasesAvailable(false);
         setOfferingsDebug(
           "RevenueCat pricing is unavailable in Expo Go. Use a development or TestFlight build to test subscriptions.",
         );
@@ -128,6 +152,7 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
       if (!REVENUECAT_API_KEY) {
         console.warn("RevenueCat API key not configured");
         purchasesAvailableRef.current = false;
+        setPurchasesAvailable(false);
         setOfferingsDebug("Subscription pricing is not configured.");
         setIsReady(true);
         return;
@@ -140,6 +165,7 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
         await Purchases.configure({ apiKey: REVENUECAT_API_KEY });
       }
       purchasesAvailableRef.current = true;
+      setPurchasesAvailable(true);
 
       // Group C / P0-1A: alias the user's anonymous RevenueCat ID to their
       // device_id immediately after configure(). This is what enables the
@@ -195,12 +221,16 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error("RevenueCat init error:", error);
       purchasesAvailableRef.current = false;
+      setPurchasesAvailable(false);
       setOfferingsDebug("Subscription pricing could not be initialized.");
       setIsReady(true);
     }
   };
 
-  const loadOfferings = async (retryCount = 0) => {
+  const loadOfferings = async (
+    retryCount = 0,
+    requestId = ++offeringsRequestIdRef.current,
+  ) => {
     if (purchasesAvailableRef.current !== true) {
       console.log(
         "RevenueCat: Skipping offerings because purchases are unavailable",
@@ -211,6 +241,7 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
     try {
       console.log("RevenueCat: Loading offerings, attempt", retryCount + 1);
       const offerings = await Purchases.getOfferings();
+      if (requestId !== offeringsRequestIdRef.current) return;
 
       // Detailed logging
       console.log("RevenueCat: Full offerings object:", offerings);
@@ -256,21 +287,28 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
 
       if (retryCount < 3) {
         console.log("RevenueCat: Retrying in 3 seconds...");
-        setTimeout(() => loadOfferings(retryCount + 1), 3000);
+        offeringsRetryTimerRef.current = setTimeout(
+          () => loadOfferings(retryCount + 1, requestId),
+          3000,
+        );
       }
     } catch (error: any) {
+      if (requestId !== offeringsRequestIdRef.current) return;
       console.error("Failed to load offerings:", error);
       console.error("Error details:", error?.message, error?.code);
       setOfferingsDebug(`Error: ${error?.message || error}`);
       if (retryCount < 3) {
-        setTimeout(() => loadOfferings(retryCount + 1), 3000);
+        offeringsRetryTimerRef.current = setTimeout(
+          () => loadOfferings(retryCount + 1, requestId),
+          3000,
+        );
       }
     }
   };
 
   const identifyUser = async (userId: string) => {
     try {
-      if (Platform.OS === "web") return;
+      if (purchasesAvailableRef.current !== true) return;
 
       const { customerInfo } = await Purchases.logIn(userId);
       setCustomerInfo(customerInfo);
@@ -281,7 +319,7 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
-      if (Platform.OS === "web") return;
+      if (purchasesAvailableRef.current !== true) return;
 
       const info = await Purchases.logOut();
       setCustomerInfo(info);
@@ -291,34 +329,27 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
   };
 
   const isPro = (() => {
-    if (!customerInfo) return false;
-
-    const entitlements = customerInfo.entitlements.active;
-    return (
-      "pro" in entitlements ||
-      "Pro" in entitlements ||
-      "Pocket Pricer Pro" in entitlements
-    );
+    return hasActiveProEntitlement(customerInfo);
   })();
 
   const purchasePackage = async (
     pkg: PurchasesPackage,
   ): Promise<{ success: boolean; error?: string }> => {
     try {
-      if (Platform.OS === "web") {
+      if (purchasesAvailableRef.current !== true) {
         return {
           success: false,
-          error: "Purchases are only available on iOS and Android",
+          error:
+            Platform.OS === "web"
+              ? "Purchases are only available on iOS and Android"
+              : "Purchases are unavailable in Expo Go. Use a development or TestFlight build.",
         };
       }
 
       const { customerInfo } = await Purchases.purchasePackage(pkg);
       setCustomerInfo(customerInfo);
 
-      const isNowPro =
-        "pro" in customerInfo.entitlements.active ||
-        "Pro" in customerInfo.entitlements.active ||
-        "Pocket Pricer Pro" in customerInfo.entitlements.active;
+      const isNowPro = hasActiveProEntitlement(customerInfo);
 
       if (isNowPro) {
         return { success: true };
@@ -341,20 +372,20 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
     error?: string;
   }> => {
     try {
-      if (Platform.OS === "web") {
+      if (purchasesAvailableRef.current !== true) {
         return {
           success: false,
-          error: "Restore is only available on iOS and Android",
+          error:
+            Platform.OS === "web"
+              ? "Restore is only available on iOS and Android"
+              : "Restore is unavailable in Expo Go. Use a development or TestFlight build.",
         };
       }
 
       const info = await Purchases.restorePurchases();
       setCustomerInfo(info);
 
-      const isNowPro =
-        "pro" in info.entitlements.active ||
-        "Pro" in info.entitlements.active ||
-        "Pocket Pricer Pro" in info.entitlements.active;
+      const isNowPro = hasActiveProEntitlement(info);
 
       if (isNowPro) {
         return { success: true };
@@ -368,7 +399,7 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
 
   const refreshCustomerInfo = async () => {
     try {
-      if (Platform.OS === "web") return;
+      if (purchasesAvailableRef.current !== true) return;
 
       const info = await Purchases.getCustomerInfo();
       setCustomerInfo(info);
@@ -378,6 +409,11 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
   };
 
   const reloadOfferings = async () => {
+    offeringsRequestIdRef.current += 1;
+    if (offeringsRetryTimerRef.current) {
+      clearTimeout(offeringsRetryTimerRef.current);
+      offeringsRetryTimerRef.current = null;
+    }
     setOfferingsDebug("Reloading...");
     if (purchasesAvailableRef.current === true) {
       await loadOfferings(0);
@@ -390,6 +426,7 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
     <RevenueCatContext.Provider
       value={{
         isReady,
+        purchasesAvailable,
         customerInfo,
         packages,
         isPro,
