@@ -46,7 +46,6 @@ import * as FileSystem from "expo-file-system/legacy";
 import { storeImage } from "@/lib/image-store";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRevenueCat } from "@/contexts/RevenueCatContext";
-import { FREE_SCAN_LIMIT } from "@shared/scan-limits";
 import type { RateLimitInfo, SearchHistoryItem } from "@/types/product";
 import type {
   RootStackParamList,
@@ -54,7 +53,10 @@ import type {
 } from "@/navigation/RootStackNavigator";
 import type { MainTabParamList } from "@/navigation/MainTabNavigator";
 import { ProCapReachedModal } from "@/components/ProCapReachedModal";
-import { FREE_SCAN_LIMIT } from "@/constants/scan-limits";
+import {
+  canUseFreeScan,
+  getScanButtonAllowanceText,
+} from "@/constants/scan-limits";
 
 type ScanScreenRouteProp = RouteProp<MainTabParamList, "Home">;
 

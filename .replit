@@ -92,3 +92,7 @@ VERIFY_PRO_VIA_RC = "true"
 
 [userenv.production]
 EXPO_PUBLIC_DOMAIN = "pocketpricerapp.com"
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 180000

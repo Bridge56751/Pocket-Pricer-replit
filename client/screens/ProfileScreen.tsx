@@ -16,11 +16,9 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRevenueCat } from "@/contexts/RevenueCatContext";
-import { FREE_SCAN_LIMIT } from "@shared/scan-limits";
 import { resetOnboarding } from "@/screens/OnboardingScreen";
 import { triggerOnboardingReplay } from "@/components/AppContent";
 import { clearSearchHistory, clearFavorites } from "@/lib/storage";
-import { FREE_SCAN_LIMIT } from "@/constants/scan-limits";
 import { getProfileAllowanceText } from "@/constants/scan-limits";
 
 export default function ProfileScreen() {

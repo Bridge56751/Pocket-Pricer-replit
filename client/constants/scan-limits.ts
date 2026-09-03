@@ -1,4 +1,6 @@
-export const FREE_SCAN_LIMIT = 10;
+import { FREE_SCAN_LIMIT } from "@shared/scan-limits";
+
+export { FREE_SCAN_LIMIT };
 
 export function canUseFreeScan(scansUsed: number, isPro: boolean): boolean {
   return isPro || scansUsed < FREE_SCAN_LIMIT;
