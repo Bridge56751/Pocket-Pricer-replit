@@ -1,82 +1,205 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  Pressable,
   ActivityIndicator,
-  Platform,
   Alert,
   Linking,
+  Platform,
+  Pressable,
   ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useNavigation, useRoute, CommonActions } from "@react-navigation/native";
+import {
+  CommonActions,
+  useNavigation,
+  useRoute,
+} from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RouteProp } from "@react-navigation/native";
-import Animated, { FadeInUp, FadeInDown } from "react-native-reanimated";
+import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
+import type { PurchasesPackage } from "react-native-purchases";
 
-import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { useRevenueCat } from "@/contexts/RevenueCatContext";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
-const PRIVACY_URL = "https://pocket-pricer.com/pocket-pricer-privacy-policy-v5.html";
-const TERMS_URL = "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/";
+const PRIVACY_URL =
+  "https://pocket-pricer.com/pocket-pricer-privacy-policy-v5.html";
+const TERMS_URL =
+  Platform.OS === "android"
+    ? "https://play.google.com/about/play-terms/"
+    : "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/";
 
-const FEATURES = [
-  {
-    icon: "camera" as const,
-    title: "Unlimited scans",
-    desc: "No daily cap — scan as much as you want",
-  },
-  {
-    icon: "trending-up" as const,
-    title: "Real sold prices",
-    desc: "What buyers actually paid, not asking prices",
-    badge: "Most valuable",
-    badgeColor: "#047857",
-  },
-  {
-    icon: "bar-chart-2" as const,
-    title: "Buy Score & Profit Calculator",
-    desc: "0–100 rating + fees, shipping & net profit",
-    badge: "New",
-    badgeColor: "#047857",
-  },
-  {
-    icon: "package" as const,
-    title: "Inventory tracking",
-    desc: "Log flips, mark items sold, and see live profit",
-  },
-];
+const BENEFITS = [
+  [
+    "camera",
+    "Expanded product photo scanning",
+    "Research more finds with Pocket Pricer Pro access.",
+  ],
+  [
+    "trending-up",
+    "Real sold-price comps",
+    "See what buyers paid, not optimistic listings.",
+  ],
+  [
+    "bar-chart-2",
+    "Buy Score and profit math",
+    "Make the call with fees, shipping, and net profit.",
+  ],
+  [
+    "package",
+    "Inventory that stays current",
+    "Track buys, sold items, and every margin.",
+  ],
+] as const;
+
+type PlanKind =
+  | "weekly"
+  | "monthly"
+  | "yearly"
+  | "multiMonth"
+  | "lifetime"
+  | "other";
+
+const planKind = (pkg: PurchasesPackage): PlanKind => {
+  const period = pkg.product.subscriptionPeriod;
+  if (period === "P1W") return "weekly";
+  if (period === "P1M") return "monthly";
+  if (period === "P1Y") return "yearly";
+  if (period && /^P(2|3|6)M$/.test(period)) return "multiMonth";
+
+  if (pkg.packageType === "WEEKLY") return "weekly";
+  if (pkg.packageType === "MONTHLY") return "monthly";
+  if (pkg.packageType === "ANNUAL") return "yearly";
+  if (
+    pkg.packageType === "TWO_MONTH" ||
+    pkg.packageType === "THREE_MONTH" ||
+    pkg.packageType === "SIX_MONTH"
+  ) {
+    return "multiMonth";
+  }
+  if (pkg.packageType === "LIFETIME") return "lifetime";
+  return "other";
+};
+
+const monthCount = (pkg: PurchasesPackage): number | null => {
+  const match = pkg.product.subscriptionPeriod?.match(/^P(\d+)M$/);
+  return match ? Number(match[1]) : null;
+};
+
+const planName = (pkg: PurchasesPackage, kind: PlanKind) => {
+  if (kind === "weekly") return "Weekly";
+  if (kind === "monthly") return "Monthly";
+  if (kind === "yearly") return "Annual";
+  if (kind === "multiMonth") {
+    const months = monthCount(pkg);
+    return months ? `${months}-Month` : "Multi-month";
+  }
+  if (kind === "lifetime") return "Lifetime";
+  return pkg.product.title || "Pocket Pricer Pro";
+};
+
+const planPeriod = (pkg: PurchasesPackage, kind: PlanKind): string | null => {
+  if (kind === "weekly") return "week";
+  if (kind === "yearly") return "year";
+  if (kind === "monthly") return "month";
+  if (kind === "multiMonth") {
+    const months = monthCount(pkg);
+    return months ? `${months} months` : "billing period";
+  }
+  if (kind === "lifetime") return "one-time";
+  return null;
+};
+
+const planDescription = (pkg: PurchasesPackage, kind: PlanKind) => {
+  if (kind === "yearly") return "Full Pro access for 12 months";
+  if (kind === "monthly") return "Full Pro access for 1 month";
+  if (kind === "weekly") return "Full Pro access for 7 days";
+  if (kind === "multiMonth") {
+    const months = monthCount(pkg);
+    return months
+      ? `Full Pro access for ${months} months`
+      : "Full Pro access for the selected term";
+  }
+  if (kind === "lifetime") return "One-time purchase";
+  return pkg.product.description || "Pocket Pricer Pro access";
+};
 
 export default function PaywallScreen() {
   const insets = useSafeAreaInsets();
-  const { theme } = useDesignTokens();
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { width } = useWindowDimensions();
+  const compact = width < 370;
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, "Paywall">>();
   const context = route.params?.context;
-  const { packages, purchasePackage, restorePurchases, reloadOfferings, isPro, isReady: rcReady, customerInfo } = useRevenueCat();
-
-  const currentPlanType = (() => {
-    if (!isPro || !customerInfo) return null;
-    const subs = customerInfo.activeSubscriptions ?? [];
-    const subStr = subs.join(" ").toLowerCase();
-    if (subStr.includes("weekly") || subStr.includes("week")) return "weekly";
-    if (subStr.includes("yearly") || subStr.includes("year") || subStr.includes("annual")) return "yearly";
-    if (subStr.includes("monthly") || subStr.includes("month")) return "monthly";
-    return "monthly";
-  })();
-
+  const {
+    packages,
+    purchasePackage,
+    restorePurchases,
+    reloadOfferings,
+    isPro,
+    isReady: rcReady,
+    customerInfo,
+  } = useRevenueCat();
   const [isLoading, setIsLoading] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [offeringsTimedOut, setOfferingsTimedOut] = useState(false);
+  const [selectedIdentifier, setSelectedIdentifier] = useState<string | null>(
+    null,
+  );
+  const chosenRef = useRef(false);
+  const wasProOnMount = useRef(isPro);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const packagesLoading = !rcReady || (rcReady && packages.length === 0);
+  const packagesLoading = !rcReady || packages.length === 0;
   const showError = offeringsTimedOut && packagesLoading;
+  const orderedPackages = [...packages].sort((a, b) => {
+    const order: Record<PlanKind, number> = {
+      weekly: 0,
+      monthly: 1,
+      multiMonth: 2,
+      yearly: 3,
+      lifetime: 4,
+      other: 5,
+    };
+    return order[planKind(a)] - order[planKind(b)];
+  });
+  const activeSubscriptionIds = new Set(
+    customerInfo?.activeSubscriptions ?? [],
+  );
+  const currentPackage = packages.find((pkg) =>
+    activeSubscriptionIds.has(pkg.product.identifier),
+  );
+  const defaultPkg =
+    currentPackage ??
+    packages.find((pkg) => planKind(pkg) === "monthly") ??
+    packages.find((pkg) => planKind(pkg) === "yearly") ??
+    packages.find((pkg) => planKind(pkg) === "weekly") ??
+    orderedPackages[0];
+  const activePkg =
+    packages.find((pkg) => pkg.identifier === selectedIdentifier) ?? defaultPkg;
+  const activeKind = activePkg ? planKind(activePkg) : "monthly";
+  const activePeriod = activePkg ? planPeriod(activePkg, activeKind) : null;
+  const activeIsCurrent = Boolean(
+    activePkg && activeSubscriptionIds.has(activePkg.product.identifier),
+  );
+  const activeIsAutoRenewing =
+    activePkg?.product.productType === "AUTO_RENEWABLE_SUBSCRIPTION";
+  const monthlyPkg = packages.find((pkg) => planKind(pkg) === "monthly");
+  const yearlyPkg = packages.find((pkg) => planKind(pkg) === "yearly");
+
+  const annualSaving = (() => {
+    if (!monthlyPkg || !yearlyPkg || monthlyPkg.product.price <= 0) return null;
+    const value = Math.round(
+      (1 - yearlyPkg.product.price / (monthlyPkg.product.price * 12)) * 100,
+    );
+    return Number.isFinite(value) && value > 0 ? value : null;
+  })();
 
   useEffect(() => {
     if (packages.length > 0) {
@@ -85,87 +208,68 @@ export default function PaywallScreen() {
       return;
     }
     timeoutRef.current = setTimeout(() => setOfferingsTimedOut(true), 12000);
-    return () => { if (timeoutRef.current) clearTimeout(timeoutRef.current); };
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
   }, [packages.length]);
+
+  useEffect(() => {
+    if (!chosenRef.current && defaultPkg) {
+      setSelectedIdentifier(defaultPkg.identifier);
+    }
+  }, [defaultPkg]);
+
+  const navigateHome = useCallback(
+    () =>
+      navigation.dispatch(
+        CommonActions.reset({ index: 0, routes: [{ name: "MainTabs" }] }),
+      ),
+    [navigation],
+  );
+
+  useEffect(() => {
+    if (isPro && !wasProOnMount.current) navigateHome();
+  }, [isPro, navigateHome]);
 
   const handleRetry = async () => {
     setOfferingsTimedOut(false);
     timeoutRef.current = setTimeout(() => setOfferingsTimedOut(true), 12000);
     await reloadOfferings();
   };
-  const weeklyPkg = packages.find(
-    (pkg) => pkg.packageType === "WEEKLY" || pkg.identifier === "$rc_weekly"
-  );
-  const monthlyPkg = packages.find(
-    (pkg) => pkg.packageType === "MONTHLY" || pkg.identifier === "$rc_monthly"
-  );
-  const yearlyPkg = packages.find(
-    (pkg) => pkg.packageType === "ANNUAL" || pkg.identifier === "$rc_annual"
-  );
-  const hasMultiplePlans = [weeklyPkg, monthlyPkg, yearlyPkg].filter(Boolean).length > 1;
-  const [selectedPlan, setSelectedPlan] = useState<"weekly" | "monthly" | "yearly">("monthly");
-  const userHasChosen = useRef(false);
 
-  useEffect(() => {
-    if (userHasChosen.current) return;
-    if (monthlyPkg) setSelectedPlan("monthly");
-    else if (weeklyPkg) setSelectedPlan("weekly");
-    else if (yearlyPkg) setSelectedPlan("yearly");
-  }, [weeklyPkg, monthlyPkg, yearlyPkg]);
-
-  const handleSelectPlan = (plan: "weekly" | "monthly" | "yearly") => {
-    userHasChosen.current = true;
-    setSelectedPlan(plan);
-  };
-
-  const activePkg =
-    selectedPlan === "weekly" && weeklyPkg
-      ? weeklyPkg
-      : selectedPlan === "yearly" && yearlyPkg
-        ? yearlyPkg
-        : monthlyPkg || weeklyPkg || yearlyPkg || packages[0];
-
-  const getSelectedPrice = () => activePkg?.product.priceString ?? "$8.99";
-  const getSelectedPeriod = () => {
-    if (!activePkg) return "month";
-    if (activePkg === weeklyPkg) return "week";
-    if (activePkg === yearlyPkg) return "year";
-    return "month";
-  };
-
-  const navigateHome = () => {
-    navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: "MainTabs" }] }));
-  };
-
-  const handleStartTrial = async () => {
+  const handlePurchase = async () => {
     if (Platform.OS === "web") {
-      Alert.alert("Mobile Only", "Subscriptions are only available in the mobile app.");
+      Alert.alert(
+        "Mobile Only",
+        "Subscriptions are available in the Pocket Pricer mobile app.",
+      );
       return;
     }
     if (!activePkg) {
-      Alert.alert("Error", "No subscription packages available. Please try again later.");
+      Alert.alert(
+        "Plans unavailable",
+        "We could not load a plan. Please try again.",
+      );
       return;
     }
+    if (activeIsCurrent) return;
     setIsLoading(true);
     try {
       const result = await purchasePackage(activePkg);
       if (result.success) {
         try {
-          const revenueValue = activePkg?.product.price ?? 8.99;
-          const currencyCode = activePkg?.product.currencyCode ?? "USD";
           const appsFlyer = await import("react-native-appsflyer");
           appsFlyer.default.logEvent("af_start_trial", {
-            af_revenue: revenueValue,
-            af_currency: currencyCode,
-            af_order_id: `trial_${Date.now()}`,
+            af_revenue: activePkg.product.price,
+            af_currency: activePkg.product.currencyCode,
+            af_order_id: `subscription_${Date.now()}`,
           });
-        } catch (e) {}
+        } catch {}
         navigateHome();
-      } else if (result.error && result.error !== "Purchase cancelled") {
+      } else if (result.error && result.error !== "Purchase cancelled")
         Alert.alert("Purchase Failed", result.error);
-      }
     } catch (error: any) {
-      Alert.alert("Error", error?.message || "Purchase failed. Please try again.");
+      Alert.alert("Purchase Failed", error?.message || "Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -173,754 +277,647 @@ export default function PaywallScreen() {
 
   const handleRestore = async () => {
     if (Platform.OS === "web") {
-      Alert.alert("Mobile Only", "Please use the mobile app to restore purchases.");
+      Alert.alert(
+        "Mobile Only",
+        "Please use the Pocket Pricer mobile app to restore purchases.",
+      );
       return;
     }
     setIsRestoring(true);
     try {
       const result = await restorePurchases();
-      if (result.success) {
-        navigateHome();
-      } else {
-        Alert.alert("No Subscription Found", result.error || "No active subscription found.");
-      }
+      if (result.success) navigateHome();
+      else
+        Alert.alert(
+          "No Subscription Found",
+          result.error || "No active subscription found.",
+        );
     } catch (error: any) {
-      Alert.alert("Error", error?.message || "Failed to restore purchases.");
+      Alert.alert("Restore Failed", error?.message || "Please try again.");
     } finally {
       setIsRestoring(false);
     }
   };
 
-  const wasProOnMount = useRef(isPro);
-
-  useEffect(() => {
-    if (isPro && !wasProOnMount.current) {
-      navigateHome();
+  const headline = isPro
+    ? "Your edge,\non your terms."
+    : context === "inventory"
+      ? "Make every\nflip count."
+      : context === "ebay"
+        ? "Price with\nproof."
+        : "Know the\nnumber.";
+  const selectedPrice = activePkg?.product.priceString;
+  const renewalDisclosure = (() => {
+    if (!activePkg || !selectedPrice) {
+      return "Subscription details will be shown when plans are available. Manage subscriptions in your device account settings.";
     }
-  }, [isPro]);
+
+    const productName =
+      activePkg.product.title || planName(activePkg, activeKind);
+    if (!activeIsAutoRenewing || !activePeriod) {
+      return `${productName}: ${selectedPrice}. The App Store or Google Play will show the complete billing terms before you confirm.`;
+    }
+    if (Platform.OS === "ios") {
+      return `${productName} renews automatically at ${selectedPrice} per ${activePeriod} unless canceled at least 24 hours before the end of the current period. Manage subscriptions in your Apple ID settings.`;
+    }
+    return `${productName} renews automatically at ${selectedPrice} per ${activePeriod} unless canceled in Google Play before renewal. Manage subscriptions in Google Play.`;
+  })();
 
   return (
     <View style={styles.container}>
       <ScrollView
-        style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: insets.bottom + 32 },
+          { paddingBottom: insets.bottom + 24 },
         ]}
         showsVerticalScrollIndicator={false}
-        bounces={false}
       >
-        <LinearGradient
-          colors={["#0A3622", "#14532D", "#1A6B3C"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[styles.heroSection, { paddingTop: insets.top + 12 }]}
+        <View
+          style={[
+            styles.top,
+            compact && styles.topCompact,
+            { paddingTop: insets.top + 8 },
+          ]}
         >
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Close subscription options"
             onPress={() => navigation.goBack()}
-            style={styles.closeButton}
             hitSlop={12}
+            style={styles.close}
           >
-            <View style={styles.closeCircle}>
-              <Feather name="x" size={18} color="rgba(255,255,255,0.7)" />
-            </View>
+            <Feather name="x" size={23} color="#073D2A" />
           </Pressable>
-
-          <Animated.View entering={FadeInUp.delay(60).duration(480)} style={styles.heroContent}>
-            <LinearGradient
-              colors={["#F5D87A", "#D4A926", "#E8C84A", "#D4A926"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.proBadge}
-            >
-              <Feather name="tag" size={12} color="#3D2E00" style={{ transform: [{ scaleX: -1 }] }} />
-              <Text style={styles.proBadgeText}>POCKET PRICER PRO</Text>
-            </LinearGradient>
-
-            {isPro ? (
-              <Text style={styles.heroTitle}>
-                Change your{"\n"}subscription plan
-              </Text>
-            ) : context === "ebay" ? (
-              <Text style={styles.heroTitle}>
-                See what items{"\n"}actually sell for
-              </Text>
-            ) : context === "inventory" ? (
-              <Text style={styles.heroTitle}>
-                Track every flip{"\n"}from buy to sold
-              </Text>
-            ) : (
-              <Text style={styles.heroTitle}>
-                Know exactly what{"\n"}to buy & sell
-              </Text>
-            )}
-
-            <Text style={styles.heroSubtitle}>
+          <Text style={styles.brand}>
+            POCKET PRICER <Text style={styles.brandGold}>PRO</Text>
+          </Text>
+          <Animated.View
+            entering={FadeInUp.duration(430)}
+            style={[styles.hero, compact && styles.heroCompact]}
+          >
+            <Text style={styles.kicker}>
+              {isPro ? "MEMBERSHIP OPTIONS" : "THE RESELLER'S ADVANTAGE"}
+            </Text>
+            <Text style={[styles.headline, compact && styles.headlineCompact]}>
+              {headline}
+            </Text>
+            <Text style={styles.subhead}>
               {isPro
-                ? "Select a new plan below to switch."
-                : context === "inventory"
-                ? "Log purchases, mark items sold,\nand watch your profit grow."
-                : "Real sold prices, unlimited scans,\nand instant profit data."}
+                ? "Choose the plan that fits how you source."
+                : "The fast read on value, profit, and what to buy next."}
             </Text>
           </Animated.View>
-        </LinearGradient>
-
-        <View style={styles.contentSection}>
-          <View style={styles.featuresList}>
-            {FEATURES.map((f, index) => (
-              <Animated.View
-                key={f.title}
-                entering={FadeInUp.delay(120 + index * 60).duration(400)}
-              >
-                <View style={styles.featureCard}>
-                  <View style={styles.featureIconCircle}>
-                    <Feather name={f.icon} size={20} color="#047857" />
-                  </View>
-                  <View style={styles.featureTextWrap}>
-                    <Text style={styles.featureTitle}>{f.title}</Text>
-                    <Text style={styles.featureDesc}>{f.desc}</Text>
-                    {"badge" in f && f.badge ? (
-                      <View style={[styles.featureBadge, { backgroundColor: f.badgeColor + "15" }]}>
-                        <Text style={[styles.featureBadgeText, { color: f.badgeColor }]}>{f.badge}</Text>
-                      </View>
-                    ) : null}
-                  </View>
-                  <View style={styles.featureCheck}>
-                    <Feather name="check" size={15} color="#fff" />
-                  </View>
-                </View>
-              </Animated.View>
-            ))}
+          <View
+            style={[styles.tagArtwork, compact && styles.tagArtworkCompact]}
+            pointerEvents="none"
+          >
+            <View style={styles.tagHole} />
+            <Feather name="dollar-sign" size={55} color="#F7E6A6" />
           </View>
+          <View style={styles.sparkOne} />
+          <View style={styles.sparkTwo} />
+        </View>
 
-          <Text style={styles.planSectionTitle}>{isPro ? "SWITCH YOUR PLAN" : "CHOOSE YOUR PLAN"}</Text>
+        <Animated.View
+          entering={FadeInUp.delay(100).duration(450)}
+          style={styles.valueCard}
+        >
+          <View style={styles.valueHeader}>
+            <View style={styles.valueIcon}>
+              <Feather name="award" size={17} color="#F5D66E" />
+            </View>
+            <Text style={styles.valueTitle}>The pocket advantage</Text>
+          </View>
+          {BENEFITS.map(([icon, title, detail]) => (
+            <View style={styles.benefit} key={title}>
+              <View style={styles.check}>
+                <Feather name="check" size={13} color="#06452F" />
+              </View>
+              <View style={styles.benefitCopy}>
+                <Text style={styles.benefitTitle}>{title}</Text>
+                <Text style={styles.benefitDetail}>{detail}</Text>
+              </View>
+            </View>
+          ))}
+          <View style={styles.chartBars}>
+            <View style={[styles.bar, { height: 16 }]} />
+            <View style={[styles.bar, { height: 30 }]} />
+            <View style={[styles.bar, { height: 45 }]} />
+          </View>
+        </Animated.View>
 
-          <View style={styles.planCards}>
-            {showError ? (
-              <View style={styles.errorCard}>
-                <Feather name="wifi-off" size={22} color="#EF4444" />
-                <Text style={styles.errorTitle}>Unable to load plans</Text>
-                <Text style={styles.errorSub}>Check your connection and try again.</Text>
-                <Pressable onPress={handleRetry} style={styles.retryButton}>
-                  <Feather name="refresh-cw" size={14} color="#047857" />
-                  <Text style={styles.retryText}>Try Again</Text>
-                </Pressable>
-              </View>
-            ) : packagesLoading ? (
-              <View style={styles.planStackCol}>
-                <View style={[styles.planRowCard, styles.skeletonCard]} />
-                <View style={[styles.planRowCard, styles.skeletonCard]} />
-              </View>
-            ) : hasMultiplePlans ? (
-              <View style={styles.planStackCol}>
-                {weeklyPkg ? (
-                  <Pressable
-                    onPress={() => handleSelectPlan("weekly")}
-                    style={[
-                      styles.planRowCard,
-                      {
-                        borderColor: selectedPlan === "weekly" ? "#047857" : "#E5E7EB",
-                        backgroundColor: selectedPlan === "weekly" ? "#F0FDF8" : "#F9FAFB",
-                      },
-                    ]}
-                  >
-                    <View style={styles.planRowLeft}>
-                      {selectedPlan === "weekly" ? (
-                        <View style={styles.planRadioFilled}>
-                          <View style={styles.planRadioInner} />
-                        </View>
-                      ) : (
-                        <View style={styles.planRadioEmpty} />
-                      )}
-                      <View>
-                        <Text style={styles.planRowTitle}>Weekly</Text>
-                        <Text style={styles.planRowSub}>Flexible, cancel anytime</Text>
+        <View style={styles.plansArea}>
+          <Text style={styles.sectionLabel}>
+            {isPro ? "UPDATE YOUR PLAN" : "CHOOSE YOUR PLAN"}
+          </Text>
+          {showError ? (
+            <View style={styles.statusCard}>
+              <Feather name="wifi-off" size={22} color="#B84D37" />
+              <Text style={styles.statusTitle}>Plans could not load</Text>
+              <Text style={styles.statusText}>
+                Check your connection and try again.
+              </Text>
+              <Pressable onPress={handleRetry} style={styles.retry}>
+                <Text style={styles.retryText}>Try again</Text>
+              </Pressable>
+            </View>
+          ) : packagesLoading ? (
+            <View style={styles.skeletonWrap}>
+              <View style={styles.skeleton} />
+              <View style={styles.skeleton} />
+              <View style={styles.skeleton} />
+            </View>
+          ) : (
+            <View
+              style={styles.planList}
+              accessibilityRole="radiogroup"
+              accessibilityLabel="Subscription plans. Select one plan."
+            >
+              {orderedPackages.map((pkg, index) => {
+                const kind = planKind(pkg);
+                const period = planPeriod(pkg, kind);
+                const selected = activePkg?.identifier === pkg.identifier;
+                const bestValue = kind === "yearly" && annualSaving !== null;
+                const isCurrent = activeSubscriptionIds.has(
+                  pkg.product.identifier,
+                );
+                return (
+                  <View key={pkg.identifier} style={styles.planSlot}>
+                    {(bestValue || (index === 1 && !yearlyPkg)) && (
+                      <View
+                        style={[
+                          styles.ribbon,
+                          bestValue ? styles.goldRibbon : styles.greenRibbon,
+                        ]}
+                      >
+                        <Text style={styles.ribbonText}>
+                          {bestValue
+                            ? `SAVE ${annualSaving}%`
+                            : "MOST FLEXIBLE"}
+                        </Text>
                       </View>
-                    </View>
-                    <View style={styles.planRowRight}>
-                      {currentPlanType === "weekly" ? (
-                        <View style={styles.currentPlanBadge}>
-                          <Text style={styles.currentPlanBadgeText}>Current</Text>
-                        </View>
-                      ) : null}
-                      <Text style={styles.planRowPrice}>{weeklyPkg.product.priceString}</Text>
-                      <Text style={styles.planRowPeriod}>per week</Text>
-                    </View>
-                  </Pressable>
-                ) : null}
-
-                {monthlyPkg ? (
-                  <View>
-                    {weeklyPkg ? (() => {
-                      const weeklyMonthly = weeklyPkg.product.price * 4.33;
-                      const monthlyPrice = monthlyPkg.product.price;
-                      const savePct = Math.round(((weeklyMonthly - monthlyPrice) / weeklyMonthly) * 100);
-                      return savePct > 0 ? (
-                        <View style={styles.saveBadgeFloatGreen}>
-                          <Text style={styles.saveBadgeFloatText}>Save {savePct}%</Text>
-                        </View>
-                      ) : null;
-                    })() : null}
+                    )}
                     <Pressable
-                      onPress={() => handleSelectPlan("monthly")}
-                      style={[
-                        styles.planRowCard,
-                        {
-                          borderColor: selectedPlan === "monthly" ? "#047857" : "#047857",
-                          borderWidth: 2,
-                          backgroundColor: selectedPlan === "monthly" ? "#F0FDF8" : "#FFFFFF",
-                        },
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected, disabled: isCurrent }}
+                      accessibilityLabel={`${planName(pkg, kind)}, ${pkg.product.priceString}${period ? ` per ${period}` : ""}${isCurrent ? ", current plan" : ""}`}
+                      disabled={isCurrent}
+                      onPress={() => {
+                        chosenRef.current = true;
+                        setSelectedIdentifier(pkg.identifier);
+                      }}
+                      style={({ pressed }) => [
+                        styles.plan,
+                        selected &&
+                          (bestValue
+                            ? styles.selectedGold
+                            : styles.selectedGreen),
+                        pressed && styles.pressed,
                       ]}
                     >
-                      <View style={styles.planRowLeft}>
-                        {selectedPlan === "monthly" ? (
-                          <View style={styles.planRadioFilled}>
-                            <View style={styles.planRadioInner} />
-                          </View>
-                        ) : (
-                          <View style={styles.planRadioEmpty} />
-                        )}
-                        <View>
-                          <Text style={styles.planRowTitle}>Monthly</Text>
-                          {weeklyPkg ? (
-                            <Text style={styles.planRowSub}>
-                              ~${(monthlyPkg.product.price / 4.33).toFixed(2)}/wk · vs weekly
-                            </Text>
-                          ) : (
-                            <Text style={styles.planRowSub}>Most flexible option</Text>
+                      <View
+                        style={[
+                          styles.radio,
+                          selected &&
+                            (bestValue ? styles.radioGold : styles.radioGreen),
+                        ]}
+                      >
+                        {selected && <View style={styles.radioDot} />}
+                      </View>
+                      <View style={styles.planCopy}>
+                        <View style={styles.planTitleRow}>
+                          <Text style={styles.planName}>
+                            {planName(pkg, kind)}
+                          </Text>
+                          {isCurrent && (
+                            <Text style={styles.current}>CURRENT</Text>
                           )}
                         </View>
+                        <Text style={styles.planDescription}>
+                          {planDescription(pkg, kind)}
+                        </Text>
                       </View>
-                      <View style={styles.planRowRight}>
-                        {currentPlanType === "monthly" ? (
-                          <View style={styles.currentPlanBadge}>
-                            <Text style={styles.currentPlanBadgeText}>Current</Text>
-                          </View>
-                        ) : null}
-                        <Text style={styles.planRowPrice}>{monthlyPkg.product.priceString}</Text>
-                        <Text style={styles.planRowPeriod}>per month</Text>
-                      </View>
-                    </Pressable>
-                  </View>
-                ) : null}
-
-                {yearlyPkg ? (
-                  <View>
-                    <View style={styles.yearlyBadgeRow}>
-                      <View style={styles.bestValueBadge}>
-                        <Text style={styles.bestValueText}>Best value</Text>
-                      </View>
-                      {weeklyPkg ? (() => {
-                        const weeklyAnnual = weeklyPkg.product.price * 52;
-                        const yearlyPrice = yearlyPkg.product.price;
-                        const savePct = Math.round(((weeklyAnnual - yearlyPrice) / weeklyAnnual) * 100);
-                        return savePct > 0 ? (
-                          <View style={styles.saveBadgeFloatGold}>
-                            <Text style={styles.saveBadgeFloatTextGold}>Save {savePct}%</Text>
-                          </View>
-                        ) : null;
-                      })() : null}
-                    </View>
-                    <Pressable
-                      onPress={() => handleSelectPlan("yearly")}
-                      style={[
-                        styles.planRowCard,
-                        {
-                          borderColor: selectedPlan === "yearly" ? "#C49B1F" : "#D4A926",
-                          borderWidth: 2,
-                          backgroundColor: selectedPlan === "yearly" ? "#FFFBEB" : "#FFFFFF",
-                        },
-                      ]}
-                    >
-                      <View style={styles.planRowLeft}>
-                        {selectedPlan === "yearly" ? (
-                          <View style={[styles.planRadioFilled, { borderColor: "#C49B1F" }]}>
-                            <View style={[styles.planRadioInner, { backgroundColor: "#C49B1F" }]} />
-                          </View>
-                        ) : (
-                          <View style={[styles.planRadioEmpty, { borderColor: "#D4A926" }]} />
-                        )}
-                        <View>
-                          <Text style={styles.planRowTitle}>Yearly</Text>
-                          {weeklyPkg ? (
-                            <Text style={styles.planRowSub}>
-                              ~${(yearlyPkg.product.price / 52).toFixed(2)}/wk · vs weekly
-                            </Text>
-                          ) : (
-                            <Text style={styles.planRowSub}>
-                              ${(yearlyPkg.product.price / 12).toFixed(2)} / mo · billed annually
-                            </Text>
-                          )}
-                        </View>
-                      </View>
-                      <View style={styles.planRowRight}>
-                        {currentPlanType === "yearly" ? (
-                          <View style={styles.currentPlanBadge}>
-                            <Text style={styles.currentPlanBadgeText}>Current</Text>
-                          </View>
-                        ) : null}
-                        {weeklyPkg ? (
-                          <Text style={styles.planRowStrikePrice}>
-                            ${(weeklyPkg.product.price * 52).toFixed(2)}
+                      <View style={styles.priceWrap}>
+                        <Text style={styles.price}>
+                          {pkg.product.priceString}
+                        </Text>
+                        {period ? (
+                          <Text style={styles.period}>
+                            {kind === "lifetime" ? period : `per ${period}`}
                           </Text>
                         ) : null}
-                        <Text style={styles.planRowPrice}>{yearlyPkg.product.priceString}</Text>
-                        <Text style={styles.planRowPeriod}>per year</Text>
                       </View>
                     </Pressable>
                   </View>
-                ) : null}
-              </View>
-            ) : (
-              <Pressable
-                style={[styles.planRowCard, { borderColor: "#047857", backgroundColor: "#F0FDF8" }]}
-              >
-                <View style={styles.planRowLeft}>
-                  <View style={styles.planRadioFilled}>
-                    <View style={styles.planRadioInner} />
-                  </View>
-                  <View>
-                    <Text style={styles.planRowTitle}>3-Day Free Trial</Text>
-                    <Text style={styles.planRowSub}>Cancel anytime</Text>
-                  </View>
-                </View>
-                <View style={styles.planRowRight}>
-                  <Text style={styles.planRowPrice}>{getSelectedPrice()}</Text>
-                  <Text style={styles.planRowPeriod}>per {getSelectedPeriod()}</Text>
-                </View>
-              </Pressable>
-            )}
-          </View>
-
-          <Animated.View entering={FadeInDown.delay(300).duration(480)} style={styles.ctaWrap}>
-            <Pressable
-              onPress={handleStartTrial}
-              disabled={isLoading || isRestoring || packagesLoading}
-              style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1, width: "100%" }]}
-            >
-              <LinearGradient
-                colors={["#0A3622", "#14532D", "#065F46"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={[styles.ctaButton, packagesLoading && { opacity: 0.75 }]}
-              >
-                {isLoading ? (
-                  <ActivityIndicator color="#fff" size="small" />
-                ) : packagesLoading && !showError ? (
-                  <>
-                    <ActivityIndicator color="#fff" size="small" />
-                    <Text style={styles.ctaButtonText}>Loading plans...</Text>
-                  </>
-                ) : (
-                  <>
-                    <Text style={styles.ctaButtonText}>{isPro ? "Switch Plan" : "Start 3-Day Free Trial"}</Text>
-                    <Feather name="arrow-right" size={20} color="#fff" />
-                  </>
-                )}
-              </LinearGradient>
-            </Pressable>
-
-            <View style={styles.ctaNoteRow}>
-              <Feather name="lock" size={12} color="#9CA3AF" />
-              <Text style={styles.ctaNote}>
-                {isPro ? "Plan change takes effect at next billing cycle" : "No charge for 3 days · Cancel anytime"}
-              </Text>
+                );
+              })}
             </View>
-          </Animated.View>
+          )}
+        </View>
 
-          <View style={styles.footer}>
-            <Pressable onPress={handleRestore} disabled={isLoading || isRestoring}>
-              {isRestoring ? (
-                <ActivityIndicator size="small" color="#047857" />
+        <Animated.View
+          entering={FadeInDown.delay(220).duration(420)}
+          style={styles.purchaseArea}
+        >
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={isPro ? "Switch plan" : "Continue to checkout"}
+            disabled={
+              isLoading ||
+              isRestoring ||
+              packagesLoading ||
+              showError ||
+              activeIsCurrent
+            }
+            onPress={handlePurchase}
+            style={({ pressed }) => [
+              styles.purchasePress,
+              pressed && styles.pressed,
+            ]}
+          >
+            <LinearGradient
+              colors={["#006E49", "#004C35"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={[
+                styles.purchaseButton,
+                (packagesLoading || showError || activeIsCurrent) &&
+                  styles.disabled,
+              ]}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#FFF9E8" />
               ) : (
-                <Text style={styles.footerLink}>Restore Purchase</Text>
+                <>
+                  <Feather name="shield" size={18} color="#F8D96C" />
+                  <Text style={styles.purchaseText}>
+                    {activeIsCurrent
+                      ? "Current plan"
+                      : isPro
+                        ? "Choose this plan"
+                        : selectedPrice
+                          ? `Continue with ${selectedPrice}`
+                          : "Continue to checkout"}
+                  </Text>
+                  <Feather name="arrow-right" size={18} color="#FFF9E8" />
+                </>
+              )}
+            </LinearGradient>
+          </Pressable>
+          <Text style={styles.secure}>
+            <Feather name="lock" size={11} color="#638176" /> Secure,
+            store-managed checkout.
+          </Text>
+          <View style={styles.footer}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={handleRestore}
+              disabled={isLoading || isRestoring}
+              hitSlop={8}
+            >
+              {isRestoring ? (
+                <ActivityIndicator size="small" color="#006E49" />
+              ) : (
+                <Text style={styles.link}>Restore purchase</Text>
               )}
             </Pressable>
-            <Text style={styles.footerDot}>·</Text>
-            <Pressable onPress={() => Linking.openURL(TERMS_URL)}>
-              <Text style={styles.footerLink}>Terms</Text>
+            <Text style={styles.dot}>·</Text>
+            <Pressable
+              accessibilityRole="link"
+              onPress={() => Linking.openURL(TERMS_URL)}
+              hitSlop={8}
+            >
+              <Text style={styles.link}>Terms</Text>
             </Pressable>
-            <Text style={styles.footerDot}>·</Text>
-            <Pressable onPress={() => Linking.openURL(PRIVACY_URL)}>
-              <Text style={styles.footerLink}>Privacy</Text>
+            <Text style={styles.dot}>·</Text>
+            <Pressable
+              accessibilityRole="link"
+              onPress={() => Linking.openURL(PRIVACY_URL)}
+              hitSlop={8}
+            >
+              <Text style={styles.link}>Privacy</Text>
             </Pressable>
           </View>
-
-          <Text style={styles.legalText}>
-            {isPro
-              ? `Your plan change will take effect at the end of your current billing period. Your new plan will renew at ${getSelectedPrice()}/${getSelectedPeriod()}. Manage or cancel in Settings → Apple ID → Subscriptions.`
-              : `After your 3-day free trial, your subscription automatically renews at ${getSelectedPrice()}/${getSelectedPeriod()}. Payment will be charged to your Apple ID account at confirmation of purchase. Subscription automatically renews unless canceled at least 24 hours before the end of the current period. Manage or cancel in Settings → Apple ID → Subscriptions.`}
-          </Text>
-        </View>
+          <Text style={styles.legal}>{renewalDisclosure}</Text>
+        </Animated.View>
       </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
+  container: { flex: 1, backgroundColor: "#F7F5ED" },
+  scrollContent: { backgroundColor: "#F7F5ED" },
+  top: {
+    minHeight: 303,
+    backgroundColor: "#EAF2E7",
+    paddingHorizontal: 25,
+    overflow: "hidden",
   },
-  scrollView: {
-    flex: 1,
+  topCompact: {
+    minHeight: 285,
+    paddingHorizontal: 20,
   },
-  scrollContent: {
-  },
-  heroSection: {
-    paddingHorizontal: 24,
-    paddingBottom: 32,
+  close: {
+    position: "absolute",
+    right: 16,
+    top: 48,
+    zIndex: 3,
+    width: 44,
+    height: 44,
+    justifyContent: "center",
     alignItems: "center",
   },
-  closeButton: {
-    position: "absolute" as const,
-    right: 16,
-    top: 52,
-    zIndex: 10,
-    padding: 10,
+  brand: {
+    alignSelf: "center",
+    fontSize: 12,
+    fontWeight: "800",
+    letterSpacing: 1.4,
+    color: "#07523A",
+    marginTop: 12,
   },
-  closeCircle: {
-    width: 36,
-    height: 36,
+  brandGold: { color: "#B78016" },
+  hero: { marginTop: 34, width: "69%" },
+  heroCompact: { marginTop: 28, width: "64%" },
+  kicker: {
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 1.25,
+    color: "#A06E10",
+    marginBottom: 9,
+  },
+  headline: {
+    fontSize: 39,
+    lineHeight: 40,
+    fontWeight: "800",
+    letterSpacing: -1.5,
+    color: "#063E2C",
+  },
+  headlineCompact: {
+    fontSize: 32,
+    lineHeight: 34,
+    letterSpacing: -1,
+  },
+  subhead: {
+    fontSize: 14,
+    lineHeight: 19,
+    color: "#49685D",
+    marginTop: 12,
+    maxWidth: 230,
+  },
+  tagArtwork: {
+    position: "absolute",
+    right: 23,
+    top: 125,
+    width: 107,
+    height: 138,
+    backgroundColor: "#008256",
+    borderRadius: 22,
+    transform: [{ rotate: "25deg" }],
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#0A553D",
+    shadowOpacity: 0.22,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 5,
+  },
+  tagArtworkCompact: {
+    right: 13,
+    top: 142,
+    width: 76,
+    height: 104,
     borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.18)",
+  },
+  tagHole: {
+    position: "absolute",
+    top: 13,
+    left: 14,
+    width: 17,
+    height: 17,
+    borderRadius: 10,
+    backgroundColor: "#EAF2E7",
+    borderWidth: 4,
+    borderColor: "#07513A",
+  },
+  sparkOne: {
+    position: "absolute",
+    right: 19,
+    top: 112,
+    width: 9,
+    height: 9,
+    backgroundColor: "#C99722",
+    transform: [{ rotate: "45deg" }],
+  },
+  sparkTwo: {
+    position: "absolute",
+    right: 127,
+    bottom: 20,
+    width: 6,
+    height: 6,
+    backgroundColor: "#07915D",
+    transform: [{ rotate: "45deg" }],
+  },
+  valueCard: {
+    marginHorizontal: 18,
+    marginTop: -12,
+    borderRadius: 22,
+    padding: 20,
+    backgroundColor: "#00583C",
+    overflow: "hidden",
+    shadowColor: "#124B3B",
+    shadowOpacity: 0.17,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 4,
+  },
+  valueHeader: { flexDirection: "row", alignItems: "center", marginBottom: 13 },
+  valueIcon: {
+    width: 31,
+    height: 31,
+    borderRadius: 10,
+    backgroundColor: "rgba(255,255,255,.13)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 10,
+  },
+  valueTitle: {
+    fontSize: 17,
+    color: "#FFF8E5",
+    fontWeight: "800",
+    letterSpacing: -0.2,
+  },
+  benefit: { flexDirection: "row", alignItems: "center", marginTop: 11 },
+  check: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "#F7E7A9",
     alignItems: "center",
     justifyContent: "center",
+    marginRight: 11,
   },
-  heroContent: {
-    alignItems: "center",
-    marginTop: 32,
+  benefitCopy: { flex: 1 },
+  benefitTitle: { color: "#F9F8EB", fontSize: 13, fontWeight: "700" },
+  benefitDetail: {
+    color: "#B9D6C8",
+    fontSize: 11,
+    lineHeight: 15,
+    marginTop: 1,
   },
-  proBadge: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginBottom: 20,
+  chartBars: {
+    position: "absolute",
+    right: -1,
+    bottom: -1,
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 5,
+    opacity: 0.18,
   },
-  proBadgeText: {
-    fontSize: 13,
-    fontWeight: "800" as const,
-    color: "#3D2E00",
-    letterSpacing: 0.8,
+  bar: {
+    width: 13,
+    backgroundColor: "#F9E189",
+    borderTopLeftRadius: 3,
+    borderTopRightRadius: 3,
   },
-  heroTitle: {
-    fontSize: 30,
-    fontWeight: "800" as const,
-    color: "#FFFFFF",
-    textAlign: "center" as const,
-    letterSpacing: -0.5,
-    lineHeight: 38,
+  plansArea: { paddingHorizontal: 18, paddingTop: 25 },
+  sectionLabel: {
+    color: "#527065",
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 1.15,
     marginBottom: 12,
   },
-  heroSubtitle: {
-    fontSize: 15,
-    color: "rgba(255,255,255,0.55)",
-    textAlign: "center" as const,
-    lineHeight: 22,
-  },
-  contentSection: {
-    backgroundColor: "#F3F4F6",
-    paddingHorizontal: 20,
-    paddingTop: 24,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    marginTop: -16,
-  },
-  featuresList: {
-    gap: 10,
-    marginBottom: 24,
-  },
-  featureCard: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-  },
-  featureIconCircle: {
-    width: 46,
-    height: 46,
-    borderRadius: 14,
-    backgroundColor: "#ECFDF5",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 14,
-  },
-  featureTextWrap: {
-    flex: 1,
-  },
-  featureTitle: {
-    fontSize: 16,
-    fontWeight: "700" as const,
-    color: "#111827",
-    marginBottom: 3,
-  },
-  featureDesc: {
-    fontSize: 13,
-    color: "#6B7280",
-    lineHeight: 18,
-  },
-  featureCheck: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "#047857",
-    alignItems: "center",
-    justifyContent: "center",
-    marginLeft: 12,
-  },
-  featureBadge: {
-    alignSelf: "flex-start" as const,
-    paddingHorizontal: 8,
+  planList: { gap: 11 },
+  planSlot: { position: "relative" },
+  ribbon: {
+    position: "absolute",
+    top: -7,
+    left: 43,
+    zIndex: 2,
+    paddingHorizontal: 9,
     paddingVertical: 3,
-    borderRadius: 6,
-    marginTop: 5,
+    borderRadius: 7,
   },
-  featureBadgeText: {
-    fontSize: 11,
-    fontWeight: "700" as const,
+  goldRibbon: { backgroundColor: "#B68117" },
+  greenRibbon: { backgroundColor: "#097350" },
+  ribbonText: {
+    color: "#FFF9E9",
+    fontSize: 9,
+    fontWeight: "800",
+    letterSpacing: 0.5,
   },
-  planSectionTitle: {
-    fontSize: 12,
-    fontWeight: "600" as const,
-    color: "#9CA3AF",
-    letterSpacing: 1.5,
-    textAlign: "center" as const,
-    marginBottom: 14,
+  plan: {
+    minHeight: 75,
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 17,
+    borderWidth: 1.5,
+    borderColor: "#D6DED4",
+    backgroundColor: "#FCFBF5",
+    padding: 14,
   },
-  planCards: {
-    marginBottom: 20,
+  selectedGreen: { borderColor: "#007451", backgroundColor: "#F1F8F1" },
+  selectedGold: { borderColor: "#B68117", backgroundColor: "#FFF9E9" },
+  pressed: { opacity: 0.82, transform: [{ scale: 0.99 }] },
+  radio: {
+    width: 23,
+    height: 23,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: "#C5D1C9",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
   },
-  planStackCol: {
-    gap: 10,
+  radioGreen: { borderColor: "#007451", backgroundColor: "#007451" },
+  radioGold: { borderColor: "#B68117", backgroundColor: "#B68117" },
+  radioDot: {
+    height: 9,
+    width: 9,
+    borderRadius: 5,
+    backgroundColor: "#FFFBEF",
   },
-  planRowCard: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    justifyContent: "space-between" as const,
-    borderRadius: 16,
-    borderWidth: 2,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    flexWrap: "wrap" as const,
+  planCopy: { flex: 1 },
+  planTitleRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  planName: { color: "#123B2D", fontSize: 16, fontWeight: "800" },
+  current: {
+    fontSize: 8,
+    fontWeight: "800",
+    color: "#006B4A",
+    backgroundColor: "#D9EFE0",
+    paddingHorizontal: 5,
+    paddingVertical: 3,
+    borderRadius: 4,
   },
-  yearlyBadgeRow: {
-    flexDirection: "row" as const,
-    justifyContent: "space-between" as const,
-    alignItems: "center" as const,
-    marginBottom: -10,
-    paddingHorizontal: 4,
-    zIndex: 1,
+  planDescription: { color: "#71877B", fontSize: 11, marginTop: 3 },
+  priceWrap: { alignItems: "flex-end" },
+  price: { color: "#006B4A", fontSize: 19, fontWeight: "800" },
+  period: { color: "#71877B", fontSize: 10, marginTop: 1 },
+  skeletonWrap: { gap: 11 },
+  skeleton: { height: 75, borderRadius: 17, backgroundColor: "#E5EAE1" },
+  statusCard: {
+    borderRadius: 17,
+    padding: 22,
+    alignItems: "center",
+    backgroundColor: "#FFF7F1",
+    borderWidth: 1,
+    borderColor: "#E7CCBC",
   },
-  planRowLeft: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    gap: 12,
-    flex: 1,
-  },
-  planRowRight: {
-    alignItems: "flex-end" as const,
-  },
-  planRowTitle: {
+  statusTitle: {
+    color: "#633426",
+    fontWeight: "800",
     fontSize: 16,
-    fontWeight: "700" as const,
-    color: "#111827",
-    marginBottom: 1,
+    marginTop: 8,
   },
-  planRowSub: {
-    fontSize: 12,
-    color: "#9CA3AF",
+  statusText: { color: "#896254", fontSize: 13, marginTop: 4 },
+  retry: {
+    minHeight: 42,
+    justifyContent: "center",
+    paddingHorizontal: 18,
+    marginTop: 14,
+    borderRadius: 12,
+    backgroundColor: "#F3E1D5",
   },
-  planRowPrice: {
-    fontSize: 22,
-    fontWeight: "800" as const,
-    color: "#111827",
-  },
-  planRowPeriod: {
-    fontSize: 12,
-    color: "#9CA3AF",
-  },
-  currentPlanBadge: {
-    backgroundColor: "#047857",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 8,
-    marginBottom: 2,
-  },
-  currentPlanBadgeText: {
-    fontSize: 10,
-    fontWeight: "700" as const,
-    color: "#FFFFFF",
-    letterSpacing: 0.3,
-  },
-  planRadioFilled: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 2,
-    borderColor: "#047857",
+  retryText: { color: "#91442E", fontWeight: "800" },
+  purchaseArea: { paddingHorizontal: 18, marginTop: 21 },
+  purchasePress: { width: "100%" },
+  purchaseButton: {
+    height: 57,
+    borderRadius: 16,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-  },
-  planRadioInner: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: "#047857",
-  },
-  planRadioEmpty: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 2,
-    borderColor: "#D1D5DB",
-  },
-  planRowStrikePrice: {
-    fontSize: 13,
-    color: "#9CA3AF",
-    textDecorationLine: "line-through" as const,
-    marginBottom: 1,
-  },
-  saveBadgeFloatGreen: {
-    alignSelf: "flex-end" as const,
-    backgroundColor: "#047857",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-    marginBottom: -10,
-    marginRight: 4,
-    zIndex: 1,
-  },
-  saveBadgeFloatText: {
-    fontSize: 11,
-    fontWeight: "700" as const,
-    color: "#FFFFFF",
-  },
-  saveBadgeFloatGold: {
-    backgroundColor: "#C49B1F",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  saveBadgeFloatTextGold: {
-    fontSize: 11,
-    fontWeight: "700" as const,
-    color: "#FFFFFF",
-  },
-  bestValueBadge: {
-    backgroundColor: "#111827",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  bestValueText: {
-    fontSize: 11,
-    fontWeight: "700" as const,
-    color: "#FFFFFF",
-  },
-  skeletonCard: {
-    height: 60,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    backgroundColor: "#F3F4F6",
-  },
-  errorCard: {
-    width: "100%" as const,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#FECACA",
-    backgroundColor: "#FEF2F2",
-    paddingVertical: 22,
-    paddingHorizontal: 20,
-    alignItems: "center" as const,
-    gap: 8,
-  },
-  errorTitle: {
-    fontSize: 16,
-    fontWeight: "700" as const,
-    color: "#111827",
-    marginTop: 2,
-  },
-  errorSub: {
-    fontSize: 13,
-    color: "#6B7280",
-    textAlign: "center" as const,
-  },
-  retryButton: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    gap: 6,
-    marginTop: 6,
-    paddingVertical: 9,
-    paddingHorizontal: 20,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#047857",
-    backgroundColor: "#FFF",
-  },
-  retryText: {
-    color: "#047857",
-    fontSize: 14,
-    fontWeight: "700" as const,
-  },
-  ctaWrap: {
-    width: "100%" as const,
-    alignItems: "center" as const,
-    marginBottom: 20,
-  },
-  ctaButton: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-    paddingVertical: 19,
-    borderRadius: 16,
     gap: 10,
-    width: "100%" as const,
+    shadowColor: "#00452F",
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
-  ctaButtonText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "800" as const,
-    letterSpacing: 0.2,
-  },
-  ctaNoteRow: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    gap: 5,
-    marginTop: 10,
-  },
-  ctaNote: {
-    fontSize: 13,
-    color: "#9CA3AF",
+  disabled: { opacity: 0.58 },
+  purchaseText: { color: "#FFF9E8", fontWeight: "800", fontSize: 16 },
+  secure: {
+    alignSelf: "center",
+    color: "#6C8478",
+    fontSize: 11,
+    marginTop: 11,
   },
   footer: {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    gap: 6,
-    marginBottom: 16,
-    flexWrap: "wrap" as const,
-    justifyContent: "center" as const,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    marginTop: 21,
   },
-  footerLink: {
-    fontSize: 13,
-    fontWeight: "500" as const,
-    color: "#6B7280",
-  },
-  footerDot: {
-    fontSize: 13,
-    color: "#6B7280",
-  },
-  legalText: {
-    fontSize: 11,
-    textAlign: "center" as const,
-    lineHeight: 16,
-    paddingHorizontal: 4,
-    color: "#9CA3AF",
+  link: { color: "#176148", fontSize: 12, fontWeight: "700" },
+  dot: { color: "#A1B2A8" },
+  legal: {
+    textAlign: "center",
+    color: "#809187",
+    fontSize: 10,
+    lineHeight: 14,
+    marginTop: 16,
+    paddingHorizontal: 10,
   },
 });
