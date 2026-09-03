@@ -19,9 +19,8 @@ import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { useTabBarVisibility } from "@/contexts/TabBarVisibilityContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRevenueCat } from "@/contexts/RevenueCatContext";
+import { FREE_SCAN_LIMIT } from "@/constants/scan-limits";
 import type { CapturedPhoto } from "@/navigation/RootStackNavigator";
-
-const FREE_SCAN_LIMIT = 3;
 
 export type MainTabParamList = {
   Home:

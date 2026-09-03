@@ -16,6 +16,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useDesignTokens } from "@/hooks/useDesignTokens";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRevenueCat } from "@/contexts/RevenueCatContext";
+import { FREE_SCAN_LIMIT } from "@/constants/scan-limits";
 import { resetOnboarding } from "@/screens/OnboardingScreen";
 import { triggerOnboardingReplay } from "@/components/AppContent";
 import { clearSearchHistory, clearFavorites } from "@/lib/storage";
@@ -122,7 +123,7 @@ export default function ProfileScreen() {
     }
   };
 
-  const freeScansRemaining = Math.max(0, 3 - scansUsed);
+  const freeScansRemaining = Math.max(0, FREE_SCAN_LIMIT - scansUsed);
 
   return (
     <View style={styles.outerContainer}>
